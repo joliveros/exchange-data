@@ -3,7 +3,11 @@ Saves bitmex data in realtime to influxdb
 """
 from setuptools import find_packages, setup
 
-dependencies = ['click', 'bitmex-websocket']
+dependencies = ['click',
+                'bitmex-websocket',
+                'influxdb',
+                'future',
+                'asyncio']
 
 setup(
     name='save-bitmex-data',
