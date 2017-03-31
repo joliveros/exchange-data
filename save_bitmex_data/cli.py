@@ -13,13 +13,15 @@ import websocket
 import json
 
 MEASUREMENT_BATCH_SIZE = 100
+db = {}
 measurements = []
 
 @click.command()
-@click.argument('symbol',
+@click.argument('symbols',
                 required=True)
-def main(symbol):
+def main(symbols):
     """Saves bitmex data in realtime to influxdb"""
+    global db
     INFLUX_DB = os.environ.get('INFLUX_DB')
     CERT_FILE = './cert.ca'
     conn_params = urlparse(INFLUX_DB)
@@ -37,23 +39,47 @@ def main(symbol):
 
     websocket.enableTrace(os.environ.get('RUN_ENV') == 'development')
 
+
     channels = ['quote', 'trade']
-    XBTH17 = Instrument(symbol=symbol,
-                        channels=channels,
-                        # set to 1 because data will be saved to db
-                        maxTableLength=1,
-                        shouldAuth=False)
+
+    symbols = [x.strip() for x in symbols.split(',')]
+
+    for symbol in symbols:
+        instrument = Instrument(symbol=symbol,
+                            channels=channels,
+                            # set to 1 because data will be saved to db
+                            maxTableLength=1,
+                            shouldAuth=False)
+        for table in channels:
+            instrument.on(table, on_table)
+
+        instrument.on('latency', lambda latency: print("latency: {0}".format(latency)))
+
+    loop = asyncio.get_event_loop()
+    return loop.run_forever()
+
+def _parse_netloc(netloc):
+    info = urlparse("http://%s" % (netloc))
+    return {'username': info.username or None,
+            'password': info.password or None,
+            'host': info.hostname or 'localhost',
+            'port': info.port or 8086}
 
 
-    def on_table(table_name, table):
+def on_table(table_name, table):
         global measurements
+        global db
         # print(json.dumps(table, indent=4, sort_keys=True))
         timestamp = table.pop('timestamp', None)
         symbol = table.pop('symbol', None)
 
         for key in table.keys():
             lower_key = key.lower()
-            if 'price' in lower_key and table[key] != None:
+            if 'price' in lower_key and table[key] is not None:
+                table[key] = float(table[key])
+            if 'foreignnotional' == lower_key:
+                table[key] = float(table[key])
+            if 'homenotional' == lower_key:
                 table[key] = float(table[key])
 
         measurement = {
@@ -71,19 +97,3 @@ def main(symbol):
             db.write_points(measurements, time_precision='ms')
             # print(json.dumps(measurements, indent=4, sort_keys=True))
             measurements = []
-
-
-    for table in channels:
-        XBTH17.on(table, on_table)
-
-    XBTH17.on('latency', lambda latency: print("latency: {0}".format(latency)))
-
-    loop = asyncio.get_event_loop()
-    return loop.run_forever()
-
-def _parse_netloc(netloc):
-    info = urlparse("http://%s" % (netloc))
-    return {'username': info.username or None,
-            'password': info.password or None,
-            'host': info.hostname or 'localhost',
-            'port': info.port or 8086}
