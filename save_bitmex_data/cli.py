@@ -3,14 +3,17 @@ from __future__ import (absolute_import,
                         print_function,
                         unicode_literals)
 from builtins import *
-import click
 from bitmex_websocket import Instrument
-import websocket
-import asyncio
 from influxdb import InfluxDBClient
-import os
 from urllib.parse import urlparse
+import asyncio
+import click
+import os
+import websocket
+import json
 
+MEASUREMENT_BATCH_SIZE = 100
+measurements = []
 
 @click.command()
 @click.argument('symbol',
@@ -18,34 +21,65 @@ from urllib.parse import urlparse
 def main(symbol):
     """Saves bitmex data in realtime to influxdb"""
     INFLUX_DB = os.environ.get('INFLUX_DB')
+    CERT_FILE = './cert.ca'
     conn_params = urlparse(INFLUX_DB)
     netlocs = conn_params.netloc.split(',')
     netloc = netlocs[0]
     parsed_netloc = _parse_netloc(netloc)
+
     db = InfluxDBClient(host=parsed_netloc['host'],
                         port=parsed_netloc['port'],
                         username=parsed_netloc['username'],
-                        database=symbol,
-                        ssl=True)
-    # websocket.enableTrace(True)
+                        password=parsed_netloc['password'],
+                        database='bitmex',
+                        ssl=True,
+                        verify_ssl=CERT_FILE)
 
+    websocket.enableTrace(os.environ.get('RUN_ENV') == 'development')
+
+    channels = ['quote', 'trade']
     XBTH17 = Instrument(symbol=symbol,
-                        channels=['instrument'],
+                        channels=channels,
                         # set to 1 because data will be saved to db
                         maxTableLength=1,
                         shouldAuth=False)
 
-    XBTH17.on('instrument', on_table)
+
+    def on_table(table_name, table):
+        global measurements
+        # print(json.dumps(table, indent=4, sort_keys=True))
+        timestamp = table.pop('timestamp', None)
+        symbol = table.pop('symbol', None)
+
+        for key in table.keys():
+            lower_key = key.lower()
+            if 'price' in lower_key and table[key] != None:
+                table[key] = float(table[key])
+
+        measurement = {
+            'measurement': table_name,
+            'tags': {
+                'symbol': symbol
+            },
+            'time': timestamp,
+            'fields': table
+        }
+
+        measurements.append(measurement)
+
+        if len(measurements) > MEASUREMENT_BATCH_SIZE - 1:
+            db.write_points(measurements, time_precision='ms')
+            # print(json.dumps(measurements, indent=4, sort_keys=True))
+            measurements = []
+
+
+    for table in channels:
+        XBTH17.on(table, on_table)
+
+    XBTH17.on('latency', lambda latency: print("latency: {0}".format(latency)))
 
     loop = asyncio.get_event_loop()
     return loop.run_forever()
-
-
-def on_table(table):
-    print("#@")
-    print(table)
-    return
-
 
 def _parse_netloc(netloc):
     info = urlparse("http://%s" % (netloc))
