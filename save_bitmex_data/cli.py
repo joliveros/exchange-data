@@ -12,7 +12,7 @@ import os
 import websocket
 import json
 
-MEASUREMENT_BATCH_SIZE = 100
+MEASUREMENT_BATCH_SIZE = os.environ.get('BATCH_SIZE') || 100
 db = {}
 measurements = []
 

@@ -4,3 +4,4 @@ save-bitmex-data:
       - BITMEX_API_KEY=${BITMEX_API_KEY}
       - BITMEX_API_SECRET=${BITMEX_API_SECRET}
       - INFLUX_DB=${INFLUX_DB}
+      - BATCH_SIZE=1
