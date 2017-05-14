@@ -1,4 +1,4 @@
-FROM python:3.6.1-alpine
+FROM python:3.6.1-slim
 
 ENV NAME save-bitmex-data
 
