@@ -6,16 +6,23 @@ from builtins import *
 from bitmex_websocket import Instrument
 from influxdb import InfluxDBClient
 from urllib.parse import urlparse
+import alog
 import asyncio
 import click
+import json
 import os
 import websocket
-import json
 
+LOG_LEVEL = os.environ.get('LOG_LEVEL')
 MEASUREMENT_BATCH_SIZE = os.environ.get('BATCH_SIZE')
 
+alog.debug('batch size: %s' % MEASUREMENT_BATCH_SIZE)
 if not MEASUREMENT_BATCH_SIZE:
     MEASUREMENT_BATCH_SIZE = 100
+else:
+    MEASUREMENT_BATCH_SIZE = int(MEASUREMENT_BATCH_SIZE)
+
+alog.debug('batch size: %s' % MEASUREMENT_BATCH_SIZE)
 
 db = {}
 measurements = []
@@ -27,8 +34,10 @@ def main(symbols):
     """Saves bitmex data in realtime to influxdb"""
     global db
     INFLUX_DB = os.environ.get('INFLUX_DB')
+    alog.debug(INFLUX_DB)
     CERT_FILE = './cert.ca'
     conn_params = urlparse(INFLUX_DB)
+    database = conn_params.path[1:]
     netlocs = conn_params.netloc.split(',')
     netloc = netlocs[0]
     parsed_netloc = _parse_netloc(netloc)
@@ -37,7 +46,7 @@ def main(symbols):
                         port=parsed_netloc['port'],
                         username=parsed_netloc['username'],
                         password=parsed_netloc['password'],
-                        database='bitmex',
+                        database=database,
                         ssl=True,
                         verify_ssl=CERT_FILE)
 
@@ -97,7 +106,9 @@ def on_table(table_name, table):
 
         measurements.append(measurement)
 
-        if len(measurements) > MEASUREMENT_BATCH_SIZE - 1:
+        if len(measurements) >= MEASUREMENT_BATCH_SIZE:
+            alog.debug('### Save measurements')
+            alog.debug(measurements)
             db.write_points(measurements, time_precision='ms')
             # print(json.dumps(measurements, indent=4, sort_keys=True))
             measurements = []
