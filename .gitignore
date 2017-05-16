@@ -7,4 +7,5 @@ build/
 .tox/
 .coverage
 .env
+.testnet-env
 *.ca
