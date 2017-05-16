@@ -1,0 +1,6 @@
+alog~=0.9.11
+asyncio~=3.4.3
+bitmex-websocket~=0.1.30
+click~=6.7
+future~=0.16.0
+influxdb~=4.1.0

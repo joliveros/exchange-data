@@ -2,12 +2,20 @@
 Saves bitmex data in realtime to influxdb
 """
 from setuptools import find_packages, setup
+from pip.req import parse_requirements
+from pip.download import PipSession
+from os.path import realpath
 
-dependencies = ['click',
-                'bitmex-websocket',
-                'influxdb',
-                'future',
-                'asyncio']
+
+def get_reqs_from_file(file):
+    file_path = realpath(file)
+
+    # parse_requirements() returns generator of pip.req.InstallRequirement objects
+    install_reqs = parse_requirements(file_path, session=PipSession)
+
+    # reqs is a list of requirement
+    # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
+    return [str(ir.req) for ir in install_reqs]
 
 setup(
     name='save-bitmex-data',
@@ -22,7 +30,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=dependencies,
+    install_requires=get_reqs_from_file('./requirements.txt'),
+    tests_require=get_reqs_from_file('./requirements-test.txt'),
     entry_points={
         'console_scripts': [
             'save-bitmex-data = save_bitmex_data.cli:main',
