@@ -5,3 +5,5 @@ ENV NAME save-bitmex-data
 ADD . /src
 
 WORKDIR /src
+
+RUN pip install -r requirements.txt -r requirements-test.txt

@@ -6,6 +6,6 @@ ADD . /src
 
 WORKDIR /src
 
-RUN python ./setup.py install 
+RUN python ./setup.py install
 
 CMD BATCH_SIZE=1 save-bitmex-data "XBTUSD"
