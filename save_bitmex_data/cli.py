@@ -2,8 +2,9 @@ from __future__ import (absolute_import,
                         division,
                         print_function,
                         unicode_literals)
-from builtins import *
 from bitmex_websocket import Instrument
+from builtins import *
+from datetime import datetime
 from influxdb import InfluxDBClient
 from urllib.parse import urlparse
 import alog
@@ -34,8 +35,11 @@ def main(symbols):
     """Saves bitmex data in realtime to influxdb"""
     global db
     INFLUX_DB = os.environ.get('INFLUX_DB')
+    LOG_LEVEL = os.environ.get('LOG_LEVEL')
+    if LOG_LEVEL:
+        alog.set_level(LOG_LEVEL)
     alog.debug(INFLUX_DB)
-    CERT_FILE = './cert.ca'
+    CERT_FILE = './ca.pem'
     conn_params = urlparse(INFLUX_DB)
     database = conn_params.path[1:]
     netlocs = conn_params.netloc.split(',')
@@ -53,7 +57,11 @@ def main(symbols):
     websocket.enableTrace(os.environ.get('RUN_ENV') == 'development')
 
 
-    channels = ['quote', 'trade']
+    channels = [
+                'trade',
+                'quote',
+                'orderBookL2'
+                ]
 
     symbols = [x.strip() for x in symbols.split(',')]
 
@@ -63,10 +71,12 @@ def main(symbols):
                             # set to 1 because data will be saved to db
                             maxTableLength=1,
                             shouldAuth=False)
+
         for table in channels:
             instrument.on(table, on_table)
 
         instrument.on('latency', lambda latency: print("latency: {0}".format(latency)))
+        instrument.on('action', on_action)
 
     loop = asyncio.get_event_loop()
     return loop.run_forever()
@@ -78,37 +88,91 @@ def _parse_netloc(netloc):
             'host': info.hostname or 'localhost',
             'port': info.port or 8086}
 
-
 def on_table(table_name, table):
-        global measurements
-        global db
-        # print(json.dumps(table, indent=4, sort_keys=True))
-        timestamp = table.pop('timestamp', None)
-        symbol = table.pop('symbol', None)
+    if table_name == 'trade':
+        return on_trade(table)
+    elif table_name == 'quote':
+        return on_quote(table)
 
-        for key in table.keys():
-            lower_key = key.lower()
-            if 'price' in lower_key and table[key] is not None:
-                table[key] = float(table[key])
-            if 'foreignnotional' == lower_key:
-                table[key] = float(table[key])
-            if 'homenotional' == lower_key:
-                table[key] = float(table[key])
 
-        measurement = {
-            'measurement': table_name,
-            'tags': {
-                'symbol': symbol
-            },
-            'time': timestamp,
-            'fields': table
-        }
 
-        measurements.append(measurement)
+def on_action(message):
+    table = message['table']
 
-        if len(measurements) >= MEASUREMENT_BATCH_SIZE:
-            alog.debug('### Save measurements')
-            alog.debug(measurements)
-            db.write_points(measurements, time_precision='ms')
-            # print(json.dumps(measurements, indent=4, sort_keys=True))
-            measurements = []
+    if table == 'orderBookL2':
+        data = message.copy()
+        data = to_lowercase_keys(data)
+        data['symbol'] = data['data'][0]['symbol']
+        data['timestamp'] = get_timestamp()
+        data.pop('table', None)
+
+        for row in data['data']:
+            row.pop('symbol', None)
+
+        data = values_to_str(data)
+        save_measurement(table, data)
+
+def pp(data):
+    alog.debug(json.dumps(data, indent=2, sort_keys=True))
+
+def get_timestamp():
+    return f'{str(datetime.utcnow())}Z'
+
+def on_quote(table):
+    data = table.copy()
+    data = to_lowercase_keys(data)
+    data['bidsize'] = str(data['bidsize'])
+    data['bidprice'] = str(data['bidprice'])
+    data['asksize'] = str(data['asksize'])
+    data['askprice'] = str(data['askprice'])
+    data = values_to_str(data)
+    save_measurement('quote', data)
+
+def on_trade(table):
+    data = table.copy()
+    data = to_lowercase_keys(data)
+    data.pop('homenotional', None)
+    data.pop('foreignnotional', None)
+    data.pop('grossvalue', None)
+    data['price'] = float(data['price'])
+    data = values_to_str(data)
+    save_measurement('trade', data)
+
+def to_lowercase_keys(data):
+    return dict((k.lower(), v) for k,v in data.items())
+
+def values_to_str(data):
+    keys = data.keys()
+
+    for key in keys:
+        value = data[key]
+        if isinstance(value, (dict, list)):
+            data[key] = json.dumps(value)
+
+    return data
+
+def save_measurement(name, table):
+    global measurements
+    global db
+
+    timestamp = table.pop('timestamp', None)
+    symbol = table.pop('symbol', None)
+
+    measurement = {
+        'measurement': name,
+        'tags': {
+            'symbol': symbol
+        },
+        'time': timestamp,
+        'fields': table
+    }
+
+    pp(measurement)
+    measurements.append(measurement)
+
+    if len(measurements) >= MEASUREMENT_BATCH_SIZE:
+        alog.debug('### Save measurements')
+        alog.debug(measurements)
+        db.write_points(measurements, time_precision='ms')
+
+        measurements = []
