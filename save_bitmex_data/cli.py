@@ -13,6 +13,17 @@ import click
 import json
 import os
 import websocket
+import rollbar
+
+
+RUN_ENV = os.environ.get('RUN_ENV')
+
+if RUN_ENV != 'development':
+    ROLLBAR_API_KEY = os.environ.get('ROLLBAR_API_KEY')
+    if not ROLLBAR_API_KEY:
+        raise ValueError('Rollbar api key is required for production.')
+    alog.info('rollbar initialized...')
+    rollbar.init(ROLLBAR_API_KEY, 'production')
 
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 MEASUREMENT_BATCH_SIZE = os.environ.get('BATCH_SIZE')
@@ -171,7 +182,7 @@ def save_measurement(name, table):
     measurements.append(measurement)
 
     if len(measurements) >= MEASUREMENT_BATCH_SIZE:
-        alog.debug('### Save measurements')
+        alog.debug('### Save measurements count: %s' % len(measurements))
         alog.debug(measurements)
         db.write_points(measurements, time_precision='ms')
 
