@@ -39,10 +39,13 @@ alog.debug('batch size: %s' % MEASUREMENT_BATCH_SIZE)
 db = {}
 measurements = []
 
+
 @click.command()
 @click.argument('symbols',
                 required=True)
-def main(symbols):
+@click.argument('https',
+                default=False)
+def main(symbols, https):
     """Saves bitmex data in realtime to influxdb"""
     global db
     INFLUX_DB = os.environ.get('INFLUX_DB')
@@ -62,11 +65,10 @@ def main(symbols):
                         username=parsed_netloc['username'],
                         password=parsed_netloc['password'],
                         database=database,
-                        ssl=True,
+                        ssl=https,
                         verify_ssl=CERT_FILE)
 
     websocket.enableTrace(os.environ.get('RUN_ENV') == 'development')
-
 
     channels = [
                 'trade',
