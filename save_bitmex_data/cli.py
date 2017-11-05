@@ -80,10 +80,9 @@ def main(symbols, https):
 
     for symbol in symbols:
         instrument = Instrument(symbol=symbol,
-                            channels=channels,
-                            # set to 1 because data will be saved to db
-                            maxTableLength=1,
-                            shouldAuth=False)
+                                channels=channels,
+                                # set to 1 because data will be saved to db
+                                shouldAuth=False)
 
         for table in channels:
             instrument.on(table, on_table)
