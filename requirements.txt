@@ -5,3 +5,4 @@ click~=6.7
 future~=0.16.0
 influxdb==4.1.0
 rollbar>=0.13.12
+python-dotenv
