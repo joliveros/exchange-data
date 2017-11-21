@@ -1,8 +1,8 @@
-FROM python:3.6.1-slim
+FROM python:3.6.2-slim
 
 ENV NAME save-bitmex-data
 
-ADD . /src
+COPY . /src
 
 WORKDIR /src
 

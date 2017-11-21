@@ -17,9 +17,10 @@ def get_reqs_from_file(file):
     # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
     return [str(ir.req) for ir in install_reqs]
 
+
 setup(
     name='save-bitmex-data',
-    version='0.1.0',
+    version='0.2.0',
     url='https://github.com/joliveros/save-bitmex-data',
     license='BSD',
     author='José Oliveros',
