@@ -1,15 +1,13 @@
 from . import settings
-from . import Database
+from . import Recorder
 from bitmex_websocket import Instrument
-from datetime import datetime
 import alog
-import json
 import websocket
 
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexRecorder(Database):
+class BitmexRecorder(Recorder):
     measurements = []
     channels = [
         'trade',
@@ -17,11 +15,11 @@ class BitmexRecorder(Database):
         'orderBookL2'
     ]
 
-    def __init__(self, symbol):
-        super().__init__(database_name='bitmex')
+    def __init__(self, symbols):
+        super().__init__(symbols, database_name='bitmex')
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
-        self.symbols = symbol
+        self.symbols = symbols
 
         for symbol in self.symbols:
             self.subscribe_symbol(symbol)
@@ -36,7 +34,7 @@ class BitmexRecorder(Database):
             instrument.on(table, self.on_table)
 
         instrument.on('latency',
-                      lambda latency: print("latency: {0}".format(latency)))
+                      lambda latency: alog.debug("latency: {0}".format(latency)))
         instrument.on('action', self.on_action)
 
     def on_table(self, table_name, table):
@@ -58,67 +56,10 @@ class BitmexRecorder(Database):
             for row in data['data']:
                 row.pop('symbol', None)
 
-            data = self.values_to_str(data)
             self.save_measurement(table, data)
 
-    def pp(self, data):
-        if settings.LOG_LEVEL == 'DEBUG':
-            alog.debug(json.dumps(data, indent=2, sort_keys=True))
-
-    def get_timestamp(self):
-        return f'{str(datetime.utcnow())}Z'
-
     def on_quote(self, table):
-        data = table.copy()
-        data = self.to_lowercase_keys(data)
-        data['bidsize'] = str(data['bidsize'])
-        data['bidprice'] = str(data['bidprice'])
-        data['asksize'] = str(data['asksize'])
-        data['askprice'] = str(data['askprice'])
-        data = self.values_to_str(data)
-        self.save_measurement('quote', data)
+        self.save_measurement('quote', table['symbol'], table)
 
     def on_trade(self, table):
-        data = table.copy()
-        data = self.to_lowercase_keys(data)
-        data.pop('homenotional', None)
-        data.pop('foreignnotional', None)
-        data.pop('grossvalue', None)
-        data['price'] = float(data['price'])
-        data = self.values_to_str(data)
-        self.save_measurement('trade', data)
-
-    def to_lowercase_keys(self, data):
-        return dict((k.lower(), v) for k, v in data.items())
-
-    def values_to_str(self, data):
-        keys = data.keys()
-
-        for key in keys:
-            value = data[key]
-            if isinstance(value, (dict, list)):
-                data[key] = json.dumps(value)
-
-        return data
-
-    def save_measurement(self, name, table):
-        timestamp = table.pop('timestamp', None)
-        symbol = table.pop('symbol', None)
-
-        measurement = {
-            'measurement': name,
-            'tags': {
-                'symbol': symbol
-            },
-            'time': timestamp,
-            'fields': table
-        }
-
-        self.measurements.append(measurement)
-
-        if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:
-            alog.debug('### Save measurements count: %s' % len(self.measurements))
-            self.pp(self.measurements)
-            self.write_points(self.measurements, time_precision='ms')
-
-            self.measurements = []
+        self.save_measurement('trade', table['symbol'], table)
