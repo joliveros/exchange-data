@@ -1,6 +1,5 @@
 from . import settings
 from . import Database
-from datetime import datetime
 import alog
 import json
 
@@ -20,9 +19,6 @@ class Recorder(Database):
     def pp(self, data):
         if settings.LOG_LEVEL == 'DEBUG':
             alog.debug(json.dumps(data, indent=2, sort_keys=True))
-
-    def get_timestamp(self):
-        return f'{str(datetime.utcnow())}Z'
 
     def to_lowercase_keys(self, data):
         return dict((k.lower(), v) for k, v in data.items())
