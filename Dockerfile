@@ -8,4 +8,4 @@ WORKDIR /src
 
 RUN python ./setup.py install
 
-CMD ["save-bitmex-data", "XBTUSD"]
+CMD ["save-bitmex-data"]
