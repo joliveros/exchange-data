@@ -1,6 +1,6 @@
 FROM python:3.6.2-slim
 
-ENV NAME save-bitmex-data
+ENV NAME exchange-data
 
 COPY . /src
 
@@ -8,4 +8,4 @@ WORKDIR /src
 
 RUN python ./setup.py install
 
-CMD ["save-bitmex-data"]
+CMD ["exchange-data"]

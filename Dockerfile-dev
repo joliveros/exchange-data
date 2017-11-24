@@ -1,6 +1,6 @@
 FROM python:3.6.2-slim
 
-ENV NAME save-bitmex-data
+ENV NAME exchange-data
 
 COPY . /src
 
