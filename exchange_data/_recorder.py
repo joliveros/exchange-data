@@ -35,19 +35,17 @@ class Recorder(Database):
 
     def save_measurement(self, name, symbol, table):
         table = json.loads(table)
-        timestamp = table.pop('timestamp', None)
 
         measurement = {
             'measurement': name,
             'tags': {
                 'symbol': symbol
             },
-            # 'time': timestamp,
             'fields': {
                 'data': json.dumps(table)
             }
         }
-        # self.pp(measurement)
+        self.pp(measurement)
         self.measurements.append(measurement)
 
         if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:

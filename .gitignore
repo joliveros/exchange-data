@@ -9,3 +9,4 @@ build/
 .env
 .test-env
 .python-version
+__pycache__

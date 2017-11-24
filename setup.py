@@ -1,5 +1,5 @@
 """
-Saves bitmex data in realtime to influxdb
+Saves cryptocurrency exchange data in realtime to influxdb
 """
 from setuptools import find_packages, setup
 from pip.req import parse_requirements
@@ -19,13 +19,13 @@ def get_reqs_from_file(file):
 
 
 setup(
-    name='save-bitmex-data',
+    name='exchange-data',
     version='0.2.0',
-    url='https://github.com/joliveros/save-bitmex-data',
+    url='https://github.com/joliveros/exchange-data',
     license='BSD',
     author='José Oliveros',
     author_email='jose.oliveros.1983@gmail.com',
-    description='Saves bitmex data in realtime to influxdb',
+    description='Saves cryptocurrency exchange data in realtime to influxdb',
     long_description=__doc__,
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
@@ -35,7 +35,7 @@ setup(
     tests_require=get_reqs_from_file('./requirements-test.txt'),
     entry_points={
         'console_scripts': [
-            'save-bitmex-data = save_bitmex_data.cli:main',
+            'exchange-data = exchange_data.cli:main',
         ],
     },
     classifiers=[
