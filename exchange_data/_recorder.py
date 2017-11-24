@@ -1,5 +1,6 @@
-from . import settings
 from . import Database
+from . import settings
+from datetime import datetime
 import alog
 import json
 
@@ -33,6 +34,9 @@ class Recorder(Database):
 
         return data
 
+    def get_timestamp(self):
+        return f'{str(datetime.utcnow())}Z'
+
     def save_measurement(self, name, symbol, table):
         if isinstance(table, str):
             table = json.loads(table)
@@ -42,6 +46,7 @@ class Recorder(Database):
             'tags': {
                 'symbol': symbol
             },
+            'timestamp': table.get('timestamp'),
             'fields': {
                 'data': json.dumps(table)
             }
@@ -53,5 +58,5 @@ class Recorder(Database):
             alog.debug('### Save measurements count: %s' % len(self.measurements))
             # self.pp(self.measurements)
             self.write_points(self.measurements, time_precision='ms')
-            
+
             self.measurements = []
