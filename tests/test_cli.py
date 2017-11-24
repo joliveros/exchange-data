@@ -1,6 +1,6 @@
 import pytest
 from click.testing import CliRunner
-from save-bitmex-data import cli
+from exchange-data import cli
 
 
 @pytest.fixture

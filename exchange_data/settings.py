@@ -5,6 +5,8 @@ import alog
 load_dotenv(find_dotenv(), override=True)
 
 RUN_ENV = environ.get('RUN_ENV')
+DB = environ.get('DB')
+BITSTAMP_PUSHER_APP_KEY = environ.get('BITSTAMP_PUSHER_APP_KEY')
 
 if RUN_ENV != 'development':
     ROLLBAR_API_KEY = environ.get('ROLLBAR_API_KEY')
