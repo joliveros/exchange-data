@@ -1,8 +1,12 @@
-alog~=0.9.11
+alog
 asyncio~=3.4.3
-bitmex-websocket~=0.1.30
+bitmex-websocket
 click~=6.7
 future~=0.16.0
+git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
 influxdb==4.1.0
-rollbar>=0.13.12
+pusherclient
 python-dotenv
+rollbar>=0.13.12
+stringcase
+websocket-client

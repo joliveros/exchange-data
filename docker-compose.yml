@@ -1,4 +1,4 @@
-save-bitmex-data:
+exchange-data:
     build: .
     environment:
       - BITMEX_API_KEY=${BITMEX_API_KEY}

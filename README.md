@@ -1,4 +1,4 @@
-# save-bitmex-data
+# exchange-data
 
 Saves bitmex data in realtime to influxdb
 
@@ -6,4 +6,4 @@ Saves bitmex data in realtime to influxdb
 
 To use it:
 
-    $ save-bitmex-data --help
+    $ exchange-data --help
