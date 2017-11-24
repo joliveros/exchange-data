@@ -34,7 +34,8 @@ class Recorder(Database):
         return data
 
     def save_measurement(self, name, symbol, table):
-        table = json.loads(table)
+        if isinstance(table, str):
+            table = json.loads(table)
 
         measurement = {
             'measurement': name,
@@ -51,10 +52,6 @@ class Recorder(Database):
         if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:
             alog.debug('### Save measurements count: %s' % len(self.measurements))
             # self.pp(self.measurements)
-            try:
-                self.write_points(self.measurements, time_precision='ms')
-            except Exception as e:
-                alog.error(e)
-                raise e
-
+            self.write_points(self.measurements, time_precision='ms')
+            
             self.measurements = []

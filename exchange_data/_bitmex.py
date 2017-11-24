@@ -50,13 +50,12 @@ class BitmexRecorder(Recorder):
             data = message.copy()
             data = self.to_lowercase_keys(data)
             data['symbol'] = data['data'][0]['symbol']
-            data['timestamp'] = self.get_timestamp()
             data.pop('table', None)
 
             for row in data['data']:
                 row.pop('symbol', None)
-
-            self.save_measurement(table, data)
+            # import pdb; pdb.set_trace()
+            self.save_measurement('orderbook', data['symbol'], data)
 
     def on_quote(self, table):
         self.save_measurement('quote', table['symbol'], table)
