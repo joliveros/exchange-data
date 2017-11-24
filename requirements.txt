@@ -10,3 +10,4 @@ python-dotenv
 rollbar>=0.13.12
 stringcase
 websocket-client
+gdax
