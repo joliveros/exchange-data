@@ -21,11 +21,8 @@ class BitstampRecorder(Pusher, Recorder):
             self.subscribe_symbol(symbol)
 
     def subscribe_symbol(self, symbol):
-        self.subscribe('diff_order_book', symbol, ['data'], self.diff_order_book)
-        # self.subscribe('order_book', symbol, ['data'], self.order_book)
-        # self.subscribe('live_orders', symbol,
-        #                ['order_created', 'order_changed', 'order_deleted'],
-        #                self.live_orders)
+        self.subscribe('diff_order_book', symbol, ['data'],
+                       self.diff_order_book)
         self.subscribe('live_trades', symbol, ['trade'], self.live_trades)
 
     def channel_name(self, channel, symbol):
