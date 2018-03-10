@@ -1,5 +1,9 @@
-from . import settings
+#! /usr/bin/env python
+
+from exchange_data import settings
 from stringcase import pascalcase
+
+import alog
 import asyncio
 import click
 import exchange_data
@@ -11,11 +15,16 @@ rollbar.init(settings.ROLLBAR_API_KEY, 'production')
 
 @click.command()
 @click.argument('symbol', nargs=-1, required=True)
-@click.option('--exchange', required=True, help="an exchange such as bitstamp|bitmex")
+@click.option('--exchange', required=True,
+              help="an exchange such as bitstamp|bitmex")
 @click.option('--https', default=False)
-def main(symbol, exchange, https):
+def main(symbol: str, exchange: str, https: bool):
     recorder = getattr(exchange_data, pascalcase(exchange) + 'Recorder')
     recorder(list(symbol))
 
     loop = asyncio.get_event_loop()
     return loop.run_forever()
+
+
+if __name__ == '__main__':
+    main()
