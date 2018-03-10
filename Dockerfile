@@ -1,4 +1,4 @@
-FROM python:3.6.2-slim
+FROM python:3.6.4
 
 ENV NAME exchange-data
 
@@ -6,6 +6,6 @@ COPY . /src
 
 WORKDIR /src
 
-RUN python ./setup.py install
+RUN pip install -r requirements.txt -r requirements-test.txt
 
-CMD ["exchange-data"]
+CMD ["./cli"]
