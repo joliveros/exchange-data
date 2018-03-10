@@ -1,6 +1,7 @@
 from . import Database
 from . import settings
 from datetime import datetime
+
 import alog
 import json
 
@@ -60,3 +61,6 @@ class Recorder(Database):
             self.write_points(self.measurements, time_precision='ms')
 
             self.measurements = []
+
+    def stop(self):
+        pass
