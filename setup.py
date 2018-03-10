@@ -10,8 +10,10 @@ from os.path import realpath
 def get_reqs_from_file(file):
     file_path = realpath(file)
 
-    # parse_requirements() returns generator of pip.req.InstallRequirement objects
+    # parse_requirements() returns generator of pip.req.InstallRequirement
+    # objects
     install_reqs = parse_requirements(file_path, session=PipSession)
+    print(install_reqs)
 
     # reqs is a list of requirement
     # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
@@ -35,15 +37,15 @@ setup(
     tests_require=get_reqs_from_file('./requirements-test.txt'),
     entry_points={
         'console_scripts': [
-            'exchange-data = exchange_data.cli:main',
+            'exchange-data = cli',
         ],
     },
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        # 'Development Status :: 1 - Planning',
+        'Development Status :: 1 - Planning',
         # 'Development Status :: 2 - Pre-Alpha',
         # 'Development Status :: 3 - Alpha',
-        'Development Status :: 4 - Beta',
+        # 'Development Status :: 4 - Beta',
         # 'Development Status :: 5 - Production/Stable',
         # 'Development Status :: 6 - Mature',
         # 'Development Status :: 7 - Inactive',

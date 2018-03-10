@@ -27,11 +27,10 @@ alog.debug('batch size: %s' % MEASUREMENT_BATCH_SIZE)
 INFLUX_DB = environ.get('INFLUX_DB')
 LOG_LEVEL = environ.get('LOG_LEVEL')
 
-if not LOG_LEVEL:
+if LOG_LEVEL is None:
     LOG_LEVEL = 'INFO'
 
-if LOG_LEVEL:
-    alog.set_level(LOG_LEVEL)
+alog.set_level(LOG_LEVEL)
 
 alog.debug(INFLUX_DB)
 
