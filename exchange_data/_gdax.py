@@ -1,27 +1,17 @@
 from . import Recorder
-from . import settings
-from gdax import WebsocketClient
+from gdax import OrderBook
 import alog
 
-alog.set_level(settings.LOG_LEVEL)
 
-
-class GdaxRecorder(Recorder, WebsocketClient):
+class GdaxRecorder(Recorder, OrderBook):
     measurements = []
-    channels = [
-        'trade',
-        'quote',
-        'orderBookL2'
-    ]
 
-    def __init__(self, symbols):
-        Recorder.__init__(symbols, database_name='gdax')
-        WebsocketClient.__init__(self)
+    def __init__(self, symbols: list):
+        Recorder.__init__(self, symbols=symbols, database_name='gdax')
+        OrderBook.__init__(self, product_id=symbols)
 
-        self.products = symbols
-
-    def on_open(self):
-        self.url = "wss://ws-feed.gdax.com/"
+        self.start()
 
     def on_message(self, msg):
         alog.debug(msg)
+        self.save_measurement('level2', msg['product_id'], msg)
