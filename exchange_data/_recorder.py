@@ -56,8 +56,8 @@ class Recorder(Database):
         self.measurements.append(measurement)
 
         if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:
-            alog.debug('### Save measurements count: %s' % len(self.measurements))
-            # self.pp(self.measurements)
+            alog.debug(
+                '### Save measurements count: %s' % len(self.measurements))
             self.write_points(self.measurements, time_precision='ms')
 
             self.measurements = []
