@@ -1,4 +1,5 @@
-from .. import settings, Recorder
+from exchange_data import settings
+from . import Recorder
 from pysher import Pusher
 import alog
 import logging
@@ -24,6 +25,10 @@ class BitstampRecorder(Pusher, Recorder):
         self.subscribe('diff_order_book', symbol, ['data'],
                        self.diff_order_book)
         self.subscribe('live_trades', symbol, ['trade'], self.live_trades)
+        self.subscribe('live_orders', symbol,
+                       ['order_created',
+                        'order_changed',
+                        'order_deleted'], self.live_orders)
 
     def channel_name(self, channel, symbol):
         if symbol == 'btcusd':

@@ -6,7 +6,7 @@ from stringcase import pascalcase
 import alog
 import asyncio
 import click
-import exchange_data
+import exchange_data.recorders
 import rollbar
 
 
@@ -19,7 +19,7 @@ rollbar.init(settings.ROLLBAR_API_KEY, 'production')
               help="an exchange such as bitstamp|bitmex")
 @click.option('--https', default=False)
 def main(symbol: str, exchange: str, https: bool):
-    recorder = getattr(exchange_data, pascalcase(exchange) + 'Recorder')
+    recorder = getattr(exchange_data.recorders, pascalcase(exchange) + 'Recorder')
     recorder(list(symbol))
 
     loop = asyncio.get_event_loop()

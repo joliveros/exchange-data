@@ -1,5 +1,5 @@
-from . import Database
-from . import settings
+from exchange_data import Database
+from exchange_data import settings
 from datetime import datetime
 
 import alog
