@@ -1,4 +1,4 @@
-from . import settings
+from .. import settings
 from . import Recorder
 from bitmex_websocket import Instrument
 import alog

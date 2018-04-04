@@ -1,6 +1,6 @@
 from influxdb import InfluxDBClient
 from urllib.parse import urlparse
-from . import settings
+from exchange_data import settings
 import alog
 
 
