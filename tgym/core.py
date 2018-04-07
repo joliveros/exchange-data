@@ -43,19 +43,17 @@ class DataGenerator(object):
     Overwrite the _generator method to create a custom data generator.
     """
 
-    def __init__(self, **gen_kwargs):
+    def __init__(self):
         """Initialisation function. The API (gen_kwargs) should be defined in
         the function _generator.
         """
         self._trainable = False
-        self.gen_kwargs = gen_kwargs
         # We pass self explicitly since we sometimes override rewind (see csv generator)
-        DataGenerator.rewind(self)
+        self.rewind()
         self.n_products = len(self.next()) / 2
-        DataGenerator.rewind(self)
+        self.rewind()
 
-    @staticmethod
-    def _generator(**kwargs):
+    def _generator(self):
         """Generator function. The keywords arguments entirely defines the API
         of the class. This must have a yield statement.
         """
@@ -68,15 +66,15 @@ class DataGenerator(object):
             numpy.array: next row of the generator
         """
         try:
-            return self.generator.next()
+            return next(self.generator)
         except StopIteration as e:
             self._iterator_end()
-            raise(e)
+            raise e
 
     def rewind(self):
         """Rewind the generator.
         """
-        self.generator = self._generator(**self.gen_kwargs)
+        self.generator = self._generator()
 
     def _iterator_end(self):
         """End of iterator logic.

@@ -6,6 +6,7 @@ from tgym.gens import WavySignal
 class TestSpreadTrading(object):
 
     data_generator = WavySignal(period_1=3, period_2=1, epsilon=0)
+
     st = SpreadTrading(
         data_generator=data_generator,
         spread_coefficients=[1],
@@ -16,7 +17,7 @@ class TestSpreadTrading(object):
     )
 
     def test_init(self):
-        assert self.st._data_generator == self.data_generator
+        assert self.st.data_generator == self.data_generator
         assert self.st._spread_coefficients == [1]
         assert self.st._first_render
         assert self.st._trading_fee == 0.2
