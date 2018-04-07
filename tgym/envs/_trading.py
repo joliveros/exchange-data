@@ -1,8 +1,13 @@
-import matplotlib as mpl
+import logging
+logging.getLogger('matplotlib').setLevel(logging.INFO)
+
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
+
 from tgym.core import Env
 from tgym.utils import calc_spread
+
 
 plt.style.use('dark_background')
 
@@ -32,7 +37,8 @@ class SpreadTrading(Env):
         'short': np.array([0, 0, 1])
     }
 
-    def __init__(self, data_generator, spread_coefficients, episode_length=1000, trading_fee=0, time_fee=0, history_length=2):
+    def __init__(self, data_generator, spread_coefficients, episode_length=1000, trading_fee=0,
+                 time_fee=0, history_length=2):
         """Initialisation function
 
         Args:
@@ -48,7 +54,6 @@ class SpreadTrading(Env):
                 observation vector.
         """
 
-        assert data_generator.n_products == len(spread_coefficients)
         assert history_length > 0
         self._data_generator = data_generator
         self._spread_coefficients = spread_coefficients
@@ -149,7 +154,7 @@ class SpreadTrading(Env):
 
         observation = self._get_observation()
         return observation, reward, done, info
-    
+
     def _handle_close(self, evt):
         self._closed_plot = True
 
@@ -199,7 +204,8 @@ class SpreadTrading(Env):
                                  yrange, color='lawngreen', marker='^')
         plt.suptitle('Cumulated Reward: ' + "%.2f" % self._total_reward + ' ~ ' +
                      'Cumulated PnL: ' + "%.2f" % self._total_pnl + ' ~ ' +
-                     'Position: ' + ['flat', 'long', 'short'][list(self._position).index(1)] + ' ~ ' +
+                     'Position: ' + ['flat', 'long', 'short'][
+                         list(self._position).index(1)] + ' ~ ' +
                      'Entry Price: ' + "%.2f" % self._entry_price)
         self._f.tight_layout()
         plt.xticks(range(self._iteration)[::5])
@@ -232,3 +238,7 @@ class SpreadTrading(Env):
             numpy.array: array with a 1 on the action index, 0 elsewhere.
         """
         return np.random.multinomial(1, [0.8, 0.1, 0.1])
+
+    @property
+    def data_generator(self):
+        return self._data_generator

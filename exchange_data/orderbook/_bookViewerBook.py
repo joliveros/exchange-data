@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-from pylimitbook.book import Book
+from ._book import Book
 from six.moves import cStringIO as StringIO
+
 
 class BookViewerBook(Book):
     def __init__(self):
@@ -11,7 +12,7 @@ class BookViewerBook(Book):
         # Efficient string concat
         file_str = StringIO()
         file_str.write("------- Bids --------\n")
-        if self.bids != None and len(self.bids) > 0:
+        if self.bids is not None and len(self.bids) > 0:
             for k, v in self.bids.price_tree.items(reverse=True):
                 file_str.write('%s' % v)
         return file_str.getvalue()
@@ -20,7 +21,7 @@ class BookViewerBook(Book):
         # Efficient string concat
         file_str = StringIO()
         file_str.write("------- Bids --------\n")
-        if self.bids != None and len(self.bids) > 0:
+        if self.bids is not None and len(self.bids) > 0:
             for k, v in self.bids.price_tree.items(reverse=True):
                 # aggregate
                 file_str.write("%s\t@\t%.4f\n" % \
@@ -31,7 +32,7 @@ class BookViewerBook(Book):
         # Efficient string concat
         file_str = StringIO()
         file_str.write("------- Asks --------\n")
-        if self.asks != None and len(self.asks) > 0:
+        if self.asks is not None and len(self.asks) > 0:
             for k, v in self.asks.price_tree.items():
                 file_str.write('%s' % v)
         return file_str.getvalue()
@@ -40,7 +41,7 @@ class BookViewerBook(Book):
         # Efficient string concat
         file_str = StringIO()
         file_str.write("------- Asks --------\n")
-        if self.asks != None and len(self.asks) > 0:
+        if self.asks is not None and len(self.asks) > 0:
             for k, v in self.asks.price_tree.items():
                 # aggregate
                 file_str.write("%s\t@\t%.4f\n" % \
@@ -51,7 +52,7 @@ class BookViewerBook(Book):
         # Efficient string concat
         file_str = StringIO()
         file_str.write("------ Trades ------\n")
-        if self.trades != None and len(self.trades) > 0:
+        if self.trades is not None and len(self.trades) > 0:
             num = 0
             for entry in self.trades:
                 if num < 10:

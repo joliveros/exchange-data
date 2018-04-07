@@ -1,3 +1,2 @@
-from csvstream import *
-from deterministic import *
-from random import *
+from .csvstream import *
+from .deterministic import *
