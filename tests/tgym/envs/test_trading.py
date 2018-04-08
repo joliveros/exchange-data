@@ -44,6 +44,3 @@ class TestSpreadTrading(object):
         assert (state[0][-3:] == np.array([1, 0, 0])).all()
         assert self.st._entry_price == 0
         assert self.st._exit_price != 0
-
-    def test_reset(self):
-        pass
