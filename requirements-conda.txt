@@ -1,3 +1,2 @@
-sortedcontainers
 matplotlib
 numpy
