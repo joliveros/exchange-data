@@ -2,6 +2,10 @@ from exchange_data.limit_orderbook._order_list import OrderList
 from exchange_data.limit_orderbook._limit_level_tree import LimitLevelTree
 
 
+class LimitLevelBalanceError(BaseException):
+    pass
+
+
 class LimitLevel:
     """AVL BST node.
 
@@ -164,7 +168,7 @@ class LimitLevel:
             pass
         else:
             # Unforeseen things have happened. D:
-            raise NotImplementedError
+            raise LimitLevelBalanceError()
 
         return
 
