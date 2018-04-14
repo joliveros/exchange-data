@@ -16,7 +16,7 @@ class Order:
     __slots__ = ['uid', 'is_bid', 'size', 'price', 'timestamp',
                  'next_item', 'previous_item', 'root']
 
-    def __init__(self, uid, is_bid, size, price, root=None,
+    def __init__(self, uid, is_bid, size, price=None, root=None,
                  timestamp=None, next_item=None, previous_item=None):
         # Data Values
         self.uid = uid
