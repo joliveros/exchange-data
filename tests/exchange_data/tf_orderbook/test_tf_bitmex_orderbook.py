@@ -7,18 +7,19 @@ from exchange_data.tf_orderbook._tf_bitmex_orderbook import TFBitmexLimitOrderBo
 class TestTFBitmexLimitOrderBook(object):
     def test_instance(self):
         TFBitmexLimitOrderBook('1h', symbol='xbtusd',
-                               json_file='./tests/exchange_data/data/bitmex_orderbook_log.json')
+                               json_file='./tests/exchange_data/data/bitmex.json')
 
     def test_replay(self):
-        orderbook = TFBitmexLimitOrderBook('1h', symbol='xbtusd',
-                               json_file='./tests/exchange_data/data/bitmex_orderbook_log.json')
-        # orderbook = TFBitmexLimitOrderBook('1h', symbol='xbtusd')
+        # orderbook = TFBitmexLimitOrderBook(symbol='xbtusd',
+        #                                    json_file='./tests/exchange_data/data/bitmex.json')
+
+        orderbook = TFBitmexLimitOrderBook(total_time='12h', symbol='xbtusd', save_json=True)
 
         orderbook.replay()
 
-        for side in orderbook.levels(10).items():
-            key, value = side
-            alog.debug(key)
-            levels = [{'price': level.price, 'orders': level.size} for level in value]
-
-            alog.debug(nice_print(levels))
+        levels = orderbook.levels_by_price(100)
+        alog.debug(nice_print({
+            'ask': orderbook.best_ask.price,
+            'bid': orderbook.best_bid.price
+        }))
+        alog.debug(nice_print(levels))

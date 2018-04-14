@@ -12,10 +12,11 @@ DATABASE_MAP = {
 
 
 class TFLimitOrderBook(LimitOrderBook, Database):
-    def __init__(self, total_time: str, database: str, symbol: str, json_file=None):
+    def __init__(self, database: str, symbol: str, total_time='1d', save_json=True, json_file=None):
         LimitOrderBook.__init__(self)
         Database.__init__(self, database_name=database)
 
+        self.save_json = save_json
         self.total_time = total_time
         self.symbol = symbol
         self.database = database
@@ -24,6 +25,13 @@ class TFLimitOrderBook(LimitOrderBook, Database):
             self._fetch_data()
         else:
             self._read_from_file(json_file)
+
+        if self.save_json:
+            self.save_as_json()
+
+    def save_as_json(self):
+        with open(f'./tests/exchange_data/data/{self.database}.json', 'w') as json_file:
+            json.dump(self.result_set.raw, json_file)
 
     def _read_from_file(self, json_file):
         self.result_set = ResultSet(json.loads(open(json_file).read()))
