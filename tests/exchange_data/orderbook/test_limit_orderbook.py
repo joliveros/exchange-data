@@ -7,6 +7,7 @@ from unittest import TestCase
 from exchange_data.limit_orderbook import LimitOrderBook, Order
 
 # Init Logging Facilities
+
 log = logging.getLogger(__name__)
 
 
@@ -33,12 +34,14 @@ class OrderTests(TestCase):
         self.assertIn(1, lob._orders)
 
         # Assert that updating an order works
-        updated_bid_order = Order(uid=1, is_bid=True, size=4, price=100, timestamp=bid_order.timestamp)
+        updated_bid_order = Order(uid=1, is_bid=True, size=4, price=100,
+                                  timestamp=bid_order.timestamp)
         lob.process(updated_bid_order)
         self.assertEqual(lob.best_bid.orders.head.size, 4)
         self.assertEqual(lob.best_bid.volume, 400)
 
-        updated_ask_order = Order(uid=2, is_bid=True, size=4, price=200, timestamp=ask_order.timestamp)
+        updated_ask_order = Order(uid=2, is_bid=True, size=4, price=200,
+                                  timestamp=ask_order.timestamp)
         lob.process(updated_ask_order)
         self.assertEqual(lob.best_ask.orders.head.size, 4)
         self.assertEqual(lob.best_ask.volume, 800)
@@ -50,7 +53,7 @@ class OrderTests(TestCase):
         self.assertEqual(lob.best_bid.orders.head.next_item, bid_order_2)
         self.assertEqual(lob.best_bid.orders.tail, bid_order_2)
         self.assertEqual(len(lob.best_bid), 2)
-        
+
     def test_removing_orders_works(self):
         lob = LimitOrderBook()
         bid_order = Order(uid=1, is_bid=True, size=5, price=100)
@@ -85,7 +88,7 @@ class OrderTests(TestCase):
 
         self.assertNotIn(removed_bid_order_2.uid, lob._orders)
         self.assertNotIn(removed_bid_order_2.price, lob._price_levels)
-    
+
     def load_book(self, lob):
         orders = [
             Order(uid=1, is_bid=True, size=5, price=100),
@@ -94,10 +97,10 @@ class OrderTests(TestCase):
             Order(uid=4, is_bid=False, size=5, price=200),
             Order(uid=5, is_bid=False, size=5, price=205),
             Order(uid=6, is_bid=False, size=5, price=210),
-            ]
+        ]
         for order in orders:
-             lob.process(order)
-    
+            lob.process(order)
+
     def check_levels_format(self, levels):
         self.assertIsInstance(levels, dict)
         for side in ('bids', 'asks'):
@@ -109,13 +112,13 @@ class OrderTests(TestCase):
                     self.assertTrue(price <= last_price)
                 else:
                     self.assertTrue(price >= last_price)
-        
+
     def test_querying_levels_works(self):
         lob = LimitOrderBook()
         self.load_book(lob)
         levels = lob.levels()
         self.check_levels_format(levels)
-    
+
     def test_querying_levels_limit_depth(self):
         lob = LimitOrderBook()
         self.load_book(lob)
@@ -123,4 +126,14 @@ class OrderTests(TestCase):
         self.check_levels_format(levels)
         for side in ('bids', 'asks'):
             self.assertEqual(len(levels[side]), 2)
-        
+
+    def test_querying_levels_by_price(self):
+        lob = LimitOrderBook()
+        self.load_book(lob)
+
+        expected_result = {
+            'asks': {200: 2, 210: 1},
+            'bids': {90: 1, 100: 2}
+        }
+
+        assert lob.levels_by_price(10) == expected_result
