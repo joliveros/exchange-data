@@ -90,7 +90,8 @@ class OrderTests(TestCase):
         self.assertNotIn(removed_bid_order_2.uid, lob._orders)
         self.assertNotIn(removed_bid_order_2.price, lob._price_levels)
 
-    def load_book(self, lob):
+    @staticmethod
+    def load_book(lob):
         orders = [
             Order(uid=1, is_bid=True, size=5, price=101.00),
             Order(uid=2, is_bid=True, size=5, price=95.00),
@@ -99,6 +100,7 @@ class OrderTests(TestCase):
             Order(uid=5, is_bid=False, size=5, price=205.00),
             Order(uid=6, is_bid=False, size=5, price=210.00),
         ]
+
         for order in orders:
             lob.process(order)
 
@@ -107,11 +109,13 @@ class OrderTests(TestCase):
         self.load_book(lob)
 
         # add buy order
-        order = Order(uid=7, is_bid=True, size=1, price=201)
+        order = Order(uid=7, is_bid=True, size=1, price=201.10)
+
         alog.debug(lob.levels_by_price(10))
+
         lob.process(order)
+
         alog.debug(lob.levels_by_price(10))
-        pass
 
     def check_levels_format(self, levels):
         self.assertIsInstance(levels, dict)
@@ -132,14 +136,20 @@ class OrderTests(TestCase):
         self.check_levels_format(levels)
 
     def test_querying_levels_limit_depth(self):
+        # Arrange
         lob = LimitOrderBook()
         self.load_book(lob)
+
+        # Act
         levels = lob.levels(depth=2)
         self.check_levels_format(levels)
+
+        # Assert
         for side in ('bids', 'asks'):
             self.assertEqual(len(levels[side]), 2)
 
     def test_querying_levels_by_price(self):
+        # Arrange
         lob = LimitOrderBook()
         self.load_book(lob)
 
