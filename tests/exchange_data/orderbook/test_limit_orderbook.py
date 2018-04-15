@@ -92,12 +92,12 @@ class OrderTests(TestCase):
 
     def load_book(self, lob):
         orders = [
-            Order(uid=1, is_bid=True, size=5, price=100),
-            Order(uid=2, is_bid=True, size=5, price=95),
-            Order(uid=3, is_bid=True, size=5, price=90),
-            Order(uid=4, is_bid=False, size=5, price=200),
-            Order(uid=5, is_bid=False, size=5, price=205),
-            Order(uid=6, is_bid=False, size=5, price=210),
+            Order(uid=1, is_bid=True, size=5, price=101.00),
+            Order(uid=2, is_bid=True, size=5, price=95.00),
+            Order(uid=3, is_bid=True, size=5, price=90.00),
+            Order(uid=4, is_bid=False, size=5, price=200.00),
+            Order(uid=5, is_bid=False, size=5, price=205.00),
+            Order(uid=6, is_bid=False, size=5, price=210.00),
         ]
         for order in orders:
             lob.process(order)
@@ -144,8 +144,15 @@ class OrderTests(TestCase):
         self.load_book(lob)
 
         expected_result = {
-            'asks': {200: 2, 210: 1},
-            'bids': {90: 1, 100: 2}
+            'bids': {
+                110: 1,
+                100: 1,
+                90: 1
+            },
+            'asks': {
+                200: 2,
+                210: 1
+            }
         }
 
         assert lob.levels_by_price(10) == expected_result
