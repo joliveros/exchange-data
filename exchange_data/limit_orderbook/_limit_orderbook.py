@@ -93,18 +93,11 @@ Available at Archive.org's WayBackMachine:
 """
 
 # Import Built-Ins
-import logging
 from itertools import islice
-# Import Third-Party
 
-# Import Homebrew
-
-
-# Init Logging Facilities
 from exchange_data.limit_orderbook._limit_level import LimitLevel
 from exchange_data.limit_orderbook._limit_level_tree import LimitLevelTree
-
-log = logging.getLogger(__name__)
+from exchange_data.utils import roundup_to_nearest
 
 
 class LimitOrderBook:
@@ -259,7 +252,7 @@ class LimitOrderBook:
     def ask_levels_by_price(self, group_size=10):
         result = {}
 
-        best_price = self.best_ask.price
+        best_price = roundup_to_nearest(self.best_ask.price, group_size)
 
         levels = sorted(self._price_levels.keys())
 
@@ -281,7 +274,7 @@ class LimitOrderBook:
     def bid_levels_by_price(self, group_size=10):
         result = {}
 
-        best_price = self.best_bid.price
+        best_price = roundup_to_nearest(self.best_bid.price, group_size)
 
         levels = sorted(self._price_levels.keys())
 
