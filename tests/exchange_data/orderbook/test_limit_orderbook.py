@@ -109,7 +109,7 @@ class OrderTests(TestCase):
         self.load_book(lob)
 
         # add buy order
-        order = Order(uid=7, is_bid=True, size=1, price=201.10)
+        order = Order(uid=7, is_bid=True, size=10, price=201.10)
 
         alog.debug(lob.levels_by_price(10))
 
