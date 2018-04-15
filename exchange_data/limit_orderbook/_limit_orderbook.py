@@ -237,16 +237,22 @@ class LimitOrderBook:
         :return:
         """
         levels_sorted = sorted(self._price_levels.keys())
-        bids_all = reversed(
-            [price_level for price_level in levels_sorted if price_level < self.best_ask.price])
+
+        bids_all = reversed([price_level for price_level in levels_sorted
+                             if price_level < self.best_ask.price])
+
         bids = list(islice(bids_all, depth)) if depth else list(bids_all)
+
         asks_all = (price_level for price_level in levels_sorted if
                     price_level > self.best_bid.price)
+
         asks = list(islice(asks_all, depth)) if depth else list(asks_all)
+
         levels_dict = {
             'bids': [self._price_levels[price] for price in bids],
             'asks': [self._price_levels[price] for price in asks],
         }
+
         return levels_dict
 
     def ask_levels_by_price(self, group_size=10):
@@ -259,12 +265,14 @@ class LimitOrderBook:
         next_level = True
 
         while next_level:
-            bids = reversed([level for level in levels if best_price <= level < best_price +
-                             group_size])
+            bids = reversed(
+                [level for level in levels if best_price <= level < best_price +
+                 group_size])
             bids = list(bids)
 
             if len(bids) > 0:
-                result[best_price] = sum([len(self._price_levels[price]) for price in bids])
+                result[best_price] = sum(
+                    [len(self._price_levels[price]) for price in bids])
 
             best_price = best_price + group_size
             next_level = best_price <= levels[-1]
@@ -281,12 +289,14 @@ class LimitOrderBook:
         next_level = True
 
         while next_level:
-            bids = reversed([level for level in levels if best_price >= level > best_price -
-                             group_size])
+            bids = reversed(
+                [level for level in levels if best_price >= level > best_price -
+                 group_size])
             bids = list(bids)
 
             if len(bids) > 0:
-                result[best_price] = sum([len(self._price_levels[price]) for price in bids])
+                result[best_price] = sum(
+                    [len(self._price_levels[price]) for price in bids])
 
             best_price = best_price - group_size
             next_level = best_price >= levels[0]

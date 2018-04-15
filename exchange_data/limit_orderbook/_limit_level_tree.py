@@ -15,7 +15,6 @@ class LimitLevelTree:
         Inserts a new node and calls the grand-parent's balance() method -
         but only if it isn't root.
 
-        :param value:
         :return:
         """
         current_node = self
