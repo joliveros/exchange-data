@@ -95,6 +95,9 @@ Available at Archive.org's WayBackMachine:
 # Import Built-Ins
 from itertools import islice
 
+import alog
+
+from exchange_data.limit_orderbook import Order
 from exchange_data.limit_orderbook._limit_level import LimitLevel
 from exchange_data.limit_orderbook._limit_level_tree import LimitLevelTree
 from exchange_data.utils import roundup_to_nearest
@@ -185,7 +188,8 @@ class LimitOrderBook:
                 # Remove Limit Level from LimitLevelTree
                 if order.is_bid:
                     if popped_limit_level == self.best_bid:
-                        if not isinstance(popped_limit_level.parent, LimitLevelTree):
+                        if not isinstance(popped_limit_level.parent,
+                                          LimitLevelTree):
                             self.best_bid = popped_limit_level.parent
                         else:
                             self.best_bid = None
@@ -193,7 +197,8 @@ class LimitOrderBook:
                     popped_limit_level.remove()
                 else:
                     if popped_limit_level == self.best_ask:
-                        if not isinstance(popped_limit_level.parent, LimitLevelTree):
+                        if not isinstance(popped_limit_level.parent,
+                                          LimitLevelTree):
                             self.best_ask = popped_limit_level.parent
                         else:
                             self.best_ask = None
@@ -203,32 +208,50 @@ class LimitOrderBook:
 
         return popped_item
 
-    def add(self, order):
-        """Adds a new LimitLevel to the book and appends the given order to it.
+    def add(self, order: Order):
+        """
+        Adds a new LimitLevel to the book and appends the given order to it.
 
         :param order: Order() Instance
         :return:
         """
-
         if order.price not in self._price_levels:
             limit_level = LimitLevel(order)
             self._orders[order.uid] = order
             self._price_levels[limit_level.price] = limit_level
 
+            self.process_trades(limit_level, order)
+
             if order.is_bid:
                 self.bids.insert(limit_level)
-                if self.best_bid is None or limit_level.price > self.best_bid.price:
-                    self.best_bid = limit_level
+                self.update_best_bid(limit_level)
 
             else:
                 self.asks.insert(limit_level)
-                if self.best_ask is None or limit_level.price < self.best_ask.price:
-                    self.best_ask = limit_level
+                self.update_best_ask(limit_level)
         else:
             # The price level already exists, hence we need to append the order
             # to that price level
             self._orders[order.uid] = order
             self._price_levels[order.price].append(order)
+
+    def process_trades(self, limit_level, order):
+        if order.is_bid and self.best_ask:
+            if limit_level.price > self.best_ask.price:
+                # trade_size = order.size
+                alog.debug(order)
+        elif not order.is_bid and self.best_bid:
+            if limit_level.price < self.best_bid.price:
+                alog.debug(order)
+
+
+    def update_best_ask(self, limit_level):
+        if self.best_ask is None or limit_level.price < self.best_ask.price:
+            self.best_ask = limit_level
+
+    def update_best_bid(self, limit_level):
+        if self.best_bid is None or limit_level.price > self.best_bid.price:
+            self.best_bid = limit_level
 
     def levels(self, depth=None):
         """Returns the price levels as a dict {'bids': [bid1, ...], 'asks': [ask1, ...]}
