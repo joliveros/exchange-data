@@ -1,8 +1,10 @@
+import logging
+
 from exchange_data import settings
 from . import Recorder
 from pysher import Pusher
+
 import alog
-import logging
 
 alog.set_level(settings.LOG_LEVEL)
 
@@ -10,8 +12,14 @@ alog.set_level(settings.LOG_LEVEL)
 class BitstampRecorder(Pusher, Recorder):
     def __init__(self, symbols):
         self.symbols = [symbol.lower() for symbol in symbols]
+
+        if settings.LOG_LEVEL == 'INFO':
+            log_level = logging.CRITICAL
+        else:
+            log_level = settings.LOG_LEVEL
+
         Pusher.__init__(self, settings.BITSTAMP_PUSHER_APP_KEY,
-                        log_level=logging.CRITICAL)
+                        log_level=log_level)
         Recorder.__init__(self, self.symbols, database_name='bitstamp')
 
         self.connection.bind('pusher:connection_established', self.on_connect)
@@ -30,7 +38,8 @@ class BitstampRecorder(Pusher, Recorder):
                         'order_changed',
                         'order_deleted'], self.live_orders)
 
-    def channel_name(self, channel, symbol):
+    @staticmethod
+    def channel_name(channel, symbol):
         if symbol == 'btcusd':
             return channel
         return '{}_{}'.format(channel, symbol)
