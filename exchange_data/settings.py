@@ -1,3 +1,5 @@
+import logging
+
 from dotenv import load_dotenv, find_dotenv
 from os import environ
 import alog
@@ -28,7 +30,11 @@ INFLUX_DB = environ.get('INFLUX_DB')
 LOG_LEVEL = environ.get('LOG_LEVEL')
 
 if LOG_LEVEL is None:
-    LOG_LEVEL = 'INFO'
+    LOG_LEVEL = logging.INFO
+
+LOG_LEVEL = logging.getLevelName(LOG_LEVEL)
+
+alog.debug(LOG_LEVEL)
 
 alog.set_level(LOG_LEVEL)
 
