@@ -8,7 +8,7 @@ class GdaxRecorder(Recorder, WebsocketClient):
 
     def __init__(self, symbols: list):
         Recorder.__init__(self, symbols=symbols, database_name='gdax')
-        WebsocketClient.__init__(self, products=symbols, channels=['level2'])
+        WebsocketClient.__init__(self, products=symbols, channels=['full'])
 
         self.start()
 
