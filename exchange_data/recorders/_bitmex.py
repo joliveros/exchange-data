@@ -10,8 +10,8 @@ alog.set_level(settings.LOG_LEVEL)
 class BitmexRecorder(Recorder):
     measurements = []
     channels = [
-        'trade',
         'quote',
+        'trade',
         'orderBookL2'
     ]
 
@@ -30,36 +30,18 @@ class BitmexRecorder(Recorder):
                                 # set to 1 because data will be saved to db
                                 shouldAuth=False)
 
-        for table in self.channels:
-            instrument.on(table, self.on_table)
-
         instrument.on('latency',
-                      lambda latency: alog.debug("latency: {0}".format(latency)))
+                      lambda latency: alog.debug(
+                          "latency: {0}".format(latency)))
         instrument.on('action', self.on_action)
 
-    def on_table(self, table_name, table):
-        if table_name == 'trade':
-            return self.on_trade(table)
-        elif table_name == 'quote':
-            return self.on_quote(table)
+    def on_action(self, data):
+        data = self.to_lowercase_keys(data)
+        data['symbol'] = data['data'][0]['symbol']
+        data['timestamp'] = self.get_timestamp()
+        table = data.pop('table', None)
 
-    def on_action(self, message):
-        table = message['table']
+        for row in data['data']:
+            row.pop('symbol', None)
 
-        if table == 'orderBookL2':
-            data = message.copy()
-            data = self.to_lowercase_keys(data)
-            data['symbol'] = data['data'][0]['symbol']
-            data['timestamp'] = self.get_timestamp()
-            data.pop('table', None)
-
-            for row in data['data']:
-                row.pop('symbol', None)
-
-            self.save_measurement('orderbook', data['symbol'], data)
-
-    def on_quote(self, table):
-        self.save_measurement('quote', table['symbol'], table)
-
-    def on_trade(self, table):
-        self.save_measurement('trade', table['symbol'], table)
+        self.save_measurement(table, data['symbol'], data)
