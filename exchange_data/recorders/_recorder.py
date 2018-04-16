@@ -52,7 +52,9 @@ class Recorder(Database):
                 'data': json.dumps(table)
             }
         }
-        # self.pp(measurement)
+
+        self.pp(measurement)
+
         self.measurements.append(measurement)
 
         if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:
