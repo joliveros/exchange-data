@@ -14,4 +14,4 @@ class GdaxRecorder(Recorder, WebsocketClient):
 
     def on_message(self, msg):
         alog.debug(msg)
-        self.save_measurement('level2', msg.get('product_id', None), msg)
+        self.save_measurement('data', msg.get('product_id', None), msg)

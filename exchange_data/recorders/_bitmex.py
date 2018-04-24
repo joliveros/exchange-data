@@ -39,9 +39,8 @@ class BitmexRecorder(Recorder):
         data = self.to_lowercase_keys(data)
         data['symbol'] = data['data'][0]['symbol']
         data['timestamp'] = self.get_timestamp()
-        table = data.pop('table', None)
 
         for row in data['data']:
             row.pop('symbol', None)
 
-        self.save_measurement(table, data['symbol'], data)
+        self.save_measurement('data', data['symbol'], data)
