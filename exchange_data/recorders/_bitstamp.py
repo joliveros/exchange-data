@@ -52,13 +52,13 @@ class BitstampRecorder(Pusher, Recorder):
         return channel
 
     def diff_order_book(self, symbol, data):
-        self.save_measurement('diff_order_book', symbol, data)
+        self.save_measurement('data', symbol, data)
 
     def order_book(self, symbol, data):
-        self.save_measurement('order_book', symbol, data)
+        self.save_measurement('data', symbol, data)
 
     def live_orders(self, symbol, data):
-        self.save_measurement('live_orders', symbol, data)
+        self.save_measurement('data', symbol, data)
 
     def live_trades(self, symbol, data):
-        self.save_measurement('live_orders', symbol, data)
+        self.save_measurement('data', symbol, data)
