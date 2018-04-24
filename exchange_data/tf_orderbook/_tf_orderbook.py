@@ -6,13 +6,10 @@ from influxdb.resultset import ResultSet
 from exchange_data import Database
 from exchange_data.limit_orderbook import LimitOrderBook
 
-DATABASE_MAP = {
-    'bitmex': 'orderbook'
-}
-
 
 class TFLimitOrderBook(LimitOrderBook, Database):
-    def __init__(self, database: str, symbol: str, total_time='1d', save_json=True, json_file=None):
+    def __init__(self, database: str, symbol: str, total_time='1d',
+                 save_json=True, json_file=None):
         LimitOrderBook.__init__(self)
         Database.__init__(self, database_name=database)
 
@@ -22,7 +19,7 @@ class TFLimitOrderBook(LimitOrderBook, Database):
         self.database = database
 
         if json_file is None:
-            self._fetch_data()
+            self._fetch_measurements()
         else:
             self._read_from_file(json_file)
 
@@ -36,20 +33,23 @@ class TFLimitOrderBook(LimitOrderBook, Database):
     def _read_from_file(self, json_file):
         self.result_set = ResultSet(json.loads(open(json_file).read()))
 
-    def _fetch_data(self):
+    def _fetch_measurements(self):
         """
         fetch log data from influxdb
         :return:
         """
-        query = f'SELECT * FROM orderbook WHERE time > now() - {self.total_time}'
+        # query = f'SELECT * FROM /.*/ WHERE time > now() - ' \
+        #         f'{self.total_time};'
 
+        query = f'SELECT merge(*) FROM /.*/ WHERE time > now() - ' \
+                f'{self.total_time};'
         alog.debug(query)
 
         params = dict(precision='ms')
 
         result: ResultSet = self.query(database=self.database, query=query, epoch='ms',
                                        params=params, chunked=True)
-
+        alog.debug(result)
         self.result_set = result
 
     def save_replay(self):
@@ -57,8 +57,10 @@ class TFLimitOrderBook(LimitOrderBook, Database):
         pass
 
     def replay(self):
-        for line in self.result_set[DATABASE_MAP[self.database]]:
-            self.on_message(line)
+        for key, _ in self.result_set.keys():
+            alog.debug(key)
+
+
 
     def on_message(self, message):
         raise NotImplementedError
