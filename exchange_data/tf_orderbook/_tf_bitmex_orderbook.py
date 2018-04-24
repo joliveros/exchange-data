@@ -1,6 +1,8 @@
 import json
 from enum import Enum
 
+import alog
+
 from exchange_data.limit_orderbook import Order
 from exchange_data.limit_orderbook._limit_level import LimitLevelBalanceError
 from ._tf_orderbook import TFLimitOrderBook
@@ -42,6 +44,8 @@ class TFBitmexLimitOrderBook(TFLimitOrderBook):
                                   save_json=save_json, json_file=json_file)
 
     def on_message(self, raw_message):
+        alog.debug(raw_message)
+        return
         message = Message(raw_message['data'], raw_message['time'])
 
         try:
