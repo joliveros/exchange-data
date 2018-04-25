@@ -111,11 +111,7 @@ class OrderTests(TestCase):
         # add buy order
         order = Order(uid=7, is_bid=True, size=10, price=201.10)
 
-        alog.debug(lob.levels_by_price(10))
-
         lob.process(order)
-
-        alog.debug(lob.levels_by_price(10))
 
     def check_levels_format(self, levels):
         self.assertIsInstance(levels, dict)
