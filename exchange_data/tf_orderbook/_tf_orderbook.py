@@ -27,7 +27,8 @@ class TFLimitOrderBook(LimitOrderBook, Database):
             self.save_as_json()
 
     def save_as_json(self):
-        with open(f'./tests/exchange_data/data/{self.database}.json', 'w') as json_file:
+        with open(f'./tests/exchange_data/data/{self.database}.json', 'w') \
+                as json_file:
             json.dump(self.result_set.raw, json_file)
 
     def _read_from_file(self, json_file):
@@ -38,18 +39,14 @@ class TFLimitOrderBook(LimitOrderBook, Database):
         fetch log data from influxdb
         :return:
         """
-        # query = f'SELECT * FROM /.*/ WHERE time > now() - ' \
-        #         f'{self.total_time};'
-
-        query = f'SELECT merge(*) FROM /.*/ WHERE time > now() - ' \
+        query = f'SELECT * FROM data WHERE time > now() - ' \
                 f'{self.total_time};'
         alog.debug(query)
 
-        params = dict(precision='ms')
+        result: ResultSet = self.query(database=self.database, query=query,
+                                       epoch='ms', params={'precision': 'ms'},
+                                       chunked=True)
 
-        result: ResultSet = self.query(database=self.database, query=query, epoch='ms',
-                                       params=params, chunked=True)
-        alog.debug(result)
         self.result_set = result
 
     def save_replay(self):
@@ -57,12 +54,8 @@ class TFLimitOrderBook(LimitOrderBook, Database):
         pass
 
     def replay(self):
-        for key, _ in self.result_set.keys():
-            alog.debug(key)
-
-
+        for line in self.result_set['data']:
+           self.on_message(line)
 
     def on_message(self, message):
         raise NotImplementedError
-
-

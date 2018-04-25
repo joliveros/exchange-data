@@ -220,12 +220,9 @@ class LimitOrderBook:
             self._orders[order.uid] = order
             self._price_levels[limit_level.price] = limit_level
 
-            self.process_trades(limit_level, order)
-
             if order.is_bid:
                 self.bids.insert(limit_level)
                 self.update_best_bid(limit_level)
-
             else:
                 self.asks.insert(limit_level)
                 self.update_best_ask(limit_level)
@@ -235,16 +232,6 @@ class LimitOrderBook:
             self._orders[order.uid] = order
             self._price_levels[order.price].append(order)
 
-    def process_trades(self, limit_level, order):
-        if order.is_bid and self.best_ask:
-            if limit_level.price > self.best_ask.price:
-                # trade_size = order.size
-                alog.debug(order)
-        elif not order.is_bid and self.best_bid:
-            if limit_level.price < self.best_bid.price:
-                alog.debug(order)
-
-
     def update_best_ask(self, limit_level):
         if self.best_ask is None or limit_level.price < self.best_ask.price:
             self.best_ask = limit_level
@@ -252,6 +239,9 @@ class LimitOrderBook:
     def update_best_bid(self, limit_level):
         if self.best_bid is None or limit_level.price > self.best_bid.price:
             self.best_bid = limit_level
+
+    def trade(self, order: Order):
+        pass
 
     def levels(self, depth=None):
         """Returns the price levels as a dict {'bids': [bid1, ...], 'asks': [ask1, ...]}
@@ -280,11 +270,8 @@ class LimitOrderBook:
 
     def ask_levels_by_price(self, group_size=10):
         result = {}
-
         best_price = roundup_to_nearest(self.best_ask.price, group_size)
-
         levels = sorted(self._price_levels.keys())
-
         next_level = True
 
         while next_level:
@@ -304,11 +291,8 @@ class LimitOrderBook:
 
     def bid_levels_by_price(self, group_size=10):
         result = {}
-
         best_price = roundup_to_nearest(self.best_bid.price, group_size)
-
         levels = sorted(self._price_levels.keys())
-
         next_level = True
 
         while next_level:
