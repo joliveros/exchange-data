@@ -1,3 +1,8 @@
+import alog
+
+from exchange_data.limit_orderbook import Order
+
+
 class OrderList:
     """Doubly-Linked List Container Class.
 
@@ -10,6 +15,10 @@ class OrderList:
     Has no other functionality.
 
     """
+    head: Order
+    parent_limit: 'LimitLevel'
+    tail: Order
+
     __slots__ = ['head', 'tail', 'parent_limit', 'count']
 
     def __init__(self, parent_limit):

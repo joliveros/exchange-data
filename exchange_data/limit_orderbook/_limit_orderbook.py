@@ -109,6 +109,8 @@ class LimitOrderBook:
     Implementation as described by WK Selph (see header doc string for link).
 
     """
+    best_bid: LimitLevel
+    best_ask: LimitLevel
 
     def __init__(self):
         self.bids = LimitLevelTree()
@@ -146,7 +148,7 @@ class LimitOrderBook:
             except KeyError:
                 self.add(order)
 
-    def update(self, order):
+    def update(self, order: Order):
         """Updates an existing order in the book.
 
         It also updates the order's related LimitLevel's size, accordingly.
@@ -154,9 +156,12 @@ class LimitOrderBook:
         :param order:
         :return:
         """
-        size_diff = self._orders[order.uid].size - order.size
-        self._orders[order.uid].size = order.size
-        self._orders[order.uid].parent_limit.size -= size_diff
+        order_in_book: Order = self._orders[order.uid]
+
+        size_diff = order_in_book.size - order.size
+        order_in_book.size = order.size
+        order_in_book.parent_limit.size -= size_diff
+        order_in_book.timestamp = order.timestamp
 
     def remove(self, order):
         """Removes an order from the book.
@@ -186,6 +191,7 @@ class LimitOrderBook:
             if len(self._price_levels[order.price]) == 0:
                 popped_limit_level = self._price_levels.pop(order.price)
                 # Remove Limit Level from LimitLevelTree
+
                 if order.is_bid:
                     if popped_limit_level == self.best_bid:
                         if not isinstance(popped_limit_level.parent,
@@ -193,6 +199,8 @@ class LimitOrderBook:
                             self.best_bid = popped_limit_level.parent
                         else:
                             self.best_bid = None
+
+                    self.update_best_values()
 
                     popped_limit_level.remove()
                 else:
@@ -232,11 +240,11 @@ class LimitOrderBook:
             self._orders[order.uid] = order
             self._price_levels[order.price].append(order)
 
-    def update_best_ask(self, limit_level):
+    def update_best_ask(self, limit_level: LimitLevel):
         if self.best_ask is None or limit_level.price < self.best_ask.price:
             self.best_ask = limit_level
 
-    def update_best_bid(self, limit_level):
+    def update_best_bid(self, limit_level: LimitLevel):
         if self.best_bid is None or limit_level.price > self.best_bid.price:
             self.best_bid = limit_level
 
@@ -315,3 +323,8 @@ class LimitOrderBook:
             'bids': self.bid_levels_by_price(group_size),
             'asks': self.ask_levels_by_price(group_size)
         }
+
+    def update_best_values(self):
+        prices = [level for level in self._price_levels.values() if level.]
+
+        alog.debug(prices)

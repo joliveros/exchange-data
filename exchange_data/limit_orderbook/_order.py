@@ -1,5 +1,7 @@
 import time
 
+import alog
+
 
 class Order:
     """Doubly-Linked List Order item.
@@ -13,6 +15,8 @@ class Order:
     Offers append() and pop() methods. Prepending isn't implemented.
 
     """
+    root: 'OrderList'
+
     __slots__ = ['uid', 'is_bid', 'size', 'price', 'timestamp',
                  'next_item', 'previous_item', 'root']
 
@@ -31,7 +35,7 @@ class Order:
         self.root = root
 
     @property
-    def parent_limit(self):
+    def parent_limit(self) -> 'LimitLevel':
         return self.root.parent_limit
 
     def append(self, order):
@@ -40,6 +44,9 @@ class Order:
         :param order: Order() instance
         :return:
         """
+
+        alog.debug(self.timestamp)
+
         if self.next_item is None:
             self.next_item = order
             self.next_item.previous_item = self
@@ -82,3 +89,7 @@ class Order:
 
     def __repr__(self):
         return str((self.uid, self.is_bid, self.price, self.size, self.timestamp))
+
+    def __eq__(self, other):
+        return self.uid == other.uid and self.price == other.price and \
+               self.size == other.size and self.timestamp == other.timestamp
