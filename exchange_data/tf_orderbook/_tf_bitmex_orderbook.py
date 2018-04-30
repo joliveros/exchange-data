@@ -4,8 +4,7 @@ from enum import Enum
 import alog
 from stringcase import snakecase
 
-from exchange_data.limit_orderbook import Order
-from exchange_data.limit_orderbook._limit_level import LimitLevelBalanceError
+from exchange_data.orderbook._order import Order
 from ._tf_orderbook import TFLimitOrderBook
 
 
@@ -63,24 +62,7 @@ class TFBitmexLimitOrderBook(TFLimitOrderBook):
     def order_book_l2(self, data):
         message = BitmexMessage(data)
 
-        try:
-            if message.action == Action.INSERT:
-                for order in message.data:
-                    self.add(order)
-            elif message.action == Action.UPDATE:
-                for order in message.data:
-                    self.update(order)
-            elif message.action == Action.DELETE:
-                for order in message.data:
-                    self.remove(order)
-
-        except KeyError as e:
-            # print(e)
-            pass
-        except LimitLevelBalanceError as e:
-            print(e)
-            pass
-        pass
+        self.process_order(data)
 
     def quote(self, data):
         pass
