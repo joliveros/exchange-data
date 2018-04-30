@@ -4,13 +4,13 @@ import alog
 from influxdb.resultset import ResultSet
 
 from exchange_data import Database
-from exchange_data.limit_orderbook import LimitOrderBook
+from exchange_data.orderbook import OrderBook
 
 
-class TFLimitOrderBook(LimitOrderBook, Database):
+class TFLimitOrderBook(OrderBook, Database):
     def __init__(self, database: str, symbol: str, total_time='1d',
                  save_json=True, json_file=None):
-        LimitOrderBook.__init__(self)
+        OrderBook.__init__(self)
         Database.__init__(self, database_name=database)
 
         self.save_json = save_json
