@@ -72,7 +72,7 @@ class TestOrderBook(object):
         with pytest.raises(KeyError):
             orderbook.asks.get_price_list(crossing_limit_order.price)
 
-        alog.debug(trade)
+        # alog.debug(trade)
 
         order_list = orderbook.asks.price_map[100]
 
