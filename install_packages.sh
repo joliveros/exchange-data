@@ -7,3 +7,5 @@
 while read requirement; do
     conda install --yes $requirement;
 done < ./requirements-conda.txt
+
+pip install -r requirements.txt -r requirements-test.txt
