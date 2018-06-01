@@ -18,10 +18,6 @@ class Recorder(Database):
 
         self.symbols = symbols
 
-    def pp(self, data):
-        if settings.LOG_LEVEL == 'DEBUG':
-            alog.debug(json.dumps(data, indent=2, sort_keys=True))
-
     def to_lowercase_keys(self, data):
         return dict((k.lower(), v) for k, v in data.items())
 
@@ -39,6 +35,7 @@ class Recorder(Database):
         return f'{str(datetime.utcnow())}Z'
 
     def save_measurement(self, name, symbol, table):
+        alog.debug(locals())
         if isinstance(table, str):
             table = json.loads(table)
 
@@ -53,7 +50,7 @@ class Recorder(Database):
             }
         }
 
-        self.pp(measurement)
+        alog.debug(alog.pformat(measurement))
 
         self.measurements.append(measurement)
 

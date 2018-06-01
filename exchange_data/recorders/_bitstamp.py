@@ -10,10 +10,10 @@ alog.set_level(settings.LOG_LEVEL)
 
 
 class BitstampRecorder(Pusher, Recorder):
-    def __init__(self, symbols):
-        self.symbols = [symbol.lower() for symbol in symbols]
+    def __init__(self, symbol):
+        self.symbol = symbol
 
-        if settings.LOG_LEVEL == 'INFO':
+        if settings.LOG_LEVEL == logging.INFO:
             log_level = logging.CRITICAL
         else:
             log_level = settings.LOG_LEVEL
@@ -23,13 +23,15 @@ class BitstampRecorder(Pusher, Recorder):
         Recorder.__init__(self, self.symbols, database_name='bitstamp')
 
         self.connection.bind('pusher:connection_established', self.on_connect)
-        self.connect()
+
+    def start(self):
+        self.connection.run()
 
     def on_connect(self, data):
-        for symbol in self.symbols:
-            self.subscribe_symbol(symbol)
+        self.subscribe_symbol()
 
-    def subscribe_symbol(self, symbol):
+    def subscribe_symbol(self):
+        symbol = self.symbol
         self.subscribe('diff_order_book', symbol, ['data'],
                        self.diff_order_book)
         self.subscribe('live_trades', symbol, ['trade'], self.live_trades)
