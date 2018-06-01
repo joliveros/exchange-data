@@ -1,29 +1,20 @@
 #! /usr/bin/env python
 
-from exchange_data import settings
 from stringcase import pascalcase
 
-import alog
-import asyncio
 import click
 import exchange_data.recorders
-import rollbar
-
-
-rollbar.init(settings.ROLLBAR_API_KEY, 'production')
 
 
 @click.command()
-@click.argument('symbol', nargs=-1, required=True)
+@click.argument('symbol', nargs=1, required=True)
 @click.option('--exchange', required=True,
               help="an exchange such as bitstamp|bitmex")
-@click.option('--https', default=False)
-def main(symbol: str, exchange: str, https: bool):
-    recorder = getattr(exchange_data.recorders, pascalcase(exchange) + 'Recorder')
-    recorder(list(symbol))
-
-    loop = asyncio.get_event_loop()
-    return loop.run_forever()
+def main(symbol: str, exchange: str):
+    recorder_class = getattr(exchange_data.recorders, pascalcase(exchange) +
+                             'Recorder')
+    recorder = recorder_class(symbol)
+    recorder.start()
 
 
 if __name__ == '__main__':
