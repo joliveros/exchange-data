@@ -19,7 +19,7 @@ class BitstampRecorder(Pusher, Recorder):
             log_level = settings.LOG_LEVEL
 
         Pusher.__init__(self, settings.BITSTAMP_PUSHER_APP_KEY,
-                        log_level=log_level)
+                        log_level=logging.CRITICAL)
         Recorder.__init__(self, self.symbols, database_name='bitstamp')
 
         self.connection.bind('pusher:connection_established', self.on_connect)
