@@ -1,9 +1,13 @@
 #! /usr/bin/env python
+import signal
 
 from stringcase import pascalcase
 
 import click
 import exchange_data.recorders
+
+signal.signal(signal.SIGINT, lambda: exit(0))
+signal.signal(signal.SIGTERM, lambda: exit(0))
 
 
 @click.command()
