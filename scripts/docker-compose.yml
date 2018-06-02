@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  influxdb:
+    image: influxdb
+    restart: unless-stopped
+
+    environment:
+      - INFLUXDB_ADMIN_ENABLED=false
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=jade121415
+      - INFLUXDB_USER=jose
+      - INFLUXDB_USER_PASSWORD=jade121415
+
+    ports:
+    - 28953:8086
+
+    volumes:
+      - "${HOME}/scripts/influxdb.conf:/etc/influxdb/influxdb.conf"
+      - "/mnt/volume-lon1-01/influxdb:/var/lib/influxdb"
+
+    command:
+      -config /etc/influxdb/influxdb.conf
+
+  bitmex-btcusd:
+    image: codequants/exchange-data
+    restart: unless-stopped
+
+    env_file:
+      - ./.env.prod
+
+    environment:
+      - BATCH_SIZE=100
+
+    links:
+      - influxdb
+
+    command:
+      ./exchange-data --exchange bitmex XBTUSD
+
+  bitstamp-btcusd:
+    image: codequants/exchange-data
+    restart: unless-stopped
+
+    env_file:
+      - ./.env.prod
+
+    environment:
+      - BATCH_SIZE=100
+
+    links:
+      - influxdb
+
+    command:
+      ./exchange-data --exchange bitstamp btcusd
+
+  gdax-btcusd:
+    image: codequants/exchange-data
+    restart: unless-stopped
+
+    env_file:
+      - ./.env.prod
+
+    environment:
+      - BATCH_SIZE=100
+
+    links:
+      - influxdb
+
+    command:
+      ./exchange-data --exchange gdax BTC-USD

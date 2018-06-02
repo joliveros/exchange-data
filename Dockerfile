@@ -1,4 +1,4 @@
-FROM python:3.6.4
+FROM python:3.6.5
 
 ENV NAME exchange-data
 
@@ -8,6 +8,6 @@ WORKDIR /src
 
 RUN pip install --upgrade pip
 
-RUN pip install -r requirements.txt -r requirements-test.txt
+RUN pip install -r requirements.txt -r requirements-test.txt --no-cache-dir
 
 CMD ["./exchange-data"]
