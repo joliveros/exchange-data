@@ -12,10 +12,9 @@ BITSTAMP_PUSHER_APP_KEY = environ.get('BITSTAMP_PUSHER_APP_KEY')
 
 if RUN_ENV != 'development':
     ROLLBAR_API_KEY = environ.get('ROLLBAR_API_KEY')
-    rollbar.init(ROLLBAR_API_KEY, 'production')
 
-    if not ROLLBAR_API_KEY:
-        raise ValueError('Rollbar api key is required for production.')
+    if ROLLBAR_API_KEY:
+        rollbar.init(ROLLBAR_API_KEY, 'production')
 
 MEASUREMENT_BATCH_SIZE = environ.get('BATCH_SIZE')
 

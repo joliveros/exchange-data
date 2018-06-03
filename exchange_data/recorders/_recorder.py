@@ -35,7 +35,6 @@ class Recorder(Database):
         return f'{str(datetime.utcnow())}Z'
 
     def save_measurement(self, name, symbol, table):
-        alog.debug(locals())
         if isinstance(table, str):
             table = json.loads(table)
 

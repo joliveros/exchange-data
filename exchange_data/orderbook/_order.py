@@ -1,16 +1,20 @@
-from enum import Enum
-
+from enum import Enum, auto
 from exchange_data.orderbook._orderlist import OrderList
 
 
-class OrderType(Enum):
-    LIMIT = 0,
-    MARKET = 1
+class NoValue(Enum):
+    def __repr__(self):
+        return '<%s.%s>' % (self.__class__.__name__, self.name)
 
 
-class OrderBookSide(Enum):
-    ASK = 0,
-    BID = 1
+class OrderType(NoValue):
+    LIMIT = auto(),
+    MARKET = auto()
+
+
+class OrderBookSide(NoValue):
+    ASK = auto(),
+    BID = auto()
 
 
 class InvalidOrderQuantity(BaseException):
@@ -41,7 +45,7 @@ class Order(object):
         self.prev_order = None
         self.price = price
         self.side = side
-        self.timestamp = timestamp
+        self._timestamp = timestamp
         self.type = order_type
         self.uid = uid
 
@@ -49,6 +53,14 @@ class Order(object):
             raise InvalidOrderQuantity(quantity)
         else:
             self.quantity = quantity
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, value):
+        self._timestamp = value
 
     def update_quantity(self, new_quantity, new_timestamp):
         if new_quantity > self.quantity and self.order_list.tail_order != self:

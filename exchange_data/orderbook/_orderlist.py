@@ -1,19 +1,28 @@
 class OrderList(object):
-    '''
+    """
     A doubly linked list of Orders. Used to iterate through Orders when
     a price match is found. Each OrderList is associated with a single
-    price. Since a single price match can have more quantity than a single 
+    price. Since a single price match can have more quantity than a single
     Order, we may need multiple Orders to fullfill a transaction. The
     OrderList makes this easy to do. OrderList is naturally arranged by time.
     Orders at the front of the list have priority.
-    '''
+    """
 
     def __init__(self):
-        self.head_order = None # first order in the list
-        self.tail_order = None # last order in the list
-        self.length = 0 # number of Orders in the list
-        self.volume = 0 # sum of Order quantity in the list AKA share volume
-        self.last = None # helper for iterating 
+        # first order in the list
+        self.head_order: 'Order' = None
+
+        # last order in the list
+        self.tail_order: 'Order' = None
+
+        # number of Orders in the list
+        self.length = 0
+
+        # sum of Order quantity in the list AKA share volume
+        self.volume = 0
+
+        # helper for iterating
+        self.last = None
 
     def __len__(self):
         return self.length
@@ -51,7 +60,7 @@ class OrderList(object):
             order.next_order = None
             self.tail_order.next_order = order
             self.tail_order = order
-        self.length +=1
+        self.length += 1
         self.volume += order.quantity
 
     def remove_order(self, order):

@@ -60,31 +60,31 @@ def orderbook_delete_msg():
             'symbol': 'XBTUSD'}
 
 
-class TestTFBitmexLimitOrderBook(object):
-
-    def test_orderbook_message_updates_orderbook(self, orderbook,
-                                                 orderbook_update_msg):
-        with patch('exchange_data.tf_orderbook.TFBitmexLimitOrderBook'
-                   '.order_book_l2') as orderBookL2Mock:
-            orderbook.on_message(orderbook_update_msg)
-
-            orderBookL2Mock.assert_called_once()
-
-    def test_orderbook_message_adds_to_orderbook(self, orderbook,
-                                                 orderbook_insert_msg):
-        with patch('exchange_data.orderbook.OrderBook'
-                   '.process_order') as insert_mock:
-            orderbook.on_message(orderbook_insert_msg)
-
-            insert_mock.assert_called()
-
-    def test_orderbook_message_deletes_from_orderbook(self, orderbook,
-                                                 orderbook_delete_msg):
-        with patch('exchange_data.orderbook.OrderBook'
-                   '.process_order') as delete_mock:
-            orderbook.on_message(orderbook_delete_msg)
-
-            delete_mock.assert_called()
+# class TestTFBitmexLimitOrderBook(object):
+#
+#     def test_orderbook_message_updates_orderbook(self, orderbook,
+#                                                  orderbook_update_msg):
+#         with patch('exchange_data.tf_orderbook.TFBitmexLimitOrderBook'
+#                    '.order_book_l2') as orderBookL2Mock:
+#             orderbook.on_message(orderbook_update_msg)
+#
+#             orderBookL2Mock.assert_called_once()
+#
+#     def test_orderbook_message_adds_to_orderbook(self, orderbook,
+#                                                  orderbook_insert_msg):
+#         with patch('exchange_data.orderbook.OrderBook'
+#                    '.process_order') as insert_mock:
+#             orderbook.on_message(orderbook_insert_msg)
+#
+#             insert_mock.assert_called()
+#
+#     def test_orderbook_message_deletes_from_orderbook(self, orderbook,
+#                                                  orderbook_delete_msg):
+#         with patch('exchange_data.orderbook.OrderBook'
+#                    '.process_order') as delete_mock:
+#             orderbook.on_message(orderbook_delete_msg)
+#
+#             delete_mock.assert_called()
 
     # def test_message_trade(self, orderbook):
     #     insert = {'time': 1524614709875,

@@ -1,17 +1,17 @@
 import json
-from enum import Enum
+from enum import auto
 
 import alog
 from stringcase import snakecase
 
-from exchange_data.orderbook._order import Order
+from exchange_data.orderbook._order import Order, NoValue
 from ._tf_orderbook import TFLimitOrderBook
 
 
-class Action(Enum):
-    INSERT = 0
-    UPDATE = 1
-    DELETE = 2
+class Action(NoValue):
+    INSERT = auto()
+    UPDATE = auto()
+    DELETE = auto()
 
 
 class BitmexOrder(Order):

@@ -1,3 +1,4 @@
+import alog
 from bintrees import RBTree
 from ._orderlist import OrderList
 from ._order import Order
@@ -21,7 +22,7 @@ class OrderTree(object):
     def __len__(self):
         return len(self.order_map)
 
-    def get_price_list(self, price):
+    def get_price_list(self, price) -> OrderList:
         return self.price_map[price]
 
     def get_order(self, order_id):
@@ -85,12 +86,15 @@ class OrderTree(object):
         self.volume += order.quantity - original_quantity
 
     def remove_order_by_id(self, order_id):
-        self.num_orders -= 1
         order = self.order_map[order_id]
+        self.num_orders -= 1
         self.volume -= order.quantity
+
         order.order_list.remove_order(order)
+
         if len(order.order_list) == 0:
             self.remove_price(order.price)
+
         del self.order_map[order_id]
 
     def max_price(self):

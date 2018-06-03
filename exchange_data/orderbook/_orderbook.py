@@ -7,6 +7,7 @@ from six.moves import cStringIO as StringIO
 from decimal import Decimal
 
 from exchange_data.orderbook import OrderType, OrderBookSide, Order
+from exchange_data.orderbook._orderlist import OrderList
 from exchange_data.orderbook._ordertree import OrderTree
 from exchange_data.orderbook._transaction_party import TransactionParty
 from exchange_data.orderbook._transcation import Transaction
@@ -18,7 +19,8 @@ class OrderBook(object):
     bids: OrderTree
 
     def __init__(self, tick_size=0.0001):
-        self.tape = deque(maxlen=0)  # Index[0] is most recent trade
+        # Index[0] is most recent trade
+        self.tape = deque(maxlen=0)
         self.bids = OrderTree()
         self.asks = OrderTree()
         self.last_tick = None
@@ -46,7 +48,7 @@ class OrderBook(object):
     def update_time(self):
         self.time += 1
 
-    def process_order(self, order: object) -> object:
+    def process_order(self, order: Order) -> object:
         order_in_book = None
         trades = []
 
@@ -73,40 +75,55 @@ class OrderBook(object):
             order.uid = self.next_order_id
 
         if side == OrderBookSide.BID:
-            while self.asks and price >= self.asks.min_price() and \
-                    quantity_to_trade > 0:
-                quantity_to_trade, new_trades = \
-                    self._process_order_list(
-                        side,
-                        quantity_to_trade,
-                        order
-                    )
-
-                trades += new_trades
-
-            # If volume remains, need to update the book with new quantity
-            if quantity_to_trade > 0:
-                self.bids.insert_order(order)
-                order_in_book = order
+            order_in_book, trades = self.process_bid_list(order, order_in_book,
+                                                          price,
+                                                          quantity_to_trade,
+                                                          side, trades)
 
         elif side == OrderBookSide.ASK:
-            while self.bids and price <= self.bids.max_price() and \
-                    quantity_to_trade > 0:
-                quantity_to_trade, new_trades = \
-                    self._process_order_list(
-                        side,
-                        quantity_to_trade,
-                        order
-                    )
-
-                trades += new_trades
-
-            # If volume remains, need to update the book with new quantity
-            if quantity_to_trade > 0:
-                self.asks.insert_order(order)
-                order_in_book = order
+            order_in_book, trades = self.process_ask_list(order, order_in_book,
+                                                          price,
+                                                          quantity_to_trade,
+                                                          side, trades)
 
         return trades, order_in_book
+
+    def process_ask_list(self, order, order_in_book, price, quantity_to_trade,
+                         side, trades):
+        while self.bids and price <= self.bids.max_price() and \
+                quantity_to_trade > 0:
+            quantity_to_trade, new_trades = \
+                self._process_order_list(
+                    side,
+                    quantity_to_trade,
+                    order
+                )
+
+            trades += new_trades
+        # If volume remains, need to update the book with new quantity
+        if quantity_to_trade > 0:
+            self.asks.insert_order(order)
+            order_in_book = order
+        return order_in_book, trades
+
+    def process_bid_list(self, order, order_in_book, price, quantity_to_trade,
+                         side, trades):
+        while self.asks and price >= self.asks.min_price() and \
+                quantity_to_trade > 0:
+            quantity_to_trade, new_trades = \
+                self._process_order_list(
+                    side,
+                    quantity_to_trade,
+                    order
+                )
+
+            trades += new_trades
+
+        # If volume remains, need to update the book with new quantity
+        if quantity_to_trade > 0:
+            self.bids.insert_order(order)
+            order_in_book = order
+        return order_in_book, trades
 
     def _process_order_list(
             self,
@@ -119,9 +136,9 @@ class OrderBook(object):
         order and matches appropriate trades given the order's quantity.
         """
         if side == OrderBookSide.BID:
-            order_list = self.bids.min_price_list()
+            order_list = self.asks.min_price_list()
         else:
-            order_list = self.asks.max_price_list()
+            order_list = self.bids.max_price_list()
 
         trades = []
 
@@ -132,13 +149,8 @@ class OrderBook(object):
 
         return quantity, trades
 
-    def _transactions(self,
-                      order,
-                      order_list,
-                      quantity
-                      ):
-        alog.debug(order)
-        alog.debug(order_list)
+    def _transactions(self, order: Order, order_list: OrderList, quantity: int):
+
         while len(order_list) > 0 and quantity > 0:
             head_order = order_list.get_head_order()
             traded_price = head_order.price
@@ -158,38 +170,22 @@ class OrderBook(object):
                 traded_quantity = quantity
 
                 if side == OrderBookSide.BID:
-                    self.bids.remove_order_by_id(head_order.uid)
-                else:
                     self.asks.remove_order_by_id(head_order.uid)
+                else:
+                    self.bids.remove_order_by_id(head_order.uid)
 
                 quantity = 0
 
-            else:  # quantity to trade is larger than the head order
+            # quantity to trade is larger than the head order
+            else:
                 traded_quantity = head_order.quantity
 
                 if side == OrderBookSide.BID:
-                    self.bids.remove_order_by_id(head_order.uid)
-                else:
                     self.asks.remove_order_by_id(head_order.uid)
+                else:
+                    self.bids.remove_order_by_id(head_order.uid)
 
                 quantity -= traded_quantity
-
-            summary = {
-                'time': self.time,
-                'price': traded_price,
-                'quantity': traded_quantity,
-                'uid': counter_party,
-                'matching_uid': order.uid
-            }
-
-            alog.debug(alog.pformat(summary))
-
-            transaction = {
-                'timestamp': self.time,
-                'price': traded_price,
-                'quantity': traded_quantity,
-                'time': self.time
-            }
 
             # transaction_record
             if side == OrderBookSide.BID:
@@ -201,13 +197,11 @@ class OrderBook(object):
 
                 transaction = Transaction(party1, party2, quantity)
             else:
-                transaction['party1'] = [counter_party, side,
-                                         head_order.uid,
-                                         new_book_quantity]
+                party1 = TransactionParty(counter_party, new_book_quantity,
+                                          OrderBookSide.BID)
+                party2 = TransactionParty(order.uid, new_book_quantity, side)
 
-                transaction['party2'] = [order.uid, OrderBookSide.BID,
-                                         None,
-                                         None]
+                transaction = Transaction(party1, party2, quantity)
 
             yield transaction
 
@@ -309,6 +303,7 @@ class OrderBook(object):
 
     def __str__(self):
         tempfile = StringIO()
+        tempfile.write('\n')
         tempfile.write("***Bids***\n")
         if self.bids != None and len(self.bids) > 0:
             for key, value in self.bids.price_tree.items(reverse=True):
