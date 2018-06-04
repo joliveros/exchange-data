@@ -21,6 +21,10 @@ class InvalidOrderQuantity(BaseException):
     pass
 
 
+class InvalidPriceMarketOrderException(Exception):
+    pass
+
+
 class Order(object):
     """
     Orders represent the core piece of the exchange. Every bid/ask is an Order.
@@ -34,9 +38,9 @@ class Order(object):
 
     def __init__(self,
                  order_type: OrderType,
-                 price: float,
                  quantity: float,
                  side: OrderBookSide,
+                 price: float=None,
                  timestamp: int = None,
                  uid: int = None
                  ):
@@ -53,6 +57,9 @@ class Order(object):
             raise InvalidOrderQuantity(quantity)
         else:
             self.quantity = quantity
+
+        if self.type == OrderType and self.price:
+            raise InvalidPriceMarketOrderException()
 
     @property
     def timestamp(self):
@@ -78,8 +85,8 @@ class Order(object):
 
 class BuyOrder(Order):
     def __init__(self,
-                 price: float,
                  quantity: float,
+                 price: float=None,
                  order_type: OrderType = OrderType.LIMIT
                  ):
         super().__init__(
@@ -92,8 +99,8 @@ class BuyOrder(Order):
 
 class SellOrder(Order):
     def __init__(self,
-                 price: float,
                  quantity: float,
+                 price: float=None,
                  order_type: OrderType = OrderType.LIMIT
                  ):
         super().__init__(
@@ -102,3 +109,13 @@ class SellOrder(Order):
             quantity=quantity,
             side=OrderBookSide.ASK
         )
+
+
+class BuyMarketOrder(BuyOrder):
+    def __init__(self, quantity: float):
+        super().__init__(order_type=OrderType.MARKET, quantity=quantity)
+
+
+class SellMarketOrder(SellOrder):
+    def __init__(self, quantity: float):
+        super().__init__(order_type=OrderType.MARKET, quantity=quantity)
