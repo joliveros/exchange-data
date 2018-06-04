@@ -20,8 +20,10 @@ class BitstampRecorder(Pusher, Recorder):
 
         Pusher.__init__(self, settings.BITSTAMP_PUSHER_APP_KEY,
                         log_level=logging.CRITICAL)
+
         Recorder.__init__(self, self.symbols, database_name='bitstamp')
 
+        self.symbols = [symbol.lower() for symbol in symbols]
         self.connection.bind('pusher:connection_established', self.on_connect)
 
     def start(self):
