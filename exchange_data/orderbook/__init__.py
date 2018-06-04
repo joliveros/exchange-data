@@ -1,15 +1,20 @@
-from ._order import Order, OrderType, OrderBookSide, SellOrder, BuyOrder
-from ._orderbook import OrderBook
 from ._orderlist import OrderList
-from ._transcation import Transaction
+from ._order import Order, OrderType, OrderBookSide, SellOrder, BuyOrder, \
+    BuyMarketOrder, SellMarketOrder
+from ._trade import TradeParty, Trade, TradeSummary
+from ._orderbook import OrderBook
 
 __all__ = [
+    BuyMarketOrder,
     BuyOrder,
     Order,
     OrderBook,
     OrderBookSide,
     OrderList,
     OrderType,
+    SellMarketOrder,
     SellOrder,
-    Transaction
+    Trade,
+    TradeParty,
+    TradeSummary
 ]
