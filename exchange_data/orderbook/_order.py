@@ -25,6 +25,10 @@ class InvalidPriceMarketOrderException(Exception):
     pass
 
 
+class PriceMustBeFloatException(Exception):
+    pass
+
+
 class Order(object):
     """
     Orders represent the core piece of the exchange. Every bid/ask is an Order.
@@ -47,6 +51,11 @@ class Order(object):
         self.next_order = None
         self.order_list = None
         self.prev_order = None
+
+        if price:
+            if type(price) != float:
+                raise PriceMustBeFloatException()
+
         self.price = price
         self.side = side
         self._timestamp = timestamp
