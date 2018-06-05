@@ -1,3 +1,4 @@
+import time
 from enum import Enum, auto
 from exchange_data.orderbook._orderlist import OrderList
 
@@ -78,7 +79,8 @@ class Order(object):
     def timestamp(self, value):
         self._timestamp = value
 
-    def update_quantity(self, new_quantity, new_timestamp):
+    def update_quantity(self, new_quantity):
+        new_timestamp = time.time()
         if new_quantity > self.quantity and self.order_list.tail_order != self:
             # check to see that the order is not the last order in list and
             # the quantity is more

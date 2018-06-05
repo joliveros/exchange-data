@@ -8,7 +8,7 @@ from six.moves import cStringIO as StringIO
 from decimal import Decimal
 
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
-    Trade, TradeSummary, TradeParty
+    Trade, TradeSummary, TradeParty, BuyOrder
 from ._ordertree import OrderTree
 
 
@@ -156,8 +156,7 @@ class OrderBook(object):
                 traded_quantity = quantity
                 # Do the transaction
                 new_book_quantity = head_order.quantity - quantity
-                head_order.update_quantity(new_book_quantity,
-                                           head_order.timestamp)
+                head_order.update_quantity(new_book_quantity)
                 quantity = 0
 
             elif quantity == head_order.quantity:
@@ -248,22 +247,12 @@ class OrderBook(object):
         else:
             raise OrderExistsException()
 
-    def modify_order(self, order_id, order_update, time=None):
-        if time:
-            self.time = time
-        else:
-            self.update_time()
-        side = order_update['side']
-        order_update['order_id'] = order_id
-        order_update['timestamp'] = self.time
-        if side == 'bid':
-            if self.bids.order_exists(order_update['order_id']):
-                self.bids.update_order(order_update)
-        elif side == 'ask':
-            if self.asks.order_exists(order_update['order_id']):
-                self.asks.update_order(order_update)
-        else:
-            sys.exit('modify_order() given neither "bid" nor "ask"')
+    def modify_order(self, order_id: int, price: float, quantity: float):
+        if self.bids.order_exists(order_id):
+            self.bids.modify_order(order_id, price, quantity)
+
+        if self.asks.order_exists(order_id):
+            self.asks.modify_order(order_id, price, quantity)
 
     def get_volume_at_price(self, side, price):
         price = Decimal(price)
