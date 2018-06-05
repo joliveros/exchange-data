@@ -12,6 +12,10 @@ from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
 from ._ordertree import OrderTree
 
 
+class OrderExistsException(Exception):
+    pass
+
+
 class OrderBook(object):
     asks: OrderTree
     bids: OrderTree
@@ -53,7 +57,7 @@ class OrderBook(object):
             self.next_order_id = order.uid
 
         if order.type == OrderType.MARKET:
-            return self.process_market_order(order)
+            return self._process_market_order(order)
         elif order.type == OrderType.LIMIT:
             return self.process_limit_order(order)
 
@@ -194,21 +198,21 @@ class OrderBook(object):
 
             yield trade
 
-    def process_market_order(self, order: Order):
+    def _process_market_order(self, order: Order):
         trades = []
         quantity_to_trade = order.quantity
         side = order.side
 
         if side == OrderBookSide.BID:
-            return self.bid_market_order(order,
-                                         quantity_to_trade,
-                                         side, trades)
+            return self._bid_market_order(order,
+                                          quantity_to_trade,
+                                          side, trades)
         else:
-            return self.ask_market_order(order,
-                                         quantity_to_trade,
-                                         side, trades)
+            return self._ask_market_order(order,
+                                          quantity_to_trade,
+                                          side, trades)
 
-    def ask_market_order(self, order, quantity_to_trade, side, trades):
+    def _ask_market_order(self, order, quantity_to_trade, side, trades):
         while quantity_to_trade > 0 and self.bids:
             trade_summary = \
                 self._process_order_list(
@@ -219,7 +223,7 @@ class OrderBook(object):
             trades += trade_summary.trades
         return quantity_to_trade, trades
 
-    def bid_market_order(self, order, quantity_to_trade, side, trades):
+    def _bid_market_order(self, order, quantity_to_trade, side, trades):
         trade_summary = None
 
         while quantity_to_trade > 0 and self.asks:
@@ -236,19 +240,13 @@ class OrderBook(object):
 
         return trade_summary
 
-    def cancel_order(self, side, order_id, time=None):
-        if time:
-            self.time = time
+    def cancel_order(self, order_id: int):
+        if self.bids.order_exists(order_id):
+            self.bids.remove_order_by_id(order_id)
+        elif self.asks.order_exists(order_id):
+            self.asks.remove_order_by_id(order_id)
         else:
-            self.update_time()
-        if side == 'bid':
-            if self.bids.order_exists(order_id):
-                self.bids.remove_order_by_id(order_id)
-        elif side == 'ask':
-            if self.asks.order_exists(order_id):
-                self.asks.remove_order_by_id(order_id)
-        else:
-            sys.exit('cancel_order() given neither "bid" nor "ask"')
+            raise OrderExistsException()
 
     def modify_order(self, order_id, order_update, time=None):
         if time:
@@ -309,15 +307,15 @@ class OrderBook(object):
         tempfile = StringIO()
         tempfile.write('\n')
         tempfile.write("***Bids***\n")
-        if self.bids != None and len(self.bids) > 0:
+        if self.bids is not None and len(self.bids) > 0:
             for key, value in self.bids.price_tree.items(reverse=True):
                 tempfile.write('%s' % value)
         tempfile.write("\n***Asks***\n")
-        if self.asks != None and len(self.asks) > 0:
+        if self.asks is not None and len(self.asks) > 0:
             for key, value in list(self.asks.price_tree.items()):
                 tempfile.write('%s' % value)
         tempfile.write("\n***Trades***\n")
-        if self.tape != None and len(self.tape) > 0:
+        if self.tape is not None and len(self.tape) > 0:
             num = 0
             for entry in self.tape:
                 if num < 10:  # get last 5 entries

@@ -29,7 +29,7 @@ class TestLimitOrders(object):
         assert min_price_list.head_order.uid == 0
 
     def test_limit_order_cross_best_bid(self, orderbook: OrderBook):
-        crossing_limit_order = SellOrder(2, 89)
+        crossing_limit_order = SellOrder(2, 89.0)
         trade_summary = orderbook.process_order(crossing_limit_order)
 
         assert len(trade_summary.trades) == 1
@@ -42,7 +42,7 @@ class TestLimitOrders(object):
         assert trade.party1.counter_party_id == max_price_list.head_order.uid
 
     def test_limit_order_cross_two_levels_into_bid(self, orderbook: OrderBook):
-        crossing_limit_order = SellOrder(10, 80)
+        crossing_limit_order = SellOrder(10, 80.0)
         trade_summary = orderbook.process_order(crossing_limit_order)
 
         assert len(trade_summary.trades) == 2
