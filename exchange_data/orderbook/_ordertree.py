@@ -1,5 +1,7 @@
 import alog
 from bintrees import RBTree
+
+from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from ._orderlist import OrderList
 from ._order import Order
 
@@ -37,9 +39,12 @@ class OrderTree(object):
             price] = new_list  # Can i just get this by using self.price_tree.get_value(price)? Maybe this is faster though.
 
     def remove_price(self, price):
-        self.depth -= 1  # Remove a price depth level
-        self.price_tree.remove(price)
-        del self.price_map[price]
+        try:
+            self.depth -= 1  # Remove a price depth level
+            self.price_tree.remove(price)
+            del self.price_map[price]
+        except KeyError as e:
+            raise PriceDoesNotExistException()
 
     def price_exists(self, price):
         return price in self.price_map
