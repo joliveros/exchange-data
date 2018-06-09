@@ -1,18 +1,20 @@
-import sys
 import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
 import alog
 from six.moves import cStringIO as StringIO
-from decimal import Decimal
 
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
-    Trade, TradeSummary, TradeParty, BuyOrder
+    Trade, TradeSummary, TradeParty
 from ._ordertree import OrderTree
 
 
 class OrderExistsException(Exception):
+    pass
+
+
+class PriceDoesNotExistException(Exception):
     pass
 
 
@@ -254,20 +256,13 @@ class OrderBook(object):
         if self.asks.order_exists(order_id):
             self.asks.modify_order(order_id, price, quantity)
 
-    def get_volume_at_price(self, side, price):
-        price = Decimal(price)
-        if side == 'bid':
-            volume = 0
-            if self.bids.price_exists(price):
-                volume = self.bids.get_price(price).volume
-            return volume
-        elif side == 'ask':
-            volume = 0
-            if self.asks.price_exists(price):
-                volume = self.asks.get_price(price).volume
-            return volume
+    def get_volume(self, price: float):
+        if self.bids.price_exists(price):
+            return self.bids.get_price_list(price).volume
+        elif self.asks.price_exists(price):
+            return self.asks.get_price_list(price).volume
         else:
-            sys.exit('get_volume_at_price() given neither "bid" nor "ask"')
+            raise PriceDoesNotExistException()
 
     def get_best_bid(self):
         return self.bids.max_price()
