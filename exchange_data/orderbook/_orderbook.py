@@ -2,9 +2,7 @@ import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
-import alog
-from six.moves import cStringIO as StringIO
-
+from exchange_data._buffer import Buffer
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
     Trade, TradeSummary, TradeParty
 from ._ordertree import OrderTree
@@ -24,7 +22,7 @@ class OrderBook(object):
 
     def __init__(self, tick_size=0.0001):
         # Index[0] is most recent trade
-        self.tape = deque(maxlen=0)
+        self.tape = deque(maxlen=10)
         self.bids = OrderTree()
         self.asks = OrderTree()
         self.last_tick = None
@@ -61,9 +59,9 @@ class OrderBook(object):
         if order.type == OrderType.MARKET:
             return self._process_market_order(order)
         elif order.type == OrderType.LIMIT:
-            return self.process_limit_order(order)
+            return self._process_limit_order(order)
 
-    def process_limit_order(self, order: Order):
+    def _process_limit_order(self, order: Order):
         order_in_book = None
         price = order.price
         quantity_to_trade = order.quantity
@@ -141,7 +139,7 @@ class OrderBook(object):
         for trade in self._trades(order, order_list, quantity):
             self.tape.append(trade)
             trades.append(trade)
-            quantity = trade.quantity
+            quantity = trade.remaining
 
         return TradeSummary(quantity, trades)
 
@@ -189,13 +187,15 @@ class OrderBook(object):
 
                 party2 = TradeParty(order.uid, side)
 
-                trade = Trade(party1, party2, quantity)
+                trade = Trade(party1, party2, quantity, traded_quantity,
+                              traded_price)
             else:
                 party1 = TradeParty(counter_party,
                                     OrderBookSide.BID)
                 party2 = TradeParty(order.uid, side)
 
-                trade = Trade(party1, party2, quantity)
+                trade = Trade(party1, party2, quantity, traded_quantity,
+                              traded_price)
 
             yield trade
 
@@ -276,40 +276,36 @@ class OrderBook(object):
     def get_worst_ask(self):
         return self.asks.max_price()
 
-    def tape_dump(self, filename, filemode, tapemode):
-        dumpfile = open(filename, filemode)
-        for tapeitem in self.tape:
-            dumpfile.write(
-                'Time: %s, Price: %s, Quantity: %s\n' % (tapeitem['time'],
-                                                         tapeitem['price'],
-                                                         tapeitem['quantity']))
-        dumpfile.close()
-        if tapemode == 'wipe':
-            self.tape = []
-
     def __str__(self):
-        tempfile = StringIO()
-        tempfile.write('\n')
-        tempfile.write("***Bids***\n")
+        summary = Buffer()
+        summary.newline()
+
+        summary.section('Bids')
+        summary.newline()
+
         if self.bids is not None and len(self.bids) > 0:
             for key, value in self.bids.price_tree.items(reverse=True):
-                tempfile.write('%s' % value)
-        tempfile.write("\n***Asks***\n")
+                summary.write('%s' % value)
+
+        summary.newline()
+        summary.section('Asks')
+        summary.newline()
+
         if self.asks is not None and len(self.asks) > 0:
             for key, value in list(self.asks.price_tree.items()):
-                tempfile.write('%s' % value)
-        tempfile.write("\n***Trades***\n")
-        if self.tape is not None and len(self.tape) > 0:
-            num = 0
-            for entry in self.tape:
-                if num < 10:  # get last 5 entries
-                    tempfile.write(str(entry['quantity']) + " @ " + str(
-                        entry['price']) + " (" + str(
-                        entry['timestamp']) + ") " + str(
-                        entry['party1'][0]) + "/" + str(
-                        entry['party2'][0]) + "\n")
-                    num += 1
-                else:
-                    break
-        tempfile.write("\n")
-        return tempfile.getvalue()
+                summary.write('%s' % value)
+
+        summary.newline()
+        summary.section('Trades')
+        summary.newline()
+
+        if len(self.tape) > 0:
+            for trade in self.tape:
+                line = f'{trade.quantity} @ {trade.price} ' \
+                       f'{trade.timestamp} {trade.party1} / {trade.party2}'
+
+                summary.write(line)
+
+        summary.newline()
+
+        return summary.getvalue()
