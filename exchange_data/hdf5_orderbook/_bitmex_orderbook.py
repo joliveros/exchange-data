@@ -85,13 +85,6 @@ class Hdf5BitmexLimitOrderBook(TFLimitOrderBook):
             for order_data in message.action.orders:
                 self.cancel_order(order_data['id'])
 
-    def quote(self, data):
-        pass
-
-    def trade(self, data):
-        for order in BitmexMessage(data).data:
-            super().trade(order)
-
     def update_orders(self, orders):
         for order in orders:
             self.modify_order(order['id'], price=None, quantity=order['size'])
