@@ -1,3 +1,5 @@
+import time
+
 import alog
 
 from exchange_data.orderbook import OrderBookSide, Order
@@ -17,10 +19,13 @@ class TradeParty(object):
 
 class Trade(object):
     def __init__(self, party1: TradeParty, party2: TradeParty,
-                 quantity: float):
-        self.quantity = quantity
-        self.party2 = party2
+                 remaining: float, quantity: float, price: float):
         self.party1 = party1
+        self.party2 = party2
+        self.price = price
+        self.quantity = quantity
+        self.remaining = remaining
+        self.timestamp = time.time()
 
     def __str__(self):
         return alog.pformat(self.__dict__)

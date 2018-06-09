@@ -1,15 +1,19 @@
-import sys
 import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
-import alog
-from six.moves import cStringIO as StringIO
-from decimal import Decimal
-
+from exchange_data import Buffer
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
     Trade, TradeSummary, TradeParty
 from ._ordertree import OrderTree
+
+
+class OrderExistsException(Exception):
+    pass
+
+
+class PriceDoesNotExistException(Exception):
+    pass
 
 
 class OrderBook(object):
@@ -18,7 +22,7 @@ class OrderBook(object):
 
     def __init__(self, tick_size=0.0001):
         # Index[0] is most recent trade
-        self.tape = deque(maxlen=0)
+        self.tape = deque(maxlen=10)
         self.bids = OrderTree()
         self.asks = OrderTree()
         self.last_tick = None
@@ -53,12 +57,11 @@ class OrderBook(object):
             self.next_order_id = order.uid
 
         if order.type == OrderType.MARKET:
-            return self.process_market_order(order)
+            return self._process_market_order(order)
         elif order.type == OrderType.LIMIT:
-            return self.process_limit_order(order)
+            return self._process_limit_order(order)
 
-    def process_limit_order(self, order: Order):
-        order_in_book = None
+    def _process_limit_order(self, order: Order):
         price = order.price
         quantity_to_trade = order.quantity
         side = order.side
@@ -68,18 +71,18 @@ class OrderBook(object):
             order.uid = self.next_order_id
 
         if side == OrderBookSide.BID:
-            return self.bid_limit_order(order, order_in_book,
+            return self.bid_limit_order(order,
                                         price,
                                         quantity_to_trade,
                                         side, trades)
 
         else:
-            return self.ask_limit_order(order, order_in_book,
+            return self.ask_limit_order(order,
                                         price,
                                         quantity_to_trade,
                                         side, trades)
 
-    def ask_limit_order(self, order, order_in_book, price, quantity_to_trade,
+    def ask_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         while self.bids and price <= self.bids.max_price() and \
                 quantity_to_trade > 0:
@@ -99,7 +102,7 @@ class OrderBook(object):
 
         return TradeSummary(quantity_to_trade, trades, order)
 
-    def bid_limit_order(self, order, order_in_book, price, quantity_to_trade,
+    def bid_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         while self.asks and price >= self.asks.min_price() and \
                 quantity_to_trade > 0:
@@ -135,7 +138,7 @@ class OrderBook(object):
         for trade in self._trades(order, order_list, quantity):
             self.tape.append(trade)
             trades.append(trade)
-            quantity = trade.quantity
+            quantity = trade.remaining
 
         return TradeSummary(quantity, trades)
 
@@ -152,8 +155,7 @@ class OrderBook(object):
                 traded_quantity = quantity
                 # Do the transaction
                 new_book_quantity = head_order.quantity - quantity
-                head_order.update_quantity(new_book_quantity,
-                                           head_order.timestamp)
+                head_order.update_quantity(new_book_quantity)
                 quantity = 0
 
             elif quantity == head_order.quantity:
@@ -184,31 +186,33 @@ class OrderBook(object):
 
                 party2 = TradeParty(order.uid, side)
 
-                trade = Trade(party1, party2, quantity)
+                trade = Trade(party1, party2, quantity, traded_quantity,
+                              traded_price)
             else:
                 party1 = TradeParty(counter_party,
                                     OrderBookSide.BID)
                 party2 = TradeParty(order.uid, side)
 
-                trade = Trade(party1, party2, quantity)
+                trade = Trade(party1, party2, quantity, traded_quantity,
+                              traded_price)
 
             yield trade
 
-    def process_market_order(self, order: Order):
+    def _process_market_order(self, order: Order):
         trades = []
         quantity_to_trade = order.quantity
         side = order.side
 
         if side == OrderBookSide.BID:
-            return self.bid_market_order(order,
-                                         quantity_to_trade,
-                                         side, trades)
+            return self._bid_market_order(order,
+                                          quantity_to_trade,
+                                          side, trades)
         else:
-            return self.ask_market_order(order,
-                                         quantity_to_trade,
-                                         side, trades)
+            return self._ask_market_order(order,
+                                          quantity_to_trade,
+                                          side, trades)
 
-    def ask_market_order(self, order, quantity_to_trade, side, trades):
+    def _ask_market_order(self, order, quantity_to_trade, side, trades):
         while quantity_to_trade > 0 and self.bids:
             trade_summary = \
                 self._process_order_list(
@@ -219,7 +223,7 @@ class OrderBook(object):
             trades += trade_summary.trades
         return quantity_to_trade, trades
 
-    def bid_market_order(self, order, quantity_to_trade, side, trades):
+    def _bid_market_order(self, order, quantity_to_trade, side, trades):
         trade_summary = None
 
         while quantity_to_trade > 0 and self.asks:
@@ -236,51 +240,28 @@ class OrderBook(object):
 
         return trade_summary
 
-    def cancel_order(self, side, order_id, time=None):
-        if time:
-            self.time = time
+    def cancel_order(self, order_id: int):
+        if self.bids.order_exists(order_id):
+            self.bids.remove_order_by_id(order_id)
+        elif self.asks.order_exists(order_id):
+            self.asks.remove_order_by_id(order_id)
         else:
-            self.update_time()
-        if side == 'bid':
-            if self.bids.order_exists(order_id):
-                self.bids.remove_order_by_id(order_id)
-        elif side == 'ask':
-            if self.asks.order_exists(order_id):
-                self.asks.remove_order_by_id(order_id)
-        else:
-            sys.exit('cancel_order() given neither "bid" nor "ask"')
+            raise OrderExistsException()
 
-    def modify_order(self, order_id, order_update, time=None):
-        if time:
-            self.time = time
-        else:
-            self.update_time()
-        side = order_update['side']
-        order_update['order_id'] = order_id
-        order_update['timestamp'] = self.time
-        if side == 'bid':
-            if self.bids.order_exists(order_update['order_id']):
-                self.bids.update_order(order_update)
-        elif side == 'ask':
-            if self.asks.order_exists(order_update['order_id']):
-                self.asks.update_order(order_update)
-        else:
-            sys.exit('modify_order() given neither "bid" nor "ask"')
+    def modify_order(self, order_id: int, price: float, quantity: float):
+        if self.bids.order_exists(order_id):
+            self.bids.modify_order(order_id, price, quantity)
 
-    def get_volume_at_price(self, side, price):
-        price = Decimal(price)
-        if side == 'bid':
-            volume = 0
-            if self.bids.price_exists(price):
-                volume = self.bids.get_price(price).volume
-            return volume
-        elif side == 'ask':
-            volume = 0
-            if self.asks.price_exists(price):
-                volume = self.asks.get_price(price).volume
-            return volume
+        if self.asks.order_exists(order_id):
+            self.asks.modify_order(order_id, price, quantity)
+
+    def get_volume(self, price: float):
+        if self.bids.price_exists(price):
+            return self.bids.get_price_list(price).volume
+        elif self.asks.price_exists(price):
+            return self.asks.get_price_list(price).volume
         else:
-            sys.exit('get_volume_at_price() given neither "bid" nor "ask"')
+            raise PriceDoesNotExistException()
 
     def get_best_bid(self):
         return self.bids.max_price()
@@ -294,40 +275,36 @@ class OrderBook(object):
     def get_worst_ask(self):
         return self.asks.max_price()
 
-    def tape_dump(self, filename, filemode, tapemode):
-        dumpfile = open(filename, filemode)
-        for tapeitem in self.tape:
-            dumpfile.write(
-                'Time: %s, Price: %s, Quantity: %s\n' % (tapeitem['time'],
-                                                         tapeitem['price'],
-                                                         tapeitem['quantity']))
-        dumpfile.close()
-        if tapemode == 'wipe':
-            self.tape = []
-
     def __str__(self):
-        tempfile = StringIO()
-        tempfile.write('\n')
-        tempfile.write("***Bids***\n")
-        if self.bids != None and len(self.bids) > 0:
+        summary = Buffer()
+        summary.newline()
+
+        summary.section('Bids')
+        summary.newline()
+
+        if self.bids is not None and len(self.bids) > 0:
             for key, value in self.bids.price_tree.items(reverse=True):
-                tempfile.write('%s' % value)
-        tempfile.write("\n***Asks***\n")
-        if self.asks != None and len(self.asks) > 0:
+                summary.write('%s' % value)
+
+        summary.newline()
+        summary.section('Asks')
+        summary.newline()
+
+        if self.asks is not None and len(self.asks) > 0:
             for key, value in list(self.asks.price_tree.items()):
-                tempfile.write('%s' % value)
-        tempfile.write("\n***Trades***\n")
-        if self.tape != None and len(self.tape) > 0:
-            num = 0
-            for entry in self.tape:
-                if num < 10:  # get last 5 entries
-                    tempfile.write(str(entry['quantity']) + " @ " + str(
-                        entry['price']) + " (" + str(
-                        entry['timestamp']) + ") " + str(
-                        entry['party1'][0]) + "/" + str(
-                        entry['party2'][0]) + "\n")
-                    num += 1
-                else:
-                    break
-        tempfile.write("\n")
-        return tempfile.getvalue()
+                summary.write('%s' % value)
+
+        summary.newline()
+        summary.section('Trades')
+        summary.newline()
+
+        if len(self.tape) > 0:
+            for trade in self.tape:
+                line = f'{trade.quantity} @ {trade.price} ' \
+                       f'{trade.timestamp} {trade.party1} / {trade.party2}'
+
+                summary.write(line)
+
+        summary.newline()
+
+        return summary.getvalue()
