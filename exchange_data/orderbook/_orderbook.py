@@ -2,7 +2,7 @@ import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
-from exchange_data._buffer import Buffer
+from exchange_data import Buffer
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
     Trade, TradeSummary, TradeParty
 from ._ordertree import OrderTree
