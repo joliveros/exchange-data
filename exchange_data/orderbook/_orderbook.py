@@ -2,18 +2,14 @@ import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
+import alog
+
 from exchange_data import Buffer
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
     Trade, TradeSummary, TradeParty
+from exchange_data.orderbook.exceptions import OrderExistsException, \
+    PriceDoesNotExistException
 from ._ordertree import OrderTree
-
-
-class OrderExistsException(Exception):
-    pass
-
-
-class PriceDoesNotExistException(Exception):
-    pass
 
 
 class OrderBook(object):
@@ -84,17 +80,18 @@ class OrderBook(object):
 
     def ask_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
-        while self.bids and price <= self.bids.max_price() and \
-                quantity_to_trade > 0:
-            trade_summary = \
-                self._process_order_list(
-                    side,
-                    quantity_to_trade,
-                    order
-                )
+        if self.bids.max_price() is not None:
+            while self.bids and price <= self.bids.max_price() and \
+                    quantity_to_trade > 0:
+                trade_summary = \
+                    self._process_order_list(
+                        side,
+                        quantity_to_trade,
+                        order
+                    )
 
-            quantity_to_trade = trade_summary.quantity_to_trade
-            trades += trade_summary.trades
+                quantity_to_trade = trade_summary.quantity_to_trade
+                trades += trade_summary.trades
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
@@ -252,8 +249,10 @@ class OrderBook(object):
         if self.bids.order_exists(order_id):
             self.bids.modify_order(order_id, price, quantity)
 
-        if self.asks.order_exists(order_id):
+        elif self.asks.order_exists(order_id):
             self.asks.modify_order(order_id, price, quantity)
+        else:
+            raise OrderExistsException()
 
     def get_volume(self, price: float):
         if self.bids.price_exists(price):
@@ -303,6 +302,7 @@ class OrderBook(object):
                 line = f'{trade.quantity} @ {trade.price} ' \
                        f'{trade.timestamp} {trade.party1} / {trade.party2}'
 
+                summary.newline()
                 summary.write(line)
 
         summary.newline()

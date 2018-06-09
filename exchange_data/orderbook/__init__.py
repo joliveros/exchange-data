@@ -1,20 +1,18 @@
 from ._orderlist import OrderList
 from ._order import Order, OrderType, OrderBookSide, SellOrder, BuyOrder, \
-    BuyMarketOrder, SellMarketOrder
+    BuyMarketOrder, SellMarketOrder, NoValue
 from ._trade import TradeParty, Trade, TradeSummary
-from ._orderbook import OrderBook, OrderExistsException, \
-    PriceDoesNotExistException
+from ._orderbook import OrderBook
 
 __all__ = {
     BuyMarketOrder,
     BuyOrder,
+    NoValue,
     Order,
     OrderBook,
     OrderBookSide,
-    OrderExistsException,
     OrderList,
     OrderType,
-    PriceDoesNotExistException,
     SellMarketOrder,
     SellOrder,
     Trade,
