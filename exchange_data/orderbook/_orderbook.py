@@ -62,7 +62,6 @@ class OrderBook(object):
             return self._process_limit_order(order)
 
     def _process_limit_order(self, order: Order):
-        order_in_book = None
         price = order.price
         quantity_to_trade = order.quantity
         side = order.side
@@ -72,18 +71,18 @@ class OrderBook(object):
             order.uid = self.next_order_id
 
         if side == OrderBookSide.BID:
-            return self.bid_limit_order(order, order_in_book,
+            return self.bid_limit_order(order,
                                         price,
                                         quantity_to_trade,
                                         side, trades)
 
         else:
-            return self.ask_limit_order(order, order_in_book,
+            return self.ask_limit_order(order,
                                         price,
                                         quantity_to_trade,
                                         side, trades)
 
-    def ask_limit_order(self, order, order_in_book, price, quantity_to_trade,
+    def ask_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         while self.bids and price <= self.bids.max_price() and \
                 quantity_to_trade > 0:
@@ -103,7 +102,7 @@ class OrderBook(object):
 
         return TradeSummary(quantity_to_trade, trades, order)
 
-    def bid_limit_order(self, order, order_in_book, price, quantity_to_trade,
+    def bid_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         while self.asks and price >= self.asks.min_price() and \
                 quantity_to_trade > 0:
