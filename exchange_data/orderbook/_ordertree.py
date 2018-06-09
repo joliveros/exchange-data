@@ -68,22 +68,23 @@ class OrderTree(object):
 
         self.volume += order.quantity
 
-    def update_order(self, order_update):
-        order = self.order_map[order_update['order_id']]
-        original_quantity = order.quantity
-        if order_update['price'] != order.price:
-            # Price changed. Remove order and update tree.
+    def modify_order(self, order_id: int, price: float, quantity: float):
+        order = self.order_map[order_id]
+
+        if order.price != price:
             order_list = self.price_map[order.price]
-            order_list.remove_order(order)
-            if len(
-                    order_list) == 0:  # If there is nothing else in the OrderList, remove the price from RBtree
+            self.remove_order_by_id(order.uid)
+
+            if len(order_list) == 0:
                 self.remove_price(order.price)
-            self.insert_order(order_update)
-        else:
-            # Quantity changed. Price is the same.
-            order.update_quantity(order_update['quantity'],
-                                  order_update['timestamp'])
-        self.volume += order.quantity - original_quantity
+
+            order.price = price
+            self.insert_order(order)
+
+        if order.quantity != quantity:
+            old_quantity = order.quantity
+            order.update_quantity(quantity)
+            self.volume += quantity - old_quantity
 
     def remove_order_by_id(self, order_id):
         order = self.order_map[order_id]
