@@ -86,8 +86,3 @@ class TestBitmexOrderBook(object):
 
     def test_replay(self, orderbook, orderbook_update_msg):
         orderbook.replay()
-
-    def test_save(self):
-        orderbook = OrderBook(symbol='xbtusd',
-                              json_file=datafile_name('bitmex'))
-        # orderbook.save()

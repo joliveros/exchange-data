@@ -86,10 +86,3 @@ class BitmexOrderBook(InfluxOrderBook):
     def update_orders(self, orders):
         for order in orders:
             self.modify_order(order['id'], price=None, quantity=order['size'])
-
-    def save(self):
-        self.replay(self._write_msg)
-
-    def _write_msg(self):
-        print(self)
-
