@@ -4,9 +4,9 @@ import pytest
 from mock import patch
 
 from exchange_data import settings
-from exchange_data.hdf5_orderbook import \
-    Hdf5BitmexLimitOrderBook as OrderBook
-from tests.exchange_data.hdf5_orderbook.fixtures import datafile_name
+from exchange_data.bitmex_orderbook import \
+    BitmexOrderBook as OrderBook
+from tests.exchange_data.bitmex_orderbook.fixtures import datafile_name
 
 
 @pytest.fixture('module')
@@ -56,11 +56,11 @@ def orderbook_delete_msg():
             'symbol': 'XBTUSD'}
 
 
-class TestHdf5BitmexLimitOrderBook(object):
+class TestBitmexOrderBook(object):
 
     def test_orderbook_message_updates_orderbook(self, orderbook,
                                                  orderbook_update_msg):
-        with patch('exchange_data.hdf5_orderbook.Hdf5BitmexLimitOrderBook'
+        with patch('exchange_data.bitmex_orderbook.BitmexOrderBook'
                    '.modify_order') as orderBookL2Mock:
 
             orderbook.on_message(json.dumps(orderbook_update_msg))
@@ -86,3 +86,8 @@ class TestHdf5BitmexLimitOrderBook(object):
 
     def test_replay(self, orderbook, orderbook_update_msg):
         orderbook.replay()
+
+    def test_save(self):
+        orderbook = OrderBook(symbol='xbtusd',
+                              json_file=datafile_name('bitmex'))
+        # orderbook.save()

@@ -10,7 +10,7 @@ from exchange_data.orderbook.exceptions import OrderExistsException, \
     PriceDoesNotExistException
 
 
-class TFLimitOrderBook(OrderBook, Database):
+class InfluxOrderBook(OrderBook, Database):
     def __init__(self, database: str, symbol: str, total_time='1d',
                  save_json=True, json_file=None):
         OrderBook.__init__(self)

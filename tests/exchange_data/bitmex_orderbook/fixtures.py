@@ -1,7 +1,5 @@
 import os
 
-import alog
-
 
 def datafile_name(name):
     path = f'../data/{name}.json'
