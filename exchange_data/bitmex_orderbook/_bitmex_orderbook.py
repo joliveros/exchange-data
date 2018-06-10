@@ -2,10 +2,8 @@ import json
 from enum import auto
 from typing import Any
 
-import alog
-
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType
-from ._orderbook import TFLimitOrderBook
+from exchange_data._orderbook import InfluxOrderBook
 
 
 class ActionType(NoValue):
@@ -57,12 +55,12 @@ class BitmexMessage(object):
         return str(self.__dict__)
 
 
-class Hdf5BitmexLimitOrderBook(TFLimitOrderBook):
+class BitmexOrderBook(InfluxOrderBook):
     def __init__(self, symbol: str, total_time='1d', save_json=False,
                  json_file=None):
-        TFLimitOrderBook.__init__(self, total_time=total_time,
-                                  database='bitmex', symbol=symbol,
-                                  save_json=save_json, json_file=json_file)
+        InfluxOrderBook.__init__(self, total_time=total_time,
+                                 database='bitmex', symbol=symbol,
+                                 save_json=save_json, json_file=json_file)
 
     def on_message(self, raw_message):
         message = BitmexMessage(raw_message)
@@ -88,3 +86,10 @@ class Hdf5BitmexLimitOrderBook(TFLimitOrderBook):
     def update_orders(self, orders):
         for order in orders:
             self.modify_order(order['id'], price=None, quantity=order['size'])
+
+    def save(self):
+        self.replay(self._write_msg)
+
+    def _write_msg(self):
+        print(self)
+
