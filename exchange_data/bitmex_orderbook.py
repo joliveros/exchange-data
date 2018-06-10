@@ -3,7 +3,7 @@ from enum import auto
 from typing import Any
 
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType
-from exchange_data._orderbook import InfluxOrderBook
+from exchange_data.influxdb_orderbook import InfluxOrderBook
 
 
 class ActionType(NoValue):
