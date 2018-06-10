@@ -6,7 +6,7 @@ from mock import patch
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import \
     BitmexOrderBook as OrderBook
-from tests.exchange_data.bitmex_orderbook.fixtures import datafile_name
+from tests.exchange_data.test_utils import datafile_name
 
 
 @pytest.fixture('module')
