@@ -84,5 +84,3 @@ class TestBitmexOrderBook(object):
 
             cancel_order_mock.assert_called()
 
-    def test_replay(self, orderbook, orderbook_update_msg):
-        orderbook.replay()
