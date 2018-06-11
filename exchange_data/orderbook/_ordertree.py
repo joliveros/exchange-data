@@ -73,8 +73,11 @@ class OrderTree(object):
 
         self.volume += order.quantity
 
-    def modify_order(self, order_id: int, price: float, quantity: float):
+    def modify_order(self, order_id: int, price: float, quantity: float,
+                     timestamp: int=None):
+
         order = self.order_map[order_id]
+        order.timestamp = timestamp
 
         if order.price != price:
             order_list = self.price_map[order.price]

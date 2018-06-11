@@ -1,15 +1,11 @@
-import json
-import os
-from collections import Callable
-
-import alog
-from influxdb.resultset import ResultSet
-
-import exchange_data
 from exchange_data import Database
 from exchange_data.orderbook import OrderBook
-from exchange_data.orderbook.exceptions import OrderExistsException, \
-    PriceDoesNotExistException
+from influxdb.resultset import ResultSet
+
+import alog
+import exchange_data
+import json
+import os
 
 
 class InfluxOrderBook(OrderBook, Database):
@@ -40,7 +36,7 @@ class InfluxOrderBook(OrderBook, Database):
         alog.debug(query)
 
         if self.read_from_json:
-            self.read_from_json_fixture()
+            self.result_set = self.read_from_json_fixture()
         else:
             self.result_set = self.query(database=self.database, query=query,
                                          epoch='ms', params={'precision': 'ms'},
@@ -53,16 +49,3 @@ class InfluxOrderBook(OrderBook, Database):
     def read_from_json_fixture(self):
         return ResultSet(json.loads(open(self.json_fixture_filename).read()))
 
-    # def replay(self, hook: Callable = None):
-    #     for line in self.result_set['data']:
-    #         try:
-    #             self.on_message(line)
-    #
-    #             if hook:
-    #                 hook()
-    #
-    #         except (OrderExistsException, PriceDoesNotExistException) as e:
-    #             pass
-    #
-    # def on_message(self, message):
-    #     raise NotImplementedError

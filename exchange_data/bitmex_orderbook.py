@@ -6,7 +6,8 @@ import alog
 
 from exchange_data.hdf5_orderbook import Hdf5OrderBook
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType
-from exchange_data.orderbook.exceptions import OrderExistsException
+from exchange_data.orderbook.exceptions import OrderExistsException, \
+    PriceDoesNotExistException
 
 
 class ActionType(NoValue):
@@ -49,8 +50,10 @@ class BitmexMessage(object):
         if type(data) == str:
             data = json.loads(data)
         self.data: Action = None
+
         self.symbol: str = data['symbol']
-        self.time: int = data['time']
+
+        self.timestamp: int = data['time']
 
         self.action = Action(self.symbol, data['data'])
 
@@ -59,14 +62,23 @@ class BitmexMessage(object):
 
 
 class BitmexOrderBook(Hdf5OrderBook):
-    def __init__(self, symbol: str, total_time='1d', overwrite: bool=False,
-                 cache_dir: str=None, read_from_json: bool=False,
-                 file_check=False):
-        super().__init__(total_time=total_time, database='bitmex',
-                         symbol=symbol, overwrite=overwrite,
-                         cache_dir=cache_dir, read_from_json=read_from_json,
-                         file_check=file_check)
-
+    def __init__(self,
+                 symbol: str,
+                 cache_dir: str = None,
+                 file_check=True,
+                 overwrite: bool = False,
+                 read_from_json: bool = False,
+                 total_time='1d'
+                 ):
+        super().__init__(
+            cache_dir=cache_dir,
+            database='bitmex',
+            file_check=file_check,
+            overwrite=overwrite,
+            read_from_json=read_from_json,
+            symbol=symbol,
+            total_time=total_time
+        )
 
     def on_message(self, raw_message):
         message = BitmexMessage(raw_message)
@@ -76,11 +88,11 @@ class BitmexOrderBook(Hdf5OrderBook):
 
     def order_book_l2(self, message):
         if message.action.type == ActionType.UPDATE:
-            self.update_orders(message.action.orders)
+            self.update_orders(message)
 
         elif message.action.type == ActionType.INSERT:
-            orders = [BitmexOrder(order_data, message.time) for order_data in
-                      message.action.orders]
+            orders = [BitmexOrder(order_data, message.timestamp)
+                      for order_data in message.action.orders]
 
             for order in orders:
                 self.process_order(order)
@@ -89,16 +101,21 @@ class BitmexOrderBook(Hdf5OrderBook):
             for order_data in message.action.orders:
                 self.cancel_order(order_data['id'])
 
-    def update_orders(self, orders):
+    def update_orders(self, message: BitmexMessage):
+        orders = message.action.orders
+        timestamp = message.timestamp
+
         for order in orders:
-            self.modify_order(order['id'], price=None, quantity=order['size'])
+            self.modify_order(order['id'], price=None, quantity=order[
+                'size'], timestamp=timestamp)
 
     def fetch_and_save(self):
         self.fetch_measurements()
 
-        # for line in data:
-        #     alog.debug(line)
-        #     try:
-        #         self.on_message(line)
-        #     except OrderExistsException:
-        #         pass
+        for line in self.result_set['data']:
+            try:
+                self.on_message(line)
+                print(self)
+
+            except (OrderExistsException, PriceDoesNotExistException):
+                pass

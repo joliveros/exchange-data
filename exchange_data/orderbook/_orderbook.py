@@ -26,6 +26,7 @@ class OrderBook(object):
         self.tick_size = tick_size
         self.time = 0
         self._next_order_id = 0
+        self.last_trades = []
 
     @property
     def next_order_id(self):
@@ -137,6 +138,8 @@ class OrderBook(object):
             trades.append(trade)
             quantity = trade.remaining
 
+        self.last_trades = trades
+
         return TradeSummary(quantity, trades)
 
     def _trades(self, order: Order, order_list: Callable, quantity: int):
@@ -245,12 +248,14 @@ class OrderBook(object):
         else:
             raise OrderExistsException()
 
-    def modify_order(self, order_id: int, price: float, quantity: float):
+    def modify_order(self, order_id: int, price: float, quantity: float,
+                     timestamp: int=None):
+
         if self.bids.order_exists(order_id):
-            self.bids.modify_order(order_id, price, quantity)
+            self.bids.modify_order(order_id, price, quantity, timestamp)
 
         elif self.asks.order_exists(order_id):
-            self.asks.modify_order(order_id, price, quantity)
+            self.asks.modify_order(order_id, price, quantity, timestamp)
         else:
             raise OrderExistsException()
 
