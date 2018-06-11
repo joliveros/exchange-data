@@ -1,22 +1,15 @@
 import json
 
+import alog
 import pytest
 from mock import patch
 
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import \
     BitmexOrderBook as OrderBook
-from tests.exchange_data.test_utils import datafile_name
+from tests.exchange_data.fixtures import datafile_name, measurements
 
-
-@pytest.fixture('module')
-def orderbook():
-    _orderbook = OrderBook(symbol='xbtusd',
-                           json_file=datafile_name('bitmex'))
-    # settings.DB = 'http://jose:jade121415@178.62.16.200:28953/'
-    # _orderbook = OrderBook(total_time='1d', symbol='xbtusd', save_json=True)
-
-    return _orderbook
+settings.DB = 'http://jose:jade121415@178.62.16.200:28953/'
 
 
 @pytest.fixture('module')
@@ -58,29 +51,39 @@ def orderbook_delete_msg():
 
 class TestBitmexOrderBook(object):
 
-    def test_orderbook_message_updates_orderbook(self, orderbook,
-                                                 orderbook_update_msg):
-        with patch('exchange_data.bitmex_orderbook.BitmexOrderBook'
-                   '.modify_order') as orderBookL2Mock:
+    def test_orderbook_message_updates_orderbook(self,
+                                                 orderbook_update_msg,
+                                                 mocker, tmpdir):
+        mocked_orderbook_l2 = mocker.patch(
+            'exchange_data.orderbook.OrderBook.modify_order'
+        )
 
-            orderbook.on_message(json.dumps(orderbook_update_msg))
+        orderbook = OrderBook(total_time='1h', symbol='xbtusd',
+                              cache_dir=tmpdir, read_from_json=True)
 
-            orderBookL2Mock.assert_called()
+        orderbook.on_message(json.dumps(orderbook_update_msg))
 
-    def test_orderbook_message_adds_to_orderbook(self, orderbook,
-                                                 orderbook_insert_msg):
-        with patch('exchange_data.orderbook.OrderBook'
-                   '.process_order') as process_order_mock:
-            orderbook.on_message(json.dumps(orderbook_insert_msg))
+        mocked_orderbook_l2.assert_called()
 
-            process_order_mock.assert_called()
+    def test_orderbook_message_adds_to_orderbook(self, orderbook_insert_msg,
+                                                 tmpdir, mocker):
+        mock_process_order = mocker.patch(
+            'exchange_data.orderbook.OrderBook.process_order'
+        )
+        orderbook = OrderBook(total_time='1h', symbol='xbtusd',
+                              cache_dir=tmpdir, read_from_json=True)
+        orderbook.on_message(json.dumps(orderbook_insert_msg))
 
-    def test_orderbook_message_deletes_from_orderbook(self, orderbook,
-                                                 orderbook_delete_msg):
-        with patch('exchange_data.orderbook.OrderBook'
-                   '.cancel_order') as cancel_order_mock:
+        mock_process_order.assert_called()
 
-            orderbook.on_message(json.dumps(orderbook_delete_msg))
+    def test_orderbook_message_deletes_from_orderbook(self,
+                                                      orderbook_delete_msg,
+                                                      mocker, tmpdir):
+        mock_cancel_order = mocker.patch(
+            'exchange_data.orderbook.OrderBook.cancel_order'
+        )
+        orderbook = OrderBook(total_time='1h', symbol='xbtusd',
+                              cache_dir=tmpdir, read_from_json=True)
+        orderbook.on_message(json.dumps(orderbook_delete_msg))
 
-            cancel_order_mock.assert_called()
-
+        mock_cancel_order.assert_called()

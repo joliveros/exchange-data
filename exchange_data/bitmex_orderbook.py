@@ -2,8 +2,11 @@ import json
 from enum import auto
 from typing import Any
 
+import alog
+
+from exchange_data.hdf5_orderbook import Hdf5OrderBook
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType
-from exchange_data.influxdb_orderbook import InfluxOrderBook
+from exchange_data.orderbook.exceptions import OrderExistsException
 
 
 class ActionType(NoValue):
@@ -55,12 +58,15 @@ class BitmexMessage(object):
         return str(self.__dict__)
 
 
-class BitmexOrderBook(InfluxOrderBook):
-    def __init__(self, symbol: str, total_time='1d', save_json=False,
-                 json_file=None):
-        InfluxOrderBook.__init__(self, total_time=total_time,
-                                 database='bitmex', symbol=symbol,
-                                 save_json=save_json, json_file=json_file)
+class BitmexOrderBook(Hdf5OrderBook):
+    def __init__(self, symbol: str, total_time='1d', overwrite: bool=False,
+                 cache_dir: str=None, read_from_json: bool=False,
+                 file_check=False):
+        super().__init__(total_time=total_time, database='bitmex',
+                         symbol=symbol, overwrite=overwrite,
+                         cache_dir=cache_dir, read_from_json=read_from_json,
+                         file_check=file_check)
+
 
     def on_message(self, raw_message):
         message = BitmexMessage(raw_message)
@@ -86,3 +92,13 @@ class BitmexOrderBook(InfluxOrderBook):
     def update_orders(self, orders):
         for order in orders:
             self.modify_order(order['id'], price=None, quantity=order['size'])
+
+    def fetch_and_save(self):
+        self.fetch_measurements()
+
+        # for line in data:
+        #     alog.debug(line)
+        #     try:
+        #         self.on_message(line)
+        #     except OrderExistsException:
+        #         pass
