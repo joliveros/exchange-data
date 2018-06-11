@@ -13,7 +13,7 @@ class Hdf5OrderBook(InfluxOrderBook):
                  database: str,
                  symbol: str,
                  cache_dir: str = None,
-                 file_check=False,
+                 file_check=True,
                  overwrite: bool = False,
                  read_from_json: bool = False,
                  total_time='1d'
@@ -34,6 +34,8 @@ class Hdf5OrderBook(InfluxOrderBook):
         if not self.cache_directory_exists():
             os.makedirs(self.cache_dir, exist_ok=True)
 
+        self._file_check()
+
     @property
     def filename(self):
         return f'{self.cache_dir}/{self.prefix}_{self.symbol}_' \
@@ -48,8 +50,8 @@ class Hdf5OrderBook(InfluxOrderBook):
     def file(self):
         return h5py.File(self.filename)
 
-    def file_check(self):
-        if not self.file_check:
+    def _file_check(self):
+        if self.file_check is False:
             return
 
         if not self.file_exists():

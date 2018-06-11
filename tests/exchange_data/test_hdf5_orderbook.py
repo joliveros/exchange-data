@@ -12,5 +12,5 @@ class TestHdf5OrderBook(object):
 
         book = Hdf5OrderBook(database='bitmex', symbol='XBTUSD',
                              total_time='15m', overwrite=True,
-                             cache_dir=tmpdir)
+                             cache_dir=tmpdir, file_check=False)
 

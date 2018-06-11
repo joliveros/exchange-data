@@ -87,3 +87,8 @@ class TestBitmexOrderBook(object):
         orderbook.on_message(json.dumps(orderbook_delete_msg))
 
         mock_cancel_order.assert_called()
+
+    def test_fetch_and_save(self, mocker, tmpdir):
+        orderbook = OrderBook(total_time='1h', symbol='xbtusd',
+                              cache_dir=tmpdir, read_from_json=True)
+
