@@ -106,8 +106,8 @@ class BitmexOrderBook(Hdf5OrderBook):
         timestamp = message.timestamp
 
         for order in orders:
-            self.modify_order(order['id'], price=None, quantity=order[
-                'size'], timestamp=timestamp)
+            self.modify_order(order['id'], price=None, quantity=order['size'],
+                              timestamp=timestamp)
 
     def fetch_and_save(self):
         self.fetch_measurements()
@@ -116,6 +116,13 @@ class BitmexOrderBook(Hdf5OrderBook):
             try:
                 self.on_message(line)
                 print(self)
+                self.relative_orderbook()
 
             except (OrderExistsException, PriceDoesNotExistException):
                 pass
+
+    def relative_orderbook(self):
+        if self.bids is not None and len(self.bids) > 0:
+            alog.debug(self.bids.price_tree.max_key())
+        if self.asks is not None and len(self.asks) > 0:
+            alog.debug(self.asks.price_tree.min_key())

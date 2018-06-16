@@ -26,7 +26,7 @@ class InfluxOrderBook(OrderBook, Database):
     def json_fixture_filename(self):
         return f'{self.json_fixture_dir}/{self.database}_{self.total_time}.json'
 
-    def fetch_measurements(self) -> ResultSet:
+    def fetch_measurements(self):
         """
         fetch log data from influxdb
         :return:
