@@ -92,3 +92,5 @@ class TestBitmexOrderBook(object):
         orderbook = OrderBook(total_time='1h', symbol='xbtusd',
                               cache_dir=tmpdir, read_from_json=True)
 
+        orderbook.fetch_and_save()
+
