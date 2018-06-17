@@ -48,6 +48,7 @@ class OrderBook(object):
         self.time += 1
 
     def process_order(self, order: Order) -> TradeSummary:
+        alog.info(order)
         order.timestamp = self.timestamp
 
         if order.uid is not None:
@@ -257,6 +258,7 @@ class OrderBook(object):
         elif self.asks.order_exists(order_id):
             self.asks.modify_order(order_id, price, quantity, timestamp)
         else:
+            alog.info(order_id)
             raise OrderExistsException()
 
     def get_volume(self, price: float):

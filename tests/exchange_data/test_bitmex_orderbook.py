@@ -61,7 +61,7 @@ class TestBitmexOrderBook(object):
         orderbook = OrderBook(total_time='1h', symbol='xbtusd',
                               cache_dir=tmpdir, read_from_json=True)
 
-        orderbook.on_message(json.dumps(orderbook_update_msg))
+        orderbook.message(json.dumps(orderbook_update_msg))
 
         mocked_orderbook_l2.assert_called()
 
@@ -72,7 +72,7 @@ class TestBitmexOrderBook(object):
         )
         orderbook = OrderBook(total_time='1h', symbol='xbtusd',
                               cache_dir=tmpdir, read_from_json=True)
-        orderbook.on_message(json.dumps(orderbook_insert_msg))
+        orderbook.message(json.dumps(orderbook_insert_msg))
 
         mock_process_order.assert_called()
 
@@ -84,7 +84,7 @@ class TestBitmexOrderBook(object):
         )
         orderbook = OrderBook(total_time='1h', symbol='xbtusd',
                               cache_dir=tmpdir, read_from_json=True)
-        orderbook.on_message(json.dumps(orderbook_delete_msg))
+        orderbook.message(json.dumps(orderbook_delete_msg))
 
         mock_cancel_order.assert_called()
 
