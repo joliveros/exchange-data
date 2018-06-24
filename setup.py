@@ -1,9 +1,9 @@
 """
 Saves cryptocurrency exchange data in realtime to influxdb
 """
+from pip._internal.download import PipSession
+from pip._internal.req import parse_requirements
 from setuptools import find_packages, setup
-from pip.req import parse_requirements
-from pip.download import PipSession
 from os.path import realpath
 
 

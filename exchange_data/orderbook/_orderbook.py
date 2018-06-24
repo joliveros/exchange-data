@@ -2,18 +2,14 @@ import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
 
+import alog
+
 from exchange_data import Buffer
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
     Trade, TradeSummary, TradeParty
+from exchange_data.orderbook.exceptions import OrderExistsException, \
+    PriceDoesNotExistException
 from ._ordertree import OrderTree
-
-
-class OrderExistsException(Exception):
-    pass
-
-
-class PriceDoesNotExistException(Exception):
-    pass
 
 
 class OrderBook(object):
@@ -30,6 +26,7 @@ class OrderBook(object):
         self.tick_size = tick_size
         self.time = 0
         self._next_order_id = 0
+        self.last_trades = []
 
     @property
     def next_order_id(self):
@@ -54,7 +51,7 @@ class OrderBook(object):
         order.timestamp = self.timestamp
 
         if order.uid is not None:
-            self.next_order_id = order.uid
+            self.next_order_id = order.uid + 1
 
         if order.type == OrderType.MARKET:
             return self._process_market_order(order)
@@ -84,17 +81,18 @@ class OrderBook(object):
 
     def ask_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
-        while self.bids and price <= self.bids.max_price() and \
-                quantity_to_trade > 0:
-            trade_summary = \
-                self._process_order_list(
-                    side,
-                    quantity_to_trade,
-                    order
-                )
+        if self.bids.max_price() is not None:
+            while self.bids and price <= self.bids.max_price() and \
+                    quantity_to_trade > 0:
+                trade_summary = \
+                    self._process_order_list(
+                        side,
+                        quantity_to_trade,
+                        order
+                    )
 
-            quantity_to_trade = trade_summary.quantity_to_trade
-            trades += trade_summary.trades
+                quantity_to_trade = trade_summary.quantity_to_trade
+                trades += trade_summary.trades
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
@@ -139,6 +137,8 @@ class OrderBook(object):
             self.tape.append(trade)
             trades.append(trade)
             quantity = trade.remaining
+
+        self.last_trades = trades
 
         return TradeSummary(quantity, trades)
 
@@ -248,12 +248,24 @@ class OrderBook(object):
         else:
             raise OrderExistsException()
 
-    def modify_order(self, order_id: int, price: float, quantity: float):
-        if self.bids.order_exists(order_id):
-            self.bids.modify_order(order_id, price, quantity)
+    def modify_order(self, order_id: int, price: float, quantity: float,
+                     timestamp: int=None):
 
-        if self.asks.order_exists(order_id):
-            self.asks.modify_order(order_id, price, quantity)
+        if self.bids.order_exists(order_id):
+            self.bids.modify_order(order_id, price, quantity, timestamp)
+
+        elif self.asks.order_exists(order_id):
+            self.asks.modify_order(order_id, price, quantity, timestamp)
+        else:
+            raise OrderExistsException()
+
+    def order_exists(self, order_id):
+        if self.bids.order_exists(order_id):
+            return True
+        elif self.asks.order_exists(order_id):
+            return True
+        else:
+            return False
 
     def get_volume(self, price: float):
         if self.bids.price_exists(price):
@@ -275,26 +287,36 @@ class OrderBook(object):
     def get_worst_ask(self):
         return self.asks.max_price()
 
-    def __str__(self):
+    def print(self, depth: int=0):
+        bid_levels = list(self.bids.price_tree.items(reverse=True))
+        ask_levels = list(self.asks.price_tree.items())
+
+        if depth > 0:
+            bid_levels = bid_levels[:depth]
+            ask_levels = list(reversed(ask_levels[:depth]))
+
         summary = Buffer()
         summary.newline()
 
-        summary.section('Bids')
-        summary.newline()
-
-        if self.bids is not None and len(self.bids) > 0:
-            for key, value in self.bids.price_tree.items(reverse=True):
-                summary.write('%s' % value)
-
-        summary.newline()
         summary.section('Asks')
         summary.newline()
 
         if self.asks is not None and len(self.asks) > 0:
-            for key, value in list(self.asks.price_tree.items()):
+            for key, value in ask_levels:
                 summary.write('%s' % value)
 
         summary.newline()
+
+        if self.bids is not None and len(self.bids) > 0:
+            for key, value in bid_levels:
+                summary.write('%s' % value)
+
+        summary.newline()
+
+        summary.section('Bids')
+
+        summary.newline()
+
         summary.section('Trades')
         summary.newline()
 
@@ -303,8 +325,15 @@ class OrderBook(object):
                 line = f'{trade.quantity} @ {trade.price} ' \
                        f'{trade.timestamp} {trade.party1} / {trade.party2}'
 
+                summary.newline()
                 summary.write(line)
 
         summary.newline()
 
         return summary.getvalue()
+
+    def __str__(self):
+        return self.print(depth=25)
+
+
+

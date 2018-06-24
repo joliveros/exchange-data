@@ -1,8 +1,9 @@
 import alog
 import pytest
 
+from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from .fixtures import orderbook, orders
-from exchange_data.orderbook import OrderBook, PriceDoesNotExistException
+from exchange_data.orderbook import OrderBook
 
 
 class TestGetVolume(object):
