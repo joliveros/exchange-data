@@ -11,6 +11,3 @@ class TestOrderBookStrRepresentation(object):
 
         orderbook_summary = orderbook.__str__()
         assert len(orderbook_summary.split()) == 40
-
-
-

@@ -8,8 +8,10 @@ from bitmex_websocket.constants import InstrumentChannels
 from exchange_data.bitmex_orderbook import BitmexOrderBook, BitmexMessage, \
     BitmexOrder
 
+
 class BitmexTickSize(Enum):
     XBTUSD = 0.01
+
 
 class LiveBitmexOrderBook(BitmexOrderBook, Instrument):
     channels = [
@@ -26,7 +28,7 @@ class LiveBitmexOrderBook(BitmexOrderBook, Instrument):
                             symbol=symbol,
                             should_auth=False,
                             channels=self.channels)
-        
+
         self._get_instrument_info()
         self.on('action', self.message)
 

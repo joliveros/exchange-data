@@ -1,5 +1,6 @@
 from exchange_data.live_bitmex_orderbook import LiveBitmexOrderBook
-from .fixtures import instruments
+from .fixtures import instruments # noqa; F401
+
 
 class TestLiveBitmexOrderBook(object):
 

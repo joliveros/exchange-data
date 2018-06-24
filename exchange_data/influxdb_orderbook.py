@@ -48,4 +48,3 @@ class InfluxOrderBook(OrderBook, Database):
 
     def read_from_json_fixture(self):
         return ResultSet(json.loads(open(self.json_fixture_filename).read()))
-

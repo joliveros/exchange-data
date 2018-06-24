@@ -85,8 +85,9 @@ class Order(object):
             # check to see that the order is not the last order in list and
             # the quantity is more
             self.order_list.move_to_tail(self)  # move to the end
-        self.order_list.volume -= (
-                self.quantity - new_quantity)  # update volume
+
+        # update volume
+        self.order_list.volume -= (self.quantity - new_quantity)
         self.timestamp = new_timestamp
         self.quantity = new_quantity
 
