@@ -71,4 +71,3 @@ class TestModifyOrder(object):
         orderbook.modify_order(order.uid, order.price, 1)
 
         assert orderbook.bids.volume == 16.0
-

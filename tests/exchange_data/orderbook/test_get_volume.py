@@ -15,5 +15,3 @@ class TestGetVolume(object):
     def test_raises_exception_price_does_not_exist(self, orderbook: OrderBook):
         with pytest.raises(PriceDoesNotExistException):
             orderbook.get_volume(10.0)
-
-
