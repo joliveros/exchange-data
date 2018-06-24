@@ -48,11 +48,10 @@ class OrderBook(object):
         self.time += 1
 
     def process_order(self, order: Order) -> TradeSummary:
-        alog.info(order)
         order.timestamp = self.timestamp
 
         if order.uid is not None:
-            self.next_order_id = order.uid
+            self.next_order_id = order.uid + 1
 
         if order.type == OrderType.MARKET:
             return self._process_market_order(order)
@@ -258,8 +257,15 @@ class OrderBook(object):
         elif self.asks.order_exists(order_id):
             self.asks.modify_order(order_id, price, quantity, timestamp)
         else:
-            alog.info(order_id)
             raise OrderExistsException()
+
+    def order_exists(self, order_id):
+        if self.bids.order_exists(order_id):
+            return True
+        elif self.asks.order_exists(order_id):
+            return True
+        else:
+            return False
 
     def get_volume(self, price: float):
         if self.bids.price_exists(price):
@@ -281,26 +287,36 @@ class OrderBook(object):
     def get_worst_ask(self):
         return self.asks.max_price()
 
-    def __str__(self):
+    def print(self, depth: int=0):
+        bid_levels = list(self.bids.price_tree.items(reverse=True))
+        ask_levels = list(self.asks.price_tree.items())
+
+        if depth > 0:
+            bid_levels = bid_levels[:depth]
+            ask_levels = list(reversed(ask_levels[:depth]))
+
         summary = Buffer()
         summary.newline()
 
-        summary.section('Bids')
-        summary.newline()
-
-        if self.bids is not None and len(self.bids) > 0:
-            for key, value in self.bids.price_tree.items(reverse=True):
-                summary.write('%s' % value)
-
-        summary.newline()
         summary.section('Asks')
         summary.newline()
 
         if self.asks is not None and len(self.asks) > 0:
-            for key, value in list(self.asks.price_tree.items()):
+            for key, value in ask_levels:
                 summary.write('%s' % value)
 
         summary.newline()
+
+        if self.bids is not None and len(self.bids) > 0:
+            for key, value in bid_levels:
+                summary.write('%s' % value)
+
+        summary.newline()
+
+        summary.section('Bids')
+
+        summary.newline()
+
         summary.section('Trades')
         summary.newline()
 
@@ -315,3 +331,9 @@ class OrderBook(object):
         summary.newline()
 
         return summary.getvalue()
+
+    def __str__(self):
+        return self.print(depth=25)
+
+
+
