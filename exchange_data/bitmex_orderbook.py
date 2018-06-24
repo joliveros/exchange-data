@@ -1,8 +1,9 @@
+import sys
 from enum import auto
 from typing import Any
+
 import alog
 import json
-import sys
 import time
 import traceback
 
@@ -57,12 +58,14 @@ class Action(object):
 
         self.orders = data['data']
 
+    def __str__(self):
+        return self.__dict__
+
 
 class BitmexMessage(object):
     def __init__(self, data: Any):
         if type(data) == str:
             data = json.loads(data)
-        self.data: Action = None
 
         if 'symbol' in data:
             self.symbol: str = data['symbol']
@@ -81,6 +84,7 @@ class BitmexMessage(object):
 
 
 class BitmexOrderBook(OrderBook):
+
     def __init__(self,
                  symbol: str,
                  cache_dir: str = None,
@@ -91,21 +95,24 @@ class BitmexOrderBook(OrderBook):
                  ):
         super().__init__()
 
+        self.symbol = symbol
+        self.result_set = None
+
     def message(self, raw_message):
         try:
             message = BitmexMessage(raw_message)
 
             if message.action.table == 'orderBookL2':
                 self.order_book_l2(message)
+                print(self)
 
-            print(self)
+            elif message.action.table == 'trade':
+                pass
 
         except Exception:
             traceback.print_exc()
 
     def order_book_l2(self, message):
-        alog.debug(message)
-        # sys.exit()
 
         if message.action.type == ActionType.UPDATE:
             self.update_orders(message)
@@ -119,15 +126,29 @@ class BitmexOrderBook(OrderBook):
 
         elif message.action.type == ActionType.DELETE:
             for order_data in message.action.orders:
-                self.cancel_order(order_data['id'])
+                try:
+                    self.cancel_order(order_data['id'])
+                except Exception:
+                    pass
 
     def update_orders(self, message: BitmexMessage):
         orders = message.action.orders
         timestamp = message.timestamp
 
         for order in orders:
-            self.modify_order(order['id'], price=None, quantity=order['size'],
-                              timestamp=timestamp)
+            try:
+                uid = order['id']
+
+                if self.order_exists(uid):
+                    self.modify_order(uid, order['price'],
+                                      quantity=order['size'],
+                                      timestamp=timestamp)
+                else:
+                    new_order = BitmexOrder(order, message.timestamp)
+                    self.process_order(new_order)
+
+            except Exception as e:
+                pass
 
     def fetch_and_save(self):
         self.fetch_measurements()
