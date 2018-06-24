@@ -10,7 +10,6 @@ class TestHdf5OrderBook(object):
                      '.fetch_measurements',
                      return_value=measurements)
 
-        book = Hdf5OrderBook(database='bitmex', symbol='XBTUSD',
-                             total_time='15m', overwrite=True,
-                             cache_dir=tmpdir, file_check=False)
-
+        Hdf5OrderBook(database='bitmex', symbol='XBTUSD',
+                      total_time='15m', overwrite=True,
+                      cache_dir=tmpdir, file_check=False)

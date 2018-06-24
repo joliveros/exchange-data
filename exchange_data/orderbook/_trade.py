@@ -32,11 +32,11 @@ class Trade(object):
 
 
 class TradeSummary(object):
-    def __init__(self, quantity_to_trade: float, trades: [Trade], order: Order=None):
+    def __init__(self, quantity_to_trade: float, trades: [Trade],
+                 order: Order=None):
         self.order = order
         self.quantity_to_trade = quantity_to_trade
         self.trades = trades
 
     def __str__(self):
         return alog.pformat(self.__dict__)
-

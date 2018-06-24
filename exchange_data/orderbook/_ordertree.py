@@ -7,11 +7,13 @@ from ._order import Order
 
 
 class OrderTree(object):
-    '''A red-black tree used to store OrderLists in price order
+    """
+    A red-black tree used to store OrderLists in price order
 
-    The exchange will be using the OrderTree to hold bid and ask data (one OrderTree for each side).
-    Keeping the information in a red black tree makes it easier/faster to detect a match.
-    '''
+    The exchange will be using the OrderTree to hold bid and ask data (one
+    OrderTree for each side). Keeping the information in a red black tree
+    makes it easier/faster to detect a match.
+    """
 
     def __init__(self):
         self.price_tree = RBTree()
@@ -19,7 +21,10 @@ class OrderTree(object):
         self.order_map = {}  # Dictionary containing order_id : Order object
         self.volume = 0  # Contains total quantity from all Orders in tree
         self.num_orders = 0  # Contains count of Orders in tree
-        self.depth = 0  # Number of different prices in tree (http://en.wikipedia.org/wiki/Order_book_(trading)#Book_depth)
+
+        # Number of different prices in tree (
+        # http://en.wikipedia.org/wiki/Order_book_(trading)#Book_depth)
+        self.depth = 0
 
     def __len__(self):
         return len(self.order_map)
@@ -35,8 +40,10 @@ class OrderTree(object):
         new_list = OrderList()
         self.price_tree.insert(price,
                                new_list)  # Insert a new price into the tree
-        self.price_map[
-            price] = new_list  # Can i just get this by using self.price_tree.get_value(price)? Maybe this is faster though.
+
+        # Can i just get this by using self.price_tree.get_value(price)?
+        # Maybe this is faster though.
+        self.price_map[price] = new_list
 
     def remove_price(self, price):
         try:
@@ -103,7 +110,6 @@ class OrderTree(object):
 
         if len(order.order_list) == 0:
             self.remove_price(order.price)
-
         del self.order_map[order_id]
 
     def max_price(self):

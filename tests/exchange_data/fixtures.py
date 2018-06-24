@@ -35,22 +35,24 @@ def measurements():
                                             '"XBTUSD", "timestamp": '
                                             '"2018-06-11 01:40:18.614585Z"}',
              'symbol': 'XBTUSD'},
-            {'time': 1528681243802, 'data': '{"table": "orderBookL2", '
-                                            '"action": '
-                                 '"update", "data": [{"id": 8799298050, '
-                                 '"side": "Sell", "size": 1200}, {"id": '
-                                 '8799310150, "side": "Sell", "size": 3041}, '
-                                 '{"id": 8799318900, "side": "Sell", "size": '
-                                 '78161}, {"id": 8799324300, "side": "Sell", '
-                                 '"size": 385505}, {"id": 8799333250, "side": '
-                                 '"Buy", "size": 1850}, {"id": 8799334050, '
-                                 '"side": "Buy", "size": 76580}, {"id": '
-                                 '8799342800, "side": "Buy", "size": 16218}, '
-                                 '{"id": 8799354900, "side": "Buy", "size": '
-                                 '48134}, {"id": 8799370400, "side": "Buy", '
-                                 '"size": 153600}], "symbol": "XBTUSD", '
-                                 '"timestamp": "2018-06-11 '
-                                 '01:40:43.799837Z"}', 'symbol': 'XBTUSD'}]
+            {'time': 1528681243802,
+             'data': '{"table": "orderBookL2", '
+                     '"action": '
+                     '"update", "data": [{"id": 8799298050, '
+                     '"side": "Sell", "size": 1200}, {"id": '
+                     '8799310150, "side": "Sell", "size": 3041}, '
+                     '{"id": 8799318900, "side": "Sell", "size": '
+                     '78161}, {"id": 8799324300, "side": "Sell", '
+                     '"size": 385505}, {"id": 8799333250, "side": '
+                     '"Buy", "size": 1850}, {"id": 8799334050, '
+                     '"side": "Buy", "size": 76580}, {"id": '
+                     '8799342800, "side": "Buy", "size": 16218}, '
+                     '{"id": 8799354900, "side": "Buy", "size": '
+                     '48134}, {"id": 8799370400, "side": "Buy", '
+                     '"size": 153600}], "symbol": "XBTUSD", '
+                     '"timestamp": "2018-06-11 '
+                     '01:40:43.799837Z"}',
+             'symbol': 'XBTUSD'}]
 
     return {'data': data}
 
