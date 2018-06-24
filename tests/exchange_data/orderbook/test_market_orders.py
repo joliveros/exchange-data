@@ -38,4 +38,3 @@ class TestMarketOrders(object):
         assert orderbook.asks.volume == 0
 
         assert trade_summary.quantity_to_trade == 1
-

@@ -334,6 +334,3 @@ class OrderBook(object):
 
     def __str__(self):
         return self.print(depth=25)
-
-
-

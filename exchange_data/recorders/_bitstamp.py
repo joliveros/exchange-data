@@ -13,17 +13,11 @@ class BitstampRecorder(Pusher, Recorder):
     def __init__(self, symbol):
         self.symbol = symbol
 
-        if settings.LOG_LEVEL == logging.INFO:
-            log_level = logging.CRITICAL
-        else:
-            log_level = settings.LOG_LEVEL
-
         Pusher.__init__(self, settings.BITSTAMP_PUSHER_APP_KEY,
                         log_level=logging.CRITICAL)
 
         Recorder.__init__(self, self.symbols, database_name='bitstamp')
 
-        self.symbols = [symbol.lower() for symbol in symbols]
         self.connection.bind('pusher:connection_established', self.on_connect)
 
     def start(self):
