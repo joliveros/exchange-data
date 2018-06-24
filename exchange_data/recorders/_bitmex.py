@@ -37,6 +37,3 @@ class BitmexRecorder(Recorder, Instrument):
 
         alog.debug(alog.pformat(data))
         self.save_measurement('data', self.symbol, data)
-
-    def start(self, **kwargs):
-        self.run_forever(**kwargs)
