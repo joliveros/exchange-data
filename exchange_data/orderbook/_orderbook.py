@@ -284,6 +284,10 @@ class OrderBook(object):
     def get_best_ask(self):
         return self.asks.min_price()
 
+    @property
+    def spread(self):
+        return self.get_best_ask() - self.get_best_bid()
+
     def get_worst_ask(self):
         return self.asks.max_price()
 

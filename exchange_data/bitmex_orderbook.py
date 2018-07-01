@@ -1,11 +1,14 @@
 import sys
-from enum import auto
+from enum import auto, Enum
+from functools import lru_cache
 from typing import Any
 
 import alog
 import json
 import time
 import traceback
+
+import requests
 
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType, \
     OrderBook
@@ -64,6 +67,7 @@ class Action(object):
 
 class BitmexMessage(object):
     def __init__(self, data: Any):
+
         if type(data) == str:
             data = json.loads(data)
 
@@ -77,37 +81,41 @@ class BitmexMessage(object):
         else:
             self.timestamp = time.time()
 
+        if 'data' in data:
+            data = data['data']
+
         self.action = Action(self.symbol, data, self.timestamp)
 
     def __str__(self):
         return str(self.__dict__)
 
 
-class BitmexOrderBook(OrderBook):
+class BitmexTickSize(Enum):
+    XBTUSD = 0.01
 
-    def __init__(self,
-                 symbol: str,
-                 cache_dir: str = None,
-                 file_check=True,
-                 overwrite: bool = False,
-                 read_from_json: bool = False,
-                 total_time='1d'
-                 ):
-        super().__init__()
+
+class BitmexOrderBook(OrderBook):
+    INSTRUMENTS_URL = 'https://www.bitmex.com/api/v1/instrument?columns' \
+                      '=symbol,tickSize&start=0&count=500'
+
+    def __init__(self, symbol: str):
+        OrderBook.__init__(self)
 
         self.symbol = symbol
         self.result_set = None
+        self._get_instrument_info()
 
-    def message(self, raw_message):
+    def message(self, raw_message) -> BitmexMessage:
         try:
             message = BitmexMessage(raw_message)
 
             if message.action.table == 'orderBookL2':
                 self.order_book_l2(message)
-                print(self)
 
             elif message.action.table == 'trade':
                 pass
+
+            return message
 
         except Exception:
             traceback.print_exc()
@@ -139,8 +147,11 @@ class BitmexOrderBook(OrderBook):
             try:
                 uid = order['id']
 
+                if 'price' not in order:
+                    order['price'] = self.parse_price_from_id(uid)
+
                 if self.order_exists(uid):
-                    self.modify_order(uid, order['price'],
+                    self.modify_order(order['id'], order['price'],
                                       quantity=order['size'],
                                       timestamp=timestamp)
                 else:
@@ -150,18 +161,6 @@ class BitmexOrderBook(OrderBook):
             except Exception as e:
                 pass
 
-    def fetch_and_save(self):
-        self.fetch_measurements()
-
-        for line in self.result_set['data']:
-            try:
-                self.message(line)
-                print(self)
-                self.relative_orderbook()
-
-            except (OrderExistsException, PriceDoesNotExistException):
-                pass
-
     def relative_orderbook(self):
         if self.bids is not None and len(self.bids) > 0:
             alog.debug(self.bids.price_tree.max_key())
@@ -169,5 +168,23 @@ class BitmexOrderBook(OrderBook):
         if self.asks is not None and len(self.asks) > 0:
             alog.debug(self.asks.price_tree.min_key())
 
-    def fetch_measurements(self):
-        raise NotImplementedError()
+    @lru_cache(maxsize=None)
+    def parse_price_from_id(self, id: int):
+        return ((100000000 * self.index) - id) * self.tick_size
+
+    def _instrument_data(self):
+        r = requests.get(self.INSTRUMENTS_URL)
+        return r.json()
+
+    def _get_instrument_info(self):
+        all_instruments = self._instrument_data()
+        instrument_data = [data for data in all_instruments
+                           if data['symbol'] == self.symbol][0]
+        self.index = all_instruments.index(instrument_data)
+
+        self.tick_size = instrument_data['tickSize']
+
+        if BitmexTickSize[self.symbol]:
+            self.tick_size = BitmexTickSize[self.symbol].value
+
+        alog.debug(self.tick_size)
