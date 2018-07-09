@@ -1,5 +1,8 @@
+import time
+
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.hdf5_orderbook import Hdf5OrderBook
+from pytimeparse import parse as dateparse
 
 import alog
 import datetime
@@ -30,6 +33,14 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
         self._last_index = 0
 
     @property
+    def interval(self):
+        return self._interval
+
+    @interval.setter
+    def interval(self, value):
+        self._interval = dateparse(value) * 1000
+
+    @property
     def dataset_name(self):
         return f'{self.database}_{self.symbol}_{self.interval}'
 
@@ -50,13 +61,14 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
         self.set_time(msg.timestamp)
 
     def set_time(self, timestamp):
-        _time = datetime.datetime.fromtimestamp(timestamp / 1000)
-        _time = _time.replace(second=0, microsecond=0)
-        prev_time = self.current_time
-        self.current_time = _time
+        if self.current_time is None:
+            self.current_time = self._get_nearest_tick(timestamp)
+        raise Exception()
+        if timestamp > self.current_time + self.interval:
+            self.current_time = timestamp
 
-        if prev_time != self.current_time:
-            self.next_tick()
+        # if prev_time != self.current_time:
+        #     self.next_tick()
 
     def next_tick(self):
         try:
@@ -115,6 +127,16 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
                                        dtype=float, chunks=True,
                                        maxshape=(float('1e5'), float('1e5'),
                                                  float('1e5'), float('1e5'),))
+
+    def _get_nearest_tick(self, timestamp):
+        _date = datetime.datetime.fromtimestamp(timestamp / 1000)
+        _date = _date.replace(second=0, microsecond=0)
+        _date = time.mktime(_date.timetuple()) * 1000
+
+        while _date <= timestamp:
+            _date += self.interval
+
+        return _date
 
 
 if __name__ == '__main__':
