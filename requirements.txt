@@ -11,3 +11,4 @@ rollbar>=0.13.12
 stringcase
 timestamp
 tables
+pytimeparse
