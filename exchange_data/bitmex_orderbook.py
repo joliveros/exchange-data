@@ -103,11 +103,13 @@ class BitmexOrderBook(OrderBook):
 
         self.symbol = symbol
         self.result_set = None
+        self.last_timestamp = None
         self._get_instrument_info()
 
     def message(self, raw_message) -> BitmexMessage:
         try:
             message = BitmexMessage(raw_message)
+            self.last_timestamp = message.timestamp
 
             if message.action.table == 'orderBookL2':
                 self.order_book_l2(message)
@@ -186,5 +188,3 @@ class BitmexOrderBook(OrderBook):
 
         if BitmexTickSize[self.symbol]:
             self.tick_size = BitmexTickSize[self.symbol].value
-
-        alog.debug(self.tick_size)
