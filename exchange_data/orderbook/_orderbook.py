@@ -276,13 +276,15 @@ class OrderBook(object):
             raise PriceDoesNotExistException()
 
     def get_best_bid(self):
-        return self.bids.max_price()
+        best_bid = self.bids.max_price()
+        return best_bid if best_bid else 0
 
     def get_worst_bid(self):
         return self.bids.min_price()
 
     def get_best_ask(self):
-        return self.asks.min_price()
+        best_ask = self.asks.min_price()
+        return best_ask if best_ask else 0
 
     @property
     def spread(self):

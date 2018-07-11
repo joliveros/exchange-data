@@ -15,8 +15,8 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
                  overwrite: bool,
                  cache_dir: str = None,
                  total_time: str = '15m',
-                 read_from_json: bool = False,
-                 interval='1m'):
+                 read_from_json: bool = False
+                 ):
         database = 'bitmex'
         Hdf5OrderBook.__init__(self,
                                database=database,
@@ -28,17 +28,8 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
 
         BitmexOrderBook.__init__(self, symbol=symbol)
 
-        self.interval = interval
         self.current_time = None
         self._last_index = 0
-
-    @property
-    def interval(self):
-        return self._interval
-
-    @interval.setter
-    def interval(self, value):
-        self._interval = dateparse(value) * 1000
 
     @property
     def dataset_name(self):
@@ -58,23 +49,7 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
 
     def replay(self, line):
         msg = self.message(line)
-        self.set_time(msg.timestamp)
-
-    def set_time(self, timestamp):
-        if self.current_time is None:
-            self.current_time = self._get_nearest_tick(timestamp)
-        raise Exception()
-        if timestamp > self.current_time + self.interval:
-            self.current_time = timestamp
-
-        # if prev_time != self.current_time:
-        #     self.next_tick()
-
-    def next_tick(self):
-        try:
-            self.save_frame()
-        except IndexError:
-            pass
+        self.save_frame()
 
     def save_frame(self):
         orderbook_frame = self.gen_orderbook_frame()
@@ -88,8 +63,8 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
         ask_side = self.gen_ask_side()
         ask_side.resize((2000, 2))
         ask_side += self.half_spread
-
         frame = np.array([ask_side, bid_side])
+        alog.debug(frame)
         return frame
 
     def gen_bid_side(self):
@@ -100,8 +75,14 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
         volume = np.array(
             [level[1].volume for level in bid_levels]
         )
-        max_bid_diff = price - price[0]
+
+        if len(price) == 0:
+            max_bid_diff = price
+        else:
+            max_bid_diff = price - price[0]
+
         volume_pct = np.true_divide(volume, np.sum(volume))
+
         return np.vstack((max_bid_diff, volume_pct))
 
     def gen_ask_side(self):
@@ -113,8 +94,14 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
         volume = np.array(
             [level[1].volume for level in ask_levels]
         )
-        max_ask_diff = price - price[0]
+
+        if len(price) == 0:
+            max_ask_diff = price
+        else:
+            max_ask_diff = price - price[0]
+
         volume_pct = np.true_divide(volume, np.sum(volume))
+
         return np.vstack((max_ask_diff, volume_pct))
 
     def dataset(self, file):
@@ -127,16 +114,6 @@ class BitmexOrderBookGymData(BitmexOrderBook, Hdf5OrderBook):
                                        dtype=float, chunks=True,
                                        maxshape=(float('1e5'), float('1e5'),
                                                  float('1e5'), float('1e5'),))
-
-    def _get_nearest_tick(self, timestamp):
-        _date = datetime.datetime.fromtimestamp(timestamp / 1000)
-        _date = _date.replace(second=0, microsecond=0)
-        _date = time.mktime(_date.timetuple()) * 1000
-
-        while _date <= timestamp:
-            _date += self.interval
-
-        return _date
 
 
 if __name__ == '__main__':
