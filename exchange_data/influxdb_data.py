@@ -8,10 +8,9 @@ import json
 import os
 
 
-class InfluxOrderBook(OrderBook, Database):
+class InfluxDBData(Database):
     def __init__(self, database: str, symbol: str, total_time='1d',
                  read_from_json: bool = False):
-        OrderBook.__init__(self)
         Database.__init__(self, database_name=database)
 
         self.read_from_json = read_from_json
