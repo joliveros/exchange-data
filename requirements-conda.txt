@@ -1,4 +1,9 @@
+bottleneck
+cyordereddict
 cython
-h5py
 matplotlib
+netCDF4
 numpy
+pandas
+scipy
+xarray
