@@ -6,11 +6,13 @@ import os
 
 
 class CachedDataset(object):
+    dataset: Dataset
+
     def __init__(self,
                  cache_dir: str = None,
                  overwrite: bool = False
                  ):
-
+        self.dataset = None
         self.overwrite = overwrite
 
         if cache_dir is None:
@@ -57,4 +59,3 @@ class CachedDataset(object):
 
     def fetch_and_save(self):
         raise NotImplementedError()
-

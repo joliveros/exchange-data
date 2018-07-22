@@ -9,4 +9,3 @@ class TestCachedDataset(object):
 
         cd = CachedDataset(overwrite=False, cache_dir=tmpdir)
         cd.save()
-

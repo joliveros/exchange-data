@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 from enum import auto, Enum
 from functools import lru_cache
 from typing import Any
@@ -89,6 +90,10 @@ class BitmexMessage(object):
     def __str__(self):
         return str(self.__dict__)
 
+    @property
+    def timestamp_datetime(self):
+        return datetime.fromtimestamp(self.timestamp / 1000)
+
 
 class BitmexTickSize(Enum):
     XBTUSD = 0.01
@@ -105,6 +110,18 @@ class BitmexOrderBook(OrderBook):
         self.result_set = None
         self.last_timestamp = None
         self._get_instrument_info()
+
+    def message_strict(self, raw_message):
+        message = BitmexMessage(raw_message)
+        self.last_timestamp = message.timestamp
+
+        if message.action.table == 'orderBookL2':
+            self.order_book_l2(message)
+
+        elif message.action.table == 'trade':
+            pass
+
+        return message
 
     def message(self, raw_message) -> BitmexMessage:
         try:
@@ -180,6 +197,7 @@ class BitmexOrderBook(OrderBook):
 
     def _get_instrument_info(self):
         all_instruments = self._instrument_data()
+
         instrument_data = [data for data in all_instruments
                            if data['symbol'] == self.symbol][0]
         self.index = all_instruments.index(instrument_data)

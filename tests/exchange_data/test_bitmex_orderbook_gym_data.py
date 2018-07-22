@@ -1,20 +1,39 @@
-import alog
-
 from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
-from mock import MagicMock
 from pytimeparse import parse as dateparse
-from tests.exchange_data.fixtures import instruments
+from tests.exchange_data.fixtures import instruments, measurements
+import alog
+import pytest
+
+
+@pytest.fixture
+def book(
+        instruments,
+        measurements,
+        mocker,
+        tmpdir
+):
+    mocker.patch.object(BitmexOrderBookGymData, '_instrument_data',
+                        return_value=instruments)
+    total_time = '15m'
+    return BitmexOrderBookGymData(
+        cache_dir=tmpdir,
+        overwrite=False,
+        read_from_json=True,
+        symbol='XBTUSD',
+        total_time=total_time
+    )
 
 
 class TestBitmexOrderBookGymData(object):
 
-    def test_fetch_and_save(self, mocker, tmpdir, instruments):
-        mocker.patch.object(BitmexOrderBookGymData, '_instrument_data',
-                            lambda context: instruments)
+    def test_parse_date_range_on_first_message(self, book):
+        msg = book.message_strict(measurements['data'][0])
 
-        book = BitmexOrderBookGymData(symbol='XBTUSD',
-                                      total_time='1h', overwrite=False,
-                                      cache_dir=tmpdir,
-                                      read_from_json=True)
+        book.read_date_range(msg)
 
+        diff = book.date_range['end'] - book.date_range['start']
+
+        assert diff.total_seconds() == dateparse(book.total_time)
+
+    def test_fetch_and_save(self, book):
         book.fetch_and_save()
