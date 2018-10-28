@@ -1,5 +1,4 @@
 bottleneck
-cyordereddict
 cython
 matplotlib
 netCDF4
