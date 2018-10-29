@@ -100,8 +100,6 @@ class BitmexTickSize(Enum):
 
 
 class BitmexOrderBook(OrderBook):
-    INSTRUMENTS_URL = 'https://www.bitmex.com/api/v1/instrument?columns' \
-                      '=symbol,tickSize&start=0&count=500'
 
     def __init__(self, symbol: str):
         OrderBook.__init__(self)
@@ -191,18 +189,43 @@ class BitmexOrderBook(OrderBook):
     def parse_price_from_id(self, id: int):
         return ((100000000 * self.index) - id) * self.tick_size
 
-    def _instrument_data(self):
-        r = requests.get(self.INSTRUMENTS_URL)
-        return r.json()
+
 
     def _get_instrument_info(self):
         all_instruments = self._instrument_data()
+        instrument_data = [data for data in all_instruments if data['symbol'] == self.symbol][0]
 
-        instrument_data = [data for data in all_instruments
-                           if data['symbol'] == self.symbol][0]
         self.index = all_instruments.index(instrument_data)
 
         self.tick_size = instrument_data['tickSize']
 
         if BitmexTickSize[self.symbol]:
             self.tick_size = BitmexTickSize[self.symbol].value
+
+
+class InstrumentInfo(object):
+
+
+    def __init__(
+        self,
+        symbol: str,
+        tickSize: float,
+        timestamp: str,
+        index: int
+    ):
+        self.symbol = symbol
+
+    @staticmethod
+    def get_instrument(symbol: str):
+        INSTRUMENTS_URL = 'https://www.bitmex.com/api/v1/instrument?columns' \
+                  '=symbol,tickSize&start=0&count=500'
+
+        r = requests.get(INSTRUMENTS_URL)
+        all_instruments = r.json()
+
+        data = [data for data in all_instruments if data['symbol'] == symbol][0]
+
+        index = all_instruments.index(data)
+
+        return InstrumentInfo(symbol, tickSize=data['tickSize'], timestamp=data['timestamp'], index=index)
+

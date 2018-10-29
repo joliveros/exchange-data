@@ -8,7 +8,6 @@ import pytest
 @pytest.fixture
 def book(
         instruments,
-        measurements,
         mocker,
         tmpdir
 ):
@@ -26,7 +25,7 @@ def book(
 
 class TestBitmexOrderBookGymData(object):
 
-    def test_parse_date_range_on_first_message(self, book):
+    def test_parse_date_range_on_first_message(self, book, measurements):
         msg = book.message_strict(measurements['data'][0])
 
         book.read_date_range(msg)

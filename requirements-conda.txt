@@ -6,3 +6,4 @@ numpy
 pandas
 scipy
 xarray
+python==3.6.5
