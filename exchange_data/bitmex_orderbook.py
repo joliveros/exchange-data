@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime
 from enum import auto, Enum
 from functools import lru_cache
@@ -15,6 +14,42 @@ from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType, \
     OrderBook
 from exchange_data.orderbook.exceptions import OrderExistsException, \
     PriceDoesNotExistException
+
+
+class InstrumentInfo(object):
+    INSTRUMENTS_URL = 'https://www.bitmex.com/api/v1/instrument?columns' \
+                      '=symbol,tickSize&start=0&count=500'
+
+    def __init__(
+            self,
+            index: int,
+            symbol: str,
+            tick_size: float,
+            timestamp: str
+    ):
+        self.index = index
+        self.timestamp = timestamp
+        self.tick_size = tick_size
+        self.symbol = symbol
+
+    @staticmethod
+    def get_instrument(symbol: str) -> 'InstrumentInfo':
+        if not symbol.isupper():
+            raise Exception('symbol should be uppercase.')
+
+        r = requests.get(InstrumentInfo.INSTRUMENTS_URL)
+        all_instruments = r.json()
+
+        data = [data for data in all_instruments if data['symbol'] == symbol][0]
+
+        index = all_instruments.index(data)
+
+        return InstrumentInfo(
+            index=index,
+            symbol=symbol,
+            tick_size=data['tickSize'],
+            timestamp=data['timestamp']
+        )
 
 
 class ActionType(NoValue):
@@ -103,11 +138,12 @@ class BitmexOrderBook(OrderBook):
 
     def __init__(self, symbol: str):
         OrderBook.__init__(self)
+        instrument_info = InstrumentInfo.get_instrument(symbol)
+        self.__dict__.update(instrument_info.__dict__)
 
         self.symbol = symbol
         self.result_set = None
         self.last_timestamp = None
-        self._get_instrument_info()
 
     def message_strict(self, raw_message):
         message = BitmexMessage(raw_message)
@@ -188,44 +224,4 @@ class BitmexOrderBook(OrderBook):
     @lru_cache(maxsize=None)
     def parse_price_from_id(self, id: int):
         return ((100000000 * self.index) - id) * self.tick_size
-
-
-
-    def _get_instrument_info(self):
-        all_instruments = self._instrument_data()
-        instrument_data = [data for data in all_instruments if data['symbol'] == self.symbol][0]
-
-        self.index = all_instruments.index(instrument_data)
-
-        self.tick_size = instrument_data['tickSize']
-
-        if BitmexTickSize[self.symbol]:
-            self.tick_size = BitmexTickSize[self.symbol].value
-
-
-class InstrumentInfo(object):
-
-
-    def __init__(
-        self,
-        symbol: str,
-        tickSize: float,
-        timestamp: str,
-        index: int
-    ):
-        self.symbol = symbol
-
-    @staticmethod
-    def get_instrument(symbol: str):
-        INSTRUMENTS_URL = 'https://www.bitmex.com/api/v1/instrument?columns' \
-                  '=symbol,tickSize&start=0&count=500'
-
-        r = requests.get(INSTRUMENTS_URL)
-        all_instruments = r.json()
-
-        data = [data for data in all_instruments if data['symbol'] == symbol][0]
-
-        index = all_instruments.index(data)
-
-        return InstrumentInfo(symbol, tickSize=data['tickSize'], timestamp=data['timestamp'], index=index)
 
