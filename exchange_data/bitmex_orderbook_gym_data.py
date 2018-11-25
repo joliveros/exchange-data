@@ -81,27 +81,24 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
 
         # round to nearest freq
 
-
     def init_dataset(self):
         time_index = date_range(
             start=self.date_range['start'],
             end=self.date_range['end'],
-            freq=self.freq)
-        self.dataset['time'] = time_index
+            freq=self.freq
+        )
 
-        alog.debug(time_index)
+        self.dataset['time'] = time_index
 
         volume_pct_shape = (time_index.shape[0], self.max_levels)
         volume_pct_data = np.zeros(volume_pct_shape)
         self.dataset['bid_volume_pct'] = \
             (['time', 'volume_pct'], volume_pct_data)
 
-        # alog.debug(self.dataset)
-
     def fetch_and_save(self):
         self.fetch_measurements()
 
-        for line in self.result_set['data']:
+        for line in self.result_set.get_points():
             self.replay(line)
 
         self.save()

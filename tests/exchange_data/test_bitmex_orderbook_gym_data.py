@@ -1,19 +1,15 @@
 from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
 from pytimeparse import parse as dateparse
 from tests.exchange_data.fixtures import instruments, measurements
+
 import alog
 import pytest
 
 
 @pytest.fixture
-def book(
-        instruments,
-        mocker,
-        tmpdir
-):
-    mocker.patch.object(BitmexOrderBookGymData, '_instrument_data',
-                        return_value=instruments)
+def book(tmpdir):
     total_time = '15m'
+
     return BitmexOrderBookGymData(
         cache_dir=tmpdir,
         overwrite=False,
@@ -25,6 +21,7 @@ def book(
 
 class TestBitmexOrderBookGymData(object):
 
+    @pytest.mark.vcr()
     def test_parse_date_range_on_first_message(self, book, measurements):
         msg = book.message_strict(measurements['data'][0])
 
@@ -34,5 +31,6 @@ class TestBitmexOrderBookGymData(object):
 
         assert diff.total_seconds() == dateparse(book.total_time)
 
+    @pytest.mark.vcr()
     def test_fetch_and_save(self, book):
         book.fetch_and_save()
