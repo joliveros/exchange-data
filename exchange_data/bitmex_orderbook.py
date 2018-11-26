@@ -173,7 +173,7 @@ class BitmexOrderBook(OrderBook):
         except Exception:
             traceback.print_exc()
 
-    def order_book_l2(self, message):
+    def order_book_l2(self, message: BitmexMessage):
 
         if message.action.type == ActionType.UPDATE:
             self.update_orders(message)
