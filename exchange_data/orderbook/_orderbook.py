@@ -1,3 +1,4 @@
+import datetime
 import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
@@ -44,11 +45,15 @@ class OrderBook(object):
         self.last_timestamp = time.time()
         return self.last_timestamp
 
+    @property
+    def last_date(self):
+        return datetime.datetime.fromtimestamp(self.last_timestamp/1000)
+
     def update_time(self):
         self.time += 1
 
     def process_order(self, order: Order) -> TradeSummary:
-        order.timestamp = self.timestamp
+        self.last_timestamp = order.timestamp
 
         if order.uid is not None:
             self.next_order_id = order.uid + 1
