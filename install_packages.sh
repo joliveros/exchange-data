@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-#
-#  Original solution via StackOverflow:
-#    http://stackoverflow.com/questions/35802939/install-only-available-packages-using-conda-install-yes-file-requirements-t
-#
+
+conda_install="conda install --yes"
 
 while read requirement; do
-    conda install --yes $requirement;
+    conda_install+=" $requirement"
 done < ./requirements-conda.txt
+
+${conda_install}
 
 pip install -r requirements.txt -r requirements-test.txt

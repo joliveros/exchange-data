@@ -1,3 +1,4 @@
+import datetime
 import time
 from collections import deque  # a faster insert/pop queue
 from typing import Callable
@@ -44,11 +45,15 @@ class OrderBook(object):
         self.last_timestamp = time.time()
         return self.last_timestamp
 
+    @property
+    def last_date(self):
+        return datetime.datetime.fromtimestamp(self.last_timestamp/1000)
+
     def update_time(self):
         self.time += 1
 
     def process_order(self, order: Order) -> TradeSummary:
-        order.timestamp = self.timestamp
+        self.last_timestamp = order.timestamp
 
         if order.uid is not None:
             self.next_order_id = order.uid + 1
@@ -276,13 +281,19 @@ class OrderBook(object):
             raise PriceDoesNotExistException()
 
     def get_best_bid(self):
-        return self.bids.max_price()
+        best_bid = self.bids.max_price()
+        return best_bid if best_bid else 0
 
     def get_worst_bid(self):
         return self.bids.min_price()
 
     def get_best_ask(self):
-        return self.asks.min_price()
+        best_ask = self.asks.min_price()
+        return best_ask if best_ask else 0
+
+    @property
+    def spread(self):
+        return self.get_best_ask() - self.get_best_bid()
 
     def get_worst_ask(self):
         return self.asks.max_price()

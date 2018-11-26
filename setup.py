@@ -24,7 +24,7 @@ setup(
     name='exchange-data',
     version='0.2.0',
     url='https://github.com/joliveros/exchange-data',
-    license='BSD',
+    license='No License',
     author='José Oliveros',
     author_email='jose.oliveros.1983@gmail.com',
     description='Saves cryptocurrency exchange data in realtime to influxdb',
