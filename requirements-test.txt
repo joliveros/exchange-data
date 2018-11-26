@@ -1,7 +1,8 @@
+coveralls
 flake8
 mock
+nose
 pytest
 pytest-cov
 pytest-mock
-coveralls
-nose
+pytest-vcr

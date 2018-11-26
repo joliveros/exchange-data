@@ -1,12 +1,14 @@
-sortedcontainers
-six
 alog
 bitmex-websocket
 click
 git+https://github.com/joliveros/gdax-python.git#egg=gdax
 git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
-influxdb==4.1.0
+influxdb
 pusherclient
+pytimeparse
 rollbar>=0.13.12
+six
+sortedcontainers
 stringcase
+tables
 timestamp
