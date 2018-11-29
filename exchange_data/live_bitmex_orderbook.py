@@ -1,3 +1,4 @@
+import websocket
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data.bitmex_orderbook import BitmexOrderBook
@@ -21,4 +22,4 @@ class LiveBitmexOrderBook(BitmexOrderBook, Instrument):
 
 if __name__ == '__main__':
     orderbook = LiveBitmexOrderBook('XBTUSD')
-    orderbook.start()
+    orderbook.run_forever()

@@ -635,3 +635,55 @@ def instruments():
              "tickSize": 1e-8},
             {"symbol": "EOSU18", "timestamp": "2018-06-23T02:58:31.001Z",
              "tickSize": 1e-7}]
+
+
+@pytest.fixture('module')
+def initial_orderbook_l2():
+    return {
+      'table': 'orderBookL2',
+      'action': 'partial',
+      'keys': ['symbol', 'id', 'side'],
+      'types': {
+        'symbol': 'symbol',
+        'id': 'long',
+        'side': 'symbol',
+        'size': 'long',
+        'price': 'float'
+      },
+      'foreignKeys': {
+        'symbol': 'instrument',
+        'side': 'side'
+      },
+      'attributes': {
+        'symbol': 'grouped',
+        'id': 'sorted'
+      },
+      'filter': {
+        'symbol': 'XBTUSD'
+      },
+      'data': [{
+        'symbol': 'XBTUSD',
+        'id': 15500000000,
+        'side': 'Sell',
+        'size': 1,
+        'price': 1000000
+      }, {
+        'symbol': 'XBTUSD',
+        'id': 15500000100,
+        'side': 'Sell',
+        'size': 100000,
+        'price': 999999
+      }, {
+        'symbol': 'XBTUSD',
+        'id': 15504648350,
+        'side': 'Sell',
+        'size': 2191000,
+        'price': 953516.5
+      }, {
+        'symbol': 'XBTUSD',
+        'id': 15515440800,
+        'side': 'Sell',
+        'size': 300,
+        'price': 845592
+      }]
+    }

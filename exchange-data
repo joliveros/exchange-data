@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import signal
 
+import websocket
 from stringcase import pascalcase
 
 import click
