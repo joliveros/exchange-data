@@ -1,6 +1,6 @@
 from numpy.core.multiarray import ndarray
 
-from exchange_data.bitmex_orderbook import BitmexOrderBook
+from exchange_data.bitmex_orderbook import BitmexOrderBook, NotOrderbookMessage
 from exchange_data.cached_dataset import CachedDataset
 from exchange_data.influxdb_data import InfluxDBData
 from exchange_data.utils import date_plus_timestring, datetime_from_timestamp
@@ -102,13 +102,16 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
         self.save()
 
     def replay(self, line):
-        msg = self.message_strict(line)
+        try:
+            msg = self.message(line)
 
-        if self.date_range is None:
-            self.read_date_range(msg)
-            self.init_dataset()
+            if self.date_range is None:
+                self.read_date_range(msg)
+                self.init_dataset()
 
-        self.save_frame()
+            self.save_frame()
+        except NotOrderbookMessage:
+            pass
 
     def save_frame(self) -> ndarray:
         bid_side = self.gen_bid_side()
