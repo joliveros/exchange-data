@@ -34,7 +34,6 @@ class TimeEmitter(MessageEmitter):
         while True:
             sleep(self.next_tick)
             now = datetime.now()
-            alog.info(f'#### {now} ####')
             self.publish('tick', str(now))
 
     def start(self):
