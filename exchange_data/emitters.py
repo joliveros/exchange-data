@@ -1,17 +1,16 @@
-import asyncio
-import json
-import sys
+from bitmex_websocket import Instrument
+from bitmex_websocket.constants import InstrumentChannels
 from datetime import datetime
+from exchange_data import settings
+from pytimeparse.timeparse import timeparse
+from redis import Redis
 from time import sleep
 
 import alog
+import asyncio
+import json
+import sys
 import websocket
-from bitmex_websocket import Instrument
-from bitmex_websocket.constants import InstrumentChannels
-from pytimeparse.timeparse import timeparse
-from redis import Redis
-
-from exchange_data import settings
 
 
 class MessageEmitter(Redis):
