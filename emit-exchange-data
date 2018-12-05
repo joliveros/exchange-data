@@ -1,0 +1,25 @@
+#! /usr/bin/env python
+import alog
+from stringcase import pascalcase
+
+import click
+import exchange_data.emitters
+import signal
+
+signal.signal(signal.SIGINT, lambda: exit(0))
+signal.signal(signal.SIGTERM, lambda: exit(0))
+
+
+@click.command()
+@click.argument('symbol', nargs=1, required=True)
+@click.option('--exchange', required=True,
+              help="an exchange such as bitstamp|bitmex")
+def main(symbol: str, exchange: str):
+    emitter_class_name = pascalcase(exchange) + 'Emitter'
+    emitter_class = getattr(exchange_data.emitters, emitter_class_name)
+    emitter = emitter_class(symbol)
+    emitter.start()
+
+
+if __name__ == '__main__':
+    main()

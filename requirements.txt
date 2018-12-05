@@ -6,6 +6,7 @@ git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
 influxdb
 pusherclient
 pytimeparse
+redis
 rollbar>=0.13.12
 six
 sortedcontainers

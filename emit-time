@@ -1,0 +1,20 @@
+#! /usr/bin/env python
+import alog
+import click
+import signal
+
+from exchange_data.emitters import TimeEmitter
+
+signal.signal(signal.SIGINT, lambda: exit(0))
+signal.signal(signal.SIGTERM, lambda: exit(0))
+
+
+@click.command()
+@click.argument('interval', nargs=1, required=False, default='1s')
+def main(interval: str):
+    time_emitter = TimeEmitter(interval)
+    time_emitter.start()
+
+
+if __name__ == '__main__':
+    main()

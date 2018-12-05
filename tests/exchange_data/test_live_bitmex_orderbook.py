@@ -28,4 +28,3 @@ class TestLiveBitmexOrderBook(object):
         action = message.action
         assert len(action.orders) == 4
         assert action.table == 'orderBookL2'
-
