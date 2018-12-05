@@ -40,3 +40,4 @@ class BitmexRecorder(Recorder, Instrument):
 
     def start(self):
         self.run_forever()
+

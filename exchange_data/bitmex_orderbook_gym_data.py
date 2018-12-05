@@ -109,27 +109,9 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
                 self.read_date_range(msg)
                 self.init_dataset()
 
-            self.save_frame()
+            self.add_frame()
         except NotOrderbookMessage:
             pass
-
-    def save_frame(self) -> ndarray:
-        bid_side = self.gen_bid_side()
-        bid_side.resize((2, self.max_levels))
-        bid_side -= self.half_spread
-
-        ask_side = self.gen_ask_side()
-        ask_side.resize((2, self.max_levels))
-        ask_side += self.half_spread
-
-        frame: ndarray = np.array([ask_side, bid_side])
-
-        if self.last_date not in self.dataset.time.values:
-            nearest_date = self.dataset.sel(time=self.last_date, method='nearest').time.values
-
-            self.dataset['orderbook'].loc[dict(time=nearest_date)] = frame
-
-        return frame
 
     def gen_bid_side(self):
         bid_levels = list(self.asks.price_tree.items())
@@ -177,6 +159,23 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
             'end': date_plus_timestring(msg.timestamp, self.total_time)
         }
 
+    def generate_frame(self) -> ndarray:
+        bid_side = self.gen_bid_side()
+        bid_side.resize((2, self.max_levels))
+        bid_side -= self.half_spread
+        ask_side = self.gen_ask_side()
+        ask_side.resize((2, self.max_levels))
+        ask_side += self.half_spread
+        frame = np.array([ask_side, bid_side])
+        return frame
 
-if __name__ == '__main__':
-    pass
+    def add_frame(self) -> ndarray:
+        frame = self.generate_frame()
+
+        if self.last_date not in self.dataset.time.values:
+            nearest_date = self.dataset.sel(time=self.last_date, method='nearest').time.values
+
+            self.dataset['orderbook'].loc[dict(time=nearest_date)] = frame
+
+        return frame
+
