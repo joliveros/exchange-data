@@ -1,7 +1,9 @@
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
+from cached_property import cached_property
 from datetime import datetime
 from exchange_data import settings
+from pyee import EventEmitter
 from pytimeparse.timeparse import timeparse
 from redis import Redis
 from time import sleep
@@ -42,7 +44,18 @@ class TimeEmitter(Messenger):
         loop.run_forever()
 
 
-class BitmexEmitter(Messenger, Instrument):
+class BitmexEmitterBase(object):
+    exchange = 'bitmex'
+
+    def __init__(self, symbol: str):
+        self.symbol = symbol
+
+    @cached_property
+    def channel_name(self):
+        return f'{self.symbol}-{self.exchange}'
+
+
+class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
     measurements = []
     channels = [
         InstrumentChannels.quote,
@@ -51,9 +64,9 @@ class BitmexEmitter(Messenger, Instrument):
     ]
 
     def __init__(self, symbol):
+        BitmexEmitterBase.__init__(self, symbol)
         Messenger.__init__(self)
         websocket.enableTrace(settings.RUN_ENV == 'development')
-        self.exchange = 'bitmex'
 
         self.symbol = symbol
         Instrument.__init__(self, symbol=symbol,
@@ -63,8 +76,7 @@ class BitmexEmitter(Messenger, Instrument):
         self.on('action', self.on_action)
 
     def on_action(self, data):
-        channel = f'{self.symbol}-{self.exchange}'
-        msg = channel, json.dumps(data)
+        msg = self.channel_name, json.dumps(data)
 
         try:
             self.publish(*msg)
