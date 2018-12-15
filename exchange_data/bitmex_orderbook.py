@@ -183,8 +183,6 @@ class BitmexOrderBook(OrderBook):
         elif message.action.table == 'trade':
             pass
 
-        alog.info(message)
-
         return message
 
 
