@@ -15,9 +15,16 @@ import sys
 import websocket
 
 
-class Messenger(Redis):
+class Messenger(Redis, EventEmitter):
     def __init__(self):
-        super().__init__(settings.REDIS_HOST)
+        Redis.__init__(self, settings.REDIS_HOST)
+        EventEmitter.__init__(self)
+
+    def sub(self, channel):
+        pubsub = self.pubsub()
+        pubsub.subscribe([channel])
+        for message in pubsub.listen():
+            self.emit(channel, message)
 
 
 class TimeEmitter(Messenger):

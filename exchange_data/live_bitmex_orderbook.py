@@ -1,23 +1,19 @@
-from bitmex_websocket import Instrument
-from bitmex_websocket.constants import InstrumentChannels
 from datetime import datetime
 from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
+from exchange_data.emitters import Messenger, BitmexEmitterBase
 
 
-class LiveBitmexOrderBook(BitmexOrderBookGymData, Instrument):
-    channels = [
-        InstrumentChannels.trade,
-        InstrumentChannels.orderBookL2
-    ]
+class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBookGymData, Messenger):
 
     def __init__(self, symbol: str):
+        BitmexEmitterBase.__init__(self, symbol)
         BitmexOrderBookGymData.__init__(self, symbol=symbol, overwrite=True)
-        Instrument.__init__(self,
-                            symbol=symbol,
-                            should_auth=False,
-                            channels=self.channels)
+        Messenger.__init__(self)
 
         self.on('action', self.message)
+
+    def sub(self, **kwargs):
+        super().sub(self.channel_name)
 
     def save_to_array(self, date: datetime):
         pass
@@ -25,4 +21,4 @@ class LiveBitmexOrderBook(BitmexOrderBookGymData, Instrument):
 
 if __name__ == '__main__':
     orderbook = LiveBitmexOrderBook('XBTUSD')
-    orderbook.run_forever()
+    orderbook.sub()
