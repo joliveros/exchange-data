@@ -13,12 +13,12 @@ import sys
 import websocket
 
 
-class MessageEmitter(Redis):
+class Messenger(Redis):
     def __init__(self):
         super().__init__(settings.REDIS_HOST)
 
 
-class TimeEmitter(MessageEmitter):
+class TimeEmitter(Messenger):
     def __init__(self, tick_interval: str = '1s'):
         super().__init__()
         self.tick_interval = timeparse(tick_interval)
@@ -42,7 +42,7 @@ class TimeEmitter(MessageEmitter):
         loop.run_forever()
 
 
-class BitmexEmitter(MessageEmitter, Instrument):
+class BitmexEmitter(Messenger, Instrument):
     measurements = []
     channels = [
         InstrumentChannels.quote,
@@ -51,7 +51,7 @@ class BitmexEmitter(MessageEmitter, Instrument):
     ]
 
     def __init__(self, symbol):
-        MessageEmitter.__init__(self)
+        Messenger.__init__(self)
         websocket.enableTrace(settings.RUN_ENV == 'development')
         self.exchange = 'bitmex'
 
