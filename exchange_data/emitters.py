@@ -63,7 +63,8 @@ class BitmexEmitter(Messenger, Instrument):
         self.on('action', self.on_action)
 
     def on_action(self, data):
-        msg = f'{self.symbol}{self.exchange}', json.dumps(data)
+        channel = f'{self.symbol}-{self.exchange}'
+        msg = channel, json.dumps(data)
 
         try:
             self.publish(*msg)
