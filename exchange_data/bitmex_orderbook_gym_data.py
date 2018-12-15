@@ -163,10 +163,13 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
         bid_side = self.gen_bid_side()
         bid_side.resize((2, self.max_levels))
         bid_side -= self.half_spread
+
         ask_side = self.gen_ask_side()
         ask_side.resize((2, self.max_levels))
         ask_side += self.half_spread
+
         frame = np.array([ask_side, bid_side])
+
         return frame
 
     def add_frame(self) -> ndarray:

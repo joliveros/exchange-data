@@ -4,16 +4,18 @@ services:
 
   redis:
     image: redis
+    ports:
+      - 0.0.0.0:6379:6379
 
   emit_bitmex:
     image: codequants/exchange-data
-    command: ./emit-exchange-data --exchange bitmex XBTUSD
+    command: bash -c "./emit-exchange-data --exchange bitmex XBTUSD"
     volumes:
       - ./:/src/
 
   emit_time:
     image: codequants/exchange-data
-    command: ./emit-time
+    command: bash -c "./emit-time"
     volumes:
       - ./:/src/
 
