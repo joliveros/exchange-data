@@ -63,7 +63,7 @@ class Order(object):
         self.type = order_type
         self.uid = uid
 
-        if quantity <= 0:
+        if quantity < 0:
             raise InvalidOrderQuantity(quantity)
         else:
             self.quantity = quantity

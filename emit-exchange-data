@@ -1,11 +1,10 @@
 #! /usr/bin/env python
-import signal
-
-import websocket
+import alog
 from stringcase import pascalcase
 
 import click
-import exchange_data.recorders
+import exchange_data.emitters
+import signal
 
 signal.signal(signal.SIGINT, lambda: exit(0))
 signal.signal(signal.SIGTERM, lambda: exit(0))
@@ -16,10 +15,10 @@ signal.signal(signal.SIGTERM, lambda: exit(0))
 @click.option('--exchange', required=True,
               help="an exchange such as bitstamp|bitmex")
 def main(symbol: str, exchange: str):
-    recorder_class = getattr(exchange_data.recorders, pascalcase(exchange) +
-                             'Recorder')
-    recorder = recorder_class(symbol)
-    recorder.start()
+    emitter_class_name = pascalcase(exchange) + 'Emitter'
+    emitter_class = getattr(exchange_data.emitters, emitter_class_name)
+    emitter = emitter_class(symbol)
+    emitter.start()
 
 
 if __name__ == '__main__':

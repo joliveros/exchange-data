@@ -1,23 +1,26 @@
 """
 Saves cryptocurrency exchange data in realtime to influxdb
 """
-from pip._internal.download import PipSession
-from pip._internal.req import parse_requirements
+from typing import List
+
 from setuptools import find_packages, setup
-from os.path import realpath
+import yaml
 
 
-def get_reqs_from_file(file):
-    file_path = realpath(file)
+def get_deps_from_yaml(file: str='./environment.yml', exclude: List=[]):
 
-    # parse_requirements() returns generator of pip.req.InstallRequirement
-    # objects
-    install_reqs = parse_requirements(file_path, session=PipSession)
-    print(install_reqs)
+    with open(file, 'r') as stream:
+        env = yaml.load(stream)
+        nested_deps = [
+            dep for dep in env['dependencies'] if type(dep) == dict
+        ][0]
+        pip_deps = []
+        if 'pip' in nested_deps:
+            pip_deps = nested_deps['pip']
 
-    # reqs is a list of requirement
-    # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-    return [str(ir.req) for ir in install_reqs]
+        pip_deps = list(set(pip_deps) - set(exclude))
+
+        return '\n'.join(pip_deps)
 
 
 setup(
@@ -33,8 +36,16 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=get_reqs_from_file('./requirements.txt'),
-    tests_require=get_reqs_from_file('./requirements-test.txt'),
+    install_requires=get_deps_from_yaml(exclude=[
+        'pytest',
+        'pytest-cov',
+        'pytest-mock',
+        'pytest-vcr',
+        'mock',
+        'coveralls',
+        'flake8'
+    ]),
+    tests_require=get_deps_from_yaml(),
     entry_points={
         'console_scripts': [
             'exchange-data = cli',
