@@ -9,13 +9,13 @@ services:
 
   emit_bitmex:
     image: codequants/exchange-data
-    command: bash -c "./emit-exchange-data --exchange bitmex XBTUSD"
+    command: bash -c "source ~/.bashrc && ./emit-exchange-data --exchange bitmex XBTUSD"
     volumes:
       - ./:/src/
 
   emit_time:
     image: codequants/exchange-data
-    command: bash -c "./emit-time"
+    command: bash -c "source ~/.bashrc && ./emit-time"
     volumes:
       - ./:/src/
 
