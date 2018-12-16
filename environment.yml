@@ -15,6 +15,7 @@ dependencies:
     - cached-property
     - click
     - coveralls
+    - django
     - flake8
     - git+https://github.com/joliveros/gdax-python.git#egg=gdax
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
