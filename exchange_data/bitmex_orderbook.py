@@ -2,7 +2,7 @@ import pdb
 from datetime import datetime
 from enum import auto, Enum
 from functools import lru_cache
-from typing import Any, List
+from typing import Any, List, Optional
 
 import alog
 import json
@@ -118,10 +118,7 @@ class BitmexMessage(object):
         except TypeError:
             pass
 
-        try:
-            table = data['table']
-        except:
-            pdb.set_trace()
+        table = data['table']
 
         if table != 'orderBookL2':
             raise NotOrderbookMessage('Not orderBookL2 message')
@@ -169,8 +166,11 @@ class BitmexOrderBook(OrderBook):
         self.result_set = None
         self.last_timestamp = None
 
-    def message(self, raw_message) -> BitmexMessage:
-        message = BitmexMessage(raw_message)
+    def message(self, raw_message) -> Optional[BitmexMessage]:
+        try:
+            message = BitmexMessage(raw_message)
+        except NotOrderbookMessage:
+            return None
 
         self.last_timestamp = message.timestamp
 
@@ -182,6 +182,8 @@ class BitmexOrderBook(OrderBook):
 
         elif message.action.table == 'trade':
             pass
+
+        alog.debug(message)
 
         return message
 
