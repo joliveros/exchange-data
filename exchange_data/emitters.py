@@ -16,8 +16,10 @@ import websocket
 
 
 class Messenger(Redis, EventEmitter):
-    def __init__(self):
-        Redis.__init__(self, settings.REDIS_HOST)
+    def __init__(self, host: str = None):
+        if host is None:
+            host = settings.REDIS_HOST
+        Redis.__init__(self, host)
         EventEmitter.__init__(self)
 
     def sub(self, channel):
@@ -65,7 +67,7 @@ class BitmexEmitterBase(object):
 class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
     measurements = []
     channels = [
-        InstrumentChannels.quote,
+        # InstrumentChannels.quote,
         InstrumentChannels.trade,
         InstrumentChannels.orderBookL2
     ]

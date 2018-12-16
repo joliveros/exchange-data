@@ -1,4 +1,4 @@
-version: "3"
+version: "3.1"
 
 services:
   influxdb:
@@ -16,15 +16,13 @@ services:
     - 28953:8086
 
     volumes:
-      - "${HOME}/scripts/influxdb.conf:/etc/influxdb/influxdb.conf"
-      - "/mnt/volume-lon1-01/influxdb:/var/lib/influxdb"
+      - "./influxdb.conf:/etc/influxdb/influxdb.conf"
+      - "${HOME}/influxdb:/var/lib/influxdb"
 
-    command:
-      -config /etc/influxdb/influxdb.conf
+    command: influxd -config /etc/influxdb/influxdb.conf
 
   bitmex-btcusd:
     image: codequants/exchange-data
-    restart: unless-stopped
 
     env_file:
       - ./.env.prod
@@ -32,11 +30,10 @@ services:
     environment:
       - BATCH_SIZE=100
 
-    links:
+    depends_on:
       - influxdb
 
-    command:
-      ./exchange-data --exchange bitmex XBTUSD
+    command: bash -c "source ~/.bashrc && ./exchange-data --exchange bitmex XBTUSD"
 
   bitstamp-btcusd:
     image: codequants/exchange-data
@@ -48,11 +45,10 @@ services:
     environment:
       - BATCH_SIZE=100
 
-    links:
+    depends_on:
       - influxdb
 
-    command:
-      ./exchange-data --exchange bitstamp btcusd
+    command: bash -c "source ~/.bashrc && ./exchange-data --exchange bitstamp btcusd"
 
   gdax-btcusd:
     image: codequants/exchange-data
@@ -64,8 +60,7 @@ services:
     environment:
       - BATCH_SIZE=100
 
-    links:
+    depends_on:
       - influxdb
 
-    command:
-      ./exchange-data --exchange gdax BTC-USD
+    command: bash -c "source ~/.bashrc && ./exchange-data --exchange gdax BTC-USD"
