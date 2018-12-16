@@ -1,3 +1,6 @@
+from exchange_data import Buffer
+
+
 class OrderList(object):
     """
     A doubly linked list of Orders. Used to iterate through Orders when
@@ -125,10 +128,9 @@ class OrderList(object):
         self.tail_order = order
 
     def __str__(self):
-        from six.moves import cStringIO as StringIO
-        temp_file = StringIO()
+        buffer = Buffer()
 
         for order in self:
-            temp_file.write("%s\n" % str(order))
+            buffer.write("%s\n" % str(order))
 
-        return temp_file.getvalue()
+        return str(buffer)

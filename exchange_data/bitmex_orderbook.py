@@ -1,7 +1,8 @@
+import pdb
 from datetime import datetime
 from enum import auto, Enum
 from functools import lru_cache
-from typing import Any
+from typing import Any, List
 
 import alog
 import json
@@ -79,33 +80,57 @@ class BitmexOrder(Order):
 
 
 class Action(object):
-    def __init__(self, symbol: str, data: str, timestamp: int=None):
+    def __init__(
+            self,
+            symbol: str,
+            table: str,
+            orders: List[BitmexOrder],
+            timestamp: int=None,
+            action_type: ActionType = None
+    ):
+        self.orders = orders
         self.symbol = symbol
-
-        if type(data) == str:
-            data = json.loads(data)
-
-        self.type = ActionType[data['action'].upper()]
-        self.table = data['table']
-
-        if 'timestamp' in data:
-            self.timestamp = data['timestamp']
-        elif timestamp:
-            self.timestamp = timestamp
-        else:
-            self.timestamp = time.time()
-
-        self.orders = data['data']
+        self.table = table
+        self.timestamp = timestamp
+        self.type = action_type
 
     def __str__(self):
-        return self.__dict__
+        return str(vars(self))
+
+
+class NotOrderbookMessage(Exception):
+    pass
 
 
 class BitmexMessage(object):
     def __init__(self, data: Any):
-
-        if type(data) == str:
+        if isinstance(data, str):
             data = json.loads(data)
+
+        try:
+            _data = data['data']
+
+            if isinstance(_data, str):
+                data = json.loads(_data)
+
+        except KeyError:
+            pass
+        except TypeError:
+            pass
+
+        try:
+            table = data['table']
+        except:
+            pdb.set_trace()
+
+        if table != 'orderBookL2':
+            raise NotOrderbookMessage('Not orderBookL2 message')
+
+        action_type = None
+        self.action = None
+
+        if 'action' in data:
+            action_type = ActionType[data['action'].upper()]
 
         if 'symbol' in data:
             self.symbol: str = data['symbol']
@@ -117,13 +142,12 @@ class BitmexMessage(object):
         else:
             self.timestamp = time.time()
 
-        if 'data' in data:
-            data = data['data']
-
-        self.action = Action(self.symbol, data, self.timestamp)
+        orders = [BitmexOrder(order_data, self.timestamp)
+                  for order_data in data['data']]
+        self.action = Action(self.symbol, table, orders, self.timestamp, action_type)
 
     def __str__(self):
-        return str(self.__dict__)
+        return str(vars(self))
 
     @property
     def timestamp_datetime(self):
@@ -145,9 +169,13 @@ class BitmexOrderBook(OrderBook):
         self.result_set = None
         self.last_timestamp = None
 
-    def message_strict(self, raw_message):
+    def message(self, raw_message) -> BitmexMessage:
         message = BitmexMessage(raw_message)
+
         self.last_timestamp = message.timestamp
+
+        if message.action is None:
+            return message
 
         if message.action.table == 'orderBookL2':
             self.order_book_l2(message)
@@ -157,21 +185,6 @@ class BitmexOrderBook(OrderBook):
 
         return message
 
-    def message(self, raw_message) -> BitmexMessage:
-        try:
-            message = BitmexMessage(raw_message)
-            self.last_timestamp = message.timestamp
-
-            if message.action.table == 'orderBookL2':
-                self.order_book_l2(message)
-
-            elif message.action.table == 'trade':
-                pass
-
-            return message
-
-        except Exception:
-            traceback.print_exc()
 
     def order_book_l2(self, message: BitmexMessage):
 
@@ -179,10 +192,7 @@ class BitmexOrderBook(OrderBook):
             self.update_orders(message)
 
         elif message.action.type in [ActionType.INSERT, ActionType.PARTIAL]:
-            orders = [BitmexOrder(order_data, message.timestamp)
-                      for order_data in message.action.orders]
-
-            for order in orders:
+            for order in message.action.orders:
                 self.process_order(order)
 
         elif message.action.type == ActionType.DELETE:

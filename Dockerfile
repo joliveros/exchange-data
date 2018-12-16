@@ -1,13 +1,16 @@
-FROM python:3.6.5
+FROM continuumio/miniconda
 
 ENV NAME exchange-data
 
-COPY . /src
-
 WORKDIR /src
 
-RUN pip install --upgrade pip
+RUN apt-get update && apt-get install -y build-essential
 
-RUN pip install -r requirements.txt -r requirements-test.txt --no-cache-dir
+COPY environment.yml .
+COPY .bashrc /root
+
+RUN bash -c "conda env create -f environment.yml"
+
+COPY . .
 
 CMD ["./exchange-data"]

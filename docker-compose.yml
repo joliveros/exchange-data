@@ -1,0 +1,29 @@
+version: '3.1'
+
+services:
+
+  redis:
+    image: redis
+    ports:
+      - 0.0.0.0:6379:6379
+
+  emit_bitmex:
+    image: codequants/exchange-data
+    command: bash -c "source ~/.bashrc && ./emit-exchange-data --exchange bitmex XBTUSD"
+    volumes:
+      - ./:/src/
+
+  emit_time:
+    image: codequants/exchange-data
+    command: bash -c "source ~/.bashrc && ./emit-time"
+    volumes:
+      - ./:/src/
+
+#  bitmex_data:
+#    image: codequants/exchange-data
+#    command: ./exchange-data --exchange bitmex XBTUSD
+
+
+#secrets:
+#  postgres_password:
+#    file: ./secrets/postgres_password

@@ -1,6 +1,6 @@
 from numpy.core.multiarray import ndarray
 
-from exchange_data.bitmex_orderbook import BitmexOrderBook
+from exchange_data.bitmex_orderbook import BitmexOrderBook, NotOrderbookMessage
 from exchange_data.cached_dataset import CachedDataset
 from exchange_data.influxdb_data import InfluxDBData
 from exchange_data.utils import date_plus_timestring, datetime_from_timestamp
@@ -102,31 +102,16 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
         self.save()
 
     def replay(self, line):
-        msg = self.message_strict(line)
+        try:
+            msg = self.message(line)
 
-        if self.date_range is None:
-            self.read_date_range(msg)
-            self.init_dataset()
+            if self.date_range is None:
+                self.read_date_range(msg)
+                self.init_dataset()
 
-        self.save_frame()
-
-    def save_frame(self) -> ndarray:
-        bid_side = self.gen_bid_side()
-        bid_side.resize((2, self.max_levels))
-        bid_side -= self.half_spread
-
-        ask_side = self.gen_ask_side()
-        ask_side.resize((2, self.max_levels))
-        ask_side += self.half_spread
-
-        frame: ndarray = np.array([ask_side, bid_side])
-
-        if self.last_date not in self.dataset.time.values:
-            nearest_date = self.dataset.sel(time=self.last_date, method='nearest').time.values
-
-            self.dataset['orderbook'].loc[dict(time=nearest_date)] = frame
-
-        return frame
+            self.add_frame()
+        except NotOrderbookMessage:
+            pass
 
     def gen_bid_side(self):
         bid_levels = list(self.asks.price_tree.items())
@@ -174,6 +159,26 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
             'end': date_plus_timestring(msg.timestamp, self.total_time)
         }
 
+    def generate_frame(self) -> ndarray:
+        bid_side = self.gen_bid_side()
+        bid_side.resize((2, self.max_levels))
+        bid_side -= self.half_spread
 
-if __name__ == '__main__':
-    pass
+        ask_side = self.gen_ask_side()
+        ask_side.resize((2, self.max_levels))
+        ask_side += self.half_spread
+
+        frame = np.array([ask_side, bid_side])
+
+        return frame
+
+    def add_frame(self) -> ndarray:
+        frame = self.generate_frame()
+
+        if self.last_date not in self.dataset.time.values:
+            nearest_date = self.dataset.sel(time=self.last_date, method='nearest').time.values
+
+            self.dataset['orderbook'].loc[dict(time=nearest_date)] = frame
+
+        return frame
+

@@ -20,13 +20,14 @@ def book(tmpdir):
 
 
 class TestBitmexOrderBookGymData(object):
+
     @pytest.mark.vcr()
     def test_parse_date_range_on_first_message(
             self,
             book: BitmexOrderBookGymData,
             measurements
     ):
-        msg = book.message_strict(measurements['data'][0])
+        msg = book.message(measurements['data'][0])
 
         book.read_date_range(msg)
 
