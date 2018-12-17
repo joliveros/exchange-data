@@ -1,6 +1,8 @@
 from . import Recorder
 from gdax import WebsocketClient
+
 import alog
+import json
 
 
 class GdaxRecorder(Recorder, WebsocketClient):
@@ -11,6 +13,17 @@ class GdaxRecorder(Recorder, WebsocketClient):
         WebsocketClient.__init__(self, products=symbols, channels=['full'])
 
         self.start()
+
+    def _disconnect(self):
+        self.ws.send(json.dumps({
+            "type": "unsubscribe",
+            "channels": self.channels
+        }))
+
+        if self.ws:
+                self.ws.close()
+
+        self.on_close()
 
     def on_message(self, msg):
         alog.debug(msg)
