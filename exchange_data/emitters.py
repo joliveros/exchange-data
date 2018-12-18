@@ -3,6 +3,7 @@ from bitmex_websocket.constants import InstrumentChannels
 from cached_property import cached_property
 from datetime import datetime
 from exchange_data import settings
+from multiprocessing import Lock
 from pyee import EventEmitter
 from pytimeparse.timeparse import timeparse
 from redis import Redis
@@ -19,14 +20,18 @@ class Messenger(Redis, EventEmitter):
     def __init__(self, host: str = None):
         if host is None:
             host = settings.REDIS_HOST
+
         Redis.__init__(self, host)
         EventEmitter.__init__(self)
 
-    def sub(self, channel):
+    def sub(self, channel, lock: Lock):
         pubsub = self.pubsub()
         pubsub.subscribe([channel])
+
         for message in pubsub.listen():
+            lock.acquire()
             self.emit(channel, message)
+            lock.release()
 
 
 class TimeEmitter(Messenger):

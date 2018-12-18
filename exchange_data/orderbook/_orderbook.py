@@ -341,7 +341,7 @@ class OrderBook(object):
 
         summary.newline()
 
-        return summary.getvalue()
+        return str(summary)
 
     def __str__(self):
         return self.print(depth=25)

@@ -1,14 +1,16 @@
 name: exchange-data
 channels:
   - defaults
+  - anaconda
 dependencies:
+  - boost
   - bottleneck
   - cython
-#  - matplotlib
   - numpy
   - pip=10.0.1
   - python=3.6.5
   - xarray
+#  - matplotlib
   - pip:
     - alog
     - bitmex-websocket
@@ -21,6 +23,7 @@ dependencies:
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
     - gym
     - influxdb
+    - larch-pickle
     - mock
     - pusherclient
     - pytest

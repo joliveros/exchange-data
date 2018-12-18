@@ -1,30 +1,37 @@
-from datetime import datetime
-from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
+from multiprocessing import Lock
+from typing import List
+
+import alog
+
+from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.emitters import Messenger, BitmexEmitterBase
 
 import json
 
 
-class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBookGymData, Messenger):
+class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBook, Messenger):
 
     def __init__(self, symbol: str, host: str = None):
         BitmexEmitterBase.__init__(self, symbol)
-        BitmexOrderBookGymData.__init__(self, symbol=symbol, overwrite=True)
+        BitmexOrderBook.__init__(self, symbol=symbol)
         Messenger.__init__(self, host=host)
+        self.serialize_keys: List[str] = BitmexOrderBook(symbol=symbol).__dict__.keys()
 
         self.on(self.channel_name, self._message)
-        self.on('action', self.message)
+        self.on('orderBookL2', self.message)
 
     def _message(self, msg):
         if msg.get('type') != 'subscribe':
             data = json.loads(msg['data'])
-            self.emit('action', data)
 
-    def sub(self, **kwargs):
-        super().sub(self.channel_name)
+            if data['table'] == 'orderBookL2':
+                self.emit('orderBookL2', data)
 
-    def save_to_array(self, date: datetime):
-        pass
+    def sub(self, lock: Lock, channel: str = None):
+        if channel is None:
+            channel = self.channel_name
+
+        super().sub(channel=channel, lock=lock)
 
 
 if __name__ == '__main__':

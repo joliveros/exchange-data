@@ -9,13 +9,13 @@ class NoValue(Enum):
 
 
 class OrderType(NoValue):
-    LIMIT = auto(),
-    MARKET = auto()
+    LIMIT = 0,
+    MARKET = 1
 
 
 class OrderBookSide(NoValue):
-    ASK = auto(),
-    BID = auto()
+    ASK = 0,
+    BID = 1
 
 
 class InvalidOrderQuantity(BaseException):
