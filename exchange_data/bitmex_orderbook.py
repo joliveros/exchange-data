@@ -10,6 +10,7 @@ import time
 import traceback
 
 import requests
+from pyee import EventEmitter
 
 from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType, \
     OrderBook
@@ -138,14 +139,17 @@ class BitmexTickSize(Enum):
     XBTUSD = 0.01
 
 
-class BitmexOrderBook(OrderBook):
+class BitmexOrderBook(OrderBook, EventEmitter):
 
     def __init__(self, symbol: str):
         OrderBook.__init__(self)
+        EventEmitter.__init__(self)
+
         instrument_info = InstrumentInfo.get_instrument(symbol)
         self.__dict__.update(instrument_info.__dict__)
 
         self.symbol = symbol
+        self.on('orderBookL2', self.message)
 
     def message(self, raw_message) -> Optional[BitmexMessage]:
         message = None

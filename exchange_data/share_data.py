@@ -1,6 +1,5 @@
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.emitters import Messenger, BitmexEmitterBase
-from exchange_data.orderbook._ordertree import OrderTree
 from multiprocessing import Lock, Process
 from multiprocessing.managers import BaseManager
 from time import sleep
@@ -9,22 +8,19 @@ import alog
 import json
 
 
-class LiveBitmexOrderBook(BitmexEmitterBase, Messenger):
+class LiveBitmexOrderBook(BitmexEmitterBase, Messenger, BitmexOrderBook):
 
     def __init__(self, symbol: str, host: str = None):
         BitmexEmitterBase.__init__(self, symbol)
         Messenger.__init__(self, host=host)
-        BaseManager.register(OrderTree.__qualname__, OrderTree)
-        self.manager = manager = BaseManager()
+        BitmexOrderBook.__init__(self, symbol=symbol)
 
-        manager.start()
+        self.start()
 
         self.lock: Lock = Lock()
 
-        self.asks = manager.OrderTree()
-        self.bids = manager.OrderTree()
+        self.orders = self.list()
 
-        self.orderbook = BitmexOrderBook(symbol=symbol)
 
         # self.serialize_keys: List[str] = BitmexOrderBook(symbol=symbol).__dict__.keys()
 
@@ -37,16 +33,11 @@ class LiveBitmexOrderBook(BitmexEmitterBase, Messenger):
             if data['table'] == 'orderBookL2':
                 self.orderbook.emit('orderBookL2', data)
 
-    def sub(self, lock: Lock, channel: str, asks: OrderTree, bids: OrderTree):
-        self.orderbook.asks = asks
-        self.orderbook.bids = bids
-        super().sub(channel, lock)
-
-    def run(self):
+    def sub(self, **kwargs):
         sub = Process(
-            target=self.sub,
-            args=[self.channel_name, self.lock, self.asks, self.bids],
-            daemon=True
+            target=super().sub,
+            args=[self.channel_name, self.lock]
+            # daemon=True
         )
         sub.start()
 
@@ -54,9 +45,8 @@ class LiveBitmexOrderBook(BitmexEmitterBase, Messenger):
 
 if __name__ == '__main__':
     orderbook: LiveBitmexOrderBook = LiveBitmexOrderBook('XBTUSD', host='0.0.0.0')
-    orderbook.run()
+    orderbook.sub()
     sleep(10)
-    alog.info(orderbook.lock)
     orderbook.lock.acquire()
-    alog.info(orderbook.bids.__dict__)
+    alog.info(orderbook.orderbook.bids)
     orderbook.lock.release()
