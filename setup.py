@@ -1,26 +1,7 @@
 """
 Saves cryptocurrency exchange data in realtime to influxdb
 """
-from typing import List
-
 from setuptools import find_packages, setup
-import yaml
-
-
-def get_deps_from_yaml(file: str='./environment.yml', exclude: List=[]):
-
-    with open(file, 'r') as stream:
-        env = yaml.load(stream)
-        nested_deps = [
-            dep for dep in env['dependencies'] if type(dep) == dict
-        ][0]
-        pip_deps = []
-        if 'pip' in nested_deps:
-            pip_deps = nested_deps['pip']
-
-        pip_deps = list(set(pip_deps) - set(exclude))
-
-        return '\n'.join(pip_deps)
 
 
 setup(
@@ -36,16 +17,6 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=get_deps_from_yaml(exclude=[
-        'pytest',
-        'pytest-cov',
-        'pytest-mock',
-        'pytest-vcr',
-        'mock',
-        'coveralls',
-        'flake8'
-    ]),
-    tests_require=get_deps_from_yaml(),
     entry_points={
         'console_scripts': [
             'exchange-data = cli',
