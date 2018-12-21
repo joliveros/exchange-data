@@ -1,3 +1,5 @@
+import json
+
 from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
 from pytimeparse import parse as dateparse
 from tests.exchange_data.fixtures import instruments, measurements
@@ -27,7 +29,9 @@ class TestBitmexOrderBookGymData(object):
             book: BitmexOrderBookGymData,
             measurements
     ):
-        msg = book.message(measurements['data'][0])
+        data = json.loads(measurements['data'][0]['data'])
+
+        msg = book.message(data)
 
         book.read_date_range(msg)
 

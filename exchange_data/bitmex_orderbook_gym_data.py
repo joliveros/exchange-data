@@ -1,3 +1,5 @@
+import json
+
 from numpy.core.multiarray import ndarray
 
 from exchange_data.bitmex_orderbook import BitmexOrderBook, NotOrderbookMessage
@@ -102,8 +104,12 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
         self.save()
 
     def replay(self, line):
+        data = line['data']
+        if type(data) == str:
+            data = json.loads(data)
+
         try:
-            msg = self.message(line)
+            msg = self.message(data)
 
             if self.date_range is None:
                 self.read_date_range(msg)
