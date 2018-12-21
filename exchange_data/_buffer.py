@@ -11,3 +11,6 @@ class Buffer(StringIO):
 
     def section(self, value):
         self.write(f'### {value} ###')
+
+    def __str__(self):
+        return self.getvalue()
