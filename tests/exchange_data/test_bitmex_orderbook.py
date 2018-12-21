@@ -60,13 +60,13 @@ class TestBitmexOrderBook(object):
     def test_orderbook_message_updates_orderbook(self,
                                                  orderbook_update_msg,
                                                  mocker):
-        mocked_update_orders = mocker.patch(
+        mocker.patch(
             'exchange_data.bitmex_orderbook.BitmexOrderBook.update_orders'
         )
 
         orderbook = OrderBook(symbol='XBTUSD')
 
-        orderbook.message(json.dumps(orderbook_update_msg))
+        orderbook.message(orderbook_update_msg)
 
         # mocked_update_orders.assert_called()
 

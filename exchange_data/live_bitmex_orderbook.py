@@ -1,32 +1,39 @@
-from datetime import datetime
-from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
-from exchange_data.emitters import Messenger, BitmexEmitterBase
+#!/usr/bin/env python
 
+from exchange_data.bitmex_orderbook import BitmexOrderBook
+from exchange_data.emitters.__init__ import BitmexEmitterBase
+from exchange_data.emitters import Messenger, TimeChannels
+
+import click
 import json
+import signal
+
+signal.signal(signal.SIGINT, lambda: exit(0))
+signal.signal(signal.SIGTERM, lambda: exit(0))
 
 
-class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBookGymData, Messenger):
+class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBook, Messenger):
 
     def __init__(self, symbol: str, host: str = None):
         BitmexEmitterBase.__init__(self, symbol)
-        BitmexOrderBookGymData.__init__(self, symbol=symbol, overwrite=True)
-        Messenger.__init__(self, host=host)
-
-        self.on(self.channel_name, self._message)
-        self.on('action', self.message)
+        Messenger.__init__(self, host=host, handler=self._message)
+        BitmexOrderBook.__init__(self, symbol=symbol)
 
     def _message(self, msg):
         if msg.get('type') != 'subscribe':
             data = json.loads(msg['data'])
-            self.emit('action', data)
 
-    def sub(self, **kwargs):
-        super().sub(self.channel_name)
+            if data['table'] == 'orderBookL2':
+                self.orderbook.emit('orderBookL2', data)
 
-    def save_to_array(self, date: datetime):
-        pass
+    def start(self):
+        channels = [self.channel, TimeChannels.Tick]
+        super().sub(channels)
 
 
-if __name__ == '__main__':
-    orderbook = LiveBitmexOrderBook('XBTUSD', host='0.0.0.0')
-    orderbook.sub()
+@click.command()
+def main():
+    orderbook: LiveBitmexOrderBook = LiveBitmexOrderBook('XBTUSD',
+                                                         host='0.0.0.0')
+
+    orderbook.start()
