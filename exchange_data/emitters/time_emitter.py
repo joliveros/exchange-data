@@ -4,7 +4,6 @@ from exchange_data.emitters.messenger import Messenger
 from pytimeparse.timeparse import timeparse
 from time import sleep
 
-import asyncio
 import click
 
 
@@ -19,18 +18,18 @@ class TimeEmitter(Messenger):
     def next_tick(self):
         now = datetime.now()
         second_diff = (now.microsecond + self.padding)/999999
-        return self.tick_interval - second_diff
+        next_tick = self.tick_interval - second_diff
 
-    async def ticker(self):
+        if next_tick > 0:
+            return next_tick
+        else:
+            return 0
+
+    def start(self):
         while True:
             sleep(self.next_tick)
             now = datetime.now()
             self.publish(TimeChannels.Tick.value, str(now))
-
-    def start(self):
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.ticker())
-        loop.run_forever()
 
 
 class TimeChannels(NoValue):
