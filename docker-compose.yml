@@ -5,6 +5,7 @@ services:
   redis:
     image: redis
     ports:
+    # for manual testing only, for productiion this can be removed
       - 0.0.0.0:6379:6379
 
   emit_bitmex:
