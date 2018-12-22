@@ -4,8 +4,8 @@ services:
 
   redis:
     image: redis
-#    ports:
-#      - 0.0.0.0:6379:6379
+    ports:
+      - 0.0.0.0:6379:6379
 
   emit_bitmex:
     image: codequants.com:5000/exchange-data:latest
