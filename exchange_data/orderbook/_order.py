@@ -1,21 +1,16 @@
 import time
-from enum import Enum, auto
 from exchange_data.orderbook._orderlist import OrderList
-
-
-class NoValue(Enum):
-    def __repr__(self):
-        return '<%s.%s>' % (self.__class__.__name__, self.name)
+from exchange_data.utils import NoValue
 
 
 class OrderType(NoValue):
-    LIMIT = auto(),
-    MARKET = auto()
+    LIMIT = 0,
+    MARKET = 1
 
 
 class OrderBookSide(NoValue):
-    ASK = auto(),
-    BID = auto()
+    ASK = 0,
+    BID = 1
 
 
 class InvalidOrderQuantity(BaseException):
