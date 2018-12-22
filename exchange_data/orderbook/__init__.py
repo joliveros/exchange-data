@@ -1,6 +1,7 @@
 from ._orderlist import OrderList
 from ._order import Order, OrderType, OrderBookSide, SellOrder, BuyOrder, \
-    BuyMarketOrder, SellMarketOrder, NoValue
+    BuyMarketOrder, SellMarketOrder
+from exchange_data.utils import NoValue
 from ._trade import TradeParty, Trade, TradeSummary
 from ._orderbook import OrderBook
 

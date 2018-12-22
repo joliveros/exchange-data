@@ -41,4 +41,4 @@ alog.set_level(LOG_LEVEL)
 
 CERT_FILE = './ca.pem'
 
-REDIS_HOST='redis'
+REDIS_HOST = 'redis'

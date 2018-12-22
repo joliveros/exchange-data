@@ -10,9 +10,11 @@ import time
 import traceback
 
 import requests
+from pyee import EventEmitter
 
-from exchange_data.orderbook import Order, NoValue, OrderBookSide, OrderType, \
+from exchange_data.orderbook import Order, OrderBookSide, OrderType, \
     OrderBook
+from exchange_data.utils import NoValue
 from exchange_data.orderbook.exceptions import OrderExistsException, \
     PriceDoesNotExistException
 
@@ -103,26 +105,7 @@ class NotOrderbookMessage(Exception):
 
 
 class BitmexMessage(object):
-    def __init__(self, data: Any):
-        if isinstance(data, str):
-            data = json.loads(data)
-
-        try:
-            _data = data['data']
-
-            if isinstance(_data, str):
-                data = json.loads(_data)
-
-        except KeyError:
-            pass
-        except TypeError:
-            pass
-
-        table = data['table']
-
-        if table != 'orderBookL2':
-            raise NotOrderbookMessage('Not orderBookL2 message')
-
+    def __init__(self, table: str, data: Any):
         action_type = None
         self.action = None
 
@@ -141,7 +124,9 @@ class BitmexMessage(object):
 
         orders = [BitmexOrder(order_data, self.timestamp)
                   for order_data in data['data']]
-        self.action = Action(self.symbol, table, orders, self.timestamp, action_type)
+
+        self.action = Action(self.symbol, table, orders, self.timestamp,
+                             action_type)
 
     def __str__(self):
         return str(vars(self))
@@ -155,49 +140,42 @@ class BitmexTickSize(Enum):
     XBTUSD = 0.01
 
 
-class BitmexOrderBook(OrderBook):
+class BitmexOrderBook(OrderBook, EventEmitter):
 
     def __init__(self, symbol: str):
         OrderBook.__init__(self)
+        EventEmitter.__init__(self)
+
         instrument_info = InstrumentInfo.get_instrument(symbol)
         self.__dict__.update(instrument_info.__dict__)
 
         self.symbol = symbol
-        self.result_set = None
-        self.last_timestamp = None
+        self.on('orderBookL2', self.message)
 
     def message(self, raw_message) -> Optional[BitmexMessage]:
-        try:
-            message = BitmexMessage(raw_message)
-        except NotOrderbookMessage:
-            return None
+        message = None
 
-        self.last_timestamp = message.timestamp
+        table = raw_message['table']
 
-        if message.action is None:
-            return message
-
-        if message.action.table == 'orderBookL2':
+        if table == 'orderBookL2':
+            message = BitmexMessage(table, raw_message)
+            self.last_timestamp = message.timestamp
             self.order_book_l2(message)
-
-        elif message.action.table == 'trade':
-            pass
-
-        alog.debug(message)
 
         return message
 
-
     def order_book_l2(self, message: BitmexMessage):
 
-        if message.action.type == ActionType.UPDATE:
+        if message.action.type.value == ActionType.UPDATE.value:
             self.update_orders(message)
 
-        elif message.action.type in [ActionType.INSERT, ActionType.PARTIAL]:
+        elif message.action.type.value in [
+            ActionType.INSERT.value, ActionType.PARTIAL.value
+        ]:
             for order in message.action.orders:
                 self.process_order(order)
 
-        elif message.action.type == ActionType.DELETE:
+        elif message.action.type.value == ActionType.DELETE.value:
             for order_data in message.action.orders:
                 try:
                     self.cancel_order(order_data['id'])
