@@ -1,9 +1,10 @@
 from bitmex_websocket.constants import NoValue
-from datetime import datetime
+from datetime import datetime, timezone
 from exchange_data.emitters.messenger import Messenger
 from pytimeparse.timeparse import timeparse
 from time import sleep
 
+import alog
 import click
 
 
@@ -28,7 +29,7 @@ class TimeEmitter(Messenger):
     def start(self):
         while True:
             sleep(self.next_tick)
-            now = datetime.now()
+            now = datetime.now().replace(tzinfo=timezone.utc).timestamp() * 1000
             self.publish(TimeChannels.Tick.value, str(now))
 
 
