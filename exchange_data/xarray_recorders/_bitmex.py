@@ -195,7 +195,6 @@ class BitmexXArrayRecorder(Messenger, BitmexOrderBook, CachedDataset):
         self.to_netcdf()
         self.dataset = Dataset()
 
-
     def start(self):
         self.sub([TimeChannels.Tick, self.symbol])
 
