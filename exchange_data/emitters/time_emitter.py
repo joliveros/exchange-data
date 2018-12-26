@@ -1,5 +1,6 @@
-from bitmex_websocket.constants import NoValue
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
 from pytimeparse.timeparse import timeparse
 from time import sleep
@@ -7,13 +8,16 @@ from time import sleep
 import alog
 import click
 
+from exchange_data.utils import NoValue
+
 
 class TimeEmitter(Messenger):
 
-    def __init__(self, tick_interval: str = '1s'):
+    def __init__(self, tick_interval: str = settings.TICK_INTERVAL):
         super().__init__()
         self.tick_interval = timeparse(tick_interval)
         self.padding = 1100
+        self.previous_day = self.next_day
 
     @property
     def next_tick(self):
@@ -26,15 +30,41 @@ class TimeEmitter(Messenger):
         else:
             return 0
 
+    @property
+    def next_day(self):
+        now: datetime = self.now_utc()
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_date = today + timedelta(days=1)
+
+        next_day_timestamp = next_date.timestamp() * 1000
+
+        return next_day_timestamp
+
+    def timestamp(self):
+        now = self.now_utc().timestamp() * 1000
+        return now
+
+    def now_utc(self):
+        return datetime.now().replace(tzinfo=timezone.utc)
+
     def start(self):
         while True:
             sleep(self.next_tick)
-            now = datetime.now().replace(tzinfo=timezone.utc).timestamp() * 1000
+            now = self.timestamp()
             self.publish(TimeChannels.Tick.value, str(now))
+            self.day_elapsed()
+
+    def day_elapsed(self):
+        next_day = self.next_day
+        if self.previous_day < next_day:
+            self.previous_day = next_day
+            self.publish(TimeChannels.NextDay.value, next_day)
+
 
 
 class TimeChannels(NoValue):
     Tick = 'tick'
+    NextDay = 'next_day'
 
 
 @click.command()
