@@ -1,6 +1,7 @@
 from pathlib import Path
 from stringcase import snakecase
 from xarray import Dataset, open_dataset
+
 import alog
 import os
 
@@ -12,7 +13,7 @@ class CachedDataset(object):
                  cache_dir: str = None,
                  overwrite: bool = False
                  ):
-        self.dataset = None
+        self.dataset: Dataset = None
         self.should_overwrite = overwrite
 
         if cache_dir is None:
