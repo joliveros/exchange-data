@@ -8,7 +8,7 @@ import alog
 import requests
 import time
 
-from exchange_data.emitters import BitmexChannels
+from exchange_data.emitters.bitmex import BitmexChannels
 from exchange_data.orderbook import Order, OrderBookSide, OrderType, \
     OrderBook
 from exchange_data.utils import NoValue

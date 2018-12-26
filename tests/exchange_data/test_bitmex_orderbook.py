@@ -7,7 +7,7 @@ from mock import patch
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import \
     BitmexOrderBook as OrderBook, InstrumentInfo
-from exchange_data.emitters import BitmexChannels
+from exchange_data.emitters.bitmex import BitmexChannels
 from tests.exchange_data.fixtures import datafile_name, measurements
 
 settings.DB = 'http://jose:jade121415@178.62.16.200:28953/'

@@ -2,8 +2,8 @@
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.cached_dataset import CachedDataset
-from exchange_data.emitters import Messenger, TimeChannels, BitmexChannels, \
-    TimeEmitter
+from exchange_data.emitters import Messenger, TimeChannels, TimeEmitter
+from exchange_data.emitters.bitmex import BitmexChannels
 from exchange_data.utils import NoValue, date_plus_timestring, \
     datetime_from_timestamp
 from numpy.core.multiarray import ndarray

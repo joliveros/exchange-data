@@ -1,4 +1,4 @@
-from exchange_data.emitters import BitmexChannels
+from exchange_data.emitters.bitmex import BitmexChannels
 from exchange_data.xarray_recorders import BitmexXArrayRecorder
 
 import alog
