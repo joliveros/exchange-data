@@ -4,7 +4,7 @@ from numpy.core.multiarray import ndarray
 
 from exchange_data.bitmex_orderbook import BitmexOrderBook, NotOrderbookMessage
 from exchange_data.cached_dataset import CachedDataset
-from exchange_data.emitters import BitmexChannels
+from exchange_data.emitters.bitmex import BitmexChannels
 from exchange_data.influxdb_data import InfluxDBData
 from exchange_data.utils import date_plus_timestring, datetime_from_timestamp
 from pandas import date_range

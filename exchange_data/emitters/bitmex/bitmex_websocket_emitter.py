@@ -1,8 +1,7 @@
 from bitmex_websocket import Instrument
-from bitmex_websocket.constants import InstrumentChannels
+from bitmex_websocket.constants import InstrumentChannels, NoValue
 from exchange_data import settings
 from exchange_data.emitters import Messenger
-from exchange_data.utils import NoValue
 
 import alog
 import json

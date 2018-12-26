@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from exchange_data.bitmex_orderbook import BitmexOrderBook
-from exchange_data.emitters.__init__ import BitmexEmitterBase
+from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters import Messenger, TimeChannels
 
 import click

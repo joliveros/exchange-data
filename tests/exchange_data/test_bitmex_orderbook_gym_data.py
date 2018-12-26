@@ -1,5 +1,5 @@
 from exchange_data.bitmex_orderbook_gym_data import BitmexOrderBookGymData
-from exchange_data.emitters import BitmexChannels
+from exchange_data.emitters.bitmex import BitmexChannels
 from pytimeparse import parse as dateparse
 from tests.exchange_data.fixtures import instruments, measurements
 
