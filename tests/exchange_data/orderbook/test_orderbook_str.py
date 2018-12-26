@@ -14,7 +14,7 @@ class TestOrderBookStrRepresentation(object):
         assert len(trade_summary.trades) == 1
 
         orderbook_summary = str(orderbook)
-        assert len(orderbook_summary.split()) == 40
+        assert len(orderbook_summary.split()) == 24
 
     def test_(self, orderbook: OrderBook):
         # alog.info(orderbook)
