@@ -1,22 +1,17 @@
-import pdb
 from datetime import datetime
 from enum import auto, Enum
 from functools import lru_cache
+from pyee import EventEmitter
 from typing import Any, List, Optional
 
 import alog
-import json
-import time
-import traceback
-
 import requests
-from pyee import EventEmitter
+import time
 
+from exchange_data.emitters import BitmexChannels
 from exchange_data.orderbook import Order, OrderBookSide, OrderType, \
     OrderBook
 from exchange_data.utils import NoValue
-from exchange_data.orderbook.exceptions import OrderExistsException, \
-    PriceDoesNotExistException
 
 
 class InstrumentInfo(object):
@@ -142,14 +137,14 @@ class BitmexTickSize(Enum):
 
 class BitmexOrderBook(OrderBook, EventEmitter):
 
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: BitmexChannels):
         OrderBook.__init__(self)
         EventEmitter.__init__(self)
 
-        instrument_info = InstrumentInfo.get_instrument(symbol)
+        instrument_info = InstrumentInfo.get_instrument(symbol.value)
         self.__dict__.update(instrument_info.__dict__)
 
-        self.symbol = symbol
+        self.symbol = symbol.value
         self.on('orderBookL2', self.message)
 
     def message(self, raw_message) -> Optional[BitmexMessage]:

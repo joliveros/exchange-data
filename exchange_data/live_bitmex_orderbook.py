@@ -14,9 +14,9 @@ signal.signal(signal.SIGTERM, lambda: exit(0))
 
 class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBook, Messenger):
 
-    def __init__(self, symbol: str, host: str = None):
+    def __init__(self, symbol: str):
         BitmexEmitterBase.__init__(self, symbol)
-        Messenger.__init__(self, host=host, handler=self._message)
+        Messenger.__init__(self)
         BitmexOrderBook.__init__(self, symbol=symbol)
 
     def _message(self, msg):
@@ -33,7 +33,6 @@ class LiveBitmexOrderBook(BitmexEmitterBase, BitmexOrderBook, Messenger):
 
 @click.command()
 def main():
-    orderbook: LiveBitmexOrderBook = LiveBitmexOrderBook('XBTUSD',
-                                                         host='0.0.0.0')
+    orderbook: LiveBitmexOrderBook = LiveBitmexOrderBook('XBTUSD')
 
     orderbook.start()

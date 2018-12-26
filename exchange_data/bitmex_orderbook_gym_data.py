@@ -4,6 +4,7 @@ from numpy.core.multiarray import ndarray
 
 from exchange_data.bitmex_orderbook import BitmexOrderBook, NotOrderbookMessage
 from exchange_data.cached_dataset import CachedDataset
+from exchange_data.emitters import BitmexChannels
 from exchange_data.influxdb_data import InfluxDBData
 from exchange_data.utils import date_plus_timestring, datetime_from_timestamp
 from pandas import date_range
@@ -14,7 +15,7 @@ import numpy as np
 
 class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
     def __init__(self,
-                 symbol: str,
+                 symbol: BitmexChannels,
                  overwrite: bool,
                  cache_dir: str = None,
                  total_time: str = '15m',
@@ -101,7 +102,7 @@ class BitmexOrderBookGymData(BitmexOrderBook, CachedDataset, InfluxDBData):
         for line in self.result_set.get_points():
             self.replay(line)
 
-        self.save()
+        self.to_netcdf()
 
     def replay(self, line):
         data = line['data']

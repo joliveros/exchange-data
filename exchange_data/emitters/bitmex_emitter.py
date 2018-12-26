@@ -11,13 +11,13 @@ import websocket
 
 
 class BitmexChannels(NoValue):
-    XBTUSD = 'XBTUSD-Bitmex'
+    XBTUSD = 'XBTUSD'
 
 
 class BitmexEmitterBase(object):
-    def __init__(self, symbol: str):
-        self.symbol = symbol
-        self.channel = BitmexChannels[symbol.upper()]
+    def __init__(self, symbol: BitmexChannels):
+        self.symbol = symbol.value
+        self.channel = symbol
 
 
 class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
@@ -28,13 +28,12 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
         InstrumentChannels.orderBookL2
     ]
 
-    def __init__(self, symbol):
+    def __init__(self, symbol: BitmexChannels):
         BitmexEmitterBase.__init__(self, symbol)
         Messenger.__init__(self)
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
-        self.symbol = symbol
-        Instrument.__init__(self, symbol=symbol,
+        Instrument.__init__(self, symbol=symbol.value,
                             channels=self.channels,
                             should_auth=False)
 
