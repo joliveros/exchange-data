@@ -54,8 +54,5 @@ class CachedDataset(object):
         if self.should_overwrite and self.file_exists():
             os.remove(self.filename)
 
-    def save(self):
+    def to_netcdf(self):
         self.dataset.to_netcdf(self.filename, compute=True)
-
-    def fetch_and_save(self):
-        raise NotImplementedError()
