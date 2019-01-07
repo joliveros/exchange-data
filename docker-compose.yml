@@ -11,16 +11,39 @@ services:
   emit_time:
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/time_emitter.py"
+    depends_on:
+      - redis
 
   emit_bitmex:
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/emit-exchange-data --exchange bitmex XBTUSD"
-
+    depends_on:
+      - redis
   record_bitmex:
+    deploy:
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     volumes:
       - $HOME/.exchange-data:/root/.exchange-data
     command: bash -c "source ~/.bashrc && python ./exchange_data/xarray_recorders/_bitmex.py XBTUSD"
+    depends_on:
+      - redis
+  emit_bitmex_orderbook:
+    deploy:
+      replicas: 0
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - redis
+
+  ws_server:
+    deploy:
+      replicas: 0
+    image: codequants.com:5000/exchange-data-ws:latest
+    env_file:
+      - ./.env.prod
 
 #secrets:
 #  postgres_password:

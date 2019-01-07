@@ -30,7 +30,7 @@ class Order(object):
     Orders represent the core piece of the exchange. Every bid/ask is an Order.
     Orders are doubly linked and have helper functions (next_order, prev_order)
     to help the exchange fulfill orders with quantities larger than a single
-    existing Order.
+existing Order.
     """
     next_order: 'Order'
     order_list: OrderList
@@ -40,8 +40,8 @@ class Order(object):
                  order_type: OrderType,
                  quantity: float,
                  side: OrderBookSide,
-                 price: float=None,
-                 timestamp: int = None,
+                 price: float = None,
+                 timestamp: float = None,
                  uid: int = None
                  ):
         self.next_order = None
@@ -93,7 +93,7 @@ class Order(object):
 class BuyOrder(Order):
     def __init__(self,
                  quantity: float,
-                 price: float=None,
+                 price: float = None,
                  order_type: OrderType = OrderType.LIMIT
                  ):
         super().__init__(
@@ -107,7 +107,7 @@ class BuyOrder(Order):
 class SellOrder(Order):
     def __init__(self,
                  quantity: float,
-                 price: float=None,
+                 price: float = None,
                  order_type: OrderType = OrderType.LIMIT
                  ):
         super().__init__(

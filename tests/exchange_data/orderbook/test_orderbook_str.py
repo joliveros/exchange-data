@@ -15,14 +15,3 @@ class TestOrderBookStrRepresentation(object):
 
         orderbook_summary = str(orderbook)
         assert len(orderbook_summary.split()) == 24
-
-    def test_(self, orderbook: OrderBook):
-        # alog.info(orderbook)
-        # orderbook_data = pickle.dumps(orderbook)
-        # alog.info(orderbook_data)
-        #
-        # _orderbook = pickle.loads(orderbook_data)
-        # alog.info(alog.pformat(vars(_orderbook)))
-        # alog.info(_orderbook)
-
-        alog.info(OrderBook)

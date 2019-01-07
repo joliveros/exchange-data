@@ -40,11 +40,13 @@ class TimeEmitter(Messenger):
 
         return next_day_timestamp
 
-    def timestamp(self):
-        now = self.now_utc().timestamp() * 1000
+    @staticmethod
+    def timestamp():
+        now = TimeEmitter.now_utc().timestamp() * 1000
         return now
 
-    def now_utc(self):
+    @staticmethod
+    def now_utc():
         return datetime.now().replace(tzinfo=timezone.utc)
 
     def start(self):
