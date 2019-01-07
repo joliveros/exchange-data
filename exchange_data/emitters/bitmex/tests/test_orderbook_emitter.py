@@ -21,11 +21,12 @@ class TestBitmexOrderBookEmitter(object):
             self.timestamp = TimeEmitter.timestamp()
             return self.timestamp
 
-    def test_generate_orderbook_frame(self, orders, mocker):
+    def test_generate_orderbook_frame(self, orders, mocker, tmpdir):
         mocker.patch(
             'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
         )
-        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD)
+        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
+                                                   cache_dir=tmpdir)
 
         for order in orders:
             orderbook_emitter.process_order(order)
@@ -34,11 +35,12 @@ class TestBitmexOrderBookEmitter(object):
 
         assert frame.shape == (2, 6)
 
-    def test_update_dataset_once(self, orders, mocker):
+    def test_update_dataset_once(self, orders, mocker, tmpdir):
         mocker.patch(
             'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
         )
-        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD)
+        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
+                                                   cache_dir=tmpdir)
 
         for order in orders:
             orderbook_emitter.process_order(order)
@@ -49,11 +51,12 @@ class TestBitmexOrderBookEmitter(object):
 
         assert list(dataset.dims) == ['price', 'time', 'volume']
 
-    def test_update_dataset_multiple_times(self, orders, mocker):
+    def test_update_dataset_multiple_times(self, orders, mocker, tmpdir):
         mocker.patch(
             'exchange_data.emitters.messenger.Redis'
         )
-        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD)
+        orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
+                                                   cache_dir=tmpdir)
 
         for order in orders:
             orderbook_emitter.process_order(order)
@@ -72,12 +75,14 @@ class TestBitmexOrderBookEmitter(object):
     def test_update_dataset_multiple_times_and_delete_level(
             self,
             orders,
-            mocker
+            mocker,
+            tmpdir
     ):
         mocker.patch(
             'exchange_data.emitters.messenger.Redis'
         )
-        orderbook = BitmexOrderBookEmitter(BitmexChannels.XBTUSD)
+        orderbook = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
+                                           cache_dir=tmpdir)
 
         for order in orders:
             orderbook.process_order(order)
@@ -100,15 +105,18 @@ class TestBitmexOrderBookEmitter(object):
     def test_trim_dataset(
             self,
             orders,
-            mocker
+            mocker,
+            tmpdir
     ):
         mocker.patch(
             'exchange_data.emitters.messenger.Redis'
         )
         orderbook = BitmexOrderBookEmitter(
             BitmexChannels.XBTUSD,
-            max_dataset_length='2s'
+            max_dataset_length='2s',
+            cache_dir=tmpdir
         )
+
 
         for order in orders:
             orderbook.process_order(order)
