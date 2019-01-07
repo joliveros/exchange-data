@@ -1,18 +1,17 @@
-import signal
-import sys
-
-import alog
-import click
-from numpy.core.multiarray import ndarray
-
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase, BitmexChannels
+from numpy.core.multiarray import ndarray
 from pandas import date_range
-from xarray import Dataset
+from pytimeparse import parse as dateparse
+from xarray import Dataset, DataArray
 
+import alog
+import click
 import numpy as np
+import signal
+import sys
 import xarray as xr
 
 
@@ -21,11 +20,12 @@ class BitmexOrderBookEmitter(
     Messenger,
     BitmexOrderBook
 ):
-    def __init__(self, symbol: BitmexChannels):
+    def __init__(self, symbol: BitmexChannels, max_dataset_length='1d'):
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
 
+        self.max_dataset_length = dateparse(max_dataset_length)
         self.freq = settings.TICK_INTERVAL
         self.dataset: Dataset = None
 
@@ -133,16 +133,22 @@ class BitmexOrderBookEmitter(
         else:
             self.dataset = xr.concat((self.dataset, dataset), dim='time')
 
+        self.trim_dataset()
+
         return self.dataset
+
+    def trim_dataset(self):
+        if len(self.dataset.time) > self.max_dataset_length:
+            new_index = self.dataset.time[self.max_dataset_length * -1:].data
+
+            self.dataset = self.dataset.sel(time=slice(*new_index))
 
 
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol: str):
 
-    recorder = BitmexOrderBookEmitter(
-        symbol=BitmexChannels[symbol]
-    )
+    recorder = BitmexOrderBookEmitter(symbol=BitmexChannels[symbol])
 
     signal.signal(signal.SIGINT, recorder.stop)
     signal.signal(signal.SIGTERM, recorder.stop)

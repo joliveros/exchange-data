@@ -9,6 +9,17 @@ from tests.exchange_data.orderbook.fixtures import orders
 
 
 class TestBitmexOrderBookEmitter(object):
+    timestamp = None
+
+    def tick(self):
+        one_second = 1000
+
+        if self.timestamp:
+            self.timestamp += one_second
+            return self.timestamp
+        else:
+            self.timestamp = TimeEmitter.timestamp()
+            return self.timestamp
 
     def test_generate_orderbook_frame(self, orders, mocker):
         mocker.patch(
@@ -71,24 +82,47 @@ class TestBitmexOrderBookEmitter(object):
         for order in orders:
             orderbook.process_order(order)
 
-        timestamp = TimeEmitter.timestamp()
+        orderbook.update_dataset(self.tick())
 
-        orderbook.update_dataset(timestamp)
-        one_second = 1000
-        next_timestamp = timestamp + one_second
-        orderbook.update_dataset(next_timestamp)
+        orderbook.update_dataset(self.tick())
 
         orderbook.process_order(BuyOrder(price=91.00, quantity=5))
 
-        next_timestamp = next_timestamp + one_second
-
-        orderbook.update_dataset(next_timestamp)
+        orderbook.update_dataset(self.tick())
 
         min_price = orderbook.bids.min_price()
         min_level: OrderList = orderbook.bids.price_map[min_price]
 
         orderbook.cancel_order(min_level.head_order.uid)
 
-        next_timestamp = next_timestamp + one_second
+        orderbook.update_dataset(self.tick())
 
-        orderbook.update_dataset(next_timestamp)
+    def test_trim_dataset(
+            self,
+            orders,
+            mocker
+    ):
+        mocker.patch(
+            'exchange_data.emitters.messenger.Redis'
+        )
+        orderbook = BitmexOrderBookEmitter(
+            BitmexChannels.XBTUSD,
+            max_dataset_length='2s'
+        )
+
+        for order in orders:
+            orderbook.process_order(order)
+
+        orderbook.update_dataset(self.tick())
+
+        orderbook.update_dataset(self.tick())
+
+        orderbook.process_order(BuyOrder(price=91.00, quantity=5))
+
+        orderbook.update_dataset(self.tick())
+
+        orderbook.update_dataset(self.tick())
+
+        orderbook.update_dataset(self.tick())
+
+        assert orderbook.max_dataset_length == len(orderbook.dataset.time)
