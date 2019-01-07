@@ -15,8 +15,7 @@ class BitmexChannels(NoValue):
 
 class BitmexEmitterBase(object):
     def __init__(self, symbol: BitmexChannels):
-        self.symbol = symbol.value
-        self.channel = symbol
+        self.symbol = symbol
 
 
 class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
@@ -39,13 +38,9 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
         self.on('action', self.on_action)
 
     def on_action(self, data):
-        msg = self.channel.value, json.dumps(data)
+        msg = self.symbol, json.dumps(data)
 
-        try:
-            self.publish(*msg)
-        except Exception as e:
-            alog.info(e)
-            sys.exit(-1)
+        self.publish(*msg)
 
     def start(self):
         self.run_forever()

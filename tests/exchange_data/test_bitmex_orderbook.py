@@ -1,14 +1,10 @@
-import json
-
-import alog
-import pytest
-from mock import patch
-
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import \
     BitmexOrderBook as OrderBook, InstrumentInfo
 from exchange_data.emitters.bitmex import BitmexChannels
 from tests.exchange_data.fixtures import datafile_name, measurements
+
+import pytest
 
 settings.DB = 'http://jose:jade121415@178.62.16.200:28953/'
 
@@ -61,15 +57,13 @@ class TestBitmexOrderBook(object):
     def test_orderbook_message_updates_orderbook(self,
                                                  orderbook_update_msg,
                                                  mocker):
-        mocker.patch(
-            'exchange_data.bitmex_orderbook.BitmexOrderBook.update_orders'
-        )
 
         orderbook = OrderBook(symbol=BitmexChannels.XBTUSD)
 
         orderbook.message(orderbook_update_msg)
 
-        # mocked_update_orders.assert_called()
+        assert orderbook.asks.volume == orderbook_update_msg['data'][0]['size']
+        assert orderbook.bids.volume == orderbook_update_msg['data'][1]['size']
 
     # def test_orderbook_message_adds_to_orderbook(self, orderbook_insert_msg,
     #                                              tmpdir, mocker):

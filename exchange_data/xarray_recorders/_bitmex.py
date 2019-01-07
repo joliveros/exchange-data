@@ -157,8 +157,6 @@ class BitmexXArrayRecorder(Messenger, BitmexOrderBook, CachedDataset):
 
         frame = np.array([ask_side, bid_side])
 
-        # alog.info(alog.pformat(frame))
-
         return frame
 
     def frame(self, timestamp) -> ndarray:
@@ -177,8 +175,6 @@ class BitmexXArrayRecorder(Messenger, BitmexOrderBook, CachedDataset):
             self.dataset = xr.concat([self.dataset, next_dataset], 'time')
         else:
             self.dataset = next_dataset
-
-        # alog.info(self.dataset.orderbook.shape)
 
         self.to_netcdf()
 

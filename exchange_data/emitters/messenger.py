@@ -27,6 +27,7 @@ class Messenger(Redis, EventEmitter):
 
         Redis.__init__(self, self.host)
         EventEmitter.__init__(self)
+        self._pubsub = None
         self.on(Events.Message.value, self.handler)
 
     def handler(self, msg):
@@ -37,11 +38,10 @@ class Messenger(Redis, EventEmitter):
     def sub(self, channels: List[Enum]):
         _channels = [channel.value for channel in channels]
 
-        pubsub = self.pubsub()
+        self._pubsub = self.pubsub()
 
-        pubsub.subscribe(_channels)
+        self._pubsub.subscribe(_channels)
 
-        for message in pubsub.listen():
-            # alog.info(message)
+        for message in self._pubsub.listen():
             self.emit(Events.Message.value, message)
 

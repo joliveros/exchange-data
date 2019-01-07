@@ -107,17 +107,18 @@ class OrderBook(object):
 
     def bid_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
-        while self.asks and price >= self.asks.min_price() and \
-                quantity_to_trade > 0:
-            trade_summary = \
-                self._process_order_list(
-                    side,
-                    quantity_to_trade,
-                    order
-                )
+        if self.asks.min_price() is not None:
+            while self.asks and price >= self.asks.min_price() and \
+                    quantity_to_trade > 0:
+                trade_summary = \
+                    self._process_order_list(
+                        side,
+                        quantity_to_trade,
+                        order
+                    )
 
-            quantity_to_trade = trade_summary.quantity_to_trade
-            trades += trade_summary.trades
+                quantity_to_trade = trade_summary.quantity_to_trade
+                trades += trade_summary.trades
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
