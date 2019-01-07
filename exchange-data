@@ -1,11 +1,9 @@
 #! /usr/bin/env python
-import signal
-
-import websocket
 from stringcase import pascalcase
 
 import click
 import exchange_data.recorders
+import signal
 
 signal.signal(signal.SIGINT, lambda: exit(0))
 signal.signal(signal.SIGTERM, lambda: exit(0))

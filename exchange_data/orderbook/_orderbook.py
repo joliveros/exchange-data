@@ -107,17 +107,18 @@ class OrderBook(object):
 
     def bid_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
-        while self.asks and price >= self.asks.min_price() and \
-                quantity_to_trade > 0:
-            trade_summary = \
-                self._process_order_list(
-                    side,
-                    quantity_to_trade,
-                    order
-                )
+        if self.asks.min_price() is not None:
+            while self.asks and price >= self.asks.min_price() and \
+                    quantity_to_trade > 0:
+                trade_summary = \
+                    self._process_order_list(
+                        side,
+                        quantity_to_trade,
+                        order
+                    )
 
-            quantity_to_trade = trade_summary.quantity_to_trade
-            trades += trade_summary.trades
+                quantity_to_trade = trade_summary.quantity_to_trade
+                trades += trade_summary.trades
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
@@ -298,7 +299,7 @@ class OrderBook(object):
     def get_worst_ask(self):
         return self.asks.max_price()
 
-    def print(self, depth: int=0):
+    def print(self, depth: int = 0, trades: bool = False):
         bid_levels = list(self.bids.price_tree.items(reverse=True))
         ask_levels = list(self.asks.price_tree.items())
 
@@ -328,20 +329,21 @@ class OrderBook(object):
 
         summary.newline()
 
-        summary.section('Trades')
-        summary.newline()
+        if trades:
+            summary.section('Trades')
+            summary.newline()
 
-        if len(self.tape) > 0:
-            for trade in self.tape:
-                line = f'{trade.quantity} @ {trade.price} ' \
-                       f'{trade.timestamp} {trade.party1} / {trade.party2}'
+            if len(self.tape) > 0:
+                for trade in self.tape:
+                    line = f'{trade.quantity} @ {trade.price} ' \
+                           f'{trade.timestamp} {trade.party1} / {trade.party2}'
 
-                summary.newline()
-                summary.write(line)
+                    summary.newline()
+                    summary.write(line)
 
-        summary.newline()
+            summary.newline()
 
         return str(summary)
 
     def __str__(self):
-        return self.print(depth=25)
+        return self.print(depth=25, trades=False)
