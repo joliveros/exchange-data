@@ -14,15 +14,4 @@ class TestOrderBookStrRepresentation(object):
         assert len(trade_summary.trades) == 1
 
         orderbook_summary = str(orderbook)
-        assert len(orderbook_summary.split()) == 40
-
-    def test_(self, orderbook: OrderBook):
-        # alog.info(orderbook)
-        # orderbook_data = pickle.dumps(orderbook)
-        # alog.info(orderbook_data)
-        #
-        # _orderbook = pickle.loads(orderbook_data)
-        # alog.info(alog.pformat(vars(_orderbook)))
-        # alog.info(_orderbook)
-
-        alog.info(OrderBook)
+        assert len(orderbook_summary.split()) == 24

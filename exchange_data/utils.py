@@ -14,7 +14,7 @@ def date_plus_timestring(timestamp: int, total_time: str) -> datetime:
     return datetime_from_timestamp(timestamp, total_time_ms)
 
 
-def datetime_from_timestamp(timestamp, total_time_ms):
+def datetime_from_timestamp(timestamp, total_time_ms=0):
     return datetime.fromtimestamp((total_time_ms + timestamp) / 1000)
 
 

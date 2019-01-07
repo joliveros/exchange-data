@@ -1,8 +1,7 @@
 from bitmex_websocket import Instrument
-from bitmex_websocket.constants import InstrumentChannels
+from bitmex_websocket.constants import InstrumentChannels, NoValue
 from exchange_data import settings
 from exchange_data.emitters import Messenger
-from exchange_data.utils import NoValue
 
 import alog
 import json
@@ -11,13 +10,12 @@ import websocket
 
 
 class BitmexChannels(NoValue):
-    XBTUSD = 'XBTUSD-Bitmex'
+    XBTUSD = 'XBTUSD'
 
 
 class BitmexEmitterBase(object):
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: BitmexChannels):
         self.symbol = symbol
-        self.channel = BitmexChannels[symbol.upper()]
 
 
 class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
@@ -28,26 +26,21 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
         InstrumentChannels.orderBookL2
     ]
 
-    def __init__(self, symbol):
+    def __init__(self, symbol: BitmexChannels):
         BitmexEmitterBase.__init__(self, symbol)
         Messenger.__init__(self)
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
-        self.symbol = symbol
-        Instrument.__init__(self, symbol=symbol,
+        Instrument.__init__(self, symbol=symbol.value,
                             channels=self.channels,
                             should_auth=False)
 
         self.on('action', self.on_action)
 
     def on_action(self, data):
-        msg = self.channel.value, json.dumps(data)
+        msg = self.symbol, json.dumps(data)
 
-        try:
-            self.publish(*msg)
-        except Exception as e:
-            alog.info(e)
-            sys.exit(-1)
+        self.publish(*msg)
 
     def start(self):
         self.run_forever()
