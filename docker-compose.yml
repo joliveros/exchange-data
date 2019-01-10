@@ -25,7 +25,7 @@ services:
     image: codequants.com:5000/exchange-data:latest
     volumes:
       - $HOME/.exchange-data:/root/.exchange-data
-    command: bash -c "source ~/.bashrc && python ./exchange_data/xarray_recorders/_bitmex.py XBTUSD"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/xarray_recorders/_xarray_recorder.py XBTUSD"
     depends_on:
       - redis
   emit_bitmex_orderbook:
