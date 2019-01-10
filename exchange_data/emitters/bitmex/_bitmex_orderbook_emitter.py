@@ -14,9 +14,6 @@ import signal
 import sys
 import xarray as xr
 
-from exchange_data.xarray_recorders.bitmex import BitmexXArrayRecorder, \
-    RecorderAppend
-
 
 class BitmexOrderBookEmitter(
     BitmexEmitterBase,
@@ -48,9 +45,7 @@ class BitmexOrderBookEmitter(
         self.sub([self.symbol, TimeChannels.Tick])
 
     def stop(self, *args):
-        self.stopped = True
         self._pubsub.close()
-        super().to_netcdf()
 
         sys.exit(0)
 
@@ -172,13 +167,10 @@ class BitmexOrderBookEmitter(
 
 
 @click.command()
-@click.option('--save-interval', '-s', default='1h',
-              help='Interval at which the Dataset will be saved to disk.')
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-def main(symbol: str, save_interval: str):
+def main(symbol: str):
 
-    recorder = BitmexOrderBookEmitter(symbol=BitmexChannels[symbol],
-                                      save_interval=save_interval)
+    recorder = BitmexOrderBookEmitter(symbol=BitmexChannels[symbol])
 
     signal.signal(signal.SIGINT, recorder.stop)
     signal.signal(signal.SIGTERM, recorder.stop)
