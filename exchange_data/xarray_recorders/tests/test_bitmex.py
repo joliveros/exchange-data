@@ -1,5 +1,5 @@
 from exchange_data.emitters.bitmex import BitmexChannels
-from exchange_data.xarray_recorders import BitmexXArrayRecorder
+from exchange_data.xarray_recorders.bitmex import BitmexXArrayRecorder
 
 import alog
 import pytest
