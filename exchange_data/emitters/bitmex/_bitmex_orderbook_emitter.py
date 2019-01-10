@@ -1,6 +1,5 @@
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
-from exchange_data.cached_dataset import CachedDataset
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase, BitmexChannels
 from numpy.core.multiarray import ndarray
@@ -15,30 +14,23 @@ import signal
 import sys
 import xarray as xr
 
-from exchange_data.xarray_recorders import BitmexXArrayRecorder
+from exchange_data.xarray_recorders.bitmex import BitmexXArrayRecorder, \
+    RecorderAppend
 
 
 class BitmexOrderBookEmitter(
     BitmexEmitterBase,
     Messenger,
-    BitmexOrderBook,
-    BitmexXArrayRecorder
+    BitmexOrderBook
 ):
     def __init__(
             self,
             symbol: BitmexChannels,
-            save_interval='10s',
-            max_dataset_length='1d',
-            cache_dir: str = None):
+            max_dataset_length='1d'
+    ):
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
-        BitmexXArrayRecorder.__init__(
-            self,
-            symbol=symbol,
-            cache_dir=cache_dir,
-            save_interval=save_interval
-        )
 
         self.max_dataset_length = dateparse(max_dataset_length)
         self.freq = settings.TICK_INTERVAL
@@ -89,51 +81,65 @@ class BitmexOrderBookEmitter(
     def generate_frame(self) -> ndarray:
         prev_frame_shape = (0, 0)
         dataset = self.dataset
+        bid_side = self.gen_bid_side()
+        ask_side = self.gen_ask_side()
+
+        bid_side_shape = bid_side.shape
+        ask_side_shape = ask_side.shape
+
+        if bid_side_shape[-1] > ask_side_shape[-1]:
+            new_ask_side = np.zeros(bid_side_shape)
+            new_ask_side[:ask_side_shape[0], :ask_side_shape[1]] = ask_side
+            ask_side = new_ask_side
+        elif ask_side_shape[-1] > bid_side_shape[-1]:
+            new_bid_side = np.zeros(ask_side_shape)
+            new_bid_side[:bid_side_shape[0], :bid_side_shape[1]] = bid_side
+            bid_side = new_bid_side
+
+        frame = np.array((ask_side, bid_side))
 
         if dataset:
             prev_frame_shape = \
                 dataset.sel(time=dataset.time[-1]).orderbook.shape
 
-        bid_side = self.gen_bid_side()
-        ask_side = self.gen_ask_side()
-
-        frame = np.append(ask_side, bid_side, axis=1)
-
         if frame.shape[-1] > prev_frame_shape[-1]:
             if dataset:
-                self.resize_dataset(dataset, frame)
+                self.resize_dataset(frame)
 
         elif frame.shape[-1] < prev_frame_shape[-1]:
-                book_shape = self.dataset.orderbook.values.shape
-                shape = (book_shape[1], book_shape[2])
-                resized_values = np.zeros(shape)
-                frame_shape = frame.shape
-
-                resized_values[:frame_shape[0], :frame_shape[1]] = frame
-                return resized_values
+                return self.resize_frame(frame)
 
         return frame
 
-    def resize_dataset(self, dataset, frame):
+    def resize_frame(self, frame):
+        book_shape = self.dataset.orderbook.values.shape
+        shape = (book_shape[1], book_shape[2], book_shape[3])
+        resized_values = np.zeros(shape)
+        frame_shape = frame.shape
+        resized_values[:frame_shape[0], :frame_shape[1], :frame_shape[2]] = frame
+        return resized_values
+
+    def resize_dataset(self, frame):
         book_shape = self.dataset.orderbook.values.shape
         resized_values = np.zeros((book_shape[0],) + frame.shape)
 
         resized_values[
             :book_shape[0],
             :book_shape[1],
-            :book_shape[2]
-        ] = dataset.orderbook.values
+            :book_shape[2],
+            :book_shape[3]
+        ] = self.dataset.orderbook.values
 
         self.dataset = self.dataset_frame(
             resized_values,
-            dataset.time
+            self.dataset.time
         )
 
     @staticmethod
     def dataset_frame(values, time):
         return Dataset(
             {
-                'orderbook': (['time', 'price', 'volume'], values)
+                'orderbook': (['time', 'frame', 'side', 'levels'], values)
             },
             coords={'time': time}
         )
@@ -155,9 +161,6 @@ class BitmexOrderBookEmitter(
             self.dataset = dataset
         else:
             self.dataset = xr.concat((self.dataset, dataset), dim='time')
-
-        # self.trim_dataset()
-        self.to_netcdf()
 
         return self.dataset
 
