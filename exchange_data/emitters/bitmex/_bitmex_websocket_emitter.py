@@ -1,16 +1,14 @@
+import alog
 from bitmex_websocket import Instrument
-from bitmex_websocket.constants import InstrumentChannels, NoValue
+from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
+from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 
-import alog
+import click
 import json
-import sys
+import signal
 import websocket
-
-
-class BitmexChannels(NoValue):
-    XBTUSD = 'XBTUSD'
 
 
 class BitmexEmitterBase(object):
@@ -39,8 +37,20 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
 
     def on_action(self, data):
         msg = self.symbol, json.dumps(data)
-
         self.publish(*msg)
 
     def start(self):
         self.run_forever()
+
+
+@click.command()
+@click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
+def main(symbol: str):
+    emitter = BitmexEmitter(BitmexChannels[symbol])
+    emitter.start()
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, lambda: exit(0))
+    signal.signal(signal.SIGTERM, lambda: exit(0))
+    main()
