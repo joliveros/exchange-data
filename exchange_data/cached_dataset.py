@@ -14,8 +14,6 @@ class CachedDataset(object):
                  **kwargs
                  ):
 
-        alog.info(cache_dir)
-
         if cache_dir is None:
             cache_dir = f'{Path.home()}/.exchange-data'
 
