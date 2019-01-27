@@ -1,7 +1,7 @@
 import alog
 import pytest
 
-from exchange_data.emitters.bitmex import BitmexChannels
+from exchange_data.channels import BitmexChannels
 from exchange_data.live_bitmex_orderbook import LiveBitmexOrderBook
 from .fixtures import instruments, initial_orderbook_l2 # noqa; F401
 
