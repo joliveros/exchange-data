@@ -1,3 +1,5 @@
+import json
+
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -174,7 +176,7 @@ class BitmexOrderBookEmitter(
         dataset = self.dataset.sel(time=slice(*last_index.data))
         last_frame_values: ndarray = dataset.orderbook.values[-1]
 
-        values_as_string = last_frame_values.tostring()
+        values_as_string = json.dumps(last_frame_values.tolist())
 
         self.publish(
             BitmexOrderBookChannels.OrderBookFrame.value,
