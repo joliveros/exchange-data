@@ -6,6 +6,7 @@ dependencies:
   - boost
   - bottleneck
   - cython
+  - netcdf4
   - numpy
   - pip=10.0.1
   - python=3.6.5
