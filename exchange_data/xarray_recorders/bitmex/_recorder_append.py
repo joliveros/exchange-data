@@ -22,9 +22,11 @@ class RecorderAppend(CachedDataset):
         self,
         symbol: BitmexChannels,
         save_interval='1h',
+        save: bool = True,
         *args,
         **kwargs
     ):
+        self.save: bool = save
         self.stopped = False
         self.save_interval = dateparse(save_interval)
         self.previous_day: decimal = TimeEmitter().previous_day
@@ -49,20 +51,20 @@ class RecorderAppend(CachedDataset):
     def to_netcdf(self):
         self.tick_counter += 1
         if self.tick_counter % self.save_interval == 0:
-            alog.info('### save interval reached, saving. ###')
             self.write_to_file()
             self.tick_counter = 0
 
         elif self.stopped:
-            alog.info('### saving ###')
             self.write_to_file()
 
     def write_to_file(self):
-        self.dataset.to_netcdf(
-            mode='w',
-            path=self.filename,
-            compute=True
-        )
+        if self.save:
+            alog.info('### saving ###')
+            self.dataset.to_netcdf(
+                mode='w',
+                path=self.filename,
+                compute=True
+            )
         self.dataset = Dataset()
 
     def next_day(self, timestamp):

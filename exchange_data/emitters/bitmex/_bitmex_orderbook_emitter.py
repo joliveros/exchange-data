@@ -174,10 +174,6 @@ class BitmexOrderBookEmitter(
         dataset = self.dataset.sel(time=slice(*last_index.data))
         last_frame_values: ndarray = dataset.orderbook.values[-1]
 
-        # temp = last_frame_values[0, 0]
-        # alog.info(temp)
-        # alog.info(temp.shape)
-
         values_as_string = last_frame_values.tostring()
 
         self.publish(
@@ -189,10 +185,11 @@ class BitmexOrderBookEmitter(
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 @click.option('--save-interval', default='1h', help='save interval as string "1h"')
-def main(symbol: str, save_interval: str, cache_dir: str = None):
-    args = {}
-    if cache_dir is not None:
-        args['cache_dir'] = cache_dir
+@click.option('--no-save', is_flag=True, help='disable saving to disk')
+def main(symbol: str, save_interval: str, no_save: bool):
+    args = {
+        'save': not no_save
+    }
 
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],
