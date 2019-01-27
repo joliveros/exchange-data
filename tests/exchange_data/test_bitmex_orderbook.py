@@ -1,7 +1,7 @@
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import \
     BitmexOrderBook as OrderBook, InstrumentInfo
-from exchange_data.emitters.bitmex import BitmexChannels
+from exchange_data.channels import BitmexChannels
 from tests.exchange_data.fixtures import datafile_name, measurements
 
 import pytest

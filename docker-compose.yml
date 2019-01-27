@@ -15,8 +15,10 @@ services:
       - redis
 
   emit_bitmex:
+    deploy:
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/emit-exchange-data --exchange bitmex XBTUSD"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
     depends_on:
       - redis
   record_bitmex:
@@ -30,9 +32,9 @@ services:
       - redis
   emit_bitmex_orderbook:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD --save-interval 1m"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     volumes:
       - $HOME/.exchange-data:/root/.exchange-data
     env_file:

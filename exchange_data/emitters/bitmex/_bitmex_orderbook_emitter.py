@@ -1,7 +1,12 @@
+import json
+
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
+from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
-from exchange_data.emitters.bitmex import BitmexEmitterBase, BitmexChannels
+from exchange_data.emitters.bitmex import BitmexEmitterBase
+from exchange_data.utils import NoValue
+from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
 from pandas import date_range
 from pytimeparse import parse as dateparse
@@ -15,38 +20,41 @@ import sys
 import xarray as xr
 
 
+class BitmexOrderBookChannels(NoValue):
+    OrderBookFrame = 'OrderBookFrame'
+
+
 class BitmexOrderBookEmitter(
     BitmexEmitterBase,
     Messenger,
-    BitmexOrderBook
+    BitmexOrderBook,
+    RecorderAppend
 ):
     def __init__(
             self,
             symbol: BitmexChannels,
-            max_dataset_length='1d'
+            **kwargs
     ):
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
+        RecorderAppend.__init__(self, symbol=symbol, **kwargs)
 
-        self.max_dataset_length = dateparse(max_dataset_length)
         self.freq = settings.TICK_INTERVAL
-        self.dataset: Dataset = None
 
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
 
-    @property
-    def filename(self):
-        return f'{self.cache_dir}/{self.prefix}.' \
-            f'{self.extension}'
-
     def start(self):
         self.sub([self.symbol, TimeChannels.Tick])
 
-    def stop(self, *args):
+    def stop(self):
         self._pubsub.close()
+        self.stopped = True
+        self.to_netcdf()
 
+    def exit(self, *args):
+        self.stop()
         sys.exit(0)
 
     def gen_bid_side(self):
@@ -152,28 +160,47 @@ class BitmexOrderBookEmitter(
 
         dataset = self.dataset_frame([frame], time_index)
 
-        if self.dataset is None:
+        if 'orderbook' not in self.dataset:
             self.dataset = dataset
         else:
             self.dataset = xr.concat((self.dataset, dataset), dim='time')
 
+        self.publish_last_frame()
+
+        self.to_netcdf()
+
         return self.dataset
 
-    def trim_dataset(self):
-        if len(self.dataset.time) > self.max_dataset_length:
-            new_index = self.dataset.time[self.max_dataset_length * -1:].data
+    def publish_last_frame(self):
+        last_index = self.dataset.time[-2:]
+        dataset = self.dataset.sel(time=slice(*last_index.data))
+        last_frame_values: ndarray = dataset.orderbook.values[-1]
 
-            self.dataset = self.dataset.sel(time=slice(*new_index))
+        values_as_string = json.dumps(last_frame_values.tolist())
+
+        self.publish(
+            BitmexOrderBookChannels.OrderBookFrame.value,
+            values_as_string
+        )
 
 
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-def main(symbol: str):
+@click.option('--save-interval', default='1h', help='save interval as string "1h"')
+@click.option('--no-save', is_flag=True, help='disable saving to disk')
+def main(symbol: str, save_interval: str, no_save: bool):
+    args = {
+        'save': not no_save
+    }
 
-    recorder = BitmexOrderBookEmitter(symbol=BitmexChannels[symbol])
+    recorder = BitmexOrderBookEmitter(
+        symbol=BitmexChannels[symbol],
+        save_interval=save_interval,
+        **args
+    )
 
-    signal.signal(signal.SIGINT, recorder.stop)
-    signal.signal(signal.SIGTERM, recorder.stop)
+    signal.signal(signal.SIGINT, recorder.exit)
+    signal.signal(signal.SIGTERM, recorder.exit)
 
     recorder.start()
 
