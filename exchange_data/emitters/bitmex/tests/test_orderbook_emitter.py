@@ -140,4 +140,3 @@ class TestBitmexOrderBookEmitter(object):
 
         orderbook_emitter.stop()
 
-        assert orderbook_emitter.dataset.dims['time'] == 1
