@@ -167,8 +167,6 @@ class BitmexOrderBookEmitter(
 
         self.to_netcdf()
 
-        # alog.info(self.dataset.dims)
-
         return self.dataset
 
     def publish_last_frame(self):
