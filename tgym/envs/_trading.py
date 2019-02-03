@@ -1,24 +1,24 @@
 import logging
-logging.getLogger('matplotlib').setLevel(logging.INFO)
-
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+# logging.getLogger('matplotlib').setLevel(logging.INFO)
+#
+# import matplotlib.pyplot as plt
+# import matplotlib as mpl
 import numpy as np
 
 from tgym.core import Env
 from tgym.utils import calc_spread
 
 
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
 
-mpl.rcParams.update(
-    {
-        "font.size": 15,
-        "axes.labelsize": 15,
-        "lines.linewidth": 1,
-        "lines.markersize": 8
-    }
-)
+# mpl.rcParams.update(
+#     {
+#         "font.size": 15,
+#         "axes.labelsize": 15,
+#         "lines.linewidth": 1,
+#         "lines.markersize": 8
+#     }
+# )
 
 
 class SpreadTrading(Env):
