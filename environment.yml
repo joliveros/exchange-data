@@ -1,21 +1,24 @@
 name: exchange-data
 channels:
   - defaults
+  - anaconda
 dependencies:
+  - boost
   - bottleneck
   - cython
-#  - matplotlib
+  - netcdf4
   - numpy
   - pip=10.0.1
   - python=3.6.5
+  - toolz
   - xarray
+#  - matplotlib
   - pip:
     - alog
     - bitmex-websocket
     - cached-property
     - click
     - coveralls
-    - django
     - flake8
     - git+https://github.com/joliveros/gdax-python.git#egg=gdax
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
@@ -27,6 +30,7 @@ dependencies:
     - pytest-cov
     - pytest-mock
     - pytest-vcr
+    - python-socketio[client]
     - pytimeparse
     - redis
     - rollbar>=0.13.12

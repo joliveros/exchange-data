@@ -41,4 +41,6 @@ alog.set_level(LOG_LEVEL)
 
 CERT_FILE = './ca.pem'
 
-REDIS_HOST='redis'
+REDIS_HOST = environ.get('REDIS_HOST') or 'redis'
+
+TICK_INTERVAL = '1s'

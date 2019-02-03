@@ -3,7 +3,7 @@ import pytest
 from exchange_data.orderbook import SellOrder, BuyOrder, OrderBook
 
 
-@pytest.fixture
+@pytest.fixture()
 def orders():
     return [
         SellOrder(price=120.00, quantity=5),
@@ -15,7 +15,7 @@ def orders():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def orderbook(orders):
     _orderbook = OrderBook()
 
