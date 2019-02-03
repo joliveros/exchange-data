@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.7'
 
 services:
 
@@ -24,7 +24,7 @@ services:
 
   emit_bitmex_orderbook:
     deploy:
-      replicas: 0
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     volumes:
@@ -34,36 +34,41 @@ services:
     depends_on:
       - emit_bitmex
       - emit_time
+      - proxy
 
   socketio:
-    image: codequants.com:5000/ws_server
+    image: codequants.com:5000/ws-server
     ports:
-     - 8080
+      - target: 8080
+        mode: host
     environment:
-     - SERVICE_PORTS=8080
+#     - DEBUG=*
      - PORT=8080
-    deploy:
-     replicas: 2
-     update_config:
-       parallelism: 2
-       delay: 10s
-     restart_policy:
-       condition: on-failure
-       max_attempts: 3
-       window: 120s
     depends_on:
       - redis
+    deploy:
+      endpoint_mode: dnsrr
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
 
   proxy:
-    image: dockercloud/haproxy
+    image: codequants.com:5000/ws-haproxy
     depends_on:
       - socketio
-    environment:
-      - BALANCE=leastconn
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./ws_service/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
     ports:
       - 0.0.0.0:8081:80
+    environment:
+      BACKENDS: "socketio"
+
 
 #secrets:
 #  postgres_password:

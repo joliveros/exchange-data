@@ -30,6 +30,7 @@ dependencies:
     - pytest-cov
     - pytest-mock
     - pytest-vcr
+    - python-socketio[client]
     - pytimeparse
     - redis
     - rollbar>=0.13.12
