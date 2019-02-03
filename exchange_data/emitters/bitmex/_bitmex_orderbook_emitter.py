@@ -5,6 +5,7 @@ from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
+from exchange_data.emitters.websocket_emitter import WebsocketEmitter
 from exchange_data.utils import NoValue
 from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
@@ -28,7 +29,8 @@ class BitmexOrderBookEmitter(
     BitmexEmitterBase,
     Messenger,
     BitmexOrderBook,
-    RecorderAppend
+    RecorderAppend,
+    WebsocketEmitter
 ):
     def __init__(
             self,
@@ -39,6 +41,7 @@ class BitmexOrderBookEmitter(
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
         RecorderAppend.__init__(self, symbol=symbol, **kwargs)
+        WebsocketEmitter.__init__(self)
 
         self.freq = settings.TICK_INTERVAL
 
@@ -50,6 +53,7 @@ class BitmexOrderBookEmitter(
 
     def stop(self):
         self._pubsub.close()
+        self.client.disconnect()
         self.stopped = True
         self.to_netcdf()
 
@@ -178,7 +182,7 @@ class BitmexOrderBookEmitter(
 
         values_as_string = json.dumps(last_frame_values.tolist())
 
-        self.publish(
+        self.ws_emit(
             BitmexOrderBookChannels.OrderBookFrame.value,
             values_as_string
         )
