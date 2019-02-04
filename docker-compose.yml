@@ -9,6 +9,8 @@ services:
       - 0.0.0.0:6379:6379
 
   emit_time:
+    deploy:
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/time_emitter.py"
     depends_on:
@@ -44,6 +46,8 @@ services:
     environment:
 #     - DEBUG=*
      - PORT=8080
+#    volumes:
+#      - ./ws_service/server/index.js:/usr/src/app/index.js
     depends_on:
       - redis
     deploy:

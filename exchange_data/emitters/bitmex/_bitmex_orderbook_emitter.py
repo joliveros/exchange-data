@@ -1,5 +1,4 @@
 import json
-
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels

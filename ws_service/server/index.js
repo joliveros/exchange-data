@@ -9,6 +9,17 @@ var serverName = process.env.NAME || 'Unknown';
 
 io.adapter(redis({ host: 'redis', port: 6379 }));
 
+io.on('connection', function(socket) {
+  socket.on('subscribe', function(channel) {
+    socket.join(channel);
+    socket.emit('joined ' + channel);
+  });
+  socket.on('message', function(msg) {
+    io.to(msg['channel'])
+        .emit('message', msg['data']);
+  });
+});
+
 server.listen(port, function () {
   console.log('Server listening at port %d', port);
 });
