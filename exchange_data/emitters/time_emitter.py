@@ -51,7 +51,7 @@ class TimeEmitter(Messenger):
 
     def start(self):
         while True:
-            sleep(self.next_tick)
+            sleep(1)
             now = self.timestamp()
             self.publish(TimeChannels.Tick.value, str(now))
             self.day_elapsed()
