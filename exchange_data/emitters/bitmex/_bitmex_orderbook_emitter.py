@@ -43,7 +43,8 @@ class BitmexOrderBookEmitter(
         WebsocketEmitter.__init__(self)
 
         self.freq = settings.TICK_INTERVAL
-
+        self.frame_channel = f'{self.symbol}_' \
+            f'{BitmexOrderBookChannels.OrderBookFrame.value}'
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
 
@@ -182,7 +183,7 @@ class BitmexOrderBookEmitter(
         values_as_string = json.dumps(last_frame_values.tolist())
 
         self.ws_emit(
-            BitmexOrderBookChannels.OrderBookFrame.value,
+            self.frame_channel,
             values_as_string
         )
 
