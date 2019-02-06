@@ -1,18 +1,11 @@
-import threading
-from time import sleep
-
 from exchange_data.cached_dataset import CachedDataset
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import TimeEmitter
 from pathlib import Path
 from pytimeparse import parse as dateparse
-from xarray import DataArray, Dataset
-
+from xarray import Dataset
 import alog
 import decimal
-import xarray
-import xarray as xr
-import numpy as np
 
 
 class RecorderAppend(CachedDataset):
@@ -60,11 +53,12 @@ class RecorderAppend(CachedDataset):
     def write_to_file(self):
         if self.save:
             alog.info('### saving ###')
-            self.dataset.to_netcdf(
-                mode='w',
-                path=self.filename,
-                compute=True
-            )
+            with self.dataset:
+                self.dataset.to_netcdf(
+                    mode='w',
+                    path=self.filename,
+                    compute=True
+                )
         self.dataset = Dataset()
 
     def next_day(self, timestamp):

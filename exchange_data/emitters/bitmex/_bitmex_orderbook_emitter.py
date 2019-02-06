@@ -1,24 +1,26 @@
-import json
+import tracemalloc
+
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.websocket_emitter import WebsocketEmitter
-from exchange_data.utils import NoValue
+from exchange_data.utils import NoValue, trace_print
 from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
 from pandas import date_range
 from pytimeparse import parse as dateparse
 from xarray import Dataset
 
-import alog
 import click
+import json
 import numpy as np
 import signal
 import sys
 import xarray as xr
 
+tracemalloc.start()
 
 class BitmexOrderBookChannels(NoValue):
     OrderBookFrame = 'OrderBookFrame'
@@ -142,8 +144,7 @@ class BitmexOrderBookEmitter(
             self.dataset.time
         )
 
-    @staticmethod
-    def dataset_frame(values, time):
+    def dataset_frame(self, values, time):
         return Dataset(
             {
                 'orderbook': (['time', 'frame', 'side', 'levels'], values)
@@ -170,8 +171,10 @@ class BitmexOrderBookEmitter(
             self.dataset = xr.concat((self.dataset, dataset), dim='time')
 
         self.publish_last_frame()
-
         self.to_netcdf()
+
+        if self.tick_counter % self.save_interval == 0:
+            trace_print()
 
         return self.dataset
 
