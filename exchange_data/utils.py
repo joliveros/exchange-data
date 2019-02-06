@@ -1,4 +1,5 @@
 import math
+import tracemalloc
 from datetime import datetime
 from enum import Enum
 
@@ -17,6 +18,25 @@ def date_plus_timestring(timestamp: int, total_time: str) -> datetime:
 def datetime_from_timestamp(timestamp, total_time_ms=0):
     return datetime.fromtimestamp((total_time_ms + timestamp) / 1000)
 
+
+snapshot = None
+
+
+def trace_print():
+    global snapshot
+    snapshot2 = tracemalloc.take_snapshot()
+    snapshot2 = snapshot2.filter_traces((
+        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+        tracemalloc.Filter(False, "<unknown>"),
+        tracemalloc.Filter(False, tracemalloc.__file__)
+    ))
+
+    if snapshot is not None:
+        print("================================== Begin Trace:")
+        top_stats = snapshot2.compare_to(snapshot, 'lineno', cumulative=True)
+        for stat in top_stats[:10]:
+            print(stat)
+    snapshot = snapshot2
 
 class NoValue(Enum):
     def __repr__(self):
