@@ -1,5 +1,3 @@
-import alog
-
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -12,6 +10,7 @@ from numpy.core.multiarray import ndarray
 from pandas import date_range
 from xarray import Dataset
 
+import alog
 import click
 import json
 import numpy as np
@@ -50,6 +49,10 @@ class BitmexOrderBookEmitter(
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
         self.on('save', self.trace_print)
+        self.on('garbage_collect', self.garbage_collect)
+
+    def garbage_collect(self):
+        gc.collect()
 
     def start(self):
         self.sub([self.symbol, TimeChannels.Tick])
