@@ -1,4 +1,4 @@
-import tracemalloc
+import alog
 
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
@@ -6,11 +6,10 @@ from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.websocket_emitter import WebsocketEmitter
-from exchange_data.utils import NoValue, trace_print
+from exchange_data.utils import NoValue, MemoryTracing
 from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
 from pandas import date_range
-from pytimeparse import parse as dateparse
 from xarray import Dataset
 
 import click
@@ -20,7 +19,6 @@ import signal
 import sys
 import xarray as xr
 
-tracemalloc.start()
 
 class BitmexOrderBookChannels(NoValue):
     OrderBookFrame = 'OrderBookFrame'
@@ -31,7 +29,8 @@ class BitmexOrderBookEmitter(
     Messenger,
     BitmexOrderBook,
     RecorderAppend,
-    WebsocketEmitter
+    WebsocketEmitter,
+    MemoryTracing
 ):
     def __init__(
             self,
@@ -43,12 +42,14 @@ class BitmexOrderBookEmitter(
         BitmexEmitterBase.__init__(self, symbol)
         RecorderAppend.__init__(self, symbol=symbol, **kwargs)
         WebsocketEmitter.__init__(self)
+        MemoryTracing.__init__(self, **kwargs)
 
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
+        self.on('save', self.trace_print)
 
     def start(self):
         self.sub([self.symbol, TimeChannels.Tick])
@@ -173,9 +174,6 @@ class BitmexOrderBookEmitter(
         self.publish_last_frame()
         self.to_netcdf()
 
-        if self.tick_counter % self.save_interval == 0:
-            trace_print()
-
         return self.dataset
 
     def publish_last_frame(self):
@@ -183,27 +181,25 @@ class BitmexOrderBookEmitter(
         dataset = self.dataset.sel(time=slice(*last_index.data))
         last_frame_values: ndarray = dataset.orderbook.values[-1]
 
-        values_as_string = json.dumps(last_frame_values.tolist())
-
         self.ws_emit(
             self.frame_channel,
-            values_as_string
+            json.dumps(last_frame_values.tolist())
         )
 
 
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-@click.option('--save-interval', default='1h', help='save interval as string "1h"')
-@click.option('--no-save', is_flag=True, help='disable saving to disk')
-def main(symbol: str, save_interval: str, no_save: bool):
-    args = {
-        'save': not no_save
-    }
+@click.option('--save-interval', '-i', default='1h', help='save interval as string "1h"')
+@click.option('--no-save', '-n', is_flag=True, help='disable saving to disk')
+@click.option('--enable-memory-tracing', '-t', is_flag=True,
+              help='Enable memory tracing.')
+def main(symbol: str, save_interval: str, no_save: bool, **kwargs):
+    kwargs['save'] = not no_save
 
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],
         save_interval=save_interval,
-        **args
+        **kwargs
     )
 
     signal.signal(signal.SIGINT, recorder.exit)
