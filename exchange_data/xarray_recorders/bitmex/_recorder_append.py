@@ -51,6 +51,7 @@ class RecorderAppend(CachedDataset):
             self.write_to_file()
 
     def write_to_file(self):
+        self.emit('save')
         if self.save:
             alog.info('### saving ###')
             with self.dataset:
@@ -67,3 +68,6 @@ class RecorderAppend(CachedDataset):
 
     def dataset_frame(self, new_full_book, time):
         raise NotImplemented()
+
+    def emit(self, event_name: str):
+        raise NotImplementedError()
