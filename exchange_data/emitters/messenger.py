@@ -1,7 +1,4 @@
 from enum import Enum, auto
-
-import alog
-
 from exchange_data import settings
 from exchange_data.utils import NoValue
 from pyee import EventEmitter
@@ -35,8 +32,8 @@ class Messenger(Redis, EventEmitter):
             channel_str = msg['channel'].decode()
             self.emit(channel_str, json.loads(msg['data']))
 
-    def sub(self, channels: List[Enum]):
-        _channels = [channel.value for channel in channels]
+    def sub(self, channels: List):
+        _channels = [channel.value if isinstance(channel, Enum) else channel for channel in channels]
 
         self._pubsub = self.pubsub()
 

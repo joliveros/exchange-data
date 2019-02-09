@@ -3,7 +3,10 @@ from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
+from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
+    OrderBookL2Emitter
 from exchange_data.emitters.websocket_emitter import WebsocketEmitter
+from exchange_data.orderbook import OrderBook
 from exchange_data.utils import NoValue, MemoryTracing
 from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
@@ -12,6 +15,7 @@ from xarray import Dataset
 
 import alog
 import click
+import gc
 import json
 import numpy as np
 import signal
@@ -42,7 +46,8 @@ class BitmexOrderBookEmitter(
         RecorderAppend.__init__(self, symbol=symbol, **kwargs)
         WebsocketEmitter.__init__(self)
         MemoryTracing.__init__(self, **kwargs)
-
+        self.orderbook_l2_channel = \
+            OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
@@ -50,12 +55,33 @@ class BitmexOrderBookEmitter(
         self.on(self.symbol.value, self.message)
         self.on('save', self.trace_print)
         self.on('garbage_collect', self.garbage_collect)
+        self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+
+    def process_orderbook_l2(self, data):
+        self.reset_orderbook()
+
+        self.message({
+            'table': 'orderBookL2',
+            'data': data,
+            'action': 'partial',
+            'symbol': self.symbol.value
+        })
+
+    def reset_orderbook(self):
+        self.__dict__ = {
+            **self.__dict__,
+            **OrderBook().__dict__
+        }
 
     def garbage_collect(self):
         gc.collect()
 
     def start(self):
-        self.sub([self.symbol, TimeChannels.Tick])
+        self.sub([
+            self.symbol,
+            TimeChannels.Tick,
+            self.orderbook_l2_channel
+        ])
 
     def stop(self):
         self._pubsub.close()
