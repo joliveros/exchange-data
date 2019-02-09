@@ -54,7 +54,6 @@ class BitmexOrderBookEmitter(
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
         self.on('save', self.trace_print)
-        self.on('garbage_collect', self.garbage_collect)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
 
     def process_orderbook_l2(self, data):
@@ -202,6 +201,7 @@ class BitmexOrderBookEmitter(
 
         self.publish_last_frame()
         self.to_netcdf()
+        self.garbage_collect()
 
         return self.dataset
 
