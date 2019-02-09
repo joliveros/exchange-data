@@ -54,7 +54,11 @@ class BitmexOrderBookEmitter(
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
         self.on('tick_interval', self.print_memory_trace)
+        self.on('tick_interval', self.print_stats)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+
+    def print_stats(self):
+        alog.info(self.dataset.dims)
 
     def print_memory_trace(self):
         if self.enable_memory_tracing:
