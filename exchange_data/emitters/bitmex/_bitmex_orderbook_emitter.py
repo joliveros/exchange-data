@@ -53,8 +53,13 @@ class BitmexOrderBookEmitter(
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
-        self.on('save', self.trace_print)
+        self.on('tick_interval', self.print_memory_trace)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+
+    def print_memory_trace(self):
+        if self.enable_memory_tracing:
+            alog.info('### trace print ###')
+            self.trace_print()
 
     def process_orderbook_l2(self, data):
         self.reset_orderbook()
@@ -145,7 +150,7 @@ class BitmexOrderBookEmitter(
                 self.resize_dataset(frame)
 
         elif frame.shape[-1] < prev_frame_shape[-1]:
-                return self.resize_frame(frame)
+            return self.resize_frame(frame)
 
         return frame
 
@@ -154,7 +159,8 @@ class BitmexOrderBookEmitter(
         shape = (book_shape[1], book_shape[2], book_shape[3])
         resized_values = np.zeros(shape)
         frame_shape = frame.shape
-        resized_values[:frame_shape[0], :frame_shape[1], :frame_shape[2]] = frame
+        resized_values[:frame_shape[0], :frame_shape[1], :frame_shape[2]] = \
+            frame
         return resized_values
 
     def resize_dataset(self, frame):
@@ -162,10 +168,10 @@ class BitmexOrderBookEmitter(
         resized_values = np.zeros((book_shape[0],) + frame.shape)
 
         resized_values[
-            :book_shape[0],
-            :book_shape[1],
-            :book_shape[2],
-            :book_shape[3]
+        :book_shape[0],
+        :book_shape[1],
+        :book_shape[2],
+        :book_shape[3]
         ] = self.dataset.orderbook.values
 
         self.dataset = self.dataset_frame(
@@ -202,6 +208,7 @@ class BitmexOrderBookEmitter(
         self.publish_last_frame()
         self.to_netcdf()
         self.garbage_collect()
+        self.emit('save')
 
         return self.dataset
 
