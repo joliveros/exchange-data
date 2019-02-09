@@ -1,9 +1,8 @@
 from datetime import datetime
 from enum import Enum
-
-import alog
 from pytimeparse import parse as dateparse
 
+import alog
 import math
 import tracemalloc
 
