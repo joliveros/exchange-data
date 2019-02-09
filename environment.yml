@@ -15,6 +15,7 @@ dependencies:
 #  - matplotlib
   - pip:
     - alog
+    - bitmex
     - bitmex-websocket
     - cached-property
     - click
