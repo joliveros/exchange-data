@@ -44,6 +44,7 @@ class RecorderAppend(CachedDataset):
     def to_netcdf(self):
         self.tick_counter += 1
         if self.tick_counter % self.save_interval == 0:
+            self.emit('tick_interval')
             self.write_to_file()
             self.tick_counter = 0
 

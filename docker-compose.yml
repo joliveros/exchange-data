@@ -36,7 +36,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD --save-interval 15m"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD --save-interval 15m -t"
     volumes:
       - $HOME/.exchange-data:/root/.exchange-data
     env_file:
