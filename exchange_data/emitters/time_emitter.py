@@ -18,6 +18,7 @@ class TimeEmitter(Messenger):
         self.tick_interval = timeparse(tick_interval)
         self.padding = 1100
         self.previous_day = self.next_day
+        self.minute_counter = 0
 
     @property
     def next_tick(self):
@@ -53,6 +54,12 @@ class TimeEmitter(Messenger):
         while True:
             sleep(1)
             now = self.timestamp()
+
+            self.minute_counter += 1
+            if self.minute_counter % 60 == 0:
+                self.publish('1m', str(now))
+                self.minute_counter = 0
+
             self.publish(TimeChannels.Tick.value, str(now))
             self.day_elapsed()
 
@@ -63,10 +70,9 @@ class TimeEmitter(Messenger):
             self.publish(TimeChannels.NextDay.value, next_day)
 
 
-
 class TimeChannels(NoValue):
-    Tick = 'tick'
     NextDay = 'next_day'
+    Tick = 'tick'
 
 
 @click.command()

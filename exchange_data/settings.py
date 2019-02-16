@@ -11,6 +11,9 @@ HOME = environ.get('HOME')
 
 BITSTAMP_PUSHER_APP_KEY = environ.get('BITSTAMP_PUSHER_APP_KEY')
 
+BITMEX_API_KEY = environ.get('BITMEX_API_KEY')
+BITMEX_API_SECRET = environ.get('BITMEX_API_SECRET')
+
 if RUN_ENV != 'development':
     ROLLBAR_API_KEY = environ.get('ROLLBAR_API_KEY')
 
