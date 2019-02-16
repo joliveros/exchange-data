@@ -8,16 +8,7 @@ import pytest
 
 class TestMessenger(object):
 
-    def test_messenger_subscribe_should_fail_if_channel_is_string(self, mocker):
-        mocker.patch('exchange_data.emitters.messenger.Redis')
-
-        messenger = Messenger()
-        messenger.pubsub = MagicMock()
-
-        with pytest.raises(Exception):
-            messenger.sub('tick')
-
-    def test_messenger_subscribe_should_only_accept_enum(self, mocker):
+    def test_sub_accepts_list_of_enums(self, mocker):
 
         class Channels(NoValue):
             Tick = 'tick'
@@ -28,3 +19,15 @@ class TestMessenger(object):
         messenger.pubsub = MagicMock()
 
         messenger.sub([Channels.Tick])
+        subscribe_mock: MagicMock = messenger._pubsub.subscribe
+        subscribe_mock.assert_called_with(['tick'])
+
+    def test_sub_accepts_list_strings(self, mocker):
+        mocker.patch('exchange_data.emitters.messenger.Redis')
+
+        messenger = Messenger()
+        messenger.pubsub = MagicMock()
+
+        messenger.sub(['tick'])
+        subscribe_mock: MagicMock = messenger._pubsub.subscribe
+        subscribe_mock.assert_called_with(['tick'])

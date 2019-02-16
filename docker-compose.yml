@@ -44,7 +44,7 @@ services:
     depends_on:
       - emit_bitmex
       - emit_time
-      - proxy
+#      - proxy
 
   socketio:
     image: codequants.com:5000/ws-server
@@ -60,7 +60,7 @@ services:
       - redis
     deploy:
       endpoint_mode: dnsrr
-      replicas: 2
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -70,6 +70,8 @@ services:
         window: 120s
 
   proxy:
+    deploy:
+      replicas: 0
     image: codequants.com:5000/ws-haproxy
     depends_on:
       - socketio
