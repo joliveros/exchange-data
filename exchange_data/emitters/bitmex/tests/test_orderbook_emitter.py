@@ -29,7 +29,7 @@ def orderbook_emitter(mocker, orders, tmpdir):
         'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
     )
     mocker.patch(
-        'exchange_data.emitters.bitmex.BitmexOrderBookEmitter.publish'
+        'exchange_data.emitters.bitmex.BitmexOrderBookEmitter.publish_last_frame'
     )
     orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
                                                cache_dir=tmpdir)
@@ -91,16 +91,6 @@ class TestBitmexOrderBookEmitter(object):
 
         orderbook_emitter.update_dataset(self.tick())
 
-    def test_emit_last_frame(self, orderbook_emitter: BitmexOrderBookEmitter):
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.process_order(BuyOrder(price=91.00, quantity=5))
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-
-        assert orderbook_emitter.publish.call_count == 5
-
     def test_open_and_append(self, mocker, orders, tmpdir):
         mocker.patch('exchange_data.bitmex_orderbook.InstrumentInfo'
                      '.get_instrument', return_value=instrument_info)
@@ -138,5 +128,5 @@ class TestBitmexOrderBookEmitter(object):
 
         orderbook_emitter.update_dataset(self.tick())
 
-        orderbook_emitter.stop()
+        # orderbook_emitter.stop()
 

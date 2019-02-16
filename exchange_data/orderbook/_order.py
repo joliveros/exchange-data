@@ -87,7 +87,7 @@ existing Order.
         self.quantity = new_quantity
 
     def __str__(self):
-        return f'{self.quantity}@{self.price}/{self.uid} - {self.timestamp}'
+        return f'{self.price}@{self.quantity}/{self.uid} - {self.timestamp}'
 
 
 class BuyOrder(Order):

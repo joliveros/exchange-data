@@ -3,13 +3,21 @@ from socketio import Client
 
 
 class WebsocketEmitter(object):
-    def __init__(self):
-        self.client = Client()
-        self.client.connect(f'http://{settings.WS_HOST}')
+    def __init__(self, websocket_emitter_enabled: bool = False):
+        self.websocket_emitter_enabled = websocket_emitter_enabled
+
+        self.ws_client = Client()
+
+        if websocket_emitter_enabled:
+            self.ws_client.connect(f'http://{settings.WS_HOST}')
+
+    def ws_disconnect(self):
+        self.ws_client.disconnect()
 
     def ws_emit(self, channel: str, data: str):
-        msg = {
-            'data': data,
-            'channel': channel
-        }
-        self.client.emit('message', msg)
+        if self.websocket_emitter_enabled:
+            msg = {
+                'data': data,
+                'channel': channel
+            }
+            self.ws_client.emit('message', msg)
