@@ -335,7 +335,7 @@ class OrderBook(object):
 
             if len(self.tape) > 0:
                 for trade in self.tape:
-                    line = f'{trade.quantity} @ {trade.price} ' \
+                    line = f'{trade.price} @ {trade.quantity} ' \
                            f'{trade.timestamp} {trade.party1} / {trade.party2}'
 
                     summary.newline()

@@ -51,8 +51,8 @@ class BitmexOrderBookEmitter(
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
-        self.on(TimeChannels.Tick.value, self.update_dataset)
-        self.on(self.symbol.value, self.message)
+        self.on_second(TimeChannels.Tick.value, self.update_dataset)
+        self.on_sub_second(self.symbol.value, self.message)
         self.on('tick_interval', self.print_memory_trace)
         self.on('tick_interval', self.print_stats)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
@@ -93,7 +93,7 @@ class BitmexOrderBookEmitter(
 
     def stop(self):
         self._pubsub.close()
-        self.client.disconnect()
+        self.ws_disconnect()
         self.stopped = True
         self.to_netcdf()
 
@@ -209,22 +209,28 @@ class BitmexOrderBookEmitter(
         else:
             self.dataset = xr.concat((self.dataset, dataset), dim='time')
 
-        self.publish_last_frame()
-        self.to_netcdf()
-        self.garbage_collect()
-        self.emit('save')
+        self.emit('dataset_update')
+
+        alog.info(self.print(depth=4))
 
         return self.dataset
 
-    def publish_last_frame(self):
-        last_index = self.dataset.time[-2:]
-        dataset = self.dataset.sel(time=slice(*last_index.data))
-        last_frame_values: ndarray = dataset.orderbook.values[-1]
+    def on_dataset_update(self):
+        alog.info('### on_dataset_update ###')
+        self.publish_last_frame()
+        self.to_netcdf()
+        self.garbage_collect()
 
-        self.ws_emit(
-            self.frame_channel,
-            json.dumps(last_frame_values.tolist())
-        )
+    def publish_last_frame(self):
+        if self.websocket_emitter_enabled:
+            last_index = self.dataset.time[-2:]
+            dataset = self.dataset.sel(time=slice(*last_index.data))
+            last_frame_values: ndarray = dataset.orderbook.values[-1]
+
+            self.ws_emit(
+                self.frame_channel,
+                json.dumps(last_frame_values.tolist())
+            )
 
 
 @click.command()
