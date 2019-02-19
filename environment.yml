@@ -12,7 +12,7 @@ dependencies:
   - python=3.6.5
   - toolz
   - xarray
-#  - matplotlib
+  - matplotlib
   - pip:
     - alog
     - bitmex
@@ -36,5 +36,6 @@ dependencies:
     - redis
     - rollbar>=0.13.12
     - sortedcontainers
+    - statsd
     - stringcase
     - timestamp

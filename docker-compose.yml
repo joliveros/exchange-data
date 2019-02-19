@@ -3,6 +3,8 @@ version: '3.7'
 services:
 
   redis:
+    deploy:
+      replicas: 1
     image: redis
     ports:
     # for manual testing only, for production this can be removed
@@ -49,11 +51,11 @@ services:
   socketio:
     image: codequants.com:5000/ws-server
     ports:
-      - target: 8080
+      - target: 8083
         mode: host
     environment:
 #     - DEBUG=*
-     - PORT=8080
+     - PORT=8083
 #    volumes:
 #      - ./ws_service/server/index.js:/usr/src/app/index.js
     depends_on:
