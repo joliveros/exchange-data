@@ -1,3 +1,5 @@
+import traceback
+
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -51,19 +53,22 @@ class BitmexOrderBookEmitter(
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
-        self.on_second(TimeChannels.Tick.value, self.update_dataset)
-        self.on_sub_second(self.symbol.value, self.message)
+        self.on(TimeChannels.Tick.value, self.update_dataset)
+        self.on(self.symbol.value, self.message)
         self.on('tick_interval', self.print_memory_trace)
         self.on('tick_interval', self.print_stats)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+        self.on('dataset_update', self.after_dataset_update)
 
     def print_stats(self):
+        alog.info(self.print(depth=4))
         alog.info(self.dataset.dims)
 
     def print_memory_trace(self):
         if self.enable_memory_tracing:
             alog.info('### trace print ###')
             self.trace_print()
+        self.garbage_collect()
 
     def process_orderbook_l2(self, data):
         self.reset_orderbook()
@@ -172,16 +177,17 @@ class BitmexOrderBookEmitter(
         resized_values = np.zeros((book_shape[0],) + frame.shape)
 
         resized_values[
-        :book_shape[0],
-        :book_shape[1],
-        :book_shape[2],
-        :book_shape[3]
+            :book_shape[0],
+            :book_shape[1],
+            :book_shape[2],
+            :book_shape[3]
         ] = self.dataset.orderbook.values
-
+        old_dataset = self.dataset
         self.dataset = self.dataset_frame(
             resized_values,
-            self.dataset.time
+            old_dataset.time
         )
+        old_dataset.close()
 
     def dataset_frame(self, values, time):
         return Dataset(
@@ -207,19 +213,17 @@ class BitmexOrderBookEmitter(
         if 'orderbook' not in self.dataset:
             self.dataset = dataset
         else:
-            self.dataset = xr.concat((self.dataset, dataset), dim='time')
+            old_dataset = self.dataset
+            self.dataset = xr.concat((old_dataset, dataset), dim='time')
+            old_dataset.close()
 
         self.emit('dataset_update')
 
-        alog.info(self.print(depth=4))
-
         return self.dataset
 
-    def on_dataset_update(self):
-        alog.info('### on_dataset_update ###')
+    def after_dataset_update(self):
         self.publish_last_frame()
         self.to_netcdf()
-        self.garbage_collect()
 
     def publish_last_frame(self):
         if self.websocket_emitter_enabled:
@@ -251,7 +255,12 @@ def main(symbol: str, save_interval: str, no_save: bool, **kwargs):
     signal.signal(signal.SIGINT, recorder.exit)
     signal.signal(signal.SIGTERM, recorder.exit)
 
-    recorder.start()
+    try:
+        recorder.start()
+    except Exception as e:
+        traceback.print_exc()
+        recorder.stop()
+        sys.exit(-1)
 
 
 if __name__ == '__main__':

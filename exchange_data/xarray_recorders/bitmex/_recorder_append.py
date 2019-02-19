@@ -55,12 +55,13 @@ class RecorderAppend(CachedDataset):
         self.emit('save')
         if self.save:
             alog.info('### saving ###')
-            with self.dataset:
-                self.dataset.to_netcdf(
-                    mode='w',
-                    path=self.filename,
-                    compute=True
-                )
+            self.dataset.to_netcdf(
+                mode='w',
+                path=self.filename,
+                compute=True
+            )
+
+        self.dataset.close()
         self.dataset = Dataset()
 
     def next_day(self, timestamp):
