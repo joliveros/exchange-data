@@ -28,7 +28,7 @@ class NoValue(Enum):
 class MemoryTracing(object):
     snapshot = None
 
-    def __init__(self, enable_memory_tracing: bool = True, **kwargs):
+    def __init__(self, enable_memory_tracing: bool = False, **kwargs):
         self.enable_memory_tracing = enable_memory_tracing
 
         if enable_memory_tracing:
