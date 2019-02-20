@@ -1,4 +1,5 @@
 import traceback
+from collections import deque
 
 from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
@@ -9,6 +10,7 @@ from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
     OrderBookL2Emitter
 from exchange_data.emitters.websocket_emitter import WebsocketEmitter
 from exchange_data.orderbook import OrderBook
+from exchange_data.orderbook._ordertree import OrderTree
 from exchange_data.utils import NoValue, MemoryTracing
 from exchange_data.xarray_recorders.bitmex import RecorderAppend
 from numpy.core.multiarray import ndarray
@@ -34,8 +36,7 @@ class BitmexOrderBookEmitter(
     Messenger,
     BitmexOrderBook,
     RecorderAppend,
-    WebsocketEmitter,
-    MemoryTracing
+    WebsocketEmitter
 ):
     def __init__(
             self,
@@ -46,8 +47,7 @@ class BitmexOrderBookEmitter(
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
         RecorderAppend.__init__(self, symbol=symbol, **kwargs)
-        WebsocketEmitter.__init__(self)
-        MemoryTracing.__init__(self, **kwargs)
+        WebsocketEmitter.__init__(self, **kwargs)
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
@@ -55,7 +55,7 @@ class BitmexOrderBookEmitter(
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
         self.on(TimeChannels.Tick.value, self.update_dataset)
         self.on(self.symbol.value, self.message)
-        self.on('tick_interval', self.print_memory_trace)
+        self.on('tick_interval', self.garbage_collect)
         self.on('tick_interval', self.print_stats)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
         self.on('dataset_update', self.after_dataset_update)
@@ -63,12 +63,6 @@ class BitmexOrderBookEmitter(
     def print_stats(self):
         alog.info(self.print(depth=4))
         alog.info(self.dataset.dims)
-
-    def print_memory_trace(self):
-        if self.enable_memory_tracing:
-            alog.info('### trace print ###')
-            self.trace_print()
-        self.garbage_collect()
 
     def process_orderbook_l2(self, data):
         self.reset_orderbook()
@@ -81,10 +75,14 @@ class BitmexOrderBookEmitter(
         })
 
     def reset_orderbook(self):
-        self.__dict__ = {
-            **self.__dict__,
-            **OrderBook().__dict__
-        }
+        alog.info('### reset orderbook ###')
+        del self.__dict__['tape']
+        del self.__dict__['bids']
+        del self.__dict__['asks']
+
+        self.tape = deque(maxlen=10)
+        self.bids = OrderTree()
+        self.asks = OrderTree()
 
     def garbage_collect(self):
         gc.collect()
@@ -211,6 +209,7 @@ class BitmexOrderBookEmitter(
         dataset = self.dataset_frame([frame], time_index)
 
         if 'orderbook' not in self.dataset:
+            self.dataset.close()
             self.dataset = dataset
         else:
             old_dataset = self.dataset

@@ -3,7 +3,7 @@ from socketio import Client
 
 
 class WebsocketEmitter(object):
-    def __init__(self, websocket_emitter_enabled: bool = False):
+    def __init__(self, websocket_emitter_enabled: bool = False, **kwargs):
         self.websocket_emitter_enabled = websocket_emitter_enabled
 
         self.ws_client = Client()

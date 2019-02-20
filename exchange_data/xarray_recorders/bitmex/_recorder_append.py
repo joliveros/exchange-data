@@ -30,7 +30,8 @@ class RecorderAppend(CachedDataset):
         self.symbol: BitmexChannels = symbol
         self.prefix = self.symbol.value
 
-        self.dataset = Dataset()
+        if self.dataset is None:
+            self.dataset = Dataset()
 
     @property
     def filename(self):
