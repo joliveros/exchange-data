@@ -2,41 +2,42 @@ version: '3.7'
 
 services:
 
-  redis:
-    image: redis
-    ports:
-    # for manual testing only, for production this can be removed
-      - 0.0.0.0:6379:6379
-
   emit_time:
     deploy:
       replicas: 1
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/time_emitter.py"
-    depends_on:
-      - redis
 
   emit_bitmex:
     deploy:
       replicas: 1
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
-    depends_on:
-      - redis
 
   emit_orderbook_l2:
     deploy:
       replicas: 1
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
-    depends_on:
-      - emit_time
 
   emit_bitmex_orderbook:
     deploy:
       replicas: 1
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
+      - "influxdb:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD --save-interval 15m"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     volumes:
       - $HOME/.exchange-data:/root/.exchange-data
     env_file:
@@ -49,11 +50,11 @@ services:
   socketio:
     image: codequants.com:5000/ws-server
     ports:
-      - target: 8080
+      - target: 8083
         mode: host
     environment:
 #     - DEBUG=*
-     - PORT=8080
+     - PORT=8083
 #    volumes:
 #      - ./ws_service/server/index.js:/usr/src/app/index.js
     depends_on:

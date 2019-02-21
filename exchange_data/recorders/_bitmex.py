@@ -1,15 +1,21 @@
-from bitmex_websocket.constants import InstrumentChannels
+import json
 
-from .. import settings
-from . import Recorder
-from bitmex_websocket import Instrument
+from bitmex_websocket.constants import InstrumentChannels
+from exchange_data import settings
+from exchange_data.channels import BitmexChannels
+from exchange_data.emitters import Messenger
+from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
+from exchange_data.recorders import Recorder
+
 import alog
-import websocket
+import click
+import signal
+import sys
 
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexRecorder(Recorder, Instrument):
+class BitmexRecorder(Recorder, Messenger):
     measurements = []
     channels = [
         InstrumentChannels.quote,
@@ -17,27 +23,69 @@ class BitmexRecorder(Recorder, Instrument):
         InstrumentChannels.orderBookL2
     ]
 
-    def __init__(self, symbol, database_name='bitmex'):
-        super().__init__(symbol, database_name)
-        websocket.enableTrace(settings.RUN_ENV == 'development')
+    def __init__(
+        self,
+        symbol: BitmexChannels,
+        database_name='bitmex',
+        no_save: bool = False,
+        **kwargs,
+    ):
+        signal.signal(signal.SIGINT, self.stop)
+        signal.signal(signal.SIGTERM, self.stop)
+
+        Messenger.__init__(self)
+        Recorder.__init__(self, symbol, database_name, **kwargs)
 
         self.symbol = symbol
-        Instrument.__init__(self, symbol=symbol,
-                            channels=self.channels,
-                            should_auth=False)
+        self.no_save = no_save
+        self.orderbook_l2_channel = \
+            OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
 
-        self.on('action', self.on_action)
+        self.on(self.symbol.value, self.on_action)
+        self.on(self.orderbook_l2_channel, self.on_action)
 
     def on_action(self, data):
-        data['symbol'] = self.symbol
+        if isinstance(data, str):
+            data = json.loads(data)
+
+        # TODO: let the orderbookL2 emitter produce this correctly.
+        if isinstance(data, list):
+            data = {
+                'table': 'orderBookL2',
+                'data': data,
+                'action': 'partial',
+                'symbol': self.symbol.value
+            }
+
+        data['symbol'] = self.symbol.value
         data['timestamp'] = self.get_timestamp()
 
         for row in data['data']:
             row.pop('symbol', None)
 
-        alog.debug(alog.pformat(data))
-        self.save_measurement('data', self.symbol, data)
+        if not self.no_save:
+            self.save_measurement('data', self.symbol.value, data)
+
+    def stop(self, *args):
+        self.close()
+        sys.exit(0)
 
     def start(self):
-        self.run_forever()
+        self.sub([
+            self.symbol,
+            self.orderbook_l2_channel
+        ])
 
+
+@click.command()
+@click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
+@click.option('--no-save', '-n', is_flag=True, help='disable saving to disk')
+@click.option('--batch-size', '-b', type=int, default=100, help='batch size at which to save to influxdb.')
+@click.option('--influxdb', type=str, default=None, help='override influxdb connection string.')
+def main(symbol: str, **kwargs):
+    emitter = BitmexRecorder(symbol=BitmexChannels[symbol], **kwargs)
+    emitter.start()
+
+
+if __name__ == '__main__':
+    main()
