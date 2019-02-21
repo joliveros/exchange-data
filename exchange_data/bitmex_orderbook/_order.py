@@ -1,7 +1,3 @@
-from functools import lru_cache
-
-import alog
-
 from exchange_data.orderbook import Order, OrderBookSide, OrderType
 
 
@@ -34,7 +30,6 @@ class BitmexOrder(Order):
         super().__init__(order_type=OrderType.LIMIT, quantity=quantity,
                          side=side, price=price, timestamp=timestamp, uid=uid)
 
-    @lru_cache(maxsize=None)
     def parse_price_from_id(self, uid: int):
         index = 100000000 * self.instrument_index
         return float(index - uid) / 100.0

@@ -1,15 +1,13 @@
-version: "3.1"
+version: "3.7"
 
 services:
   influxdb:
     image: influxdb
-    restart: unless-stopped
-
     env_file:
       - ./.env.prod
 
     ports:
-    - 28953:8086
+    - 0.0.0.0:28953:8086
 
     volumes:
       - "./influxdb.conf:/etc/influxdb/influxdb.conf"
@@ -17,27 +15,24 @@ services:
 
     command: influxd -config /etc/influxdb/influxdb.conf
 
-  bitmex-btcusd:
+  bitmex-xbtusd:
     image: codequants.com:5000/exchange-data
-
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
+      - "influxdb:172.18.0.1"
     env_file:
       - ./.env.prod
-
-    environment:
-      - BATCH_SIZE=100
-
     depends_on:
       - influxdb
-
-    command: bash -c "source ~/.bashrc && ./exchange-data --exchange bitmex XBTUSD"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD"
 
   bitstamp-btcusd:
     image: codequants.com:5000/exchange-data
-    restart: unless-stopped
-
     env_file:
       - ./.env.prod
-
+    extra_hosts:
+      - "influxdb:172.18.0.1"
     environment:
       - BATCH_SIZE=100
 
@@ -48,11 +43,10 @@ services:
 
   gdax-btcusd:
     image: codequants.com:5000/exchange-data
-    restart: unless-stopped
-
     env_file:
       - ./.env.prod
-
+    extra_hosts:
+      - "influxdb:172.18.0.1"
     environment:
       - BATCH_SIZE=100
 
