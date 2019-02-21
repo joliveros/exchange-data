@@ -1,21 +1,16 @@
 import traceback
 from collections import deque
 
-from exchange_data import settings
+from exchange_data import settings, Database
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
     OrderBookL2Emitter
-from exchange_data.emitters.websocket_emitter import WebsocketEmitter
-from exchange_data.orderbook import OrderBook
 from exchange_data.orderbook._ordertree import OrderTree
-from exchange_data.utils import NoValue, MemoryTracing
-from exchange_data.xarray_recorders.bitmex import RecorderAppend
+from exchange_data.utils import NoValue
 from numpy.core.multiarray import ndarray
-from pandas import date_range
-from xarray import Dataset
 
 import alog
 import click
@@ -24,7 +19,6 @@ import json
 import numpy as np
 import signal
 import sys
-import xarray as xr
 
 
 class BitmexOrderBookChannels(NoValue):
@@ -35,8 +29,7 @@ class BitmexOrderBookEmitter(
     BitmexEmitterBase,
     Messenger,
     BitmexOrderBook,
-    RecorderAppend,
-    WebsocketEmitter
+    Database
 ):
     def __init__(
             self,
@@ -46,19 +39,16 @@ class BitmexOrderBookEmitter(
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
-        RecorderAppend.__init__(self, symbol=symbol, **kwargs)
-        WebsocketEmitter.__init__(self, **kwargs)
+        Database.__init__(self, database_name='bitmex')
+
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
-        self.on(TimeChannels.Tick.value, self.update_dataset)
+        self.on(TimeChannels.Tick.value, self.save_frame)
         self.on(self.symbol.value, self.message)
-        self.on('tick_interval', self.garbage_collect)
-        self.on('tick_interval', self.print_stats)
         self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
-        self.on('dataset_update', self.after_dataset_update)
 
     def print_stats(self):
         alog.info(self.print(depth=4))
@@ -94,12 +84,6 @@ class BitmexOrderBookEmitter(
             self.orderbook_l2_channel
         ])
 
-    def stop(self):
-        self._pubsub.close()
-        self.ws_disconnect()
-        self.stopped = True
-        self.to_netcdf()
-
     def exit(self, *args):
         self.stop()
         sys.exit(0)
@@ -129,8 +113,6 @@ class BitmexOrderBookEmitter(
         return np.vstack((price, volume))
 
     def generate_frame(self) -> ndarray:
-        prev_frame_shape = (0, 0)
-        dataset = self.dataset
         bid_side = self.gen_bid_side()
         ask_side = self.gen_ask_side()
 
@@ -148,106 +130,30 @@ class BitmexOrderBookEmitter(
 
         frame = np.array((ask_side, bid_side))
 
-        if dataset:
-            prev_frame_shape = \
-                dataset.sel(time=dataset.time[-1]).orderbook.shape
-
-        if frame.shape[-1] > prev_frame_shape[-1]:
-            if dataset:
-                self.resize_dataset(frame)
-
-        elif frame.shape[-1] < prev_frame_shape[-1]:
-            return self.resize_frame(frame)
-
         return frame
 
-    def resize_frame(self, frame):
-        book_shape = self.dataset.orderbook.values.shape
-        shape = (book_shape[1], book_shape[2], book_shape[3])
-        resized_values = np.zeros(shape)
-        frame_shape = frame.shape
-        resized_values[:frame_shape[0], :frame_shape[1], :frame_shape[2]] = \
-            frame
-        return resized_values
-
-    def resize_dataset(self, frame):
-        book_shape = self.dataset.orderbook.values.shape
-        resized_values = np.zeros((book_shape[0],) + frame.shape)
-
-        resized_values[
-            :book_shape[0],
-            :book_shape[1],
-            :book_shape[2],
-            :book_shape[3]
-        ] = self.dataset.orderbook.values
-        old_dataset = self.dataset
-        self.dataset = self.dataset_frame(
-            resized_values,
-            old_dataset.time
-        )
-        old_dataset.close()
-
-    def dataset_frame(self, values, time):
-        return Dataset(
-            {
-                'orderbook': (['time', 'frame', 'side', 'levels'], values)
-            },
-            coords={'time': time}
-        )
-
-    def update_dataset(self, timestamp) -> Dataset:
+    def save_frame(self, timestamp):
         self.last_timestamp = timestamp
-
         frame = self.generate_frame()
 
-        time_index = date_range(
-            start=self.last_date,
-            end=self.last_date,
-            freq=self.freq
-        ).floor(self.freq)
-
-        dataset = self.dataset_frame([frame], time_index)
-
-        if 'orderbook' not in self.dataset:
-            self.dataset.close()
-            self.dataset = dataset
-        else:
-            old_dataset = self.dataset
-            self.dataset = xr.concat((old_dataset, dataset), dim='time')
-            old_dataset.close()
-
-        self.emit('dataset_update')
-
-        return self.dataset
-
-    def after_dataset_update(self):
-        self.publish_last_frame()
-        self.to_netcdf()
-
-    def publish_last_frame(self):
-        if self.websocket_emitter_enabled:
-            last_index = self.dataset.time[-2:]
-            dataset = self.dataset.sel(time=slice(*last_index.data))
-            last_frame_values: ndarray = dataset.orderbook.values[-1]
-
-            self.ws_emit(
-                self.frame_channel,
-                json.dumps(last_frame_values.tolist())
-            )
+        measurement = {
+            'measurement': self.frame_channel,
+            'tags': {
+                'symbol': self.symbol.value
+            },
+            'timestamp': self.last_timestamp,
+            'fields': {
+                'data': json.dumps(frame.tolist())
+            }
+        }
+        self.write_points([measurement], time_precision='ms')
 
 
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-@click.option('--save-interval', '-i', default='1h', help='save interval as string "1h"')
-@click.option('--no-save', '-n', is_flag=True, help='disable saving to disk')
-@click.option('--enable-memory-tracing', '-t', is_flag=True,
-              help='Enable memory tracing.')
-def main(symbol: str, save_interval: str, no_save: bool, **kwargs):
-    kwargs['save'] = not no_save
-
+def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],
-        save_interval=save_interval,
         **kwargs
     )
 

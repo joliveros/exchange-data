@@ -35,7 +35,10 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
         self.on('action', self.on_action)
 
     def on_action(self, data):
-        msg = self.symbol, json.dumps(data)
+        if not isinstance(data, str):
+            data = json.dumps(data)
+
+        msg = self.symbol, data
         self.publish(*msg)
 
     def start(self):

@@ -5,8 +5,17 @@ import alog
 
 
 class Database(InfluxDBClient):
-    def __init__(self, database_name, ssl=False):
-        conn_params = urlparse('{}{}'.format(settings.DB, database_name))
+    def __init__(
+        self,
+        database_name,
+        ssl=False,
+        influxdb: str = None,
+        **kwargs
+    ):
+        self.connection_str = influxdb if influxdb else settings.DB
+
+        conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
+
         alog.debug(conn_params)
         database = conn_params.path[1:]
         netlocs = conn_params.netloc.split(',')
