@@ -42,3 +42,5 @@ class Messenger(Redis, EventEmitter):
         for message in self._pubsub.listen():
             self.emit(Events.Message.value, message)
 
+    def stop(self):
+        self._pubsub.close()

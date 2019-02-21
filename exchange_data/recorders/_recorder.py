@@ -13,9 +13,10 @@ class Recorder(Database):
     channels = []
     symbols = []
 
-    def __init__(self, symbols, database_name):
-        Database.__init__(self, database_name=database_name)
+    def __init__(self, symbols, database_name, batch_size: int = 100, **kwargs):
+        Database.__init__(self, database_name=database_name, **kwargs)
 
+        self.batch_size = batch_size
         self.symbols = symbols
 
     def to_lowercase_keys(self, data):
@@ -49,16 +50,10 @@ class Recorder(Database):
             }
         }
 
-        alog.debug(alog.pformat(measurement))
-
         self.measurements.append(measurement)
 
-        if len(self.measurements) >= settings.MEASUREMENT_BATCH_SIZE:
-            alog.debug(
-                '### Save measurements count: %s' % len(self.measurements))
+        if len(self.measurements) >= self.batch_size:
             self.write_points(self.measurements, time_precision='ms')
 
             self.measurements = []
 
-    def stop(self):
-        pass
