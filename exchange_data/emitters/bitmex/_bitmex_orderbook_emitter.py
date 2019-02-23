@@ -1,7 +1,7 @@
 import traceback
 from collections import deque
 
-from exchange_data import settings, Database
+from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
@@ -136,16 +136,13 @@ class BitmexOrderBookEmitter(
         self.last_timestamp = timestamp
         frame = self.generate_frame()
 
-        measurement = {
-            'measurement': self.frame_channel,
-            'tags': {
-                'symbol': self.symbol.value
-            },
-            'timestamp': self.last_timestamp,
-            'fields': {
-                'data': json.dumps(frame.tolist())
-            }
-        }
+        measurement = Measurement(
+            measurement=self.frame_channel,
+            tags={'symbol': self.symbol.value},
+            timestamp=self.last_timestamp,
+            fields={'data': json.dumps(frame.tolist())}
+        )
+
         self.write_points([measurement], time_precision='ms')
 
 

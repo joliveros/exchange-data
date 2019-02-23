@@ -1,14 +1,12 @@
-from unittest.mock import MagicMock
-
-import alog
-import pytest
-
 from exchange_data.bitmex_orderbook import InstrumentInfo
-from exchange_data.emitters import TimeEmitter
 from exchange_data.channels import BitmexChannels
+from exchange_data.emitters import TimeEmitter
 from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
 from exchange_data.orderbook import BuyOrder, OrderList
 from tests.exchange_data.orderbook.fixtures import orders
+
+import mock
+import pytest
 
 
 @pytest.fixture()
@@ -27,9 +25,6 @@ def orderbook_emitter(mocker, orders, tmpdir):
                  '.get_instrument', return_value=instrument_info)
     mocker.patch(
         'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
-    )
-    mocker.patch(
-        'exchange_data.emitters.bitmex.BitmexOrderBookEmitter.publish_last_frame'
     )
     orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
                                                cache_dir=tmpdir)
@@ -58,75 +53,9 @@ class TestBitmexOrderBookEmitter(object):
 
         assert frame.shape == (2, 2, 3)
 
-    def test_update_dataset_once(self, orderbook_emitter):
-        timestamp = TimeEmitter.timestamp()
+    @mock.patch('exchange_data.emitters.bitmex.BitmexOrderBookEmitter.write_points')
+    def test_save_frame(self, write_points_mock, orderbook_emitter):
+        orderbook_emitter.save_frame(self.timestamp)
 
-        dataset = orderbook_emitter.update_dataset(timestamp)
-
-        assert list(dataset.dims) == ['frame', 'levels', 'side', 'time']
-
-    def test_update_dataset_multiple_times(self, orderbook_emitter):
-        timestamp = TimeEmitter.timestamp()
-
-        orderbook_emitter.update_dataset(timestamp)
-        one_second = 1000
-        next_timestamp = timestamp + one_second
-        orderbook_emitter.update_dataset(next_timestamp)
-
-        orderbook_emitter.process_order(BuyOrder(price=91.00, quantity=5))
-
-        orderbook_emitter.update_dataset(next_timestamp + one_second)
-
-    def test_update_dataset_multiple_times_and_delete_level(self,
-                                                            orderbook_emitter):
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.process_order(BuyOrder(price=91.00, quantity=5))
-        orderbook_emitter.update_dataset(self.tick())
-
-        min_price = orderbook_emitter.bids.min_price()
-        min_level: OrderList = orderbook_emitter.bids.price_map[min_price]
-
-        orderbook_emitter.cancel_order(min_level.head_order.uid)
-
-        orderbook_emitter.update_dataset(self.tick())
-
-    def test_open_and_append(self, mocker, orders, tmpdir):
-        mocker.patch('exchange_data.bitmex_orderbook.InstrumentInfo'
-                     '.get_instrument', return_value=instrument_info)
-        mocker.patch(
-            'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
-        )
-        mocker.patch(
-            'exchange_data.emitters.bitmex.BitmexOrderBookEmitter.publish'
-        )
-
-        args = {
-            'symbol': BitmexChannels.XBTUSD,
-            'cache_dir': tmpdir,
-            'save_interval': '1s'
-        }
-        orderbook_emitter = BitmexOrderBookEmitter(**args)
-        orderbook_emitter._pubsub = MagicMock()
-
-        for order in orders:
-            orderbook_emitter.process_order(order)
-
-        orderbook_emitter.update_dataset(self.tick())
-
-        orderbook_emitter.update_dataset(self.tick())
-
-        orderbook_emitter.process_order(BuyOrder(price=91.00, quantity=5))
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-        orderbook_emitter.update_dataset(self.tick())
-
-        orderbook_emitter.stop()
-
-        orderbook_emitter = BitmexOrderBookEmitter(**args)
-        orderbook_emitter._pubsub = MagicMock()
-
-        orderbook_emitter.update_dataset(self.tick())
-
-        # orderbook_emitter.stop()
+        write_points_mock.called_once()
 

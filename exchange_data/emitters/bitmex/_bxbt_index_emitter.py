@@ -1,46 +1,40 @@
-from datetime import datetime, timedelta
-from typing import List
-
 from bitmex import bitmex
-
+from datetime import datetime, timedelta
 from exchange_data import Database
+from exchange_data._measurement import Measurement
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from pyee import EventEmitter
+from typing import List, Callable
 
-import alog
 import click
 import json
 import signal
 
 
-class Measurement(object):
-    def __init__(
-        self,
-        fields: dict = None,
-        measurement: str = None,
-        tags: dict = None,
-        timestamp: float = None
-    ):
-        self.fields = fields
-        self.timestamp = timestamp
-        self.tags = tags
-        self.measurement = measurement
+class SignalInterceptor(object):
+    def __init__(self, exit_func: Callable):
+        signal.signal(signal.SIGINT, exit_func)
+        signal.signal(signal.SIGTERM, exit_func)
 
 
-class BXBTIndexEmitter(BitmexEmitterBase, Messenger, EventEmitter, Database):
+class BXBTIndexEmitter(
+    BitmexEmitterBase,
+    Messenger,
+    Database,
+    SignalInterceptor
+):
 
     def __init__(self, interval: str = '1m', **kwargs):
         self.symbol = BitmexChannels.BXBT
 
-        EventEmitter.__init__(self)
         BitmexEmitterBase.__init__(self, symbol=self.symbol, **kwargs)
-        Messenger.__init__(self)
         Database.__init__(self, database_name='bitmex', **kwargs)
+        Messenger.__init__(self)
+        SignalInterceptor.__init__(self, self.stop)
 
         self.bitmex_client = bitmex()
-        self.setup_signals()
 
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)
@@ -99,10 +93,6 @@ class BXBTIndexEmitter(BitmexEmitterBase, Messenger, EventEmitter, Database):
 
     def start(self):
         self.sub([self.interval])
-
-    def setup_signals(self):
-        signal.signal(signal.SIGINT, self.stop)
-        signal.signal(signal.SIGTERM, self.stop)
 
 
 @click.command()
