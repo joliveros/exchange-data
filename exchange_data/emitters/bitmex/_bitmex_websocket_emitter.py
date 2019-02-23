@@ -11,7 +11,7 @@ import websocket
 
 
 class BitmexEmitterBase(object):
-    def __init__(self, symbol: BitmexChannels):
+    def __init__(self, symbol: BitmexChannels, **kwargs):
         self.symbol = symbol
 
 
