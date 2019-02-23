@@ -1,3 +1,4 @@
+import sys
 from enum import Enum, auto
 from exchange_data import settings
 from exchange_data.utils import NoValue
@@ -42,5 +43,6 @@ class Messenger(Redis, EventEmitter):
         for message in self._pubsub.listen():
             self.emit(Events.Message.value, message)
 
-    def stop(self):
+    def stop(self, *args, **kwargs):
         self._pubsub.close()
+        sys.exit(0)

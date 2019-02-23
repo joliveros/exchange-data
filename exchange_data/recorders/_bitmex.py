@@ -1,5 +1,3 @@
-import json
-
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
@@ -9,6 +7,7 @@ from exchange_data.recorders import Recorder
 
 import alog
 import click
+import json
 import signal
 import sys
 
