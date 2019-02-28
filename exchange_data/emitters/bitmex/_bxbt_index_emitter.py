@@ -1,3 +1,4 @@
+import alog
 from bitmex import bitmex
 from datetime import datetime, timedelta
 from exchange_data import Database
@@ -6,7 +7,7 @@ from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from pyee import EventEmitter
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 import click
 import json
@@ -68,7 +69,7 @@ class BXBTIndexEmitter(
 
         self.write_points(formatted_indexes)
 
-    def format_indexes(self, indexes: List[dict]) -> (str, List):
+    def format_indexes(self, indexes: List[dict]) -> Tuple[str, List]:
         formatted_indexes = []
 
         for index in indexes:
@@ -82,13 +83,16 @@ class BXBTIndexEmitter(
         points = [
             Measurement(
                 measurement=self.channel,
-                timestamp=index['timestamp'],
-                tags={'symbol': self.symbol.value},
+                timestamp=index['logged'],
+                tags={
+                    'symbol': self.symbol.value,
+                    'reference': index['reference']
+                },
                 fields=index
             ).__dict__
             for index in data
         ]
-
+        alog.info(alog.pformat(points))
         super().write_points(points, time_precision='ms')
 
     def start(self):
