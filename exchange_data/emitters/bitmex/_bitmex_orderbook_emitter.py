@@ -143,7 +143,7 @@ class BitmexOrderBookEmitter(
             fields={'data': json.dumps(frame.tolist())}
         )
 
-        self.write_points([measurement], time_precision='ms')
+        self.write_points([measurement.__dict__], time_precision='ms')
 
 
 @click.command()

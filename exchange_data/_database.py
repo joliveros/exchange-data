@@ -1,5 +1,8 @@
 from influxdb import InfluxDBClient
 from urllib.parse import urlparse
+
+from influxdb.resultset import ResultSet
+
 from exchange_data import settings
 import alog
 
@@ -12,6 +15,7 @@ class Database(InfluxDBClient):
         influxdb: str = None,
         **kwargs
     ):
+        self.database_name = database_name
         self.connection_str = influxdb if influxdb else settings.DB
 
         conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
@@ -36,3 +40,11 @@ class Database(InfluxDBClient):
                 'password': info.password or None,
                 'host': info.hostname or 'localhost',
                 'port': info.port or 8086}
+
+    def query(self, query: str, *args, **kwargs) -> ResultSet:
+        return super().query(
+            database=self.database_name,
+            query=query,
+            epoch='ms', params={'precision': 'ms'},
+            chunked=True,
+            *args, **kwargs)
