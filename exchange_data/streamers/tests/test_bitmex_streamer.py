@@ -1,8 +1,4 @@
-from datetime import datetime
-
-import alog
 from dateutil import parser
-
 from exchange_data.streamers._bitmex import BitmexStreamer
 
 import pytest
@@ -21,5 +17,6 @@ class TestBitmexStreamer(object):
         )
 
         window = streamer.compose_window()
-        alog.info(window.shape)
+
+        assert window.shape == (3, 60, 2, 2, 10)
 
