@@ -111,6 +111,7 @@ class BitmexStreamer(Database):
             .fillna(0)
 
         orderbook = orderbook.diff('price')
+
         price_info = xr.merge([index_ds, orderbook])
 
         orderbook.close()
