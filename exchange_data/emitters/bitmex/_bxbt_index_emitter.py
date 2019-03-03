@@ -1,4 +1,5 @@
 import alog
+import pytz
 from bitmex import bitmex
 from datetime import datetime, timedelta
 from exchange_data import Database
@@ -65,19 +66,17 @@ class BXBTIndexEmitter(
         indexes_str, formatted_indexes = self.format_indexes(indexes)
 
         msg = self.channel, indexes_str
-        self.publish(*msg)
 
+        self.publish(*msg)
         self.write_points(formatted_indexes)
 
     def format_indexes(self, indexes: List[dict]) -> Tuple[str, List]:
-        formatted_indexes = []
 
         for index in indexes:
-            index['timestamp'] = index['timestamp'].timestamp() * 1000
-            index['logged'] = index['logged'].timestamp() * 1000
-            formatted_indexes.append(index)
+            index['timestamp'] = index['timestamp'].timestamp()
+            index['logged'] = index['logged'].timestamp()
 
-        return json.dumps(formatted_indexes), formatted_indexes
+        return json.dumps(indexes), indexes
 
     def write_points(self, data):
         points = [
@@ -92,7 +91,7 @@ class BXBTIndexEmitter(
             ).__dict__
             for index in data
         ]
-        alog.info(alog.pformat(points))
+
         super().write_points(points, time_precision='ms')
 
     def start(self):

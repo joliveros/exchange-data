@@ -7,6 +7,7 @@ import alog
 RUN_ENV = environ.get('RUN_ENV')
 
 DB = environ.get('DB')
+
 HOME = environ.get('HOME')
 
 BITSTAMP_PUSHER_APP_KEY = environ.get('BITSTAMP_PUSHER_APP_KEY')

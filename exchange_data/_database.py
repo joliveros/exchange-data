@@ -45,6 +45,7 @@ class Database(InfluxDBClient):
         return super().query(
             database=self.database_name,
             query=query,
-            epoch='ms', params={'precision': 'ms'},
+            epoch='ms',
+            params={'precision': 'ms'},
             chunked=True,
             *args, **kwargs)

@@ -1,7 +1,7 @@
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger
+from exchange_data.emitters import Messenger, TimeEmitter
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
 from exchange_data.recorders import Recorder
 
@@ -57,7 +57,7 @@ class BitmexRecorder(Recorder, Messenger):
             }
 
         data['symbol'] = self.symbol.value
-        data['timestamp'] = self.get_timestamp()
+        data['timestamp'] = TimeEmitter.timestamp()
 
         for row in data['data']:
             row.pop('symbol', None)

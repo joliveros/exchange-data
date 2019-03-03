@@ -2,8 +2,12 @@ import time
 from datetime import datetime
 from typing import Any
 
+import alog
+import pytz
+
 from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
 from exchange_data.bitmex_orderbook._action import Action
+from exchange_data.emitters import TimeEmitter
 
 
 class BitmexMessage(object):
@@ -25,10 +29,7 @@ class BitmexMessage(object):
         else:
             self.symbol = data['data'][0]['symbol']
 
-        if 'time' in data:
-            self.timestamp: int = data['time']
-        else:
-            self.timestamp = time.time()
+        self.timestamp = TimeEmitter.timestamp()
 
         orders = [
             BitmexOrder(

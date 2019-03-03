@@ -1,5 +1,7 @@
 from datetime import datetime, timezone, timedelta
 
+import pytz
+
 from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
 from pytimeparse.timeparse import timeparse
@@ -37,18 +39,18 @@ class TimeEmitter(Messenger):
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         next_date = today + timedelta(days=1)
 
-        next_day_timestamp = next_date.timestamp() * 1000
+        next_day_timestamp = next_date.timestamp()
 
         return next_day_timestamp
 
     @staticmethod
     def timestamp():
-        now = TimeEmitter.now_utc().timestamp() * 1000
+        now = TimeEmitter.now_utc().timestamp()
         return now
 
     @staticmethod
     def now_utc():
-        return datetime.now().replace(tzinfo=timezone.utc)
+        return datetime.utcnow().replace(tzinfo=pytz.utc)
 
     def start(self):
         while True:
