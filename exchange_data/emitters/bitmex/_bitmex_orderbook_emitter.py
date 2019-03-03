@@ -1,5 +1,8 @@
 import traceback
 from collections import deque
+from datetime import datetime
+
+import pytz
 
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
@@ -134,6 +137,7 @@ class BitmexOrderBookEmitter(
 
     def save_frame(self, timestamp):
         self.last_timestamp = timestamp
+
         frame = self.generate_frame()
 
         measurement = Measurement(

@@ -6,8 +6,6 @@ from tests.exchange_data.fixtures import datafile_name, measurements
 
 import pytest
 
-settings.DB = 'http://jose:jade121415@178.62.16.200:28953/'
-
 
 @pytest.fixture('module')
 def orderbook_update_msg():

@@ -5,6 +5,8 @@ from datetime import datetime
 import alog
 import json
 
+from exchange_data.emitters import TimeEmitter
+
 alog.set_level(settings.LOG_LEVEL)
 
 
@@ -32,9 +34,6 @@ class Recorder(Database):
 
         return data
 
-    def get_timestamp(self):
-        return f'{str(datetime.utcnow())}Z'
-
     def save_measurement(self, name, symbol, table):
         if isinstance(table, str):
             table = json.loads(table)
@@ -44,7 +43,7 @@ class Recorder(Database):
             'tags': {
                 'symbol': symbol
             },
-            'timestamp': table.get('timestamp'),
+            'timestamp': self.get_timestamp(table),
             'fields': {
                 'data': json.dumps(table)
             }
@@ -56,4 +55,8 @@ class Recorder(Database):
             self.write_points(self.measurements, time_precision='ms')
 
             self.measurements = []
+
+    def get_timestamp(self, table):
+        return float(
+            table.get('microtimestamp', TimeEmitter.timestamp() * 1000)) / 1000
 

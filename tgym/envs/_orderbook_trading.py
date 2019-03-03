@@ -1,9 +1,12 @@
+from exchange_data.streamers._bitmex import BitmexStreamer
+from gym.spaces import Box
 from tgym.core import Env
-import logging
+
+import alog
 import numpy as np
 
 
-class OrderBookTradingEnv(Env):
+class OrderBookTradingEnv(Env, BitmexStreamer):
     """
     Orderbook based trading environment.
     """
@@ -20,35 +23,29 @@ class OrderBookTradingEnv(Env):
         'short': np.array([0, 0, 1])
     }
 
-    def __init__(self, episode_length=1000,
-                 trading_fee=0, time_fee=0, history_length=2):
-        """Initialisation function
+    def __init__(
+        self,
+        episode_length=1000,
+        trading_fee=0,
+        time_fee=0,
+        **kwargs
+    ):
+        Env.__init__(self)
+        BitmexStreamer.__init__(self, **kwargs)
+        action_space = Box(0, 1.0, shape=(3, ), dtype=np.float32)
+        alog.info(action_space)
 
-        Args:
-            episode_length (int): number of steps to play the game for
-            trading_fee (float): penalty for trading
-            time_fee (float): time fee
-            history_length (int): number of historical states to stack in the
-                observation vector.
-        """
-
-        super().__init__()
-        assert history_length > 0
-        self._first_render = True
         self._trading_fee = trading_fee
         self._time_fee = time_fee
         self._episode_length = episode_length
-        self.n_actions = 3
-        self._prices_history = []
-        self._history_length = history_length
+        self.n_actions = len(self._actions.keys())
+        self.window: np.ndarray = self.compose_window()
+
+        alog.info(self.window.shape)
+
         self.reset()
 
     def reset(self):
-        """Reset the trading environment. Reset rewards
-
-        Returns:
-            observation (numpy.array): observation of the state
-        """
         self._iteration = 0
         self._total_reward = 0
         self._total_pnl = 0
@@ -57,8 +54,7 @@ class OrderBookTradingEnv(Env):
         self._exit_price = 0
         self._closed_plot = False
 
-        # for i in range(self._history_length):
-        #     self._prices_history.append(self._data_generator.next())
+        return
 
         observation = self._get_observation()
         self.state_shape = observation.shape
