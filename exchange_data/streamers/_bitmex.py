@@ -1,21 +1,19 @@
-from copy import copy
-
 from cached_property import cached_property
 from datetime import datetime, timedelta
-
 from dateutil.tz import tz
+from numpy.core.multiarray import ndarray
 
-from exchange_data import Database
-from exchange_data.utils import datetime_from_timestamp
+from exchange_data import Database, settings
 from pandas import to_datetime, DataFrame
 from pytimeparse.timeparse import timeparse
+from typing import Tuple
 from xarray import Dataset, DataArray
 
 import alog
 import json
 import numpy as np
-import pytz
-import xarray as xr
+
+alog.set_level(settings.LOG_LEVEL)
 
 
 class BitmexStreamer(Database):
@@ -92,8 +90,6 @@ class BitmexStreamer(Database):
         query = f'SELECT * FROM {self.channel_name} ' \
             f'WHERE time > {start_date} AND time < {end_date};'
 
-        alog.debug(query)
-
         return self.query(query)
 
     def parse_db_timestamp(self, timestamp):
@@ -110,12 +106,14 @@ class BitmexStreamer(Database):
         for item in orderbook.get_points(self.channel_name):
             time_index.append(self.parse_db_timestamp(item['time']))
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
+
+            buy_side = data[1, :, :]
+            zeros = (buy_side == 0.0).argmax(axis=1)
+            buy_side = np.flip(buy_side[:, :zeros[0]], 1)[:, : self.depth]
+
+            data = data[:, :, :self.depth]
+            data[1, :, :] = buy_side
             window_list.append(data)
-
-            if data.shape[-1] > max_shape[-1]:
-                max_shape = data.shape
-
-        window_list = [self.resize_frame(data, max_shape) for data in window_list]
 
         window = np.stack(window_list, axis=0)
 
@@ -124,12 +122,18 @@ class BitmexStreamer(Database):
         }, coords={
             'time': to_datetime(time_index, utc=True)
         })
-
         return orderbook
 
     def index(self) -> list:
         start_date = self.format_date_query(self.start_date)
         end_date = self.format_date_query(self.end_date)
+
+        range_diff = (self.end_date - self.start_date).total_seconds()
+
+        if range_diff < timeparse('1m'):
+            start_date = self.format_date_query(
+                self.end_date - timedelta(seconds=timeparse('1m'))
+            )
 
         query = f'SELECT * FROM ".BXBT_1m" ' \
             f'WHERE time > {start_date} AND time < {end_date};'
@@ -138,7 +142,7 @@ class BitmexStreamer(Database):
 
         return [item for item in index.get_points('.BXBT_1m')]
 
-    def compose_window(self):
+    def compose_window(self) -> Tuple[ndarray, ndarray]:
         orderbook = self.orderbook_frames()
 
         time_index: DataArray = orderbook.time.values.copy()
@@ -168,19 +172,13 @@ class BitmexStreamer(Database):
         index = index.fillna(method='ffill')
         index['index_diff'] = index.diff()
 
-        index_ds = Dataset.from_dataframe(index) \
+        index: ndarray = Dataset.from_dataframe(index) \
             .rename({'index': 'time'}) \
-            .fillna(0)
+            .fillna(0).to_array().values[0]
 
-        orderbook = orderbook.diff('price')
+        alog.info(index)
 
-        price_info = xr.merge([index_ds, orderbook])
-
-        orderbook.close()
-
-        return price_info.sel(
-            price=slice(None, self.depth)
-        ).to_array().values
+        return index, orderbook.to_array().values[0]
 
     def __iter__(self):
         pass

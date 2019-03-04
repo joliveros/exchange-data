@@ -42,6 +42,8 @@ class Database(InfluxDBClient):
                 'port': info.port or 8086}
 
     def query(self, query: str, *args, **kwargs) -> ResultSet:
+        alog.debug(query)
+
         return super().query(
             database=self.database_name,
             query=query,

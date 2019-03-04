@@ -39,9 +39,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         self._time_fee = time_fee
         self._episode_length = episode_length
         self.n_actions = len(self._actions.keys())
-        self.window: np.ndarray = self.compose_window()
 
-        alog.info(self.window.shape)
+        # index, orderbook = self.compose_window()
 
         self.reset()
 
