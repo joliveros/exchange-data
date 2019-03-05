@@ -23,6 +23,7 @@ alog.set_level(settings.LOG_LEVEL)
 class BitmexStreamer(Database, Generator):
     def __init__(
         self,
+        max_spread: float = 100.0,
         depth: int = 10,
         random_start_date: bool = False,
         end_date: datetime = None,
@@ -31,10 +32,11 @@ class BitmexStreamer(Database, Generator):
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
-        self.start_date = None
-        self.end_date = None
         self._index = []
         self._orderbook = []
+        self.end_date = None
+        self.max_spread = max_spread
+        self.start_date = None
 
         self.depth = depth
         self.window_size = timeparse(window_size)
@@ -130,6 +132,13 @@ class BitmexStreamer(Database, Generator):
 
             data = data[:, :, :self.depth]
             data[1, :buy_side.shape[0], :buy_side.shape[1]] = buy_side
+
+            best_ask = data[0][0][0]
+            best_bid = data[1][0][0]
+
+            if best_ask - best_bid > self.max_spread:
+                raise Exception('Spread exceeds limit.')
+
             window_list.append(data)
 
         window = np.stack(window_list, axis=0)
