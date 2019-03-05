@@ -1,9 +1,9 @@
 from cached_property import cached_property
 from datetime import datetime, timedelta
 from dateutil.tz import tz
-from numpy.core.multiarray import ndarray
-
 from exchange_data import Database, settings
+from exchange_data.utils import random_date
+from numpy.core.multiarray import ndarray
 from pandas import to_datetime, DataFrame
 from pytimeparse.timeparse import timeparse
 from typing import Tuple
@@ -20,23 +20,32 @@ class BitmexStreamer(Database):
     def __init__(
         self,
         depth: int = 10,
+        random_start_date: bool = False,
         end_date: datetime = None,
         start_date: datetime = None,
         window_size: str = '1m',
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
+        self.start_date = None
+        self.end_date = None
 
         self.depth = depth
         self.window_size = timeparse(window_size)
         self.channel_name = 'XBTUSD_OrderBookFrame'
 
-        if start_date is None:
-            start_date = self.now()
+        if random_start_date:
+            if start_date is not None:
+                raise Exception('start_date should be None.')
 
-        self.start_date = start_date
+            self.start_date = random_date(self.min_date, self.now())
 
-        if end_date:
+        if self.start_date is None:
+            self.start_date = start_date
+        if self.start_date is None:
+            self.start_date = self.now()
+
+        if end_date is not None:
             self.end_date = end_date
         else:
             self.end_date = self.start_date + \
@@ -112,7 +121,7 @@ class BitmexStreamer(Database):
             buy_side = np.flip(buy_side[:, :zeros[0]], 1)[:, : self.depth]
 
             data = data[:, :, :self.depth]
-            data[1, :, :] = buy_side
+            data[1, :buy_side.shape[0], :buy_side.shape[1]] = buy_side
             window_list.append(data)
 
         window = np.stack(window_list, axis=0)
