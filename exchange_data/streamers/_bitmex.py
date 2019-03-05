@@ -1,3 +1,7 @@
+from collections import Generator
+from time import sleep
+
+import click
 from cached_property import cached_property
 from datetime import datetime, timedelta
 from dateutil.tz import tz
@@ -16,7 +20,7 @@ import numpy as np
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexStreamer(Database):
+class BitmexStreamer(Database, Generator):
     def __init__(
         self,
         depth: int = 10,
@@ -29,6 +33,8 @@ class BitmexStreamer(Database):
         super().__init__(database_name='bitmex', **kwargs)
         self.start_date = None
         self.end_date = None
+        self._index = []
+        self._orderbook = []
 
         self.depth = depth
         self.window_size = timeparse(window_size)
@@ -53,6 +59,8 @@ class BitmexStreamer(Database):
 
         if self.start_date < self.min_date:
             raise Exception('Start date not available in DB.')
+
+        self.window_size = (self.end_date - self.start_date).total_seconds()
 
     def now(self):
         return datetime.now(tz=tz.tzlocal())
@@ -185,18 +193,39 @@ class BitmexStreamer(Database):
             .rename({'index': 'time'}) \
             .fillna(0).to_array().values[0]
 
-        alog.info(index)
-
         return index, orderbook.to_array().values[0]
 
-    def __iter__(self):
-        pass
+    def next_window(self):
+        self.start_date += timedelta(seconds=self.window_size)
+        self.end_date += timedelta(seconds=self.window_size)
+        return self.compose_window()
 
-    def resize_frame(self, data, max_shape):
-        frame = np.zeros(max_shape)
-        frame[
-            :data.shape[0],
-            :data.shape[1],
-            :data.shape[2]
-        ] = data
-        return frame
+    def send(self, *args):
+        if len(self._index) == 0:
+            index, orderbook = self.next_window()
+            self._index += index.tolist()
+            self._orderbook += orderbook.tolist()
+
+        return self._index.pop(), self._orderbook.pop()
+
+    def throw(self, type=None, value=None, traceback=None):
+        raise StopIteration
+
+
+@click.command()
+@click.option('--random-start-date',
+              '-r',
+              is_flag=True,
+              help='Enable random start date.')
+def main(**kwargs):
+    streamer = BitmexStreamer(**kwargs)
+
+    while True:
+        index, orderbook = next(streamer)
+        orderbook_ar = np.array(orderbook)
+        alog.info(orderbook_ar)
+        sleep(1)
+
+
+if __name__ == '__main__':
+    main()

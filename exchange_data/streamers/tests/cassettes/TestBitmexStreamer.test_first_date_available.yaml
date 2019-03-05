@@ -22,12 +22,12 @@ interactions:
     headers:
       Content-Encoding: [gzip]
       Content-Type: [application/json]
-      Date: ['Tue, 05 Mar 2019 01:27:00 GMT']
-      Request-Id: [c612db0f-3ee5-11e9-aa17-02420aff000b]
+      Date: ['Tue, 05 Mar 2019 02:56:12 GMT']
+      Request-Id: [3c2154bd-3ef2-11e9-a41d-02420aff000b]
       Transfer-Encoding: [chunked]
       X-Influxdb-Build: [OSS]
       X-Influxdb-Version: [1.7.4]
-      X-Request-Id: [c612db0f-3ee5-11e9-aa17-02420aff000b]
+      X-Request-Id: [3c2154bd-3ef2-11e9-a41d-02420aff000b]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -423,11 +423,11 @@ interactions:
     headers:
       Content-Encoding: [gzip]
       Content-Type: [application/json]
-      Date: ['Tue, 05 Mar 2019 01:27:00 GMT']
-      Request-Id: [c6204d1b-3ee5-11e9-aa18-02420aff000b]
+      Date: ['Tue, 05 Mar 2019 02:56:12 GMT']
+      Request-Id: [3c2c4fb0-3ef2-11e9-a423-02420aff000b]
       Transfer-Encoding: [chunked]
       X-Influxdb-Build: [OSS]
       X-Influxdb-Version: [1.7.4]
-      X-Request-Id: [c6204d1b-3ee5-11e9-aa18-02420aff000b]
+      X-Request-Id: [3c2c4fb0-3ef2-11e9-a423-02420aff000b]
     status: {code: 200, message: OK}
 version: 1

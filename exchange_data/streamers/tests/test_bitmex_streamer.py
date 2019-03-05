@@ -4,6 +4,7 @@ from exchange_data.streamers._bitmex import BitmexStreamer
 
 import alog
 import mock
+import numpy as np
 import pytest
 
 
@@ -135,4 +136,18 @@ class TestBitmexStreamer(object):
 
         assert streamer.start_date != \
                parser.parse('2019-02-24 19:07:10.543897-06:00')
+
+    @pytest.mark.vcr()
+    def test_generating_exceeds_window_size(self):
+        streamer = BitmexStreamer(
+            start_date=self.start_date,
+            end_date=self.start_date + timedelta(seconds=1),
+        )
+
+        for number in range(5):
+            index, orderbook = next(streamer)
+            orderbook_ar = np.array(orderbook)
+
+            assert index > 0.0
+            assert orderbook_ar.shape == (2, 2, 10)
 
