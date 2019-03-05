@@ -1,34 +1,25 @@
-import json
-
 from bitmex import bitmex
-from bravado.client import SwaggerClient
-from pytimeparse.timeparse import timeparse
-
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
+from pytimeparse.timeparse import timeparse
 
 import alog
 import click
+import json
 import signal
 
 
-class OrderBookL2Emitter(BitmexEmitterBase, Messenger, SwaggerClient):
+class OrderBookL2Emitter(BitmexEmitterBase, Messenger):
 
     def __init__(self, symbol: BitmexChannels, interval: str = '1m'):
         BitmexEmitterBase.__init__(self, symbol)
         Messenger.__init__(self)
-        SwaggerClient.__init__(self, None)
-        bitmex_client = bitmex()
 
+        self.bitmex = bitmex(test=False)
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)
-
-        self.__dict__ = {
-            **self.__dict__,
-            **bitmex_client.__dict__
-        }
 
         self.on(self.interval, self.publish_orderbook)
 
@@ -37,7 +28,7 @@ class OrderBookL2Emitter(BitmexEmitterBase, Messenger, SwaggerClient):
         return f'{symbol.value}_OrderBookL2_{interval}'
 
     def publish_orderbook(self, timestamp):
-        data = self.OrderBook.OrderBook_getL2(
+        data = self.bitmex.OrderBook.OrderBook_getL2(
             symbol=self.symbol.value,
             depth=0
         ).result()
