@@ -1,9 +1,16 @@
+from collections import deque
+from typing import List
+
 from exchange_data.streamers._bitmex import BitmexStreamer
 from gym.spaces import Box
 from tgym.core import Env
+from tgym.envs.orderbook import Actions, Positions
 
 import alog
 import numpy as np
+
+POSITIONS = Positions()
+ACTIONS = Actions()
 
 
 class OrderBookTradingEnv(Env, BitmexStreamer):
@@ -11,35 +18,25 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
     Orderbook based trading environment.
     """
 
-    _actions = {
-        'hold': np.array([1, 0, 0]),
-        'buy': np.array([0, 1, 0]),
-        'sell': np.array([0, 0, 1])
-    }
-
-    _positions = {
-        'flat': np.array([1, 0, 0]),
-        'long': np.array([0, 1, 0]),
-        'short': np.array([0, 0, 1])
-    }
-
     def __init__(
         self,
         episode_length=1000,
         trading_fee=0,
         time_fee=0,
+        max_frames=10,
         **kwargs
     ):
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
+        self.max_frames = max_frames
         action_space = Box(0, 1.0, shape=(3, ), dtype=np.float32)
         alog.info(action_space)
 
         self._trading_fee = trading_fee
         self._time_fee = time_fee
         self._episode_length = episode_length
-        self.n_actions = len(self._actions.keys())
-
+        self.n_actions = len(ACTIONS)
+        self.frames = deque(maxlen=self.max_frames)
         # index, orderbook = self.compose_window()
 
         self.reset()
@@ -48,12 +45,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         self._iteration = 0
         self._total_reward = 0
         self._total_pnl = 0
-        self._position = self._positions['flat']
+        self._position = Positions.Flat
         self._entry_price = 0
         self._exit_price = 0
         self._closed_plot = False
-
-        return
 
         observation = self._get_observation()
         self.state_shape = observation.shape
@@ -61,39 +56,29 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         return observation
 
     def step(self, action):
-        """Take an action (buy/sell/hold) and computes the immediate reward.
+        assert any([(action == x).all() for x in ACTIONS])
 
-        Args:
-            action (numpy.array): Action to be taken, one-hot encoded.
-
-        Returns:
-            tuple:
-                - observation (numpy.array): Agent's observation of the current environment.
-                - reward (float) : Amount of reward returned after previous action.
-                - done (bool): Whether the episode has ended, in which case further step() calls will return undefined results.
-                - info (dict): Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
-
-        """
-
-        assert any([(action == x).all() for x in self._actions.values()])
         self._action = action
         self._iteration += 1
         done = False
         instant_pnl = 0
         info = {}
         reward = -self._time_fee
-        if all(action == self._actions['buy']):
+
+        if all(action == ACTIONS.Buy):
             reward -= self._trading_fee
-            if all(self._position == self._positions['flat']):
-                self._position = self._positions['long']
+            if all(self._position == POSITIONS.Flat):
+                self._position = POSITIONS.Long
                 self._entry_price = calc_spread(
                     self._prices_history[-1], self._spread_coefficients)[1]  # Ask
+
             elif all(self._position == self._positions['short']):
                 self._exit_price = calc_spread(
                     self._prices_history[-1], self._spread_coefficients)[1]  # Ask
                 instant_pnl = self._entry_price - self._exit_price
                 self._position = self._positions['flat']
                 self._entry_price = 0
+
         elif all(action == self._actions['sell']):
             reward -= self._trading_fee
             if all(self._position == self._positions['flat']):
@@ -127,17 +112,24 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         return observation, reward, done, info
 
     def _get_observation(self):
-        """Concatenate all necessary elements to create the observation.
+        index, orderbook = next(self)
+        index = np.array([index])
 
-        Returns:
-            numpy.array: observation array.
-        """
+        if isinstance(orderbook, list):
+            orderbook = np.array(orderbook).flatten()
+
+        alog.info(index)
+        alog.info(orderbook)
+        frame = np.concatenate((index, orderbook))
+
+        self.frames.append(frame)
+
         return np.concatenate(
-            [prices for prices in self._prices_history[-self._history_length:]] +
-            [
+            self.frames,
+            np.array([
                 np.array([self._entry_price]),
                 np.array(self._position)
-            ]
+            ])
         )
 
     @staticmethod

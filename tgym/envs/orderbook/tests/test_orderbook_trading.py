@@ -1,15 +1,17 @@
 from dateutil import parser, tz
 from tgym.envs import OrderBookTradingEnv
-
-import alog
+from tgym.envs.orderbook import Actions
 
 
 class TestOrderBookTradingEnv(object):
     def test_init(self):
-        start_date = parser.parse('2019-02-25T03:36:15.751397')\
+        start_date = parser.parse('2019-02-25T03:36:15.751397') \
             .replace(tzinfo=tz.tzlocal())
 
         env = OrderBookTradingEnv(
+            window_size='1s',
             start_date=start_date,
             influxdb='http://jose:jade121415@0.0.0.0:28953/'
         )
+
+        env.step(Actions.Buy)
