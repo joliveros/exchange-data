@@ -1,5 +1,7 @@
 from datetime import datetime
 from enum import Enum
+from random import random
+
 from pytimeparse import parse as dateparse
 
 import alog
@@ -18,6 +20,10 @@ def date_plus_timestring(timestamp: int, total_time: str) -> datetime:
 
 def datetime_from_timestamp(timestamp, total_time_ms=0):
     return datetime.fromtimestamp((total_time_ms + timestamp) / 1000)
+
+
+def random_date(start, end):
+    return start + random() * (end - start)
 
 
 class NoValue(Enum):

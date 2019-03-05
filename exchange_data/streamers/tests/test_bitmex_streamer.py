@@ -125,3 +125,14 @@ class TestBitmexStreamer(object):
         assert index.shape == (1,)
         assert orderbook.shape == (1, 2, 2, 10)
 
+    @pytest.mark.vcr()
+    def test_random_start_date_for_window(self):
+        streamer = BitmexStreamer(
+            random_start_date=True,
+            end_date=self.start_date,
+            window_size='1s'
+        )
+
+        assert streamer.start_date != \
+               parser.parse('2019-02-24 19:07:10.543897-06:00')
+
