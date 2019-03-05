@@ -127,15 +127,24 @@ class TestBitmexStreamer(object):
         assert orderbook.shape == (1, 2, 2, 10)
 
     @pytest.mark.vcr()
-    def test_random_start_date_for_window(self):
+    def test_ensure_buy_side_is_flipped(self):
         streamer = BitmexStreamer(
-            random_start_date=True,
-            end_date=self.start_date,
-            window_size='1s'
+            start_date=self.start_date,
+            end_date=self.start_date + timedelta(seconds=1),
         )
 
-        assert streamer.start_date != \
-               parser.parse('2019-02-24 19:07:10.543897-06:00')
+        index, orderbook = streamer.compose_window()
+
+        book_frame = orderbook[0]
+        best_ask = book_frame[0][0][0]
+        best_bid = book_frame[1][0][0]
+
+        assert best_ask == 3805.0
+        assert best_bid == 3804.5
+        assert best_ask - best_bid == 0.5
+
+        assert index.shape == (1,)
+        assert orderbook.shape == (1, 2, 2, 10)
 
     @pytest.mark.vcr()
     def test_generating_exceeds_window_size(self):
