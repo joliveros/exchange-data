@@ -226,6 +226,11 @@ class BitmexStreamer(Database, Generator):
               '-r',
               is_flag=True,
               help='Enable random start date.')
+@click.option('--window-size',
+              '-w',
+              type=str,
+              default='1m',
+              help='Window size i.e. "1m"')
 def main(**kwargs):
     streamer = BitmexStreamer(**kwargs)
 
@@ -233,7 +238,7 @@ def main(**kwargs):
         index, orderbook = next(streamer)
         orderbook_ar = np.array(orderbook)
         alog.info(orderbook_ar)
-        sleep(1)
+        sleep(0.1)
 
 
 if __name__ == '__main__':
