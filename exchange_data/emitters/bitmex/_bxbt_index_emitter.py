@@ -36,7 +36,7 @@ class BXBTIndexEmitter(
         Messenger.__init__(self)
         SignalInterceptor.__init__(self, self.stop)
 
-        self.bitmex_client = bitmex()
+        self.bitmex_client = bitmex(test=False)
 
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)
