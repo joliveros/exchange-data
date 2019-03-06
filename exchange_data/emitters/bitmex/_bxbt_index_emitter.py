@@ -1,24 +1,14 @@
-import alog
-import pytz
 from bitmex import bitmex
 from datetime import datetime, timedelta
 from exchange_data import Database
 from exchange_data._measurement import Measurement
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger
+from exchange_data.emitters import Messenger, SignalInterceptor
 from exchange_data.emitters.bitmex import BitmexEmitterBase
-from pyee import EventEmitter
-from typing import List, Callable, Tuple
+from typing import List, Tuple
 
 import click
 import json
-import signal
-
-
-class SignalInterceptor(object):
-    def __init__(self, exit_func: Callable):
-        signal.signal(signal.SIGINT, exit_func)
-        signal.signal(signal.SIGTERM, exit_func)
 
 
 class BXBTIndexEmitter(

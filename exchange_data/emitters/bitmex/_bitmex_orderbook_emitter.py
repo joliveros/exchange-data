@@ -1,14 +1,8 @@
-import traceback
 from collections import deque
-from datetime import datetime
-
-import pytz
-from dateutil.tz import tz
-
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, TimeChannels
+from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
     OrderBookL2Emitter
@@ -21,8 +15,8 @@ import click
 import gc
 import json
 import numpy as np
-import signal
 import sys
+import traceback
 
 
 class BitmexOrderBookChannels(NoValue):
@@ -33,7 +27,8 @@ class BitmexOrderBookEmitter(
     BitmexEmitterBase,
     Messenger,
     BitmexOrderBook,
-    Database
+    Database,
+    SignalInterceptor
 ):
     def __init__(
             self,
@@ -44,6 +39,7 @@ class BitmexOrderBookEmitter(
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
         Database.__init__(self, database_name='bitmex')
+        SignalInterceptor.__init__(self, self.exit)
 
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
@@ -117,7 +113,7 @@ class BitmexOrderBookEmitter(
         return np.vstack((price, volume))
 
     def generate_frame(self) -> ndarray:
-        bid_side = self.gen_bid_side()
+        bid_side = np.flip(self.gen_bid_side(), axis=1)
         ask_side = self.gen_ask_side()
 
         bid_side_shape = bid_side.shape
@@ -141,6 +137,8 @@ class BitmexOrderBookEmitter(
 
         frame = self.generate_frame()
 
+        alog.info(frame[:, :, :5])
+
         measurement = Measurement(
             measurement=self.frame_channel,
             tags={'symbol': self.symbol.value},
@@ -158,9 +156,6 @@ def main(symbol: str, **kwargs):
         symbol=BitmexChannels[symbol],
         **kwargs
     )
-
-    signal.signal(signal.SIGINT, recorder.exit)
-    signal.signal(signal.SIGTERM, recorder.exit)
 
     try:
         recorder.start()
