@@ -2,8 +2,7 @@ from exchange_data.bitmex_orderbook import InstrumentInfo
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import TimeEmitter
 from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
-from exchange_data.orderbook import BuyOrder, OrderList
-from tests.exchange_data.orderbook.fixtures import orders
+from exchange_data.orderbook.tests.fixtures import orders
 
 import mock
 import pytest
@@ -20,11 +19,16 @@ def instrument_info():
 
 
 @pytest.fixture()
+@pytest.mark.vcr()
 def orderbook_emitter(mocker, orders, tmpdir):
     mocker.patch('exchange_data.bitmex_orderbook.InstrumentInfo'
                  '.get_instrument', return_value=instrument_info)
     mocker.patch(
         'exchange_data.emitters.bitmex._bitmex_orderbook_emitter.Messenger'
+    )
+    mocker.patch(
+        'exchange_data.emitters.bitmex._bitmex_orderbook_emitter'
+        '.SignalInterceptor'
     )
     orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
                                                cache_dir=tmpdir)

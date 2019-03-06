@@ -52,7 +52,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
 
         observation = self._get_observation()
         self.state_shape = observation.shape
-        self._action = self._actions['hold']
+        self._action = ACTIONS.Hold
         return observation
 
     def step(self, action):
@@ -64,6 +64,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         instant_pnl = 0
         info = {}
         reward = -self._time_fee
+
+        return
 
         if all(action == ACTIONS.Buy):
             reward -= self._trading_fee
@@ -125,11 +127,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         self.frames.append(frame)
 
         return np.concatenate(
-            self.frames,
-            np.array([
-                np.array([self._entry_price]),
-                np.array(self._position)
-            ])
+            self.frames
+            # np.array([
+            #     np.array([self._entry_price]),
+            #     np.array(self._position)
+            # ])
         )
 
     @staticmethod

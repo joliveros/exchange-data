@@ -128,13 +128,6 @@ class BitmexStreamer(Database, Generator):
             time_index.append(self.parse_db_timestamp(item['time']))
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
 
-            buy_side = data[1, :, :]
-            zeros = (buy_side == 0.0).argmax(axis=1)
-            buy_side = np.flip(buy_side[:, :zeros[0]], 1)[:, : self.depth]
-
-            data = data[:, :, :self.depth]
-            data[1, :buy_side.shape[0], :buy_side.shape[1]] = buy_side
-
             best_ask = data[0][0][0]
             best_bid = data[1][0][0]
 
@@ -205,7 +198,7 @@ class BitmexStreamer(Database, Generator):
             .rename({'index': 'time'}) \
             .fillna(0).to_array().values[0]
 
-        return index, orderbook.to_array().values[0]
+        return index, orderbook.to_array().values[0][:, :, :, :self.depth]
 
     def next_window(self):
         now = self.now()
