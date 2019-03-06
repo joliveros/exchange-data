@@ -27,6 +27,16 @@ class BitmexOrderBook(OrderBook, EventEmitter):
         self.on('orderBookL2', self.message)
 
     def message(self, raw_message) -> Optional[BitmexMessage]:
+        if not isinstance(raw_message, dict):
+            raise Exception()
+
+        expected_keys = ['action', 'data', 'table', 'symbol']
+
+        for key in raw_message.keys():
+            assert key in expected_keys
+
+        # alog.info(alog.pformat(raw_message))
+
         message = None
 
         table = raw_message['table']
@@ -41,6 +51,10 @@ class BitmexOrderBook(OrderBook, EventEmitter):
             self.last_timestamp = message.timestamp
 
             self.order_book_l2(message)
+        elif table == 'trade':
+            alog.info(alog.pformat(raw_message))
+        else:
+            raise Exception(table)
 
         return message
 
