@@ -32,8 +32,8 @@ class BitmexOrderBook(OrderBook, EventEmitter):
 
         expected_keys = ['action', 'data', 'table', 'symbol']
 
-        for key in raw_message.keys():
-            assert key in expected_keys
+        # for key in raw_message.keys():
+        #     assert key in expected_keys
 
         # alog.info(alog.pformat(raw_message))
 
@@ -52,7 +52,8 @@ class BitmexOrderBook(OrderBook, EventEmitter):
 
             self.order_book_l2(message)
         elif table == 'trade':
-            alog.info(alog.pformat(raw_message))
+            # alog.info(alog.pformat(raw_message))
+            pass
         else:
             raise Exception(table)
 

@@ -5,8 +5,8 @@ from tgym.envs.orderbook import Actions
 
 class TestOrderBookTradingEnv(object):
     def test_init(self):
-        start_date = parser.parse('2019-02-25T03:36:15.751397') \
-            .replace(tzinfo=tz.tzlocal())
+        start_date = parser.parse('2019-03-06 21:49:07.807158+00:00') \
+            .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
             window_size='1s',
