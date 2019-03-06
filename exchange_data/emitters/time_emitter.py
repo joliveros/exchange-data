@@ -1,16 +1,11 @@
-from datetime import datetime, timezone, timedelta
-
-import pytz
-
+from datetime import datetime
 from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
+from exchange_data.utils import NoValue
 from pytimeparse.timeparse import timeparse
 from time import sleep
 
-import alog
 import click
-
-from exchange_data.utils import NoValue
 
 
 class TimeEmitter(Messenger):
@@ -19,38 +14,11 @@ class TimeEmitter(Messenger):
         super().__init__()
         self.tick_interval = timeparse(tick_interval)
         self.padding = 1100
-        self.previous_day = self.next_day
         self.minute_counter = 0
-
-    @property
-    def next_tick(self):
-        now = datetime.now()
-        second_diff = (now.microsecond + self.padding)/999999
-        next_tick = self.tick_interval - second_diff
-
-        if next_tick > 0:
-            return next_tick
-        else:
-            return 0
-
-    @property
-    def next_day(self):
-        now: datetime = self.now_utc()
-        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        next_date = today + timedelta(days=1)
-
-        next_day_timestamp = next_date.timestamp()
-
-        return next_day_timestamp
 
     @staticmethod
     def timestamp():
-        now = TimeEmitter.now_utc().timestamp()
-        return now
-
-    @staticmethod
-    def now_utc():
-        return datetime.utcnow().replace(tzinfo=pytz.utc)
+        return datetime.utcnow().timestamp()
 
     def start(self):
         while True:
@@ -61,19 +29,12 @@ class TimeEmitter(Messenger):
             if self.minute_counter % 60 == 0:
                 self.publish('1m', str(now))
                 self.minute_counter = 0
+            timestamp = self.timestamp()
 
-            self.publish(TimeChannels.Tick.value, str(now))
-            self.day_elapsed()
-
-    def day_elapsed(self):
-        next_day = self.next_day
-        if self.previous_day < next_day:
-            self.previous_day = next_day
-            self.publish(TimeChannels.NextDay.value, next_day)
+            self.publish(TimeChannels.Tick.value, timestamp)
 
 
 class TimeChannels(NoValue):
-    NextDay = 'next_day'
     Tick = 'tick'
 
 

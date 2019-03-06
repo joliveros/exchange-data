@@ -3,6 +3,7 @@ from collections import deque
 from datetime import datetime
 
 import pytz
+from dateutil.tz import tz
 
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
