@@ -46,7 +46,3 @@ class BitmexMessage(object):
 
     def __str__(self):
         return str(vars(self))
-
-    @property
-    def timestamp_datetime(self):
-        return datetime.fromtimestamp(self.timestamp / 1000)

@@ -1,3 +1,4 @@
+import re
 from collections import Generator
 from time import sleep
 
@@ -37,6 +38,7 @@ class BitmexStreamer(Database, Generator):
         self.end_date = None
         self.max_spread = max_spread
         self.start_date = None
+        self.realtime = False
 
         self.depth = depth
         self.window_size = timeparse(window_size)
@@ -48,10 +50,11 @@ class BitmexStreamer(Database, Generator):
 
             self.start_date = random_date(self.min_date, self.now())
 
-        if self.start_date is None:
+        if start_date is not None:
             self.start_date = start_date
-        if self.start_date is None:
-            self.start_date = self.now()
+        elif self.start_date is None:
+            self.start_date = self.now() - timedelta(seconds=self.window_size)
+            self.realtime = True
 
         if end_date is not None:
             self.end_date = end_date
@@ -65,11 +68,11 @@ class BitmexStreamer(Database, Generator):
         self.window_size = (self.end_date - self.start_date).total_seconds()
 
     def now(self):
-        return datetime.now(tz=tz.tzlocal())
+        return datetime.utcnow().replace(tzinfo=tz.tzutc())
 
     @cached_property
     def min_date(self):
-        start_date = datetime.fromtimestamp(0, tz=tz.tzlocal())
+        start_date = datetime.fromtimestamp(0, tz=tz.tzutc())
 
         if self.end_date is None:
             self.end_date = self.now()
@@ -77,13 +80,14 @@ class BitmexStreamer(Database, Generator):
         result = self.oldest_frame_query(start_date, self.end_date)
 
         for item in result.get_points(self.channel_name):
-            return datetime.utcfromtimestamp(item['time']/1000)\
-                .replace(tzinfo=tz.tzlocal())
+            timestamp = datetime.utcfromtimestamp(item['time']/1000)\
+                .replace(tzinfo=tz.tzutc())
+            return timestamp
 
         raise Exception('Database has no data.')
 
     def format_date_query(self, value):
-        return f'\'{value.replace(tzinfo=None)}\''
+        return f'\'{value.astimezone(tz.tzutc()).replace(tzinfo=None)}\''
 
     def orderbook_frames(self):
         return self._orderbook_frames(self.start_date, self.end_date)
@@ -93,9 +97,8 @@ class BitmexStreamer(Database, Generator):
         end_date = self.format_date_query(end_date)
 
         query = f'SELECT * FROM {self.channel_name} ' \
-            f'WHERE time > {start_date} AND time < {end_date} LIMIT 1;'
-
-        alog.debug(query)
+            f'WHERE time > {start_date} AND ' \
+            f'time < {end_date} LIMIT 1 tz(\'UTC\');'
 
         return self.query(query)
 
@@ -107,7 +110,7 @@ class BitmexStreamer(Database, Generator):
         end_date = self.format_date_query(end_date)
 
         query = f'SELECT * FROM {self.channel_name} ' \
-            f'WHERE time > {start_date} AND time < {end_date};'
+            f'WHERE time > {start_date} AND time < {end_date} tz(\'UTC\');'
 
         return self.query(query)
 
@@ -117,7 +120,6 @@ class BitmexStreamer(Database, Generator):
 
     def _orderbook_frames(self, start_date, end_date):
         orderbook = self.orderbook_frame_query(start_date, end_date)
-
         window_list = []
         max_shape = (0, 0, 0)
         time_index = []
@@ -162,7 +164,8 @@ class BitmexStreamer(Database, Generator):
             )
 
         query = f'SELECT * FROM ".BXBT_1m" ' \
-            f'WHERE time > {start_date} AND time < {end_date};'
+            f'WHERE time > {start_date} AND ' \
+            f'time < {end_date} tz(\'UTC\');'
 
         index = self.query(query)
 
@@ -205,13 +208,23 @@ class BitmexStreamer(Database, Generator):
         return index, orderbook.to_array().values[0]
 
     def next_window(self):
-        self.start_date += timedelta(seconds=self.window_size)
-        self.end_date += timedelta(seconds=self.window_size)
-        return self.compose_window()
+        now = self.now()
+        if self.realtime:
+            self.start_date = now - timedelta(seconds=self.window_size)
+            self.end_date = now
+
+        result = self.compose_window()
+
+        if not self.realtime:
+            self.start_date += timedelta(seconds=self.window_size)
+            self.end_date += timedelta(seconds=self.window_size)
+
+        return result
 
     def send(self, *args):
         if len(self._index) == 0:
             index, orderbook = self.next_window()
+
             self._index += index.tolist()
             self._orderbook += orderbook.tolist()
 
@@ -233,12 +246,14 @@ class BitmexStreamer(Database, Generator):
               help='Window size i.e. "1m"')
 def main(**kwargs):
     streamer = BitmexStreamer(**kwargs)
+    alog.info(datetime.utcnow())
 
     while True:
         index, orderbook = next(streamer)
         orderbook_ar = np.array(orderbook)
-        alog.info(orderbook_ar)
-        sleep(0.1)
+
+        alog.info('\n' + str(index) + '\n' + str(orderbook_ar))
+        sleep(1)
 
 
 if __name__ == '__main__':

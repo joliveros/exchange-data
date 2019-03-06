@@ -9,12 +9,8 @@ import pytest
 
 
 class TestBitmexStreamer(object):
-    start_date_str = '2019-03-02 20:04:48.468323'
-
-    start_date = parser.parse(start_date_str).replace(tzinfo=tz.tzlocal())
-
-    min_date = parser.parse('2019-02-20 23:15:24.665000-06:00')\
-        .replace(tzinfo=tz.tzlocal())
+    start_date = parser.parse('2019-03-06 20:25:37.709856+00:00')
+    min_date = parser.parse('2019-03-06 01:48:25.218000+00:00')
 
     @pytest.mark.vcr()
     def test_first_date_available(self):
@@ -25,7 +21,6 @@ class TestBitmexStreamer(object):
             end_date=end_date
         )
 
-
         assert streamer.min_date == self.min_date
 
         orderbook_frames = streamer.orderbook_frame_query()
@@ -33,8 +28,7 @@ class TestBitmexStreamer(object):
 
         for frame in orderbook_frames.get_points(streamer.channel_name):
             last_timestamp = \
-                datetime.utcfromtimestamp(frame['time'] / 1000)\
-                .replace(tzinfo=tz.tzlocal())
+                datetime.fromtimestamp(frame['time'] / 1000, tz=tz.tzutc())
 
         assert end_date > last_timestamp > self.start_date
 
@@ -89,10 +83,7 @@ class TestBitmexStreamer(object):
 
         for frame in orderbook_frames.get_points(streamer.channel_name):
             last_timestamp = \
-                datetime.utcfromtimestamp(frame['time'] / 1000)\
-                .replace(tzinfo=tz.tzlocal())
-
-            alog.debug(last_timestamp)
+                datetime.fromtimestamp(frame['time'] / 1000, tz=tz.tzutc())
 
             frame_count += 1
 
@@ -106,13 +97,13 @@ class TestBitmexStreamer(object):
     def test_compose_window(self):
         streamer = BitmexStreamer(
             start_date=self.start_date,
-            end_date=self.start_date + timedelta(minutes=1),
+            end_date=self.start_date + timedelta(seconds=2),
         )
 
         index, orderbook = streamer.compose_window()
 
-        assert index.shape == (60,)
-        assert orderbook.shape == (60, 2, 2, 10)
+        assert index.shape == (2,)
+        assert orderbook.shape == (2, 2, 2, 10)
 
     @pytest.mark.vcr()
     def test_one_second_window(self):
@@ -139,8 +130,8 @@ class TestBitmexStreamer(object):
         best_ask = book_frame[0][0][0]
         best_bid = book_frame[1][0][0]
 
-        assert best_ask == 3805.0
-        assert best_bid == 3804.5
+        assert best_ask == 3846.5
+        assert best_bid == 3846.0
         assert best_ask - best_bid == 0.5
 
         assert index.shape == (1,)

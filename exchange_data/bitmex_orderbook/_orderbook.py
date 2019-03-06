@@ -1,3 +1,5 @@
+from dateutil.tz import tz
+
 from exchange_data.bitmex_orderbook import ActionType
 from exchange_data.bitmex_orderbook._bitmex_message import BitmexMessage
 from exchange_data.bitmex_orderbook._instrument_info import InstrumentInfo
@@ -6,6 +8,7 @@ from exchange_data.orderbook import OrderBook
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from pyee import EventEmitter
 from typing import Optional
+from datetime import datetime
 
 import alog
 
@@ -36,6 +39,7 @@ class BitmexOrderBook(OrderBook, EventEmitter):
                 tick_size=self.tick_size
             )
             self.last_timestamp = message.timestamp
+
             self.order_book_l2(message)
 
         return message
