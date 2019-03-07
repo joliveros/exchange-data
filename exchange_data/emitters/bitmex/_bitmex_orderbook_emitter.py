@@ -142,9 +142,6 @@ class BitmexOrderBookEmitter(
 
         frame = self.generate_frame()
 
-        alog.info('\n' + str(frame[:, :, :5]))
-        alog.info(frame.shape)
-
         measurement = Measurement(
             measurement=self.frame_channel,
             tags={'symbol': self.symbol.value},
