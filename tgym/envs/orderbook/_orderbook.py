@@ -1,16 +1,18 @@
 from collections import deque
-from typing import List
+
+from pytimeparse import timeparse
 
 from exchange_data.streamers._bitmex import BitmexStreamer
-from gym.spaces import Box
+from gym.spaces import Discrete
 from tgym.core import Env
 from tgym.envs.orderbook import Actions, Positions
 
 import alog
 import numpy as np
 
-POSITIONS = Positions()
-ACTIONS = Actions()
+
+class AlreadyFlatException(Exception):
+    pass
 
 
 class OrderBookTradingEnv(Env, BitmexStreamer):
@@ -21,118 +23,157 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
     def __init__(
         self,
         episode_length=1000,
-        trading_fee=0,
+        trading_fee=1,
         time_fee=0,
         max_frames=10,
         **kwargs
     ):
+
+        self._args = locals()
+        del self._args['self']
+
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
+
+        self._position_pnl = 0
+        self.action_space = Discrete(3)
+        self.closed_plot = False
+        self.entry_price = 0
+        self.episode_length = episode_length
+        self.exit_price = 0
         self.max_frames = max_frames
-        action_space = Box(0, 1.0, shape=(3, ), dtype=np.float32)
-        alog.info(action_space)
+        self.frames = deque(maxlen=max_frames)
+        self.iteration = 0
+        self.last_index = None
+        self.last_orderbook = None
+        self.negative_position_reward_factor = 1.0
+        self.position = Positions.Flat
+        self.reward = 0
+        self.time_fee = time_fee
+        self.total_pnl = 0
+        self.total_reward = 0
+        self.trading_fee = trading_fee
+        self.max_position_pnl = 0.0
+        self.max_negative_pnl_factor = -0.01
+        self.max_position_duration = timeparse.timeparse('30m')
 
-        self._trading_fee = trading_fee
-        self._time_fee = time_fee
-        self._episode_length = episode_length
-        self.n_actions = len(ACTIONS)
-        self.frames = deque(maxlen=self.max_frames)
-        # index, orderbook = self.compose_window()
+        for i in range(max_frames):
+            self.get_observation()
 
-        self.reset()
+        self.observation_space = self.last_observation.shape
+
+    @property
+    def max_negative_pnl(self):
+        return self.best_bid * self.max_negative_pnl_factor
+
+    @property
+    def position_pnl(self):
+        if self.is_flat:
+            self._position_pnl = 0.0
+        elif self.is_long:
+            self._position_pnl = self.long_pnl
+        elif self.is_short:
+            self._position_pnl = self.short_pnl
+
+        return self._position_pnl
 
     def reset(self):
-        self._iteration = 0
-        self._total_reward = 0
-        self._total_pnl = 0
-        self._position = Positions.Flat
-        self._entry_price = 0
-        self._exit_price = 0
-        self._closed_plot = False
+        kwargs = self._args['kwargs']
+        del self._args['kwargs']
+        kwargs = {**self._args, **kwargs}
+        new_instance = OrderBookTradingEnv(**kwargs)
+        self.__dict__ = new_instance.__dict__
 
-        observation = self._get_observation()
-        self.state_shape = observation.shape
-        self._action = ACTIONS.Hold
-        return observation
+        return self.last_observation
 
     def step(self, action):
-        assert any([(action == x).all() for x in ACTIONS])
-
-        self._action = action
-        self._iteration += 1
+        self.reset_reward()
+        assert self.action_space.contains(action)
+        self.iteration += 1
         done = False
-        instant_pnl = 0
         info = {}
-        reward = -self._time_fee
 
-        return
+        self.reward = -self.time_fee
 
-        if all(action == ACTIONS.Buy):
-            reward -= self._trading_fee
-            if all(self._position == POSITIONS.Flat):
-                self._position = POSITIONS.Long
-                self._entry_price = calc_spread(
-                    self._prices_history[-1], self._spread_coefficients)[1]  # Ask
+        if self.should_change_position(action):
+            self.change_position(action)
 
-            elif all(self._position == self._positions['short']):
-                self._exit_price = calc_spread(
-                    self._prices_history[-1], self._spread_coefficients)[1]  # Ask
-                instant_pnl = self._entry_price - self._exit_price
-                self._position = self._positions['flat']
-                self._entry_price = 0
+        position_pnl = self.position_pnl
 
-        elif all(action == self._actions['sell']):
-            reward -= self._trading_fee
-            if all(self._position == self._positions['flat']):
-                self._position = self._positions['short']
-                self._entry_price = calc_spread(
-                    self._prices_history[-1], self._spread_coefficients)[0]  # Bid
-            elif all(self._position == self._positions['long']):
-                self._exit_price = calc_spread(
-                    self._prices_history[-1], self._spread_coefficients)[0]  # Bid
-                instant_pnl = self._exit_price - self._entry_price
-                self._position = self._positions['flat']
-                self._entry_price = 0
+        if position_pnl > self.max_position_pnl:
+            self.max_position_pnl = position_pnl
 
-        reward += instant_pnl
-        self._total_pnl += instant_pnl
-        self._total_reward += reward
+        max_pos_diff = self.max_position_pnl - position_pnl
 
-        # Game over logic
-        try:
-            self._prices_history.append(self._data_generator.next())
-        except StopIteration:
+        self.reward -= max_pos_diff * self.negative_position_reward_factor
+
+        if position_pnl > 0:
+            self.reward += position_pnl
+
+        if self.total_pnl + self.position_pnl <= self.max_negative_pnl:
             done = True
-            info['status'] = 'No more data.'
-        if self._iteration >= self._episode_length:
+
+        if self.total_reward <= self.max_position_duration * -1:
             done = True
-            info['status'] = 'Time out.'
-        if self._closed_plot:
-            info['status'] = 'Closed plot'
 
-        observation = self._get_observation()
-        return observation, reward, done, info
+        if done:
+            alog.info('Session is complete.')
 
-    def _get_observation(self):
+        observation = self.get_observation()
+
+        return observation, self.reward, done, self.summary()
+
+    def charge_trading_fee(self):
+        self.reward -= self.trading_fee
+
+    @property
+    def best_bid(self):
+        self._best_bid = self.last_orderbook[0][0][0]
+        return self._best_bid
+
+    @property
+    def best_ask(self):
+        self._best_ask = self.last_orderbook[1][0][0]
+        return self._best_ask
+
+    @property
+    def last_frame(self):
+        return self.frames[-1]
+
+    @property
+    def position_data(self):
+        data_keys = [
+            'total_pnl',
+            '_position_pnl',
+            'max_position_pnl'
+        ]
+
+        data = {key: self.__dict__[key] for key in
+                   data_keys}
+
+        return np.array(list(data.values()))
+
+    def get_observation(self):
         index, orderbook = next(self)
-        index = np.array([index])
+        self.last_index = index
+        self.last_orderbook = orderbook = np.array(orderbook)
 
-        if isinstance(orderbook, list):
-            orderbook = np.array(orderbook).flatten()
+        index = np.array([index - self.best_ask, index - self.best_bid])
+        position_data = self.position_data
+        position_data = np.concatenate((position_data, index))
 
-        alog.info(index)
-        alog.info(orderbook)
-        frame = np.concatenate((index, orderbook))
+        asks = np.concatenate((orderbook[0]))
+        bids = np.concatenate((orderbook[0]))
+        resized_position_data = np.zeros((bids.shape[0],))
+        resized_position_data[:position_data.shape[0]] = position_data
+
+        frame = np.stack((resized_position_data, asks, bids))
 
         self.frames.append(frame)
 
-        return np.concatenate(
-            self.frames
-            # np.array([
-            #     np.array([self._entry_price]),
-            #     np.array(self._position)
-            # ])
-        )
+        self.last_observation = np.concatenate(self.frames)
+
+        return self.last_observation
 
     @staticmethod
     def random_action_fun():
@@ -146,3 +187,100 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
 
     def render(self):
         pass
+
+    def reset_reward(self):
+        self.total_reward += self.reward
+        self.reward = 0
+
+    def close_short(self):
+        if self.position != Positions.Short:
+            raise Exception('Not short.')
+
+        self.total_pnl += self.short_pnl
+        self.reward += self.total_pnl
+
+    def close_long(self):
+        if self.position != Positions.Long:
+            raise Exception('Not long.')
+
+        self.total_pnl += self.long_pnl
+        self.reward += self.total_pnl
+
+    @property
+    def short_pnl(self):
+        return self.entry_price - self.best_bid
+
+    @property
+    def long_pnl(self):
+        return self.best_ask - self.entry_price
+
+    @property
+    def is_short(self):
+        return self.position == Positions.Short
+
+    @property
+    def is_long(self):
+        return self.position == Positions.Long
+
+    @property
+    def is_flat(self):
+        return self.position == Positions.Flat
+
+    def should_change_position(self, action):
+        return self.position.value != action
+
+    def long(self):
+        if self.is_long:
+            raise Exception('Already long.')
+        self.charge_trading_fee()
+        if self.is_short:
+            self.close_short()
+
+        self.position = Positions.Long
+        self.entry_price = self.best_bid
+
+    def short(self):
+        if self.is_short:
+            raise Exception('Already short.')
+        self.charge_trading_fee()
+        if self.is_long:
+            self.close_long()
+
+        self.position = Positions.Short
+        self.entry_price = self.best_ask
+
+    def change_position(self, action):
+        if action == Positions.Long.value:
+            self.long()
+        elif action == Positions.Short.value:
+            self.short()
+        elif action == Positions.Flat.value:
+            self.flat()
+
+    def flat(self):
+        if self.position == Positions.Flat:
+            raise AlreadyFlatException()
+
+        if self.is_long:
+            self.close_long()
+        elif self.is_short:
+            self.close_short()
+
+        self.position = Positions.Flat
+
+    def summary(self):
+        summary_keys = [
+            '_best_ask',
+            '_best_bid',
+            '_position_pnl',
+            'max_position_pnl',
+            'position',
+            'total_pnl',
+            'total_reward',
+        ]
+
+        summary = {key: self.__dict__[key] for key in
+                   summary_keys}
+
+        alog.info(alog.pformat(summary))
+        return summary
