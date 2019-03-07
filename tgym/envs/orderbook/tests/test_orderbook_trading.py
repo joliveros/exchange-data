@@ -14,8 +14,7 @@ class TestOrderBookTradingEnv(object):
 
         env = OrderBookTradingEnv(
             window_size='1s',
-            start_date=start_date,
-            influxdb='http://jose:jade121415@0.0.0.0:28953/'
+            start_date=start_date
         )
 
         env.step(Actions.Buy)
