@@ -1,6 +1,7 @@
 import alog
 
 from exchange_data.bitmex_orderbook import BitmexOrder
+from exchange_data.orderbook import OrderType
 
 
 class TestBitmexOrderObject(object):
@@ -14,7 +15,8 @@ class TestBitmexOrderObject(object):
                 'symbol': 'XBTUSD'
             },
             tick_size=0.5,
-            timestamp=1546747235.2815228
+            timestamp=1546747235.2815228,
+            order_type=OrderType.LIMIT
         )
 
         assert order.price == 4036.5
