@@ -1,4 +1,5 @@
 import re
+from abc import ABC
 from collections import Generator
 from time import sleep
 
@@ -21,7 +22,7 @@ import numpy as np
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexStreamer(Database, Generator):
+class BitmexStreamer(Database, Generator, ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
@@ -33,6 +34,7 @@ class BitmexStreamer(Database, Generator):
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
+        self._time = []
         self._index = []
         self._orderbook = []
         self.end_date = None
@@ -120,7 +122,7 @@ class BitmexStreamer(Database, Generator):
 
     def _orderbook_frames(self, start_date, end_date):
         orderbook = self.orderbook_frame_query(start_date, end_date)
-        window_list = []
+        frame_list = []
         max_shape = (0, 0, 0)
         time_index = []
 
@@ -134,9 +136,22 @@ class BitmexStreamer(Database, Generator):
             if best_ask - best_bid > self.max_spread:
                 raise Exception('Spread exceeds limit.')
 
-            window_list.append(data)
+            if data.shape[-1] > max_shape[-1]:
+                max_shape = data.shape
 
-        window = np.stack(window_list, axis=0)
+            frame_list.append(data)
+
+        resized_frames = []
+        for frame in frame_list:
+            if frame.shape[-1] != max_shape[-1]:
+                new_frame = np.zeros(max_shape)
+                shape = frame.shape
+                new_frame[:shape[0], :shape[1], :shape[2]] = frame
+                resized_frames.append(new_frame)
+            else:
+                resized_frames.append(frame)
+
+        window = np.stack(resized_frames, axis=0)
 
         orderbook: Dataset = Dataset({
             'orderbook': (['time', 'side', 'level', 'price'], window)
@@ -164,10 +179,11 @@ class BitmexStreamer(Database, Generator):
 
         return [item for item in index.get_points('.BXBT_1m')]
 
-    def compose_window(self) -> Tuple[ndarray, ndarray]:
+    def compose_window(self) -> Tuple[ndarray, ndarray, ndarray]:
         orderbook = self.orderbook_frames()
 
         time_index: DataArray = orderbook.time.values.copy()
+
         _index = [item for item in self.index() if item['weight'] is not None]
         timestamps = set([item['timestamp'] for item in _index])
 
@@ -198,7 +214,7 @@ class BitmexStreamer(Database, Generator):
             .rename({'index': 'time'}) \
             .fillna(0).to_array().values[0]
 
-        return index, orderbook.to_array().values[0][:, :, :, :self.depth]
+        return time_index, index, orderbook.to_array().values[0][:, :, :, :self.depth]
 
     def next_window(self):
         now = self.now()
@@ -216,12 +232,12 @@ class BitmexStreamer(Database, Generator):
 
     def send(self, *args):
         if len(self._index) == 0:
-            index, orderbook = self.next_window()
-
+            time, index, orderbook = self.next_window()
+            self._time += time.tolist()
             self._index += index.tolist()
             self._orderbook += orderbook.tolist()
 
-        return self._index.pop(), self._orderbook.pop()
+        return self._time.pop(), self._index.pop(), self._orderbook.pop()
 
     def throw(self, type=None, value=None, traceback=None):
         raise StopIteration

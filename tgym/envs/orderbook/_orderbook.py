@@ -1,6 +1,11 @@
+from abc import ABC
 from collections import deque
+from datetime import datetime
+from time import sleep
 
-from pytimeparse import timeparse
+import click
+from dateutil.tz import tz
+from pytimeparse.timeparse import timeparse
 
 from exchange_data.streamers._bitmex import BitmexStreamer
 from gym.spaces import Discrete
@@ -15,7 +20,7 @@ class AlreadyFlatException(Exception):
     pass
 
 
-class OrderBookTradingEnv(Env, BitmexStreamer):
+class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     """
     Orderbook based trading environment.
     """
@@ -25,7 +30,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         episode_length=1000,
         trading_fee=1,
         time_fee=0,
-        max_frames=10,
+        max_frames='2m',
         **kwargs
     ):
 
@@ -35,15 +40,17 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
+        self.last_timestamp = 0
+        self.last_datetime = None
         self._position_pnl = 0
         self.action_space = Discrete(3)
         self.closed_plot = False
         self.entry_price = 0
         self.episode_length = episode_length
         self.exit_price = 0
-        self.max_frames = max_frames
-        self.frames = deque(maxlen=max_frames)
-        self.iteration = 0
+        self.max_frames = timeparse(max_frames)
+        self.frames = deque(maxlen=self.max_frames)
+        self.step_count = 0
         self.last_index = None
         self.last_orderbook = None
         self.negative_position_reward_factor = 1.0
@@ -55,10 +62,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
         self.trading_fee = trading_fee
         self.max_position_pnl = 0.0
         self.max_negative_pnl_factor = -0.01
-        self.max_position_duration = timeparse.timeparse('30m')
+        self.max_position_duration = timeparse('30m')
 
-        for i in range(max_frames):
-            self.get_observation()
+        for i in range(self.max_frames):
+            self.get_observation
 
         self.observation_space = self.last_observation.shape
 
@@ -89,9 +96,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
     def step(self, action):
         self.reset_reward()
         assert self.action_space.contains(action)
-        self.iteration += 1
+
         done = False
-        info = {}
 
         self.reward = -self.time_fee
 
@@ -118,8 +124,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
 
         if done:
             alog.info('Session is complete.')
+        else:
+            self.step_count += 1
 
-        observation = self.get_observation()
+        observation = self.get_observation
 
         return observation, self.reward, done, self.summary()
 
@@ -153,8 +161,16 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
 
         return np.array(list(data.values()))
 
+    def local_fromtimestamp(self, value):
+        return datetime.fromtimestamp(value/10**9, tz=tz.tzlocal())
+
+    @property
     def get_observation(self):
-        index, orderbook = next(self)
+        time, index, orderbook = next(self)
+
+        self.last_timestamp = time
+        self.last_datetime = str(self.local_fromtimestamp(time))
+
         self.last_index = index
         self.last_orderbook = orderbook = np.array(orderbook)
 
@@ -273,10 +289,12 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
             '_best_ask',
             '_best_bid',
             '_position_pnl',
+            'last_datetime',
             'max_position_pnl',
             'position',
             'total_pnl',
             'total_reward',
+            'step_count'
         ]
 
         summary = {key: self.__dict__[key] for key in
@@ -284,3 +302,23 @@ class OrderBookTradingEnv(Env, BitmexStreamer):
 
         alog.info(alog.pformat(summary))
         return summary
+
+
+@click.command()
+@click.option('--test-span', default='1m')
+def main(test_span, **kwargs):
+    env = OrderBookTradingEnv(
+        window_size='30s',
+        random_start_date=True,
+        **kwargs
+    )
+
+    for i in range(timeparse(test_span)):
+        env.step(Positions.Long.value)
+        sleep(0.2)
+
+    env.step(Positions.Flat.value)
+
+
+if __name__ == '__main__':
+    main()
