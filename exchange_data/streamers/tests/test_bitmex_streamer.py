@@ -68,8 +68,9 @@ class TestBitmexStreamer(object):
             end_date=self.start_date + timedelta(seconds=2),
         )
 
-        index, orderbook = streamer.compose_window()
+        time, index, orderbook = streamer.compose_window()
 
+        assert time.shape == (2,)
         assert index.shape == (2,)
         assert orderbook.shape == (2, 2, 2, 10)
 
@@ -80,8 +81,9 @@ class TestBitmexStreamer(object):
             end_date=self.start_date + timedelta(seconds=1),
         )
 
-        index, orderbook = streamer.compose_window()
+        time, index, orderbook = streamer.compose_window()
 
+        assert time.shape == (1,)
         assert index.shape == (1,)
         assert orderbook.shape == (1, 2, 2, 10)
 
@@ -92,7 +94,7 @@ class TestBitmexStreamer(object):
             end_date=self.start_date + timedelta(seconds=1),
         )
 
-        index, orderbook = streamer.compose_window()
+        time, index, orderbook = streamer.compose_window()
 
         book_frame = orderbook[0]
         best_ask = book_frame[0][0][0]
@@ -102,6 +104,7 @@ class TestBitmexStreamer(object):
         assert best_bid == 3845.0
         assert best_ask - best_bid == 0.5
 
+        assert time.shape == (1,)
         assert index.shape == (1,)
         assert orderbook.shape == (1, 2, 2, 10)
 
@@ -113,7 +116,7 @@ class TestBitmexStreamer(object):
         )
 
         for number in range(5):
-            index, orderbook = next(streamer)
+            time, index, orderbook = next(streamer)
             orderbook_ar = np.array(orderbook)
 
             assert index > 0.0
