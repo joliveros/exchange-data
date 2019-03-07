@@ -1,10 +1,10 @@
 from dateutil.tz import tz
 
-from exchange_data.bitmex_orderbook import ActionType
+from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
 from exchange_data.bitmex_orderbook._bitmex_message import BitmexMessage
 from exchange_data.bitmex_orderbook._instrument_info import InstrumentInfo
 from exchange_data.channels import BitmexChannels
-from exchange_data.orderbook import OrderBook
+from exchange_data.orderbook import OrderBook, OrderType
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from pyee import EventEmitter
 from typing import Optional
@@ -35,32 +35,33 @@ class BitmexOrderBook(OrderBook, EventEmitter):
         # for key in raw_message.keys():
         #     assert key in expected_keys
 
-        # alog.info(alog.pformat(raw_message))
-
         message = None
 
         table = raw_message['table']
 
-        if table == 'orderBookL2':
+        if table in ['orderBookL2', 'trade']:
+            order_type = None
+            if table == 'orderBookL2':
+                order_type = OrderType.LIMIT
+            elif table == 'trade':
+                order_type = OrderType.MARKET
+
             message = BitmexMessage(
                 table,
                 raw_message,
                 instrument_index=self.index,
-                tick_size=self.tick_size
+                tick_size=self.tick_size,
+                order_type=order_type
             )
             self.last_timestamp = message.timestamp
 
             self.order_book_l2(message)
-        elif table == 'trade':
-            # alog.info(alog.pformat(raw_message))
-            pass
         else:
             raise Exception(table)
 
         return message
 
     def order_book_l2(self, message: BitmexMessage):
-
         if message.action.type.value == ActionType.UPDATE.value:
             self.update_orders(message)
 
@@ -71,9 +72,10 @@ class BitmexOrderBook(OrderBook, EventEmitter):
                 self.process_order(order)
 
         elif message.action.type.value == ActionType.DELETE.value:
-            for order_data in message.action.orders:
+            order: BitmexOrder = None
+            for order in message.action.orders:
                 try:
-                    self.cancel_order(order_data['id'])
+                    self.cancel_order(order.uid)
                 except Exception:
                     pass
 

@@ -1,13 +1,14 @@
-from exchange_data.orderbook import Order, OrderBookSide, OrderType
+from exchange_data.orderbook import Order, OrderBookSide
 
 
 class BitmexOrder(Order):
     def __init__(
-            self,
-            order_data: dict,
-            timestamp: float,
-            instrument_index: int,
-            tick_size: float
+        self,
+        order_data: dict,
+        timestamp: float,
+        instrument_index: int,
+        tick_size: float,
+        **kwargs
     ):
         self.tick_size = tick_size
         self.instrument_index = instrument_index
@@ -27,8 +28,9 @@ class BitmexOrder(Order):
         side = OrderBookSide.ASK if order_data['side'] == 'Sell' else \
             OrderBookSide.BID
 
-        super().__init__(order_type=OrderType.LIMIT, quantity=quantity,
-                         side=side, price=price, timestamp=timestamp, uid=uid)
+        super().__init__(quantity=quantity,
+                         side=side, price=price, timestamp=timestamp, uid=uid,
+                         **kwargs)
 
     def parse_price_from_id(self, uid: int):
         index = 100000000 * self.instrument_index

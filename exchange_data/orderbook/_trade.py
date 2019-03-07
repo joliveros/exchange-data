@@ -7,7 +7,7 @@ from exchange_data.orderbook import OrderBookSide, Order
 
 class TradeParty(object):
     def __init__(self, counter_party_id: int, side: OrderBookSide):
-        self.counter_party_id = counter_party_id
+        self.counter_party_id = counter_party_id if counter_party_id else 0
         self.side = side
 
     def __str__(self):

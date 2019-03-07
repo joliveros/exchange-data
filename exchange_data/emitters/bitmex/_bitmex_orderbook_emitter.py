@@ -31,9 +31,11 @@ class BitmexOrderBookEmitter(
     SignalInterceptor
 ):
     def __init__(
-            self,
-            symbol: BitmexChannels,
-            **kwargs
+        self,
+        symbol: BitmexChannels,
+        save_data: bool = True,
+        reset_orderbook: bool = True,
+        **kwargs
     ):
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
@@ -41,6 +43,7 @@ class BitmexOrderBookEmitter(
         Database.__init__(self, database_name='bitmex')
         SignalInterceptor.__init__(self, self.exit)
 
+        self.save_data = save_data
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
@@ -48,7 +51,9 @@ class BitmexOrderBookEmitter(
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
         self.on(TimeChannels.Tick.value, self.save_frame)
         self.on(self.symbol.value, self.message)
-        self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+
+        if reset_orderbook:
+            self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
 
     def print_stats(self):
         alog.info(self.print(depth=4))
@@ -137,7 +142,8 @@ class BitmexOrderBookEmitter(
 
         frame = self.generate_frame()
 
-        # alog.info(frame[:, :, :5])
+        alog.info('\n' + str(frame[:, :, :5]))
+        alog.info(frame.shape)
 
         measurement = Measurement(
             measurement=self.frame_channel,
@@ -146,11 +152,14 @@ class BitmexOrderBookEmitter(
             fields={'data': json.dumps(frame.tolist())}
         )
 
-        self.write_points([measurement.__dict__], time_precision='ms')
+        if self.save_data:
+            self.write_points([measurement.__dict__], time_precision='ms')
 
 
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
+@click.option('--save-data/--no-save-data', default=True)
+@click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],

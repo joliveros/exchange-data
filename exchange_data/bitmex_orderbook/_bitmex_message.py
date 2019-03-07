@@ -8,6 +8,7 @@ import pytz
 from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
 from exchange_data.bitmex_orderbook._action import Action
 from exchange_data.emitters import TimeEmitter
+from exchange_data.orderbook import OrderType
 
 
 class BitmexMessage(object):
@@ -16,7 +17,8 @@ class BitmexMessage(object):
             table: str,
             data: Any,
             instrument_index: int,
-            tick_size: float
+            tick_size: float,
+            **kwargs
     ):
         action_type = None
         self.action = None
@@ -36,7 +38,8 @@ class BitmexMessage(object):
                 order_data,
                 self.timestamp,
                 instrument_index=instrument_index,
-                tick_size=tick_size
+                tick_size=tick_size,
+                **kwargs
             )
             for order_data in data['data']
         ]

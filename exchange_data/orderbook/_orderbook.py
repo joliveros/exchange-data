@@ -1,16 +1,14 @@
-import datetime
-import time
+from ._ordertree import OrderTree
 from collections import deque  # a faster insert/pop queue
-from typing import Callable
-
-import alog
-
 from exchange_data import Buffer
-from exchange_data.orderbook import OrderType, OrderBookSide, Order, \
-    Trade, TradeSummary, TradeParty
+from exchange_data.orderbook import OrderType, OrderBookSide, Order, Trade, \
+    TradeSummary, TradeParty
 from exchange_data.orderbook.exceptions import OrderExistsException, \
     PriceDoesNotExistException
-from ._ordertree import OrderTree
+from typing import Callable
+
+import datetime
+import time
 
 
 class OrderBook(object):
@@ -149,6 +147,7 @@ class OrderBook(object):
         return TradeSummary(quantity, trades)
 
     def _trades(self, order: Order, order_list: Callable, quantity: int):
+
         while order_list() and quantity > 0:
             _order_list = order_list()
             head_order = _order_list.get_head_order()
@@ -157,12 +156,19 @@ class OrderBook(object):
             new_book_quantity = None
             side = order.side
 
+            try:
+                head_price = _order_list.head_order.price
+                assert head_price == order.price
+            except AssertionError:
+                order.price = head_price
+
             if quantity < head_order.quantity:
                 traded_quantity = quantity
                 # Do the transaction
                 new_book_quantity = head_order.quantity - quantity
                 head_order.update_quantity(new_book_quantity)
                 quantity = 0
+
 
             elif quantity == head_order.quantity:
                 traded_quantity = quantity
@@ -182,7 +188,6 @@ class OrderBook(object):
                     self.asks.remove_order_by_id(head_order.uid)
                 else:
                     self.bids.remove_order_by_id(head_order.uid)
-
                 quantity -= traded_quantity
 
             # transaction_record
@@ -225,9 +230,11 @@ class OrderBook(object):
                     side,
                     quantity_to_trade,
                     order)
-
             trades += trade_summary.trades
-        return quantity_to_trade, trades
+            quantity_to_trade = trade_summary.quantity_to_trade
+            trade_summary = TradeSummary(trade_summary.quantity_to_trade,
+                                         trades)
+        return trade_summary
 
     def _bid_market_order(self, order, quantity_to_trade, side, trades):
         trade_summary = None
