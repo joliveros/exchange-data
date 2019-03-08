@@ -1,15 +1,10 @@
-from exchange_data.utils import NoValue
+from abc import ABC
+from tgym.envs.orderbook._orderbook import OrderBookTradingEnv
 
 
-class Actions(NoValue):
-    Buy = 0
-    Hold = 1
-    Sell = 2
+class OrderBookTradingEnvRLLib(OrderBookTradingEnv, ABC):
+    def __init__(self, config: dict):
+        OrderBookTradingEnv.__init__(self, **config)
 
-
-class Positions(NoValue):
-    Flat = 0
-    Long = 1
-    Short = 2
 
 

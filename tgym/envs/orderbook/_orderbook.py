@@ -1,19 +1,18 @@
 from abc import ABC
 from collections import deque
 from datetime import datetime
-from time import sleep
-
-import click
 from dateutil.tz import tz
-from pytimeparse.timeparse import timeparse
+from gym.spaces import Discrete, Box
 
 from exchange_data.streamers._bitmex import BitmexStreamer
-from gym.spaces import Discrete
-from tgym.core import Env
-from tgym.envs.orderbook import Actions, Positions
-
+from gym import Env
+from pytimeparse.timeparse import timeparse
+from time import sleep
 import alog
+import click
 import numpy as np
+
+from tgym.envs.orderbook.utils import Positions
 
 
 class AlreadyFlatException(Exception):
@@ -30,9 +29,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         episode_length=1000,
         trading_fee=1,
         time_fee=0,
-        max_frames='2m',
+        max_frames='15s',
         **kwargs
     ):
+        kwargs['random_start_date'] = True
 
         self._args = locals()
         del self._args['self']
@@ -67,7 +67,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         for i in range(self.max_frames):
             self.get_observation
 
-        self.observation_space = self.last_observation.shape
+        high = np.full(self.last_observation.shape, np.inf)
+        self.observation_space = Box(-high, high, dtype=np.float32)
 
     @property
     def max_negative_pnl(self):
@@ -85,6 +86,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return self._position_pnl
 
     def reset(self):
+        if self.step_count > 0:
+            alog.info(alog.pformat(self.summary()))
+        alog.info('### env reset ###')
         kwargs = self._args['kwargs']
         del self._args['kwargs']
         kwargs = {**self._args, **kwargs}
@@ -145,19 +149,17 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return self._best_ask
 
     @property
-    def last_frame(self):
-        return self.frames[-1]
-
-    @property
     def position_data(self):
         data_keys = [
             'total_pnl',
             '_position_pnl',
-            'max_position_pnl'
+            'max_position_pnl',
         ]
 
         data = {key: self.__dict__[key] for key in
                    data_keys}
+
+        data['position'] = self.position.value
 
         return np.array(list(data.values()))
 
@@ -187,7 +189,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self.frames.append(frame)
 
-        self.last_observation = np.concatenate(self.frames)
+        self.last_observation = np.stack(self.frames).flatten()
 
         return self.last_observation
 
@@ -294,13 +296,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             'position',
             'total_pnl',
             'total_reward',
-            'step_count'
+            'step_count',
+            'orderbook_depth'
         ]
 
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
 
-        alog.info(alog.pformat(summary))
         return summary
 
 
