@@ -1,3 +1,4 @@
+import traceback
 from abc import ABC
 from collections import deque
 from datetime import datetime
@@ -65,7 +66,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.max_position_duration = timeparse('30m')
 
         for i in range(self.max_frames):
-            self.get_observation
+            self.get_observation()
 
         high = np.full(self.last_observation.shape, np.inf)
         self.observation_space = Box(-high, high, dtype=np.float32)
@@ -88,7 +89,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def reset(self):
         if self.step_count > 0:
             alog.info(alog.pformat(self.summary()))
+
         alog.info('### env reset ###')
+
         kwargs = self._args['kwargs']
         del self._args['kwargs']
         kwargs = {**self._args, **kwargs}
@@ -131,7 +134,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         else:
             self.step_count += 1
 
-        observation = self.get_observation
+        observation = self.get_observation()
 
         return observation, self.reward, done, self.summary()
 
@@ -166,7 +169,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def local_fromtimestamp(self, value):
         return datetime.fromtimestamp(value/10**9, tz=tz.tzlocal())
 
-    @property
     def get_observation(self):
         time, index, orderbook = next(self)
 
@@ -317,7 +319,8 @@ def main(test_span, **kwargs):
 
     for i in range(timeparse(test_span)):
         env.step(Positions.Long.value)
-        sleep(0.2)
+        alog.info(alog.pformat(env.summary()))
+        sleep(0.1)
 
     env.step(Positions.Flat.value)
 

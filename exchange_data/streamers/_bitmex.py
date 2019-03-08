@@ -1,4 +1,5 @@
 import re
+import traceback
 from abc import ABC
 from collections import Generator
 from time import sleep
@@ -8,6 +9,7 @@ from cached_property import cached_property
 from datetime import datetime, timedelta
 from dateutil.tz import tz
 from exchange_data import Database, settings
+from exchange_data.emitters import SignalInterceptor
 from exchange_data.utils import random_date
 from numpy.core.multiarray import ndarray
 from pandas import to_datetime, DataFrame
@@ -22,7 +24,7 @@ import numpy as np
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexStreamer(Database, Generator, ABC):
+class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
@@ -34,6 +36,8 @@ class BitmexStreamer(Database, Generator, ABC):
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
+        SignalInterceptor.__init__(self)
+
         self._time = []
         self._index = []
         self._orderbook = []
@@ -141,6 +145,9 @@ class BitmexStreamer(Database, Generator, ABC):
 
             frame_list.append(data)
 
+        if len(frame_list) == 0:
+            raise Exception('Out of frames.')
+
         resized_frames = []
         for frame in frame_list:
             if frame.shape[-1] != max_shape[-1]:
@@ -217,12 +224,16 @@ class BitmexStreamer(Database, Generator, ABC):
         return time_index, index, orderbook.to_array().values[0][:, :, :, :self.orderbook_depth]
 
     def next_window(self):
+        result = np.array([]), np.array([]), np.array([])
+
         now = self.now()
         if self.realtime:
             self.start_date = now - timedelta(seconds=self.window_size)
             self.end_date = now
-
-        result = self.compose_window()
+        try:
+            result = self.compose_window()
+        except Exception as e:
+            traceback.print_exc()
 
         if not self.realtime:
             self.start_date += timedelta(seconds=self.window_size)
@@ -231,7 +242,7 @@ class BitmexStreamer(Database, Generator, ABC):
         return result
 
     def send(self, *args):
-        if len(self._index) == 0:
+        while len(self._index) == 0:
             time, index, orderbook = self.next_window()
             self._time += time.tolist()
             self._index += index.tolist()
@@ -255,14 +266,13 @@ class BitmexStreamer(Database, Generator, ABC):
               help='Window size i.e. "1m"')
 def main(**kwargs):
     streamer = BitmexStreamer(**kwargs)
-    alog.info(datetime.utcnow())
 
     while True:
-        index, orderbook = next(streamer)
+        timestamp, index, orderbook = next(streamer)
         orderbook_ar = np.array(orderbook)
 
-        alog.info('\n' + str(index) + '\n' + str(orderbook_ar))
-        sleep(1)
+        alog.info('\n' + str(index) + '\n' + str(orderbook_ar[:, :, :1]))
+        sleep(0.1)
 
 
 if __name__ == '__main__':
