@@ -29,12 +29,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self,
         episode_length=1000,
         trading_fee=1,
-        time_fee=0,
+        time_fee=0.2,
         max_frames='15s',
         **kwargs
     ):
         kwargs['random_start_date'] = True
-
+        kwargs['orderbook_depth'] = 21
+        kwargs['window_size'] = '30s'
         self._args = locals()
         del self._args['self']
 
@@ -65,10 +66,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.max_negative_pnl_factor = -0.01
         self.max_position_duration = timeparse('30m')
 
-        for i in range(self.max_frames):
-            self.get_observation()
+        high = np.full((126 * self.max_frames, ), np.inf)
 
-        high = np.full(self.last_observation.shape, np.inf)
         self.observation_space = Box(-high, high, dtype=np.float32)
 
     @property
@@ -98,6 +97,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         new_instance = OrderBookTradingEnv(**kwargs)
         self.__dict__ = new_instance.__dict__
 
+        for i in range(self.max_frames):
+            self.get_observation()
+
         return self.last_observation
 
     def step(self, action):
@@ -110,6 +112,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if self.should_change_position(action):
             self.change_position(action)
+        else:
+            self.reward += self.time_fee
 
         position_pnl = self.position_pnl
 
@@ -316,6 +320,8 @@ def main(test_span, **kwargs):
         random_start_date=True,
         **kwargs
     )
+
+    env.reset()
 
     for i in range(timeparse(test_span)):
         env.step(Positions.Long.value)
