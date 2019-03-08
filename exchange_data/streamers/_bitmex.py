@@ -26,11 +26,11 @@ class BitmexStreamer(Database, Generator, ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
-        depth: int = 10,
+        orderbook_depth: int = 21,
         random_start_date: bool = False,
         end_date: datetime = None,
         start_date: datetime = None,
-        window_size: str = '1m',
+        window_size: str = '15s',
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
@@ -42,7 +42,7 @@ class BitmexStreamer(Database, Generator, ABC):
         self.start_date = None
         self.realtime = False
 
-        self.depth = depth
+        self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)
         self.channel_name = 'XBTUSD_OrderBookFrame'
 
@@ -214,7 +214,7 @@ class BitmexStreamer(Database, Generator, ABC):
             .rename({'index': 'time'}) \
             .fillna(0).to_array().values[0]
 
-        return time_index, index, orderbook.to_array().values[0][:, :, :, :self.depth]
+        return time_index, index, orderbook.to_array().values[0][:, :, :, :self.orderbook_depth]
 
     def next_window(self):
         now = self.now()

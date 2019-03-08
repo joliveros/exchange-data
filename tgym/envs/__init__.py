@@ -1,6 +1,5 @@
-from tgym.envs.orderbook._orderbook import OrderBookTradingEnv
-from ._trading import SpreadTrading
 from gym.envs.registration import register
+from tgym.envs.orderbook import OrderBookTradingEnv
 
 
 register(
