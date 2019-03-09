@@ -14,7 +14,7 @@ orderbook-ppo:
         num_envs_per_worker: 4
         num_gpus: 1
         num_sgd_iter: 10
-        num_workers: 14
+        num_workers: 12
         observation_filter: NoFilter
         sample_batch_size: 100
         sgd_minibatch_size: 500

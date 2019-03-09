@@ -134,12 +134,6 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
             time_index.append(self.parse_db_timestamp(item['time']))
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
 
-            best_ask = data[0][0][0]
-            best_bid = data[1][0][0]
-
-            if best_ask - best_bid > self.max_spread:
-                raise Exception('Spread exceeds limit.')
-
             if data.shape[-1] > max_shape[-1]:
                 max_shape = data.shape
 

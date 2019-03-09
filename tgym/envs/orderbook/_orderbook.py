@@ -31,11 +31,14 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         trading_fee=1,
         time_fee=0.2,
         max_frames='15s',
+        random_start_date=True,
+        orderbook_depth=21,
+        window_size='30s',
         **kwargs
     ):
-        kwargs['random_start_date'] = True
-        kwargs['orderbook_depth'] = 21
-        kwargs['window_size'] = '30s'
+        kwargs['random_start_date'] = random_start_date
+        kwargs['orderbook_depth'] = orderbook_depth
+        kwargs['window_size'] = window_size
         self._args = locals()
         del self._args['self']
 
@@ -64,9 +67,22 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.trading_fee = trading_fee
         self.max_position_pnl = 0.0
         self.max_negative_pnl_factor = -0.01
-        self.max_position_duration = timeparse('30m')
+        self.max_position_duration = timeparse('5m')
+        self.max_pnl = 0.0
+        self.position_history = []
+        self.bid_diff = 0.0
+        self.ask_diff = 0.0
+        self.last_observation = None
+        self.last_best_ask = None
+        self.last_best_bid = None
+        self.index_diff = None
+        self._best_bid = None
+        self._best_ask = None
 
-        high = np.full((126 * self.max_frames, ), np.inf)
+        high = np.full(
+            (self.max_frames * (7 + 4 * self.orderbook_depth), ),
+            np.inf
+        )
 
         self.observation_space = Box(-high, high, dtype=np.float32)
 
@@ -112,25 +128,26 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if self.should_change_position(action):
             self.change_position(action)
+            alog.info(alog.pformat(self.summary()))
         else:
-            self.reward += self.time_fee
+            if self.position_pnl > 0:
+                self.reward += self.time_fee
 
         position_pnl = self.position_pnl
 
         if position_pnl > self.max_position_pnl:
             self.max_position_pnl = position_pnl
 
-        max_pos_diff = self.max_position_pnl - position_pnl
-
-        self.reward -= max_pos_diff * self.negative_position_reward_factor
+        # max_pos_diff = self.max_position_pnl - position_pnl
+        # self.reward -= max_pos_diff * self.negative_position_reward_factor
 
         if position_pnl > 0:
-            self.reward += position_pnl
+            self.reward += 1
 
-        if self.total_pnl + self.position_pnl <= self.max_negative_pnl:
-            done = True
+        if self.total_pnl > self.max_pnl:
+            self.max_pnl = self.total_pnl
 
-        if self.total_reward <= self.max_position_duration * -1:
+        if self.step_count > self.max_position_duration:
             done = True
 
         if done:
@@ -158,9 +175,12 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     @property
     def position_data(self):
         data_keys = [
-            'total_pnl',
             '_position_pnl',
+            'ask_diff',
+            'bid_diff',
+            'index_diff',
             'max_position_pnl',
+            'total_pnl'
         ]
 
         data = {key: self.__dict__[key] for key in
@@ -174,28 +194,31 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return datetime.fromtimestamp(value/10**9, tz=tz.tzlocal())
 
     def get_observation(self):
-        time, index, orderbook = next(self)
+        if self.last_observation is not None:
+            self.last_best_ask = self.best_ask
+            self.last_best_bid = self.best_bid
 
+        time, index, orderbook = next(self)
+        self.position_history.append(self.position.name[0])
         self.last_timestamp = time
         self.last_datetime = str(self.local_fromtimestamp(time))
 
         self.last_index = index
         self.last_orderbook = orderbook = np.array(orderbook)
 
-        index = np.array([index - self.best_ask, index - self.best_bid])
+        if self.last_observation is not None:
+            self.bid_diff = self.best_bid - self.last_best_bid
+            self.ask_diff = self.best_ask - self.last_best_ask
+
+        self.index_diff = index - self.best_ask / index - self.best_bid
+
         position_data = self.position_data
-        position_data = np.concatenate((position_data, index))
 
-        asks = np.concatenate((orderbook[0]))
-        bids = np.concatenate((orderbook[0]))
-        resized_position_data = np.zeros((bids.shape[0],))
-        resized_position_data[:position_data.shape[0]] = position_data
-
-        frame = np.stack((resized_position_data, asks, bids))
+        frame = np.concatenate((position_data, orderbook.flatten()))
 
         self.frames.append(frame)
 
-        self.last_observation = np.stack(self.frames).flatten()
+        self.last_observation = np.concatenate(self.frames)
 
         return self.last_observation
 
@@ -298,16 +321,18 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             '_best_bid',
             '_position_pnl',
             'last_datetime',
+            'max_pnl',
             'max_position_pnl',
-            'position',
+            'orderbook_depth',
+            'step_count',
             'total_pnl',
             'total_reward',
-            'step_count',
-            'orderbook_depth'
         ]
 
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
+
+        summary['position_history'] = ''.join(self.position_history)
 
         return summary
 

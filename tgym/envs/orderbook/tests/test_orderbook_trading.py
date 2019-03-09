@@ -33,11 +33,14 @@ class TestOrderBookTradingEnv(object):
             .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
-            window_size='1s',
-            start_date=start_date,
             max_frames='5s',
-            orderbook_depth=21
+            orderbook_depth=21,
+            random_start_date=False,
+            start_date=start_date,
+            window_size='1s'
         )
+
+        env.reset()
 
         for i in range(timeparse.timeparse('5s')):
             env.step(Positions.Long.value)
