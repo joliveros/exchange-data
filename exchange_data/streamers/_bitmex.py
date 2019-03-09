@@ -46,6 +46,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
         self.max_spread = max_spread
         self.start_date = None
         self.realtime = False
+        self._min_date = parser.parse('2019-03-07 01:29:32.414000+00:00')
 
         self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)
@@ -78,6 +79,8 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
     @cached_property
     def min_date(self):
+        if self._min_date:
+            return self._min_date
         start_date = datetime.fromtimestamp(0, tz=tz.tzutc())
 
         if self.end_date is None:
