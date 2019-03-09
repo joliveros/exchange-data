@@ -28,7 +28,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
-        orderbook_depth: int = 21,
+        orderbook_depth: int = 10,
         random_start_date: bool = False,
         end_date: datetime = None,
         start_date: datetime = None,
@@ -38,6 +38,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
         super().__init__(database_name='bitmex', **kwargs)
         SignalInterceptor.__init__(self)
 
+        self.out_of_frames_counter = 0
         self._time = []
         self._index = []
         self._orderbook = []
@@ -61,7 +62,6 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
         elif self.start_date is None:
             self.start_date = self.now() - timedelta(seconds=self.window_size)
             self.realtime = True
-
         if end_date is not None:
             self.end_date = end_date
         else:
@@ -140,6 +140,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
             frame_list.append(data)
 
         if len(frame_list) == 0:
+            self.out_of_frames_counter += 1
             raise Exception('Out of frames.')
 
         resized_frames = []
