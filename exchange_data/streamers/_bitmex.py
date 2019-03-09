@@ -1,12 +1,9 @@
-import re
-import traceback
 from abc import ABC
-from collections import Generator
-from time import sleep
-
-import click
 from cached_property import cached_property
+from collections import Generator
 from datetime import datetime, timedelta
+from dateutil import parser
+from dateutil import parser
 from dateutil.tz import tz
 from exchange_data import Database, settings
 from exchange_data.emitters import SignalInterceptor
@@ -14,12 +11,16 @@ from exchange_data.utils import random_date
 from numpy.core.multiarray import ndarray
 from pandas import to_datetime, DataFrame
 from pytimeparse.timeparse import timeparse
+from time import sleep
 from typing import Tuple
 from xarray import Dataset, DataArray
 
 import alog
+import click
 import json
 import numpy as np
+import re
+import traceback
 
 alog.set_level(settings.LOG_LEVEL)
 
