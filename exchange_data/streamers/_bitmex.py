@@ -34,12 +34,14 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
         end_date: datetime = None,
         start_date: datetime = None,
         window_size: str = '15s',
+        sample_interval: str = '1s',
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
         SignalInterceptor.__init__(self)
 
         self.out_of_frames_counter = 0
+        self.sample_interval = sample_interval
         self._time = []
         self._index = []
         self._orderbook = []
@@ -119,8 +121,9 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT * FROM {self.channel_name} ' \
-            f'WHERE time > {start_date} AND time < {end_date} tz(\'UTC\');'
+        query = f'SELECT FIRST(data) as data FROM {self.channel_name} ' \
+            f'WHERE time > {start_date} AND time < {end_date} ' \
+            f'GROUP BY time({self.sample_interval}) tz(\'UTC\');'
 
         return self.query(query)
 
@@ -263,6 +266,11 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
               type=str,
               default='1m',
               help='Window size i.e. "1m"')
+@click.option('--sample-interval',
+              '-s',
+              type=str,
+              default='1s',
+              help='interval at which to sample data from db.')
 def main(**kwargs):
     streamer = BitmexStreamer(**kwargs)
 
