@@ -130,7 +130,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.change_position(action)
         else:
             if self.position_pnl > 0:
-                self.reward += self.time_fee
+                self.reward += self.position_pnl / self.step_count
 
         position_pnl = self.position_pnl
 
@@ -145,6 +145,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if self.step_count >= self.max_position_duration \
             and self.total_pnl < 0.0:
+            done = True
+
+        if self.step_count >= self.episode_length:
             done = True
 
         if self.out_of_frames_counter > 30 and not done:
@@ -191,7 +194,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return np.array(list(data.values()))
 
     def local_fromtimestamp(self, value):
-        return datetime.fromtimestamp(value/10**9, tz=tz.tzlocal())
+        return datetime.fromtimestamp(value/10**9, tz=tz.tzutc())\
+            .astimezone(tz.tzlocal())
 
     def get_observation(self):
         if self.last_observation is not None:
@@ -261,13 +265,17 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def short_pnl(self):
         if self.entry_price == 0.0 or self.best_bid == 0:
             return 0.0
-        return self.entry_price - self.best_bid
+        pnl = self.entry_price - self.best_bid
+        # alog.info((self.position, self.entry_price, self.best_bid, pnl))
+        return pnl
 
     @property
     def long_pnl(self):
         if self.entry_price == 0.0 or self.best_ask == 0.0:
             return 0.0
-        return self.best_ask - self.entry_price
+        pnl = self.best_ask - self.entry_price
+        # alog.info((self.position, self.entry_price, self.best_ask, pnl))
+        return pnl
 
     @property
     def is_short(self):
@@ -292,7 +300,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.close_short()
 
         self.position = Positions.Long
-        self.entry_price = self.best_bid
+        # alog.info(f'set long entry price {self.best_ask}')
+        self.entry_price = self.best_ask
 
     def short(self):
         if self.is_short:
@@ -302,7 +311,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.close_long()
 
         self.position = Positions.Short
-        self.entry_price = self.best_ask
+        # alog.info(f'set short entry price {self.best_bid}')
+        self.entry_price = self.best_bid
 
     def change_position(self, action):
         if action == Positions.Long.value:
@@ -341,6 +351,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
                    summary_keys}
 
         summary['position_history'] = ''.join(self.position_history)
+
         if self.step_count % 30 == 0:
             alog.info(alog.pformat(summary))
 
