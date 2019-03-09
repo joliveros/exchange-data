@@ -32,7 +32,7 @@ class TestOrderBookTradingEnv(object):
 
         assert env.total_reward == 0
 
-    # @pytest.mark.vcr()
+    @pytest.mark.vcr()
     @mock.patch(
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
@@ -45,7 +45,7 @@ class TestOrderBookTradingEnv(object):
             orderbook_depth=21,
             random_start_date=False,
             start_date=start_date,
-            window_size='1s'
+            window_size='30s'
         )
 
         env.reset()
