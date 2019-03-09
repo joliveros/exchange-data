@@ -50,6 +50,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         kwargs['random_start_date'] = random_start_date
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
+        kwargs['sample_interval'] = '5s'
         self._args = locals()
         del self._args['self']
 
