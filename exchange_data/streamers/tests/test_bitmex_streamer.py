@@ -13,7 +13,10 @@ class TestBitmexStreamer(object):
     min_date = parser.parse('2019-03-06 21:46:42.633000+00:00')
 
     @pytest.mark.vcr()
-    def test_first_date_available(self):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_first_date_available(self, sig_mock):
         end_date = self.start_date + timedelta(seconds=2)
 
         streamer = BitmexStreamer(
@@ -37,7 +40,10 @@ class TestBitmexStreamer(object):
         'exchange_data.streamers._bitmex.BitmexStreamer.now',
         return_value=start_date
     )
-    def test_init_with_window_size(self, mock_start):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_init_with_window_size(self, mock_start, sig_mock):
         streamer = BitmexStreamer(
             window_size='2s'
         )
@@ -62,7 +68,10 @@ class TestBitmexStreamer(object):
         assert streamer.start_date < last_timestamp < streamer.end_date
 
     @pytest.mark.vcr()
-    def test_compose_window(self):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_compose_window(self, sig_mock):
         streamer = BitmexStreamer(
             start_date=self.start_date,
             end_date=self.start_date + timedelta(seconds=2),
@@ -75,7 +84,10 @@ class TestBitmexStreamer(object):
         assert orderbook.shape == (2, 2, 2, 10)
 
     @pytest.mark.vcr()
-    def test_one_second_window(self):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_one_second_window(self, sig_mock):
         streamer = BitmexStreamer(
             start_date=self.start_date,
             end_date=self.start_date + timedelta(seconds=1),
@@ -88,7 +100,10 @@ class TestBitmexStreamer(object):
         assert orderbook.shape == (1, 2, 2, 10)
 
     @pytest.mark.vcr()
-    def test_ensure_buy_side_is_flipped(self):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_ensure_buy_side_is_flipped(self, sig_mock):
         streamer = BitmexStreamer(
             start_date=self.start_date,
             end_date=self.start_date + timedelta(seconds=1),
@@ -109,7 +124,10 @@ class TestBitmexStreamer(object):
         assert orderbook.shape == (1, 2, 2, 10)
 
     @pytest.mark.vcr()
-    def test_generating_exceeds_window_size(self):
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_generating_exceeds_window_size(self, sig_mock):
         streamer = BitmexStreamer(
             start_date=self.start_date,
             end_date=self.start_date + timedelta(seconds=1),

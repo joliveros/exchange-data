@@ -50,7 +50,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self._position_pnl = 0
         self.action_space = Discrete(3)
         self.closed_plot = False
-        self.entry_price = 0
+        self.entry_price = 0.0
         self.episode_length = episode_length
         self.exit_price = 0
         self.max_frames = timeparse(max_frames)
@@ -67,7 +67,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.trading_fee = trading_fee
         self.max_position_pnl = 0.0
         self.max_negative_pnl_factor = -0.01
-        self.max_position_duration = timeparse('5m')
+        self.max_position_duration = timeparse('45s')
         self.max_pnl = 0.0
         self.position_history = []
         self.bid_diff = 0.0
@@ -128,7 +128,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if self.should_change_position(action):
             self.change_position(action)
-            alog.info(alog.pformat(self.summary()))
         else:
             if self.position_pnl > 0:
                 self.reward += self.time_fee
@@ -138,16 +137,17 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if position_pnl > self.max_position_pnl:
             self.max_position_pnl = position_pnl
 
-        # max_pos_diff = self.max_position_pnl - position_pnl
-        # self.reward -= max_pos_diff * self.negative_position_reward_factor
-
         if position_pnl > 0:
             self.reward += 1
 
         if self.total_pnl > self.max_pnl:
             self.max_pnl = self.total_pnl
 
-        if self.step_count > self.max_position_duration:
+        if self.step_count >= self.max_position_duration \
+            and self.total_pnl < 0.0:
+            done = True
+
+        if self.out_of_frames_counter > 30 and not done:
             done = True
 
         if done:
@@ -210,7 +210,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.bid_diff = self.best_bid - self.last_best_bid
             self.ask_diff = self.best_ask - self.last_best_ask
 
-        self.index_diff = index - self.best_ask / index - self.best_bid
+        idx_bbid_diff = self.best_ask + self.best_bid
+
+        self.index_diff = ((index * 2) - idx_bbid_diff) / 2
 
         position_data = self.position_data
 
@@ -245,6 +247,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self.total_pnl += self.short_pnl
         self.reward += self.total_pnl
+        self.entry_price = 0.0
 
     def close_long(self):
         if self.position != Positions.Long:
@@ -252,13 +255,18 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self.total_pnl += self.long_pnl
         self.reward += self.total_pnl
+        self.entry_price = 0.0
 
     @property
     def short_pnl(self):
+        if self.entry_price == 0.0:
+            return 0.0
         return self.entry_price - self.best_bid
 
     @property
     def long_pnl(self):
+        if self.entry_price == 0.0:
+            return 0.0
         return self.best_ask - self.entry_price
 
     @property
@@ -333,6 +341,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
                    summary_keys}
 
         summary['position_history'] = ''.join(self.position_history)
+        if self.step_count % 30 == 0:
+            alog.info(alog.pformat(summary))
 
         return summary
 
