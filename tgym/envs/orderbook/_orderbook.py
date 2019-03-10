@@ -39,12 +39,12 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def __init__(
         self,
         episode_length=1000,
-        trading_fee=1,
-        time_fee=0.2,
-        max_frames='15s',
+        trading_fee=.1,
+        time_fee=0.1,
+        max_frames='1m',
         random_start_date=True,
         orderbook_depth=21,
-        window_size='30s',
+        window_size='1m',
         **kwargs
     ):
         kwargs['random_start_date'] = random_start_date
@@ -90,6 +90,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self._best_bid = None
         self._best_ask = None
         self.trades = []
+        self.last_price_diff = 0.0
 
         high = np.full(
             (self.max_frames * (7 + 4 * self.orderbook_depth), ),
@@ -150,7 +151,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.max_position_pnl = position_pnl
 
         if position_pnl > 0:
-            self.reward += 1.0 * 2.0
+            self.reward += position_pnl * 4.0
 
         if self.total_pnl > self.max_pnl:
             self.max_pnl = self.total_pnl
@@ -208,9 +209,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             .astimezone(tz.tzlocal())
 
     def get_observation(self):
+        alog.info('### get obs ###')
         if self.last_observation is not None:
             self.last_best_ask = self.best_ask
             self.last_best_bid = self.best_bid
+            self.last_price_diff = (self.last_best_ask + self.last_best_bid)/2 - \
+                (self.best_ask + self.best_bid)/2
+            self.reward -= self.last_price_diff
 
         time, index, orderbook = next(self)
         self.position_history.append(self.position.name[0])
@@ -266,7 +271,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.best_bid
         ))
         self.total_pnl += pnl
-        self.reward += self.total_pnl
+        self.reward += self.total_pnl * 4
         self.entry_price = 0.0
 
     def close_long(self):
@@ -281,21 +286,21 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.best_ask
         ))
         self.total_pnl += pnl
-        self.reward += self.total_pnl
+        self.reward += self.total_pnl * 4
         self.entry_price = 0.0
 
     @property
     def short_pnl(self):
         if self.entry_price == 0.0 or self.best_bid == 0:
-            return 0.0
-        pnl = self.entry_price - self.best_bid
+            return 0.0 - self.trading_fee
+        pnl = self.entry_price - self.best_bid - self.trading_fee
         return pnl
 
     @property
     def long_pnl(self):
         if self.entry_price == 0.0 or self.best_ask == 0.0:
-            return 0.0
-        pnl = self.best_ask - self.entry_price
+            return 0.0 - self.trading_fee
+        pnl = self.best_ask - self.entry_price - self.trading_fee
         return pnl
 
     @property
@@ -371,8 +376,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         summary['position_history'] = ''.join(self.position_history[-45:])
         summary['trades'] = self.trades[-45:]
 
-        if self.step_count % 30 == 0:
-            alog.info(alog.pformat(summary))
+        # if self.step_count % self.max_position_duration == 0:
+        #     alog.info(alog.pformat(summary))
 
         return summary
 
