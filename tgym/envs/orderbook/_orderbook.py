@@ -41,16 +41,17 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         episode_length=1000,
         trading_fee=.1,
         time_fee=0.1,
-        max_frames='1m',
+        max_frames=12,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='1m',
+        window_size='5m',
+        sample_interval='5s',
         **kwargs
     ):
         kwargs['random_start_date'] = random_start_date
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
-        kwargs['sample_interval'] = '5s'
+        kwargs['sample_interval'] = sample_interval
         self._args = locals()
         del self._args['self']
 
@@ -65,7 +66,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.entry_price = 0.0
         self.episode_length = episode_length
         self.exit_price = 0
-        self.max_frames = timeparse(max_frames)
+        self.max_frames = max_frames
         self.frames = deque(maxlen=self.max_frames)
         self.step_count = 0
         self.last_index = None
@@ -127,8 +128,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         new_instance = OrderBookTradingEnv(**kwargs)
         self.__dict__ = new_instance.__dict__
 
-        for i in range(self.max_frames):
-            self.get_observation()
+        try:
+            for i in range(self.max_frames):
+                self.get_observation()
+        except:
+            return self.reset()
 
         return self.last_observation
 
@@ -169,8 +173,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if not done:
             self.step_count += 1
-
-        observation = self.get_observation()
+        try:
+            observation = self.get_observation()
+        except:
+            observation = self.last_observation
+            done = True
 
         return observation, self.reward, done, self.summary()
 
@@ -206,11 +213,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return np.array(list(data.values()))
 
     def local_fromtimestamp(self, value):
-        return datetime.fromtimestamp(value/10**9, tz=tz.tzutc())\
+        return datetime.utcfromtimestamp(value/10**9)\
             .astimezone(tz.tzlocal())
 
     def get_observation(self):
-        alog.info('### get obs ###')
         if self.last_observation is not None:
             self.last_best_ask = self.best_ask
             self.last_best_bid = self.best_bid
@@ -397,7 +403,7 @@ def main(test_span, **kwargs):
     for i in range(timeparse(test_span)):
         env.step(Positions.Long.value)
         alog.info(alog.pformat(env.summary()))
-        sleep(0.1)
+        sleep(0.33)
 
     env.step(Positions.Flat.value)
 

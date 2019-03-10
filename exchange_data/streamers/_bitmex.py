@@ -42,6 +42,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         self.out_of_frames_counter = 0
         self.sample_interval = sample_interval
+        self.sample_interval_s = timeparse(sample_interval)
         self._time = []
         self._index = []
         self._orderbook = []
@@ -120,10 +121,12 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
-
-        query = f'SELECT FIRST(data) as data FROM {self.channel_name} ' \
+        query = f'SELECT LAST(data) as data FROM {self.channel_name} ' \
             f'WHERE time > {start_date} AND time < {end_date} ' \
             f'GROUP BY time({self.sample_interval}) tz(\'UTC\');'
+        # query = f'SELECT * FROM {self.channel_name} ' \
+        #     f'WHERE time >= {start_date} AND time < {end_date} ' \
+        #     f'tz(\'UTC\');'
 
         return self.query(query)
 
@@ -145,6 +148,9 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
                 max_shape = data.shape
 
             frame_list.append(data)
+
+        time_index.reverse()
+        frame_list.reverse()
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
@@ -186,7 +192,10 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         index = self.query(query)
 
-        return [item for item in index.get_points('.BXBT_1m')]
+        index = [item for item in index.get_points('.BXBT_1m')]
+        index.reverse()
+
+        return index
 
     def compose_window(self) -> Tuple[ndarray, ndarray, ndarray]:
         orderbook = self.orderbook_frames()
@@ -230,15 +239,13 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         now = self.now()
         if self.realtime:
-            self.start_date = now - timedelta(seconds=self.window_size)
+            self.start_date = now - timedelta(seconds=self.window_size + self.sample_interval_s)
             self.end_date = now
-        try:
-            result = self.compose_window()
-        except Exception as e:
-            traceback.print_exc()
+
+        result = self.compose_window()
 
         if not self.realtime:
-            self.start_date += timedelta(seconds=self.window_size)
+            self.start_date += timedelta(seconds=self.window_size + self.sample_interval_s)
             self.end_date += timedelta(seconds=self.window_size)
 
         return result
@@ -278,7 +285,8 @@ def main(**kwargs):
         timestamp, index, orderbook = next(streamer)
         orderbook_ar = np.array(orderbook)
 
-        alog.info('\n' + str(index) + '\n' + str(orderbook_ar[:, :, :1]))
+        alog.info('\n'+ str(datetime.fromtimestamp(timestamp/10**9)) +'\n' +
+                  str(index) + '\n' + str(orderbook_ar[:, :, :1]))
         sleep(0.1)
 
 
