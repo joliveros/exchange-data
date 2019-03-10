@@ -55,3 +55,5 @@ class TestOrderBookTradingEnv(object):
 
         env.step(Positions.Flat.value)
 
+        alog.info(alog.pformat(env.summary()))
+

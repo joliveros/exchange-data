@@ -20,6 +20,17 @@ class AlreadyFlatException(Exception):
     pass
 
 
+class Trade(object):
+    def __init__(self, type: str, pnl: float, entry: float, position_exit: float):
+        self.type = type
+        self.pnl = pnl
+        self.entry = entry
+        self.position_exit = position_exit
+
+    def __repr__(self):
+        return f'{self.type}/{self.pnl}/{self.entry}/{self.position_exit}'
+
+
 class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     """
     Orderbook based trading environment.
@@ -78,6 +89,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.index_diff = None
         self._best_bid = None
         self._best_ask = None
+        self.trades = []
 
         high = np.full(
             (self.max_frames * (7 + 4 * self.orderbook_depth), ),
@@ -138,13 +150,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.max_position_pnl = position_pnl
 
         if position_pnl > 0:
-            self.reward += 1
+            self.reward += 1.0 * 2.0
 
         if self.total_pnl > self.max_pnl:
             self.max_pnl = self.total_pnl
 
         if self.step_count >= self.max_position_duration \
-            and self.total_pnl < 0.0:
+            and self.total_pnl < self.step_count / 2:
             done = True
 
         if self.step_count >= self.episode_length:
@@ -153,9 +165,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.out_of_frames_counter > 30 and not done:
             done = True
 
-        if done:
-            alog.info('Session is complete.')
-        else:
+        if not done:
             self.step_count += 1
 
         observation = self.get_observation()
@@ -249,7 +259,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.position != Positions.Short:
             raise Exception('Not short.')
 
-        self.total_pnl += self.short_pnl
+        pnl = self.short_pnl
+        self.trades.append(Trade(
+            self.position.name[0],
+            pnl, self.entry_price,
+            self.best_bid
+        ))
+        self.total_pnl += pnl
         self.reward += self.total_pnl
         self.entry_price = 0.0
 
@@ -257,7 +273,14 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.position != Positions.Long:
             raise Exception('Not long.')
 
-        self.total_pnl += self.long_pnl
+        pnl = self.long_pnl
+        self.trades.append(Trade(
+            self.position.name[0],
+            pnl,
+            self.entry_price,
+            self.best_ask
+        ))
+        self.total_pnl += pnl
         self.reward += self.total_pnl
         self.entry_price = 0.0
 
@@ -266,7 +289,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.entry_price == 0.0 or self.best_bid == 0:
             return 0.0
         pnl = self.entry_price - self.best_bid
-        # alog.info((self.position, self.entry_price, self.best_bid, pnl))
         return pnl
 
     @property
@@ -274,7 +296,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.entry_price == 0.0 or self.best_ask == 0.0:
             return 0.0
         pnl = self.best_ask - self.entry_price
-        # alog.info((self.position, self.entry_price, self.best_ask, pnl))
         return pnl
 
     @property
@@ -335,13 +356,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
     def summary(self):
         summary_keys = [
-            '_best_ask',
-            '_best_bid',
             '_position_pnl',
             'last_datetime',
             'max_pnl',
             'max_position_pnl',
-            'orderbook_depth',
             'step_count',
             'total_pnl',
             'total_reward',
@@ -350,7 +368,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
 
-        summary['position_history'] = ''.join(self.position_history)
+        summary['position_history'] = ''.join(self.position_history[-45:])
+        summary['trades'] = self.trades[-45:]
 
         if self.step_count % 30 == 0:
             alog.info(alog.pformat(summary))
