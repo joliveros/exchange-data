@@ -1,9 +1,11 @@
+from dateutil import parser
 from exchange_data.bitmex_orderbook import InstrumentInfo
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import TimeEmitter
 from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
 from exchange_data.orderbook.tests.fixtures import orders
 
+import alog
 import mock
 import pytest
 
@@ -40,7 +42,7 @@ def orderbook_emitter(mocker, orders, tmpdir):
 
 
 class TestBitmexOrderBookEmitter(object):
-    timestamp = None
+    timestamp = parser.parse('2019-03-06 22:00:03.910369+00:00').timestamp()
 
     def tick(self):
         one_second = 1000
@@ -59,6 +61,8 @@ class TestBitmexOrderBookEmitter(object):
 
     @mock.patch('exchange_data.emitters.bitmex.BitmexOrderBookEmitter.write_points')
     def test_save_frame(self, write_points_mock, orderbook_emitter):
+        orderbook_emitter.depths = [1]
+
         orderbook_emitter.save_frame(self.timestamp)
 
         write_points_mock.called_once()
