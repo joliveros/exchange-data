@@ -44,7 +44,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         max_frames=12,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='5m',
+        window_size='5m30s',
         sample_interval='5s',
         **kwargs
     ):
@@ -163,7 +163,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         if self.step_count >= self.max_position_duration \
             and self.total_pnl < self.step_count / 2:
-            done = True
+            if self.position == Positions.Flat:
+                done = True
 
         if self.step_count >= self.episode_length:
             done = True
