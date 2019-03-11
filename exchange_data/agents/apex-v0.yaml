@@ -22,8 +22,8 @@ orderbook-apex-v0:
         num_gpus: 1
 
         # APEX
-        num_workers: 8
-        num_envs_per_worker: 8
+        num_workers: 12
+        num_envs_per_worker: 1
         sample_batch_size: 20
         train_batch_size: 512
         target_network_update_freq: 50000
