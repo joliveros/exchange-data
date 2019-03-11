@@ -1,4 +1,6 @@
 from collections import deque
+from functools import lru_cache
+
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -35,6 +37,7 @@ class BitmexOrderBookEmitter(
         symbol: BitmexChannels,
         save_data: bool = True,
         reset_orderbook: bool = True,
+        depths=None,
         **kwargs
     ):
         BitmexOrderBook.__init__(self, symbol)
@@ -43,6 +46,10 @@ class BitmexOrderBookEmitter(
         Database.__init__(self, database_name='bitmex')
         SignalInterceptor.__init__(self, self.exit)
 
+        if depths is None:
+            depths = [21, ]
+
+        self.depths = depths
         self.save_data = save_data
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
@@ -141,7 +148,7 @@ class BitmexOrderBookEmitter(
         self.last_timestamp = timestamp
 
         frame = self.generate_frame()
-
+        measurements = []
         measurement = Measurement(
             measurement=self.frame_channel,
             tags={'symbol': self.symbol.value},
@@ -149,8 +156,23 @@ class BitmexOrderBookEmitter(
             fields={'data': json.dumps(frame.tolist())}
         )
 
+        measurements.append(measurement)
+
+        for depth in self.depths:
+            measurements.append(Measurement(
+                measurement=self.channel_for_depth(depth),
+                tags={'symbol': self.symbol.value},
+                timestamp=self.last_timestamp,
+                fields={'data': json.dumps(frame[:, :, :depth].tolist())}
+            ))
+
         if self.save_data:
-            self.write_points([measurement.__dict__], time_precision='ms')
+            self.write_points([m.__dict__ for m in measurements],
+                              time_precision='ms')
+
+    @lru_cache()
+    def channel_for_depth(self, depth):
+        return f'{self.frame_channel}_depth_{depth}'
 
 
 @click.command()
