@@ -1,6 +1,7 @@
 orderbook-apex-v0:
     checkpoint_at_end: True
     checkpoint_freq: 10
+    max_failures: 10000
     env: orderbook-trading-v0
     run: APEX
     config:
