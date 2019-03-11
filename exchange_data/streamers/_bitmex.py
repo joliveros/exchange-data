@@ -24,6 +24,9 @@ import traceback
 
 alog.set_level(settings.LOG_LEVEL)
 
+class OutOfFramesException(Exception):
+    pass
+
 
 class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
     def __init__(
@@ -154,7 +157,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
-            raise Exception('Out of frames.')
+            raise OutOfFramesException
 
         resized_frames = []
         for frame in frame_list:

@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil.tz import tz
 from gym.spaces import Discrete, Box
 
-from exchange_data.streamers._bitmex import BitmexStreamer
+from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
 from pytimeparse.timeparse import timeparse
 from time import sleep
@@ -80,7 +80,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.trading_fee = trading_fee
         self.max_position_pnl = 0.0
         self.max_negative_pnl_factor = -0.01
-        self.max_position_duration = timeparse('45s')
+        self.max_position_duration = 48
         self.max_pnl = 0.0
         self.position_history = []
         self.bid_diff = 0.0
@@ -131,7 +131,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         try:
             for i in range(self.max_frames):
                 self.get_observation()
-        except:
+        except (OutOfFramesException, TypeError):
             return self.reset()
 
         return self.last_observation
@@ -175,7 +175,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.step_count += 1
         try:
             observation = self.get_observation()
-        except:
+        except (OutOfFramesException, TypeError):
             observation = self.last_observation
             done = True
 
@@ -222,7 +222,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.last_best_bid = self.best_bid
             self.last_price_diff = (self.last_best_ask + self.last_best_bid)/2 - \
                 (self.best_ask + self.best_bid)/2
-            self.reward -= self.last_price_diff
+            self.reward -= abs(self.last_price_diff)
 
         time, index, orderbook = next(self)
         self.position_history.append(self.position.name[0])
@@ -383,8 +383,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         summary['position_history'] = ''.join(self.position_history[-45:])
         summary['trades'] = self.trades[-45:]
 
-        # if self.step_count % self.max_position_duration == 0:
-        #     alog.info(alog.pformat(summary))
+        if self.step_count % self.max_position_duration == 0:
+            alog.info(alog.pformat(summary))
 
         return summary
 
