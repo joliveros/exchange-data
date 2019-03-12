@@ -301,14 +301,20 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def short_pnl(self):
         if self.entry_price == 0.0 or self.best_bid == 0:
             return 0.0 - self.trading_fee
-        pnl = self.entry_price - self.best_bid - self.trading_fee
+        if self.entry_price > 0.0:
+            pnl = self.entry_price - self.best_bid - self.trading_fee
+        else:
+            pnl = 0.0
         return pnl
 
     @property
     def long_pnl(self):
         if self.entry_price == 0.0 or self.best_ask == 0.0:
             return 0.0 - self.trading_fee
-        pnl = self.best_ask - self.entry_price - self.trading_fee
+        if self.entry_price > 0.0:
+            pnl = self.best_ask - self.entry_price - self.trading_fee
+        else:
+            pnl = 0.0
         return pnl
 
     @property

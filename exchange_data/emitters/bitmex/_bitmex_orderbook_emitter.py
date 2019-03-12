@@ -38,6 +38,7 @@ class BitmexOrderBookEmitter(
         save_data: bool = True,
         reset_orderbook: bool = True,
         depths=None,
+        subscriptions_enabled: bool = True,
         **kwargs
     ):
         BitmexOrderBook.__init__(self, symbol)
@@ -46,8 +47,9 @@ class BitmexOrderBookEmitter(
         Database.__init__(self, database_name='bitmex')
         SignalInterceptor.__init__(self, self.exit)
 
+        self.subscriptions_enabled = subscriptions_enabled
         if depths is None:
-            depths = [21, ]
+            depths = [21, 0]
 
         self.depths = depths
         self.save_data = save_data
@@ -56,11 +58,13 @@ class BitmexOrderBookEmitter(
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
-        self.on(TimeChannels.Tick.value, self.save_frame)
-        self.on(self.symbol.value, self.message)
 
-        if reset_orderbook:
-            self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+        if subscriptions_enabled:
+            self.on(TimeChannels.Tick.value, self.save_frame)
+            self.on(self.symbol.value, self.message)
+
+            if reset_orderbook:
+                self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
 
     def print_stats(self):
         alog.info(self.print(depth=4))
@@ -144,34 +148,37 @@ class BitmexOrderBookEmitter(
 
         return frame
 
-    def save_frame(self, timestamp):
-        self.last_timestamp = timestamp
-
+    def measurements(self, timestamp):
         frame = self.generate_frame()
         measurements = []
-        measurement = Measurement(
-            measurement=self.frame_channel,
-            tags={'symbol': self.symbol.value},
-            timestamp=self.last_timestamp,
-            fields={'data': json.dumps(frame.tolist())}
-        )
-
-        measurements.append(measurement)
 
         for depth in self.depths:
+            if depth > 0:
+                frame_slice = frame[:, :, :depth]
+            else:
+                frame_slice = frame
+
             measurements.append(Measurement(
                 measurement=self.channel_for_depth(depth),
                 tags={'symbol': self.symbol.value},
-                timestamp=self.last_timestamp,
-                fields={'data': json.dumps(frame[:, :, :depth].tolist())}
+                timestamp=timestamp,
+                fields={'data': json.dumps(frame_slice.tolist())}
             ))
 
+        return [m.__dict__ for m in measurements]
+
+    def save_frame(self, timestamp):
+        self.last_timestamp = timestamp
+
         if self.save_data:
-            self.write_points([m.__dict__ for m in measurements],
-                              time_precision='ms')
+                self.write_points(self.measurements(timestamp),
+                                  time_precision='ms')
 
     @lru_cache()
     def channel_for_depth(self, depth):
+        if depth == 0:
+            return self.frame_channel
+
         return f'{self.frame_channel}_depth_{depth}'
 
 
