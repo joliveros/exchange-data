@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from random import random
 
@@ -73,3 +73,28 @@ class DateTimeUtils(object):
     def parse_db_timestamp(timestamp):
         return datetime.utcfromtimestamp(timestamp / 1000) \
             .replace(tzinfo=tz.tzutc())
+
+    @staticmethod
+    def split_range_into_datetimes(
+        dt: datetime,
+        dt1: datetime,
+        num_intervals: int
+    ):
+        delta: timedelta = dt1 - dt
+        interval = round(delta.total_seconds() / num_intervals)
+        interval_delta = timedelta(seconds=interval)
+        last_dt = None
+
+        results = []
+        results.append(dt)
+
+        for i in range(num_intervals):
+            if last_dt is None:
+                last_dt = dt
+            last_dt = last_dt + interval_delta
+            results.append(last_dt)
+
+        results.append(dt1)
+        # results.reverse()
+
+        return results
