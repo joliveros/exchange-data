@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from random import random
 
+from dateutil.tz import tz
 from pytimeparse import parse as dateparse
 
 import alog
@@ -57,3 +58,13 @@ class MemoryTracing(object):
                 print(stat)
 
         self.snapshot = snapshot2
+
+
+class DateTimeUtils(object):
+    @staticmethod
+    def now():
+        return datetime.utcnow().replace(tzinfo=tz.tzutc())
+
+    @staticmethod
+    def format_date_query(value):
+        return f'\'{value.astimezone(tz.tzutc()).replace(tzinfo=None)}\''

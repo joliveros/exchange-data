@@ -7,7 +7,7 @@ from dateutil import parser
 from dateutil.tz import tz
 from exchange_data import Database, settings
 from exchange_data.emitters import SignalInterceptor
-from exchange_data.utils import random_date
+from exchange_data.utils import random_date, DateTimeUtils, NoValue
 from numpy.core.multiarray import ndarray
 from pandas import to_datetime, DataFrame
 from pytimeparse.timeparse import timeparse
@@ -28,7 +28,11 @@ class OutOfFramesException(Exception):
     pass
 
 
-class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
+class BitmexOrderBookChannels(NoValue):
+    XBTUSD = 'XBTUSD_OrderBookFrame'
+
+
+class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
@@ -57,7 +61,7 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)
-        self.channel_name = 'XBTUSD_OrderBookFrame'
+        self.channel_name = BitmexOrderBookChannels.XBTUSD.value
 
         if random_start_date:
             if start_date is not None:
@@ -81,9 +85,6 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
 
         self.window_size = (self.end_date - self.start_date).total_seconds()
 
-    def now(self):
-        return datetime.utcnow().replace(tzinfo=tz.tzutc())
-
     @cached_property
     def min_date(self):
         if self._min_date:
@@ -101,9 +102,6 @@ class BitmexStreamer(Database, Generator, SignalInterceptor, ABC):
             return timestamp
 
         raise Exception('Database has no data.')
-
-    def format_date_query(self, value):
-        return f'\'{value.astimezone(tz.tzutc()).replace(tzinfo=None)}\''
 
     def orderbook_frames(self):
         return self._orderbook_frames(self.start_date, self.end_date)
