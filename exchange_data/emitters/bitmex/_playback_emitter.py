@@ -130,7 +130,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         if dt > self._next_tick:
             diff = self._next_tick - dt
 
-            if diff.seconds > 1:
+            if diff.total_seconds() > 1:
                 self._next_tick = copy(dt).replace(microsecond=0)
 
             self._next_tick = self._next_tick + timedelta(seconds=1)
