@@ -1,5 +1,6 @@
 import json
 import sys
+from copy import copy
 
 import click
 from cached_property import cached_property
@@ -17,7 +18,9 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
     def __init__(
         self,
         start_date=None,
-        max_cache_len: int = 60 * 60,
+        end_date=None,
+        max_cache_len: int = 60 * 45,
+        query_interval: int = 60 * 24,
         **kwargs
     ):
         super().__init__(
@@ -25,21 +28,32 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
             subscriptions_enabled=False,
             **kwargs
         )
+        self.query_interval = timedelta(minutes=query_interval)
         self.max_cache_len = max_cache_len
         self._measurements = []
         self.measurement = 'data'
-        self.start_date = start_date
-        self.end_date = self.now()
+
+        if start_date is None:
+            self.start_date = self.min_date
+        else:
+            self.start_date = start_date
+
+        self.start_date = self.start_date.replace(microsecond=0)
+        self._next_tick = self.start_date
+
+        if end_date:
+            self.end_date = end_date
+        else:
+            self.end_date = self.now()
 
     @cached_property
     def min_date(self):
         start_date = datetime.fromtimestamp(0, tz=tz.tzutc())
 
-        result = self.oldest_frame_query(start_date, self.end_date)
+        result = self.oldest_frame_query(start_date, self.now())
 
         for item in result.get_points(self.measurement):
-            timestamp = datetime.utcfromtimestamp(item['time'] / 1000) \
-                .replace(tzinfo=tz.tzutc())
+            timestamp = self.parse_db_timestamp(item['time'])
             return timestamp
 
         raise Exception('Database has no data.')
@@ -55,9 +69,6 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         return self.query(query)
 
     def interval_query(self, start_date=None, end_date=None):
-        start_date = start_date if start_date else self.start_date
-        end_date = end_date if end_date else self.end_date
-
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
@@ -67,38 +78,64 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         return self.query(query)
 
     def run(self):
-        self.start_date = self.min_date
-        self.start_date.replace(microsecond=0)
-        self.end_date = self.start_date + timedelta(seconds=1)
+        start_date = self.start_date
 
-        while self.end_date <= self.now():
-            for message in self.messages():
+        end_date = start_date + self.query_interval
+
+        while end_date <= self.now() - self.query_interval:
+            for message in self.messages(start_date, end_date):
+                self.tick(message['time'])
+
                 data = json.loads(message['data'])
+
                 if data['table'] in ['orderBookL2', 'trade']:
                     self.message(data)
 
-            self.save_frame(self.end_date.timestamp())
+            start_date += self.query_interval
+            end_date += self.query_interval
 
-            self.start_date = self.start_date + timedelta(seconds=1)
-            self.end_date = self.end_date + timedelta(seconds=1)
-
-    def messages(self):
-        return self.interval_query(self.start_date, self.end_date).get_points(
+    def messages(self, start, end):
+        return self.interval_query(start, end).get_points(
             self.measurement)
 
-    def save_frame(self, timestamp):
+    def save_frame(self, timestamp=None, dt=None, save_now=False):
         self.last_timestamp = timestamp
-        self._measurements += self.measurements(timestamp)
 
-        if len(self._measurements) % self.max_cache_len == 0:
-            meas = self._measurements.copy()
-            self._measurements = []
-            self.write_points(meas,
-                              time_precision='ms')
-            alog.info(f'## meas saved for {self.end_date}##')
+        if dt:
+            date_time = dt
+        else:
+            date_time = self.parse_db_timestamp(self.last_timestamp)
+
+        self._measurements += self.measurements(self.last_timestamp)
+
+        if save_now:
+            self.save_points(date_time)
+        elif len(self._measurements) % self.max_cache_len == 0:
+            self.save_points(date_time)
+
+    def save_points(self, dt):
+        meas = self._measurements.copy()
+        self._measurements = []
+        alog.info('\n' + str(self.frame_slice[:, :, :1]))
+        self.write_points(meas,
+                          time_precision='ms')
+        alog.info(f'## meas saved for {dt}##')
 
     def exit(self, *args):
+        self.save_frame(save_now=True)
         sys.exit(0)
+
+    def tick(self, timestamp):
+        dt = self.parse_db_timestamp(timestamp)
+        if dt > self._next_tick:
+            diff = self._next_tick - dt
+
+            if diff.seconds > 1:
+                self._next_tick = copy(dt).replace(microsecond=0)
+
+            self._next_tick = self._next_tick + timedelta(seconds=1)
+            self.save_frame(timestamp, dt)
+
 
 @click.command()
 def main(**kwargs):
