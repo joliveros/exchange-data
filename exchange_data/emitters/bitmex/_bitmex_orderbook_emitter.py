@@ -53,6 +53,7 @@ class BitmexOrderBookEmitter(
 
         self.depths = depths
         self.save_data = save_data
+        self.frame_slice = None
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
@@ -154,15 +155,15 @@ class BitmexOrderBookEmitter(
 
         for depth in self.depths:
             if depth > 0:
-                frame_slice = frame[:, :, :depth]
+                self.frame_slice = frame[:, :, :depth]
             else:
-                frame_slice = frame
+                self.frame_slice = frame
 
             measurements.append(Measurement(
                 measurement=self.channel_for_depth(depth),
                 tags={'symbol': self.symbol.value},
                 timestamp=timestamp,
-                fields={'data': json.dumps(frame_slice.tolist())}
+                fields={'data': json.dumps(self.frame_slice.tolist())}
             ))
 
         return [m.__dict__ for m in measurements]

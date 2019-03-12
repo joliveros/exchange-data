@@ -68,3 +68,8 @@ class DateTimeUtils(object):
     @staticmethod
     def format_date_query(value):
         return f'\'{value.astimezone(tz.tzutc()).replace(tzinfo=None)}\''
+
+    @staticmethod
+    def parse_db_timestamp(timestamp):
+        return datetime.utcfromtimestamp(timestamp / 1000) \
+            .replace(tzinfo=tz.tzutc())
