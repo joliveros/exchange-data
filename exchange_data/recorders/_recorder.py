@@ -1,3 +1,5 @@
+from dateutil.tz import tz
+
 from exchange_data import Database
 from exchange_data import settings
 from datetime import datetime
@@ -6,16 +8,18 @@ import alog
 import json
 
 from exchange_data.emitters import TimeEmitter
+from exchange_data.utils import DateTimeUtils
 
 alog.set_level(settings.LOG_LEVEL)
 
 
-class Recorder(Database):
+class Recorder(Database, DateTimeUtils):
     measurements = []
     channels = []
     symbols = []
 
     def __init__(self, symbols, database_name, batch_size: int = 100, **kwargs):
+        DateTimeUtils.__init__(self)
         Database.__init__(self, database_name=database_name, **kwargs)
 
         self.batch_size = batch_size
@@ -38,16 +42,32 @@ class Recorder(Database):
         if isinstance(table, str):
             table = json.loads(table)
 
+        time = table.get('timestamp', None)
+
+        if time is None:
+            time = table.get('time', self.now())
+
+        if isinstance(time, str):
+            time = self.parse_timestamp(time)
+
+        if 'time' in table:
+            del table['time']
+
+        if 'timestamp' in table:
+            del table['timestamp']
+
         measurement = {
             'measurement': name,
             'tags': {
                 'symbol': symbol
             },
-            'timestamp': self.get_timestamp(table),
+            'time': time,
             'fields': {
                 'data': json.dumps(table)
             }
         }
+
+        # alog.info(alog.pformat(measurement))
 
         self.measurements.append(measurement)
 

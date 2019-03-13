@@ -119,4 +119,3 @@ class TestBitmexOrderBook(object):
     def test_buy_trade(self, buy_trade):
         orderbook = OrderBook(symbol=BitmexChannels.XBTUSD)
         orderbook.message(buy_trade)
-

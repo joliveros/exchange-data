@@ -1,3 +1,7 @@
+from datetime import datetime
+
+import alog
+
 from exchange_data.emitters.bitmex._bxbt_index_emitter import BXBTIndexEmitter
 
 import dateutil
@@ -24,6 +28,6 @@ class TestBXBTIndexEmitter(object):
     def test_fetch_price(self, messenger_mock, publish_mock, setup_signals_mock,
                          write_points_mock, on_mock):
         emitter = BXBTIndexEmitter(interval='1m', influxdb='http://jose:jade121415@0.0.0.0:28953/')
-        start_time = dateutil.parser.parse('2019-02-22 21:35:42.784633')
+        start_time = dateutil.parser.parse('2019-03-13 00:19:30.089369')
         emitter.fetch_price('', start_time)
 

@@ -15,8 +15,8 @@ import alog
 
 class BitmexOrderBook(OrderBook, EventEmitter):
 
-    def __init__(self, symbol: BitmexChannels):
-        OrderBook.__init__(self)
+    def __init__(self, symbol: BitmexChannels, **kwargs):
+        OrderBook.__init__(self, **kwargs)
         EventEmitter.__init__(self)
 
         instrument_info = InstrumentInfo.get_instrument(symbol.value)
@@ -29,11 +29,6 @@ class BitmexOrderBook(OrderBook, EventEmitter):
     def message(self, raw_message) -> Optional[BitmexMessage]:
         if not isinstance(raw_message, dict):
             raise Exception()
-
-        expected_keys = ['action', 'data', 'table', 'symbol']
-
-        # for key in raw_message.keys():
-        #     assert key in expected_keys
 
         message = None
 
@@ -55,7 +50,10 @@ class BitmexOrderBook(OrderBook, EventEmitter):
             )
             self.last_timestamp = message.timestamp
 
-            self.order_book_l2(message)
+            try:
+                self.order_book_l2(message)
+            except PriceDoesNotExistException:
+                pass
         else:
             raise Exception(table)
 

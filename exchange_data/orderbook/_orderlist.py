@@ -28,7 +28,10 @@ class OrderList(object):
         self.last = None
 
     def __len__(self):
-        return self.length
+        if self.length > 0:
+            return self.length
+        else:
+            return 0
 
     def __iter__(self):
         self.last = self.head_order
@@ -72,7 +75,7 @@ class OrderList(object):
         self.length -= 1
 
         # if there are no more Orders, stop/return
-        if len(self) == 0:
+        if self.length == 0:
             return
 
         # Remove an Order from the OrderList. First grab next / prev order
