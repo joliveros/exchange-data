@@ -1,3 +1,5 @@
+import logging
+
 from dateutil.tz import tz
 
 from exchange_data import Database
@@ -67,7 +69,8 @@ class Recorder(Database, DateTimeUtils):
             }
         }
 
-        # alog.info(alog.pformat(measurement))
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.info(alog.pformat(measurement))
 
         self.measurements.append(measurement)
 

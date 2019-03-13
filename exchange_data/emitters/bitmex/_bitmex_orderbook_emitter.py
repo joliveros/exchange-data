@@ -159,6 +159,8 @@ class BitmexOrderBookEmitter(
 
         if isinstance(timestamp, str):
             timestamp = self.parse_timestamp(timestamp)
+        elif isinstance(timestamp, float):
+            timestamp = self.parse_timestamp(timestamp)
 
         for depth in self.depths:
             if depth > 0:
