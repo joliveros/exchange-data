@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import alog
 
 
@@ -7,10 +9,11 @@ class Measurement(object):
         fields: dict = None,
         measurement: str = None,
         tags: dict = None,
-        timestamp: float = None
+        time: datetime = None
     ):
         self.fields = fields
-        self.timestamp = timestamp
+        assert isinstance(time, datetime)
+        self.time = time
         self.tags = tags
         self.measurement = measurement
 

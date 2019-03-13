@@ -1,6 +1,8 @@
 from collections import deque
 from functools import lru_cache
 
+from dateutil.tz import tz
+
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -9,7 +11,7 @@ from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
     OrderBookL2Emitter
 from exchange_data.orderbook._ordertree import OrderTree
-from exchange_data.utils import NoValue
+from exchange_data.utils import NoValue, DateTimeUtils
 from numpy.core.multiarray import ndarray
 
 import alog
@@ -30,7 +32,8 @@ class BitmexOrderBookEmitter(
     Messenger,
     BitmexOrderBook,
     Database,
-    SignalInterceptor
+    SignalInterceptor,
+    DateTimeUtils
 ):
     def __init__(
         self,
@@ -41,6 +44,7 @@ class BitmexOrderBookEmitter(
         subscriptions_enabled: bool = True,
         **kwargs
     ):
+        DateTimeUtils.__init__(self)
         BitmexOrderBook.__init__(self, symbol)
         Messenger.__init__(self)
         BitmexEmitterBase.__init__(self, symbol)
@@ -153,6 +157,9 @@ class BitmexOrderBookEmitter(
         frame = self.generate_frame()
         measurements = []
 
+        if isinstance(timestamp, str):
+            timestamp = self.parse_timestamp(timestamp)
+
         for depth in self.depths:
             if depth > 0:
                 self.frame_slice = frame[:, :, :depth]
@@ -162,7 +169,7 @@ class BitmexOrderBookEmitter(
             measurements.append(Measurement(
                 measurement=self.channel_for_depth(depth),
                 tags={'symbol': self.symbol.value},
-                timestamp=timestamp,
+                time=timestamp,
                 fields={'data': json.dumps(self.frame_slice.tolist())}
             ))
 

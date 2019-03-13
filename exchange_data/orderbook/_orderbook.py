@@ -1,3 +1,5 @@
+import alog
+
 from ._ordertree import OrderTree
 from collections import deque  # a faster insert/pop queue
 from exchange_data import Buffer
@@ -147,7 +149,6 @@ class OrderBook(object):
         return TradeSummary(quantity, trades)
 
     def _trades(self, order: Order, order_list: Callable, quantity: int):
-
         while order_list() and quantity > 0:
             _order_list = order_list()
             head_order = _order_list.get_head_order()
@@ -156,11 +157,10 @@ class OrderBook(object):
             new_book_quantity = None
             side = order.side
 
-            try:
-                head_price = _order_list.head_order.price
-                assert head_price == order.price
-            except AssertionError:
-                order.price = head_price
+            head_price = _order_list.head_order.price
+
+            if head_price != order.price:
+                raise PriceDoesNotExistException()
 
             if quantity < head_order.quantity:
                 traded_quantity = quantity
@@ -224,6 +224,7 @@ class OrderBook(object):
                                           side, trades)
 
     def _ask_market_order(self, order, quantity_to_trade, side, trades):
+        trade_summary = None
         while quantity_to_trade > 0 and self.bids:
             trade_summary = \
                 self._process_order_list(

@@ -1,3 +1,4 @@
+import alog
 from bitmex import bitmex
 from datetime import datetime, timedelta
 from exchange_data import Database
@@ -10,12 +11,15 @@ from typing import List, Tuple
 import click
 import json
 
+from exchange_data.utils import DateTimeUtils
+
 
 class BXBTIndexEmitter(
     BitmexEmitterBase,
     Messenger,
     Database,
-    SignalInterceptor
+    SignalInterceptor,
+    DateTimeUtils
 ):
 
     def __init__(self, interval: str = '1m', **kwargs):
@@ -72,7 +76,7 @@ class BXBTIndexEmitter(
         points = [
             Measurement(
                 measurement=self.channel,
-                timestamp=index['logged'],
+                time=self.parse_timestamp(index['logged']),
                 tags={
                     'symbol': self.symbol.value,
                     'reference': index['reference']

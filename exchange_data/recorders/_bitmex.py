@@ -11,10 +11,12 @@ import json
 import signal
 import sys
 
+from exchange_data.utils import DateTimeUtils
+
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexRecorder(Recorder, Messenger):
+class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
     measurements = []
     channels = [
         InstrumentChannels.quote,
@@ -31,7 +33,7 @@ class BitmexRecorder(Recorder, Messenger):
     ):
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
-
+        DateTimeUtils.__init__(self)
         Messenger.__init__(self)
         Recorder.__init__(self, symbol, database_name, **kwargs)
 
@@ -57,7 +59,11 @@ class BitmexRecorder(Recorder, Messenger):
             }
 
         data['symbol'] = self.symbol.value
-        data['timestamp'] = TimeEmitter.timestamp()
+
+        if 'timestamp' in data:
+            data['time'] = self.parse_timestamp(data['timestamp'])
+        else:
+            data['time'] = self.now()
 
         for row in data['data']:
             row.pop('symbol', None)

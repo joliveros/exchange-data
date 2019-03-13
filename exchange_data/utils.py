@@ -70,6 +70,11 @@ class DateTimeUtils(object):
         return f'\'{value.astimezone(tz.tzutc()).replace(tzinfo=None)}\''
 
     @staticmethod
+    def parse_timestamp(timestamp, _tz=tz.tzlocal()):
+        return datetime.utcfromtimestamp(timestamp)\
+            .replace(tzinfo=_tz)
+
+    @staticmethod
     def parse_db_timestamp(timestamp):
         return datetime.utcfromtimestamp(timestamp / 1000) \
             .replace(tzinfo=tz.tzutc())

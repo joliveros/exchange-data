@@ -1,3 +1,5 @@
+import traceback
+
 import alog
 from bintrees import RBTree
 
@@ -47,9 +49,9 @@ class OrderTree(object):
 
     def remove_price(self, price):
         try:
-            self.depth -= 1  # Remove a price depth level
             self.price_tree.remove(price)
             del self.price_map[price]
+            self.depth -= 1  # Remove a price depth level
         except KeyError as e:
             raise PriceDoesNotExistException()
 

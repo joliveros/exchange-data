@@ -1,13 +1,18 @@
 import json
 import sys
 from copy import copy
+from multiprocessing import Process, Pool
+from time import sleep
 
 import click
 from cached_property import cached_property
 from datetime import datetime, timedelta
 from dateutil.tz import tz
+from pytimeparse.timeparse import timeparse
+
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
+from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from exchange_data.streamers._bitmex import BitmexOrderBookChannels
 from exchange_data.utils import DateTimeUtils
 
@@ -21,6 +26,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         end_date=None,
         max_cache_len: int = 60 * 45,
         query_interval: int = 60 * 24,
+        save_delay='15m',
         **kwargs
     ):
         super().__init__(
@@ -28,6 +34,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
             subscriptions_enabled=False,
             **kwargs
         )
+        self.save_delay = timeparse(save_delay)
         self.query_interval = timedelta(minutes=query_interval)
         self.max_cache_len = max_cache_len
         self._measurements = []
@@ -39,6 +46,9 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
             self.start_date = start_date
 
         self.start_date = self.start_date.replace(microsecond=0)
+        self.start_save = copy(self.start_date)
+        self.start_date = self.start_date - \
+                          timedelta(seconds=self.save_delay)
         self._next_tick = self.start_date
 
         if end_date:
@@ -74,73 +84,138 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
         query = f'SELECT * FROM {self.measurement} ' \
             f'WHERE time > {start_date} AND time <= {end_date} tz(\'UTC\');'
-
         return self.query(query)
 
     def run(self):
         start_date = self.start_date
-
         end_date = start_date + self.query_interval
 
-        while end_date <= self.now() - self.query_interval:
+        while end_date <= (self.end_date + self.query_interval):
             for message in self.messages(start_date, end_date):
-                self.tick(message['time'])
-
                 data = json.loads(message['data'])
 
                 if data['table'] in ['orderBookL2', 'trade']:
-                    self.message(data)
+                    try:
+                        self.message(data)
+                    except PriceDoesNotExistException:
+                        pass
+
+                self.tick(message['time'])
 
             start_date += self.query_interval
             end_date += self.query_interval
+
+        self.save_points(None)
 
     def messages(self, start, end):
         return self.interval_query(start, end).get_points(
             self.measurement)
 
-    def save_frame(self, timestamp=None, dt=None, save_now=False):
+    def save_frame(self, timestamp, dt=None, save_now=False):
         self.last_timestamp = timestamp
 
         if dt:
             date_time = dt
         else:
-            date_time = self.parse_db_timestamp(self.last_timestamp)
+            date_time = self.parse_timestamp(self.last_timestamp)
 
-        self._measurements += self.measurements(self.last_timestamp)
+        if date_time >= self.start_save:
+            self._measurements += \
+                self.measurements(date_time)
 
         if save_now:
             self.save_points(date_time)
-        elif len(self._measurements) % self.max_cache_len == 0:
+        elif len(self._measurements) >= self.max_cache_len:
             self.save_points(date_time)
 
     def save_points(self, dt):
-        meas = self._measurements.copy()
+        if self.frame_slice is not None:
+            alog.info('\n' + str(self.frame_slice[:, :, :1]))
+
+        self.write_points(self._measurements)
+
         self._measurements = []
-        alog.info('\n' + str(self.frame_slice[:, :, :1]))
-        self.write_points(meas,
-                          time_precision='ms')
-        alog.info(f'## meas saved for {dt}##')
+
+        alog.info(f'## meas saved for {dt} ##')
 
     def exit(self, *args):
-        self.save_frame(save_now=True)
         sys.exit(0)
 
     def tick(self, timestamp):
         dt = self.parse_db_timestamp(timestamp)
+
         if dt > self._next_tick:
             diff = self._next_tick - dt
 
-            if diff.total_seconds() > 1:
+            if abs(diff.total_seconds()) > 1:
                 self._next_tick = copy(dt).replace(microsecond=0)
 
             self._next_tick = self._next_tick + timedelta(seconds=1)
             self.save_frame(timestamp, dt)
 
+    def get_empty_ranges(self, min_count, interval):
+        range_lists = [self._get_empty_ranges(depth, min_count, interval) for depth in self.depths]
+        return [range for range_list in range_lists for range in range_list]
+
+    def _get_empty_ranges(self, depth, min_count=None, interval=None):
+        start_date = self.format_date_query(self.min_date)
+        end_date = self.format_date_query(self.now())
+
+        if interval is None:
+            interval = '10d'
+
+        if min_count is None:
+            min_count = timeparse('10d')
+
+        meas_name = self.channel_for_depth(depth)
+        query = f'SELECT COUNT(*) FROM {meas_name} ' \
+            f'WHERE time > {start_date} AND time <= {end_date} ' \
+            f'GROUP BY time({interval}) tz(\'UTC\');'
+
+        incomplete_ranges = [(depth, item)
+                             for item in self.query(query).get_points(meas_name)
+                             if item['count_data'] < min_count]
+
+        dts = [(range[0], self.parse_db_timestamp(range[1]['time']))
+               for range in incomplete_ranges]
+
+        dt_ranges = [(dt[0], dt[1], dt[1] + timedelta(seconds=min_count - 1))
+                     for dt in dts]
+        return dt_ranges
+
 
 @click.command()
-def main(**kwargs):
-    orderbook = OrderBookPlayBack(depths=[21], **kwargs)
-    orderbook.run()
+@click.option('--max-workers', '-w', type=int, default=12)
+def main(max_workers, **kwargs):
+    ranges = OrderBookPlayBack(depths=[21], **kwargs)\
+        .get_empty_ranges(60000000, '30d')
+
+    ranges.reverse()
+
+    def replay(depth, start_date, end_date):
+        orderbook = OrderBookPlayBack(
+            depths=[depth],
+            start_date=start_date,
+            end_date=end_date
+        )
+        return orderbook.run()
+
+    workers = []
+
+    while True:
+        if len(workers) < max_workers and len(ranges) > 0:
+            args = ranges.pop()
+            worker = Process(target=replay, args=args)
+            worker.start()
+            alog.info(worker)
+            workers.append(worker)
+
+        if len(ranges) == 0 and len(workers) == 0:
+            sys.exit(0)
+
+        workers = [w for w in workers if w.is_alive()]
+
+        sleep(1)
 
 
 if __name__ == '__main__':
