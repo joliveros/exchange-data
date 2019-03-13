@@ -42,6 +42,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         start_date: datetime = None,
         window_size: str = '15s',
         sample_interval: str = '1s',
+        channel_name: str = None,
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
@@ -61,7 +62,10 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
 
         self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)
-        self.channel_name = BitmexOrderBookChannels.XBTUSD.value
+        if channel_name:
+            self.channel_name = channel_name
+        else:
+            self.channel_name = BitmexOrderBookChannels.XBTUSD.value
 
         if random_start_date:
             if start_date is not None:

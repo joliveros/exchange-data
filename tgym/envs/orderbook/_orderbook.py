@@ -55,6 +55,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self._args = locals()
         del self._args['self']
 
+        kwargs['channel_name'] = \
+            f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
+
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
