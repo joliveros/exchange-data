@@ -31,6 +31,9 @@ class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
         no_save: bool = False,
         **kwargs,
     ):
+        if isinstance(symbol, str):
+            symbol = BitmexChannels[symbol]
+
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
         DateTimeUtils.__init__(self)

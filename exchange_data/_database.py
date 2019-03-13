@@ -20,7 +20,6 @@ class Database(InfluxDBClient):
 
         conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
 
-        alog.debug(conn_params)
         database = conn_params.path[1:]
         netlocs = conn_params.netloc.split(',')
         netloc = netlocs[0]

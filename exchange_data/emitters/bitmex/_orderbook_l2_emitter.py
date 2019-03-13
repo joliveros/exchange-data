@@ -1,3 +1,5 @@
+from enum import Enum
+
 from bitmex import bitmex
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels

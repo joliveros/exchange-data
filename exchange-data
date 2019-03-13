@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import alog
 from stringcase import pascalcase
 
 import click
@@ -16,6 +17,7 @@ signal.signal(signal.SIGTERM, lambda: exit(0))
 def main(symbol: str, exchange: str):
     recorder_class = getattr(exchange_data.recorders, pascalcase(exchange) +
                              'Recorder')
+
     recorder = recorder_class(symbol)
     recorder.start()
 
