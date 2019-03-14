@@ -59,6 +59,18 @@ services:
       - emit_time
 #      - proxy
 
+  emit_bitmex_account:
+    deploy:
+      replicas: 1
+    network_mode: bridge
+    extra_hosts:
+      - "redis:172.18.0.1"
+      - "influxdb:172.18.0.1"
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
+    env_file:
+      - ./.env.prod
+
   socketio:
     image: codequants.com:5000/ws-server
     ports:
