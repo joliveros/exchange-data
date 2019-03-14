@@ -24,6 +24,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         self,
         start_date=None,
         end_date=None,
+        min_date=None,
         max_cache_len: int = 60 * 45,
         query_interval: int = 60 * 24,
         save_delay='15m',
@@ -34,8 +35,12 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
             subscriptions_enabled=False,
             **kwargs
         )
+
+        self._min_date = min_date
+
         self.save_delay = timeparse(save_delay)
         self.query_interval = timedelta(minutes=query_interval)
+        self.query_interval_s = self.query_interval.total_seconds()
         self.max_cache_len = max_cache_len
         self._measurements = []
         self.measurement = 'data'
@@ -58,6 +63,9 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
     @cached_property
     def min_date(self):
+        if self._min_date:
+            return self._min_date
+
         start_date = datetime.fromtimestamp(0, tz=tz.tzutc())
 
         result = self.oldest_frame_query(start_date, self.now())
@@ -89,8 +97,9 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
     def run(self):
         start_date = self.start_date
         end_date = start_date + self.query_interval
+        end_date_max = self.end_date + timedelta(seconds=15)
 
-        while end_date <= (self.end_date + self.query_interval):
+        while True:
             for message in self.messages(start_date, end_date):
                 data = json.loads(message['data'])
 
@@ -102,10 +111,20 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
                 self.tick(message['time'])
 
+                # sleep(0.33)
+                # alog.info(self)
             start_date += self.query_interval
-            end_date += self.query_interval
+            end_delta = self.end_date - end_date
+            diff = end_delta.total_seconds()
 
-        self.save_points(None)
+            if self.query_interval_s > diff:
+                end_date += timedelta(seconds=diff + 15)
+            else:
+                end_date += self.query_interval
+
+            if end_date > end_date_max or start_date > end_date_max:
+                self.save_points(None)
+                return
 
     def messages(self, start, end):
         return self.interval_query(start, end).get_points(
@@ -153,13 +172,32 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
             self._next_tick = self._next_tick + timedelta(seconds=1)
             self.save_frame(timestamp, dt)
 
-    def get_empty_ranges(self, min_count, interval):
-        range_lists = [self._get_empty_ranges(depth, min_count, interval) for depth in self.depths]
+    def get_empty_ranges(
+        self,
+        min_count,
+        interval,
+        **kwargs
+    ):
+        range_lists = [self._get_empty_ranges(depth, min_count, interval, **kwargs) for depth in self.depths]
         return [range for range_list in range_lists for range in range_list]
 
-    def _get_empty_ranges(self, depth, min_count=None, interval=None):
-        start_date = self.format_date_query(self.min_date)
-        end_date = self.format_date_query(self.now())
+    def _get_empty_ranges(
+        self,
+        depth,
+        min_count=None,
+        interval=None,
+        start_date=None,
+        end_date=None
+    ):
+        if start_date is None:
+            start_date = self.format_date_query(self.min_date)
+        else:
+            start_date = self.format_date_query(start_date)
+
+        if end_date is None:
+            end_date = self.format_date_query(self.now())
+        else:
+            end_date = self.format_date_query(end_date)
 
         if interval is None:
             interval = '10d'
@@ -179,8 +217,10 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         dts = [(range[0], self.parse_db_timestamp(range[1]['time']))
                for range in incomplete_ranges]
 
-        dt_ranges = [(dt[0], dt[1], dt[1] + timedelta(seconds=min_count - 1))
-                     for dt in dts]
+        dt_ranges = [
+            (dt[0], dt[1], dt[1] + timedelta(seconds=timeparse(interval) - 1))
+            for dt in dts
+        ]
         return dt_ranges
 
 
@@ -188,7 +228,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 @click.option('--max-workers', '-w', type=int, default=12)
 def main(max_workers, **kwargs):
     ranges = OrderBookPlayBack(depths=[21], **kwargs)\
-        .get_empty_ranges(60000000, '30d')
+        .get_empty_ranges(60000000, '5d')
 
     ranges.reverse()
 
@@ -205,6 +245,7 @@ def main(max_workers, **kwargs):
     while True:
         if len(workers) < max_workers and len(ranges) > 0:
             args = ranges.pop()
+            alog.info(f'#### ranges left {len(ranges)} ####')
             worker = Process(target=replay, args=args)
             worker.start()
             alog.info(worker)
