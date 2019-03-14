@@ -20,7 +20,7 @@ class MessageType(NoValue):
 
 class Messenger(Redis, EventEmitter):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.host: str = settings.REDIS_HOST
 
         Redis.__init__(self, self.host)
