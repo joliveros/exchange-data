@@ -58,7 +58,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         self.max_spread = max_spread
         self.start_date = None
         self.realtime = False
-        self._min_date = parser.parse('2019-03-07 01:29:32.414000+00:00')
+        self._min_date = parser.parse('2018-06-02 22:49:31.148000+00:00')
 
         self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)

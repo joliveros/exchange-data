@@ -120,10 +120,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return self._position_pnl
 
     def reset(self):
-        if self.step_count > 0:
-            alog.info(alog.pformat(self.summary()))
+        # if self.step_count > 0:
+        #     alog.info(alog.pformat(self.summary()))
 
-        alog.info('### env reset ###')
+        # alog.info('### env reset ###')
 
         kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -150,8 +150,12 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.should_change_position(action):
             self.change_position(action)
         else:
+            step_count = self.step_count if self.step_count > 0 else 1
+
             if self.position_pnl > 0:
-                self.reward += self.position_pnl / self.step_count
+                self.reward += self.time_fee
+            else:
+                self.reward -= self.time_fee
 
         position_pnl = self.position_pnl
 
@@ -168,6 +172,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             and self.total_pnl < self.step_count / 2:
             if self.position == Positions.Flat:
                 done = True
+
+        if self.step_count == self.max_position_duration * 2:
+            done = True
 
         if self.step_count >= self.episode_length:
             done = True
@@ -394,7 +401,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         summary['trades'] = self.trades[-45:]
 
         if self.step_count % self.max_position_duration == 0:
-            alog.info(alog.pformat(summary))
+            if self.total_pnl > 10.0:
+                alog.info(alog.pformat(summary))
 
         return summary
 
