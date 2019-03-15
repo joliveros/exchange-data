@@ -15,7 +15,7 @@ dependencies:
   - xarray
   - pip:
     - pytest-mypy
-    - ray[rllib,debug,dashboard]
+    - ray[rllib,debug]
     - alog
     - bitmex
     - bitmex-websocket
