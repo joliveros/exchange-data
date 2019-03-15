@@ -14,11 +14,10 @@ dependencies:
   - toolz
   - xarray
   - pip:
-    - pytest-mypy
-    - ray[rllib,debug]
     - alog
     - bitmex
     - bitmex-websocket
+    - bson
     - cached-property
     - click
     - coveralls
@@ -32,13 +31,15 @@ dependencies:
     - pytest
     - pytest-cov
     - pytest-mock
+    - pytest-mypy
     - pytest-vcr
     - python-socketio[client]
     - pytimeparse
+    - ray[rllib,debug]
     - redis
     - rollbar>=0.13.12
     - sortedcontainers
     - statsd
     - stringcase
-    - timestamp
     - tensorflow-gpu
+    - timestamp

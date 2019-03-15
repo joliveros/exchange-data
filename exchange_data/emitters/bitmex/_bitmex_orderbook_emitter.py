@@ -1,3 +1,6 @@
+import json
+
+import bson
 from collections import deque
 from functools import lru_cache
 
@@ -17,7 +20,6 @@ from numpy.core.multiarray import ndarray
 import alog
 import click
 import gc
-import json
 import numpy as np
 import sys
 import traceback
@@ -38,9 +40,11 @@ class BitmexOrderBookEmitter(
     def __init__(
         self,
         symbol: BitmexChannels,
-        save_data: bool = True,
-        reset_orderbook: bool = True,
         depths=None,
+        emit_depths=None,
+        emit_interval=None,
+        reset_orderbook: bool = True,
+        save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
     ):
@@ -50,6 +54,16 @@ class BitmexOrderBookEmitter(
         BitmexEmitterBase.__init__(self, symbol)
         Database.__init__(self, database_name='bitmex')
         SignalInterceptor.__init__(self, self.exit)
+
+        if emit_interval is None:
+            self.emit_interval = '5s'
+        else:
+            self.emit_interval = emit_interval
+
+        if emit_depths is None:
+            self.emit_depths = [21]
+        else:
+            self.emit_depths = emit_depths
 
         self.subscriptions_enabled = subscriptions_enabled
         if depths is None:
@@ -66,6 +80,7 @@ class BitmexOrderBookEmitter(
 
         if subscriptions_enabled:
             self.on(TimeChannels.Tick.value, self.save_frame)
+            self.on(TimeChannels.Tick.value, self.emit_frames)
             self.on(self.symbol.value, self.message)
 
             if reset_orderbook:
@@ -100,9 +115,10 @@ class BitmexOrderBookEmitter(
 
     def start(self):
         self.sub([
+            '5s',
+            self.orderbook_l2_channel,
             self.symbol,
             TimeChannels.Tick,
-            self.orderbook_l2_channel
         ])
 
     def exit(self, *args):
@@ -153,7 +169,7 @@ class BitmexOrderBookEmitter(
 
         return frame
 
-    def measurements(self, timestamp):
+    def measurements(self, timestamp, depths=None):
         frame = self.generate_frame()
         measurements = []
 
@@ -162,7 +178,10 @@ class BitmexOrderBookEmitter(
         elif isinstance(timestamp, float):
             timestamp = self.parse_timestamp(timestamp)
 
-        for depth in self.depths:
+        if depths is None:
+            depths = self.depths
+
+        for depth in depths:
             if depth > 0:
                 self.frame_slice = frame[:, :, :depth]
             else:
@@ -177,12 +196,23 @@ class BitmexOrderBookEmitter(
 
         return [m.__dict__ for m in measurements]
 
+    def emit_frames(self, timestamp):
+        frame = self.generate_frame()
+
+        for depth in self.emit_depths:
+            if depth > 0:
+                frame_slice = frame[:, :, :depth]
+            else:
+                frame_slice = frame
+
+            slice_str = json.dumps(frame_slice.tolist())
+            self.publish(self.channel_for_depth(depth), slice_str)
+
     def save_frame(self, timestamp):
         self.last_timestamp = timestamp
 
         if self.save_data:
-                self.write_points(self.measurements(timestamp),
-                                  time_precision='ms')
+            self.write_points(self.measurements(timestamp), time_precision='ms')
 
     @lru_cache()
     def channel_for_depth(self, depth):
