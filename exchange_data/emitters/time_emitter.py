@@ -1,4 +1,7 @@
 from datetime import datetime
+
+import alog
+
 from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.utils import NoValue
@@ -10,11 +13,10 @@ import click
 
 class TimeEmitter(Messenger):
 
-    def __init__(self, tick_interval: str = settings.TICK_INTERVAL):
-        super().__init__()
-        self.tick_interval = timeparse(tick_interval)
-        self.padding = 1100
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.minute_counter = 0
+        self.five_second_counter = 0
 
     @staticmethod
     def timestamp():
@@ -24,14 +26,23 @@ class TimeEmitter(Messenger):
         while True:
             sleep(1)
             now = self.timestamp()
+            self.publish(TimeChannels.Tick.value, now)
 
             self.minute_counter += 1
+            self.five_second_counter += 1
+
             if self.minute_counter % 60 == 0:
                 self.publish('1m', str(now))
                 self.minute_counter = 0
-            timestamp = self.timestamp()
 
-            self.publish(TimeChannels.Tick.value, timestamp)
+            if self.five_second_counter % 5 == 0:
+                self.five_second_counter = 0
+                self.publish('5s', str(now))
+
+
+    def publish(self, *args):
+        alog.info(args)
+        super().publish(*args)
 
 
 class TimeChannels(NoValue):
@@ -40,8 +51,8 @@ class TimeChannels(NoValue):
 
 @click.command()
 @click.argument('interval', nargs=1, required=False, default='1s')
-def main(interval: str):
-    time_emitter = TimeEmitter(interval)
+def main(**kwargs):
+    time_emitter = TimeEmitter(**kwargs)
     time_emitter.start()
 
 
