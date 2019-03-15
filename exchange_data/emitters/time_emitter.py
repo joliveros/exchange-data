@@ -1,10 +1,14 @@
 from datetime import datetime
+
+from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.utils import NoValue
 from time import sleep
 
 import alog
 import click
+
+alog.set_level(settings.LOG_LEVEL)
 
 
 class TimeEmitter(Messenger):
@@ -36,7 +40,7 @@ class TimeEmitter(Messenger):
                 self.publish('5s', str(now))
 
     def publish(self, *args):
-        alog.info(args)
+        alog.debug(args)
         super().publish(*args)
 
 
