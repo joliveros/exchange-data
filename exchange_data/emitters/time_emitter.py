@@ -1,13 +1,9 @@
 from datetime import datetime
-
-import alog
-
-from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.utils import NoValue
-from pytimeparse.timeparse import timeparse
 from time import sleep
 
+import alog
 import click
 
 
@@ -38,7 +34,6 @@ class TimeEmitter(Messenger):
             if self.five_second_counter % 5 == 0:
                 self.five_second_counter = 0
                 self.publish('5s', str(now))
-
 
     def publish(self, *args):
         alog.info(args)
