@@ -70,6 +70,7 @@ class BitmexOrderBookEmitter(
         self.depths = depths
         self.save_data = save_data
         self.slices = {}
+        self.frame_slice = None
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
@@ -185,6 +186,8 @@ class BitmexOrderBookEmitter(
                 frame_slice = frame[:, :, :depth]
             else:
                 frame_slice = frame
+
+            self.frame_slice = frame_slice
 
             measurement = self.slice(depth, frame_slice, timestamp)
 
