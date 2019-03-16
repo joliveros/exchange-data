@@ -1,60 +1,81 @@
 version: "3.7"
 
+networks:
+  public:
+    name: public
+    external: true
+
 services:
-  influxdb:
-    deploy:
-        resources:
-            limits:
-                memory: 4G
-    image: influxdb
-    env_file:
-      - ./.env.prod
+    redis:
+        image:
+            redis
+        ports:
+            - 0.0.0.0:6379:6379
+        networks:
+          - public
 
-    ports:
-    - 0.0.0.0:28953:8086
+    influxdb:
+      deploy:
+          resources:
+              limits:
+                  memory: 4G
+      image: influxdb
+      env_file:
+        - ./.env.prod
 
-    volumes:
-      - "./influxdb.conf:/etc/influxdb/influxdb.conf"
-      - "${HOME}/influxdb:/var/lib/influxdb"
+      ports:
+      - 0.0.0.0:28953:8086
 
-    command: influxd -config /etc/influxdb/influxdb.conf
+      volumes:
+        - "./influxdb.conf:/etc/influxdb/influxdb.conf"
+        - "${HOME}/influxdb:/var/lib/influxdb"
 
-  bitmex-xbtusd:
-    image: codequants.com:5000/exchange-data
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
-      - "influxdb:172.18.0.1"
-    env_file:
-      - ./.env.prod
-    depends_on:
-      - influxdb
-    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD"
+      command: influxd -config /etc/influxdb/influxdb.conf
+      networks:
+        - public
 
-  bitstamp-btcusd:
-    image: codequants.com:5000/exchange-data
-    env_file:
-      - ./.env.prod
-    extra_hosts:
-      - "influxdb:172.18.0.1"
-    environment:
-      - BATCH_SIZE=100
+    bitmex-xbtusd:
+      image: codequants.com:5000/exchange-data
+  #    extra_hosts:
+  #      - "redis:172.18.0.1"
+  #      - "influxdb:172.18.0.1"
+      env_file:
+        - ./.env.prod
+      depends_on:
+        - influxdb
+      command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD"
+      networks:
+        - public
 
-    depends_on:
-      - influxdb
+    bitstamp-btcusd:
+      image: codequants.com:5000/exchange-data
+      env_file:
+        - ./.env.prod
+  #    extra_hosts:
+  #      - "influxdb:172.18.0.1"
+      environment:
+        - BATCH_SIZE=100
 
-    command: bash -c "source ~/.bashrc && ./exchange-data --exchange bitstamp btcusd"
+      depends_on:
+        - influxdb
 
-  gdax-btcusd:
-    image: codequants.com:5000/exchange-data
-    env_file:
-      - ./.env.prod
-    extra_hosts:
-      - "influxdb:172.18.0.1"
-    environment:
-      - BATCH_SIZE=100
+      command: bash -c "source ~/.bashrc && ./exchange-data --exchange bitstamp btcusd"
+      networks:
+        - public
 
-    depends_on:
-      - influxdb
+    gdax-btcusd:
+      image: codequants.com:5000/exchange-data
+      env_file:
+        - ./.env.prod
+  #    extra_hosts:
+  #      - "influxdb:172.18.0.1"
+      environment:
+        - BATCH_SIZE=100
 
-    command: bash -c "source ~/.bashrc && ./exchange-data --exchange gdax BTC-USD"
+      depends_on:
+        - influxdb
+
+      command: bash -c "source ~/.bashrc && ./exchange-data --exchange gdax BTC-USD"
+      networks:
+          - public
+

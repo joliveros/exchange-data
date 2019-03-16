@@ -1,53 +1,69 @@
 version: '3.7'
 
+networks:
+  public:
+    name: public
+    external: true
+
 services:
 
   emit_time:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/time_emitter.py"
+    networks:
+      - public
+    depends_on:
+      - redis
 
   emit_bitmex:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
+    networks:
+      - public
+    depends_on:
+      - redis
 
   emit_orderbook_l2:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
+    networks:
+      - public
+    depends_on:
+      - redis
 
   emit_bxbt_index:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
-      - "influxdb:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
+#      - "influxdb:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
     env_file:
       - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
 
   emit_bitmex_orderbook:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
-      - "influxdb:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
+#      - "influxdb:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     volumes:
@@ -57,19 +73,25 @@ services:
     depends_on:
       - emit_bitmex
       - emit_time
+      - redis
 #      - proxy
+    networks:
+      - public
 
   emit_bitmex_account:
     deploy:
       replicas: 1
-    network_mode: bridge
-    extra_hosts:
-      - "redis:172.18.0.1"
-      - "influxdb:172.18.0.1"
+#    extra_hosts:
+#      - "redis:172.18.0.1"
+#      - "influxdb:172.18.0.1"
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
     env_file:
       - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
 
   socketio:
     image: codequants.com:5000/ws-server
@@ -93,6 +115,8 @@ services:
         condition: on-failure
         max_attempts: 3
         window: 120s
+    networks:
+      - public
 
   proxy:
     deploy:
@@ -107,6 +131,8 @@ services:
       - 0.0.0.0:8081:80
     environment:
       BACKENDS: "socketio"
+    networks:
+      - public
 
 
 #secrets:
