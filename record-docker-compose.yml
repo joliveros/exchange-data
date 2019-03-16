@@ -12,33 +12,28 @@ services:
         ports:
             - 0.0.0.0:6379:6379
         networks:
-          - public
+            - public
 
     influxdb:
-      deploy:
+        deploy:
           resources:
               limits:
                   memory: 4G
-      image: influxdb
-      env_file:
-        - ./.env.prod
+        image: influxdb
+        env_file:
+            - ./.env.prod
+        ports:
+            - 0.0.0.0:28953:8086
+        volumes:
+            - "./influxdb.conf:/etc/influxdb/influxdb.conf"
+            - "${HOME}/influxdb:/var/lib/influxdb"
 
-      ports:
-      - 0.0.0.0:28953:8086
-
-      volumes:
-        - "./influxdb.conf:/etc/influxdb/influxdb.conf"
-        - "${HOME}/influxdb:/var/lib/influxdb"
-
-      command: influxd -config /etc/influxdb/influxdb.conf
-      networks:
-        - public
+        command: influxd -config /etc/influxdb/influxdb.conf
+        networks:
+            - public
 
     bitmex-xbtusd:
       image: codequants.com:5000/exchange-data
-  #    extra_hosts:
-  #      - "redis:172.18.0.1"
-  #      - "influxdb:172.18.0.1"
       env_file:
         - ./.env.prod
       depends_on:
@@ -51,8 +46,6 @@ services:
       image: codequants.com:5000/exchange-data
       env_file:
         - ./.env.prod
-  #    extra_hosts:
-  #      - "influxdb:172.18.0.1"
       environment:
         - BATCH_SIZE=100
 
@@ -67,8 +60,6 @@ services:
       image: codequants.com:5000/exchange-data
       env_file:
         - ./.env.prod
-  #    extra_hosts:
-  #      - "influxdb:172.18.0.1"
       environment:
         - BATCH_SIZE=100
 

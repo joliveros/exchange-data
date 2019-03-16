@@ -38,8 +38,6 @@ else:
 
 alog.debug('batch size: %s' % MEASUREMENT_BATCH_SIZE)
 
-
-
 CERT_FILE = './ca.pem'
 
 REDIS_HOST = environ.get('REDIS_HOST') or 'redis'
@@ -47,3 +45,9 @@ REDIS_HOST = environ.get('REDIS_HOST') or 'redis'
 WS_HOST = environ.get('WS_HOST') or 'proxy'
 
 TICK_INTERVAL = '1s'
+
+PROMETHEUS_HOST = environ.get('PROMETHEUS_HOST')
+if PROMETHEUS_HOST is None:
+    PROMETHEUS_HOST = 'pushgateway:9091'
+
+

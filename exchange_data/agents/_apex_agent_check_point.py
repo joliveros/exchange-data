@@ -3,25 +3,21 @@ from pathlib import Path
 import alog
 import gym
 from numpy.core.multiarray import ndarray
-from ray.rllib.agents.dqn import ApexAgent
+from ray.rllib.agents.dqn import DQNAgent
 
 
-class AgentCheckPoint(ApexAgent):
+class ApexAgentCheckPoint(DQNAgent):
     def __init__(
         self,
-        env_name='orderbook-trading-v0',
+        env,
+        checkpoint,
         config=None,
-        checkpoint='/ray_results/orderbook-apex-v3/APEX_orderbook-trading'
-                   '-v0_0_2019-03-15_09-43-04v2xyo9_t/checkpoint_88/'
-                   'checkpoint-88'
+        **kwargs
     ):
-        super().__init__(env=env_name, config=config)
-        if config is None:
-            config = dict()
+        super().__init__(env=env, config=config)
 
         self.checkpoint = None
         self.use_lstm = False
-        self.config = config
         self.set_checkpoint_file(checkpoint)
 
         if hasattr(self, "local_evaluator"):
@@ -37,7 +33,6 @@ class AgentCheckPoint(ApexAgent):
 
     def set_checkpoint_file(self, checkpoint):
         checkpoint = Path(f'{Path.home()}{checkpoint}')
-        alog.debug(checkpoint.exists())
         assert checkpoint.exists()
         self.checkpoint = checkpoint.resolve()
 

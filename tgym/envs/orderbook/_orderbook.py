@@ -48,8 +48,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         orderbook_depth=21,
         window_size='10m',
         sample_interval='5s',
+        max_summary=10,
+        should_penalize_even_trade=True,
         **kwargs
     ):
+
         kwargs['random_start_date'] = random_start_date
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
@@ -63,6 +66,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
+        self.should_penalize_even_trade = should_penalize_even_trade
+        self.max_summary = max_summary
         self.no_pnl_reward = no_pnl_reward
         self.last_timestamp = 0
         self.last_datetime = None
@@ -241,7 +246,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
                 (self.best_ask + self.best_bid)/2
             self.reward -= abs(self.last_price_diff)
 
-        time, index, orderbook = next(self)
+        index, orderbook, time = self._get_observation()
         self.position_history.append(self.position.name[0])
         self.last_timestamp = time
         self.last_datetime = str(self.local_fromtimestamp(time))
@@ -267,6 +272,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         return self.last_observation
 
+    def _get_observation(self):
+        return next(self)
+
     def reset_reward(self):
         self.total_reward += self.reward
         self.reward = 0
@@ -277,8 +285,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         pnl = self.short_pnl
 
-        if pnl == -1 * self.trading_fee:
-            pnl += self.no_pnl_reward
+        pnl = self.penalize_even_trade(pnl)
 
         self.trades.append(Trade(
             self.position.name[0],
@@ -287,8 +294,14 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         ))
 
         self.total_pnl += pnl
-        self.reward += pnl
+        self.reward += self.penalize_even_trade(pnl, enabled=True)
         self.entry_price = 0.0
+
+    def penalize_even_trade(self, pnl, enabled=False):
+        if enabled or self.should_penalize_even_trade:
+            if pnl == -1 * self.trading_fee:
+                pnl += self.no_pnl_reward
+        return pnl
 
     def close_long(self):
         if self.position != Positions.Long:
@@ -296,8 +309,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         pnl = self.long_pnl
 
-        if pnl == -1 * self.trading_fee:
-            pnl += self.no_pnl_reward
+        pnl = self.penalize_even_trade(pnl)
 
         self.trades.append(Trade(
             self.position.name[0],
@@ -307,7 +319,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         ))
 
         self.total_pnl += pnl
-        self.reward += pnl
+        self.reward += self.penalize_even_trade(pnl, enabled=True)
         self.entry_price = 0.0
 
     @property
@@ -402,8 +414,9 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
 
-        summary['position_history'] = ''.join(self.position_history[-45:])
-        summary['trades'] = self.trades[-45:]
+        summary['position_history'] = \
+            ''.join(self.position_history[-1 * self.max_summary:])
+        summary['trades'] = self.trades[-1 * self.max_summary:]
 
         return summary
 
