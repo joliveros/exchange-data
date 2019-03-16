@@ -111,8 +111,6 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
                 self.tick(message['time'])
 
-                # sleep(0.33)
-                # alog.info(self)
             start_date += self.query_interval
             end_delta = self.end_date - end_date
             diff = end_delta.total_seconds()
@@ -149,13 +147,13 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
     def save_points(self, dt):
         if self.frame_slice is not None:
-            alog.info('\n' + str(self.frame_slice[:, :, :1]))
+            alog.debug('\n' + str(self.frame_slice[:, :, :1]))
 
         self.write_points(self._measurements)
 
         self._measurements = []
 
-        alog.info(f'## meas saved for {dt} ##')
+        alog.debug(f'## meas saved for {dt} ##')
 
     def exit(self, *args):
         sys.exit(0)
@@ -226,9 +224,11 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
 @click.command()
 @click.option('--max-workers', '-w', type=int, default=12)
-def main(max_workers, **kwargs):
+@click.option('--max-count', '-c', type=int, default=10000)
+@click.option('--group-interval', '-g', type=str, default='5d')
+def main(max_workers, max_count, group_interval, **kwargs):
     ranges = OrderBookPlayBack(depths=[21], **kwargs)\
-        .get_empty_ranges(60000000, '5d')
+        .get_empty_ranges(max_count, group_interval)
 
     ranges.reverse()
 
@@ -245,10 +245,10 @@ def main(max_workers, **kwargs):
     while True:
         if len(workers) < max_workers and len(ranges) > 0:
             args = ranges.pop()
-            alog.info(f'#### ranges left {len(ranges)} ####')
+            alog.debug(f'#### ranges left {len(ranges)} ####')
             worker = Process(target=replay, args=args)
             worker.start()
-            alog.info(worker)
+            alog.debug(worker)
             workers.append(worker)
 
         if len(ranges) == 0 and len(workers) == 0:

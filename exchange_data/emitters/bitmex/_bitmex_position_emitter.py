@@ -50,7 +50,7 @@ class BitmexPositionEmitter(
         OrderBookTradingEnv.__init__(
             self,
             should_penalize_even_trade=False,
-            trading_fee=0.075,
+            trading_fee=0.075/100.00,
             time_fee=0.0,
             **kwargs
         )
@@ -68,6 +68,7 @@ class BitmexPositionEmitter(
         self.agent = agent_cls(**kwargs)
         self.job_name = job_name
         self._database = 'bitmex'
+        self._index = 0.0
         self.channel = 'XBTUSD_OrderBookFrame_depth_21_5s'
 
         self.on(self.channel, self.emit_position)
@@ -77,14 +78,15 @@ class BitmexPositionEmitter(
         super().stop(*args)
 
     def set_index(self, value):
-        self.index = value
+        self._index = value
 
     def emit_position(self, *args):
         self._emit_position(*args)
         self._push_metrics()
 
     def _get_observation(self):
-        return self.index, self.orderbook_frame, self.last_timestamp.timestamp()
+        return self._index, self.orderbook_frame, \
+               self.last_timestamp.timestamp()
 
     @pos_summary.time()
     def _emit_position(self, data):
@@ -109,7 +111,7 @@ class BitmexPositionEmitter(
         self.prev_action = action
         obs, reward, done, info = super().step(action)
         self.prev_reward = reward
-
+        profit_gauge.set(self.total_pnl)
         alog.info(alog.pformat(self.summary()))
 
     def _push_metrics(self):

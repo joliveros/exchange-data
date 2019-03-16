@@ -164,6 +164,8 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         time_index.reverse()
         frame_list.reverse()
 
+        alog.info(frame_list)
+
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
             raise OutOfFramesException
@@ -245,14 +247,17 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
             .rename({'index': 'time'}) \
             .fillna(0).to_array().values[0]
 
-        return time_index, index, orderbook.to_array().values[0][:, :, :, :self.orderbook_depth]
+        return time_index, index, \
+               orderbook.to_array().values[0][:, :, :, :self.orderbook_depth]
 
     def next_window(self):
         result = np.array([]), np.array([]), np.array([])
 
         now = self.now()
         if self.realtime:
-            self.start_date = now - timedelta(seconds=self.window_size + self.sample_interval_s)
+            interval_delta = \
+                timedelta(seconds=self.window_size + self.sample_interval_s)
+            self.start_date = now - interval_delta
             self.end_date = now
 
         result = self.compose_window()

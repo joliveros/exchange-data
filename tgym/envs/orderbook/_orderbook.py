@@ -40,14 +40,14 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
     def __init__(
         self,
         episode_length=1000,
-        trading_fee=-0.1,
+        trading_fee=-0.5,
         time_fee=-0.2,
         no_pnl_reward=-1.0,
-        max_frames=24,
+        max_frames=100,
         random_start_date=True,
         orderbook_depth=21,
         window_size='10m',
-        sample_interval='5s',
+        sample_interval='1s',
         max_summary=10,
         should_penalize_even_trade=True,
         **kwargs
@@ -91,7 +91,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.trading_fee = trading_fee
         self.max_position_pnl = 0.0
         self.max_negative_pnl_factor = -0.01
-        self.max_position_duration = 96
+        self.max_position_duration = 500
         self.max_pnl = 0.0
         self.position_history = []
         self.bid_diff = 0.0
@@ -143,6 +143,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             for i in range(self.max_frames):
                 self.get_observation()
         except (OutOfFramesException, TypeError):
+            alog.info('#### exception 3##')
             if not self.random_start_date:
                 self._set_next_window()
                 kwargs = dict(
@@ -425,7 +426,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 @click.option('--test-span', default='1m')
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
-        window_size='30s',
+        window_size='10m',
         random_start_date=True,
         **kwargs
     )
