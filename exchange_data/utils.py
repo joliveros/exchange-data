@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-from enum import Enum
-from random import random
-
+from dateutil import parser
 from dateutil.tz import tz
+from enum import Enum
 from pytimeparse import parse as dateparse
+from random import random
 
 import alog
 import math
@@ -78,6 +78,10 @@ class DateTimeUtils(object):
     def parse_db_timestamp(timestamp):
         return datetime.utcfromtimestamp(timestamp / 1000) \
             .replace(tzinfo=tz.tzutc())
+
+    @staticmethod
+    def parse_datetime_str(value):
+        return parser.parse(value)
 
     @staticmethod
     def split_range_into_datetimes(

@@ -1,3 +1,4 @@
+import sys
 import traceback
 from abc import ABC
 from collections import deque
@@ -121,21 +122,29 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         return self._position_pnl
 
-    def reset(self):
+    def reset(self, **kwargs):
+        alog.debug('##### reset ######')
+
         if self.step_count > 0 and self.total_pnl > 10.0:
             alog.info(alog.pformat(self.summary()))
 
-        kwargs = self._args['kwargs']
+        _kwargs = self._args['kwargs']
         del self._args['kwargs']
-        kwargs = {**self._args, **kwargs}
-        new_instance = OrderBookTradingEnv(**kwargs)
+        _kwargs = {**self._args, **_kwargs, **kwargs}
+        new_instance = OrderBookTradingEnv(**_kwargs)
         self.__dict__ = new_instance.__dict__
 
         try:
             for i in range(self.max_frames):
                 self.get_observation()
         except (OutOfFramesException, TypeError):
-            return self.reset()
+            if not self.random_start_date:
+                self._set_next_window()
+                kwargs = dict(
+                    start_date=self.start_date,
+                    end_date=self.end_date
+                )
+            return self.reset(**kwargs)
 
         return self.last_observation
 
@@ -257,19 +266,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.last_observation = np.concatenate(self.frames)
 
         return self.last_observation
-
-    @staticmethod
-    def random_action_fun():
-        """The default random action for exploration.
-        We hold 80% of the time and buy or sell 10% of the time each.
-
-        Returns:
-            numpy.array: array with a 1 on the action index, 0 elsewhere.
-        """
-        return np.random.multinomial(1, [0.8, 0.1, 0.1])
-
-    def render(self):
-        pass
 
     def reset_reward(self):
         self.total_reward += self.reward

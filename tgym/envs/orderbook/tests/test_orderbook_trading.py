@@ -32,7 +32,7 @@ class TestOrderBookTradingEnv(object):
 
         assert env.total_reward == 0
 
-    @pytest.mark.vcr()
+    @pytest.mark.vcr(record_mode='all')
     @mock.patch(
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
@@ -41,11 +41,9 @@ class TestOrderBookTradingEnv(object):
             .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
-            max_frames='5s',
             orderbook_depth=21,
             random_start_date=False,
             start_date=start_date,
-            window_size='30s'
         )
 
         env.reset()
@@ -55,5 +53,5 @@ class TestOrderBookTradingEnv(object):
 
         env.step(Positions.Flat.value)
 
-        alog.info(alog.pformat(env.summary()))
+        alog.debug(alog.pformat(env.summary()))
 

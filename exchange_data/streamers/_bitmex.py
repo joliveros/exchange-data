@@ -48,6 +48,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         super().__init__(database_name='bitmex', **kwargs)
         SignalInterceptor.__init__(self)
 
+        self.random_start_date = random_start_date
         self.out_of_frames_counter = 0
         self.sample_interval = sample_interval
         self.sample_interval_s = timeparse(sample_interval)
@@ -62,12 +63,13 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
 
         self.orderbook_depth = orderbook_depth
         self.window_size = timeparse(window_size)
+
         if channel_name:
             self.channel_name = channel_name
         else:
             self.channel_name = BitmexOrderBookChannels.XBTUSD.value
 
-        if random_start_date:
+        if self.random_start_date:
             if start_date is not None:
                 raise Exception('start_date should be None.')
 
@@ -88,6 +90,12 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
             raise Exception('Start date not available in DB.')
 
         self.window_size = (self.end_date - self.start_date).total_seconds()
+
+        # alog.info(self.realtime)
+        # alog.info(self.start_date)
+        # alog.info(self.end_date)
+        #
+        # raise Exception()
 
     @cached_property
     def min_date(self):
@@ -178,6 +186,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         }, coords={
             'time': to_datetime(time_index, utc=True)
         })
+
         return orderbook
 
     def index(self) -> list:
@@ -250,10 +259,14 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         result = self.compose_window()
 
         if not self.realtime:
-            self.start_date += timedelta(seconds=self.window_size + self.sample_interval_s)
-            self.end_date += timedelta(seconds=self.window_size)
+            self._set_next_window()
 
         return result
+
+    def _set_next_window(self):
+        self.start_date += timedelta(
+            seconds=self.window_size + self.sample_interval_s)
+        self.end_date += timedelta(seconds=self.window_size)
 
     def send(self, *args):
         while len(self._index) == 0:

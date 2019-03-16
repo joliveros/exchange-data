@@ -1,9 +1,9 @@
-import json
 from datetime import datetime
+from dateutil import parser
+from exchange_data.utils import DateTimeUtils
 
 import alog
-
-from exchange_data.utils import DateTimeUtils
+import json
 
 
 class Measurement(DateTimeUtils):
@@ -18,6 +18,8 @@ class Measurement(DateTimeUtils):
 
         if isinstance(time, float):
             time = self.parse_timestamp(time)
+        elif isinstance(time, str):
+            time = self.parse_datetime_str(time)
 
         assert isinstance(time, datetime)
         self.time = time
