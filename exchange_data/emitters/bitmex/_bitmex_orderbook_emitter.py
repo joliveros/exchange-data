@@ -1,6 +1,5 @@
 import json
 
-import bson
 from collections import deque
 from functools import lru_cache
 
@@ -38,8 +37,7 @@ class BitmexOrderBookEmitter(
     DateTimeUtils
 ):
     def __init__(
-        self,
-        symbol: BitmexChannels,
+        self, symbol: BitmexChannels,
         depths=None,
         emit_depths=None,
         emit_interval=None,
@@ -71,7 +69,7 @@ class BitmexOrderBookEmitter(
 
         self.depths = depths
         self.save_data = save_data
-        self.frame_slice = None
+        self.slices = {}
         self.orderbook_l2_channel = \
             OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
         self.freq = settings.TICK_INTERVAL
@@ -183,36 +181,41 @@ class BitmexOrderBookEmitter(
 
         for depth in depths:
             if depth > 0:
-                self.frame_slice = frame[:, :, :depth]
+                self.slices[self.channel_for_depth(depth)] = \
+                    frame_slice = frame[:, :, :depth]
             else:
-                self.frame_slice = frame
+                self.slices[self.channel_for_depth(depth)] = frame_slice = frame
 
             measurements.append(Measurement(
                 measurement=self.channel_for_depth(depth),
                 tags={'symbol': self.symbol.value},
                 time=timestamp,
-                fields={'data': json.dumps(self.frame_slice.tolist())}
+                fields={'data': json.dumps(frame_slice.tolist())}
             ))
 
         return [m.__dict__ for m in measurements]
 
     def emit_frames(self, timestamp):
-        frame = self.generate_frame()
 
         for depth in self.emit_depths:
-            if depth > 0:
-                frame_slice = frame[:, :, :depth]
-            else:
-                frame_slice = frame
+            frame_slice = self.slices.get(self.channel_for_depth(depth))
 
-            slice_str = json.dumps(frame_slice.tolist())
-            self.publish(self.channel_for_depth(depth), slice_str)
+            if frame_slice is not None:
+                slice = Measurement(
+                    measurement=self.channel_for_depth(depth),
+                    tags={'symbol': self.symbol.value},
+                    time=timestamp,
+                    fields={'data': json.dumps(frame_slice.tolist())}
+                )
+
+                self.publish(self.channel_for_depth(depth), str(slice))
 
     def save_frame(self, timestamp):
         self.last_timestamp = timestamp
+        measurements = self.measurements(timestamp)
 
         if self.save_data:
-            self.write_points(self.measurements(timestamp), time_precision='ms')
+            self.write_points(measurements, time_precision='ms')
 
     @lru_cache()
     def channel_for_depth(self, depth):

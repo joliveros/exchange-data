@@ -1,9 +1,12 @@
+import json
 from datetime import datetime
 
 import alog
 
+from exchange_data.utils import DateTimeUtils
 
-class Measurement(object):
+
+class Measurement(DateTimeUtils):
     def __init__(
         self,
         fields: dict = None,
@@ -12,6 +15,10 @@ class Measurement(object):
         time: datetime = None
     ):
         self.fields = fields
+
+        if isinstance(time, float):
+            time = self.parse_timestamp(time)
+
         assert isinstance(time, datetime)
         self.time = time
         self.tags = tags
@@ -19,3 +26,8 @@ class Measurement(object):
 
     def __repr__(self):
             return alog.pformat(self.__dict__)
+
+    def __str__(self):
+        data = self.__dict__
+        data['time'] = str(data['time'])
+        return json.dumps(data)

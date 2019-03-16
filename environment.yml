@@ -17,13 +17,13 @@ dependencies:
     - alog
     - bitmex
     - bitmex-websocket
-    - bson
     - cached-property
     - click
     - coveralls
     - flake8
     - git+https://github.com/joliveros/gdax-python.git#egg=gdax
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
+#    - git+https://github.com/py-bson/bson.git#egg=bson
     - gym
     - influxdb
     - mock
