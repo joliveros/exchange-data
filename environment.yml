@@ -23,10 +23,10 @@ dependencies:
     - flake8
     - git+https://github.com/joliveros/gdax-python.git#egg=gdax
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
-#    - git+https://github.com/py-bson/bson.git#egg=bson
     - gym
     - influxdb
     - mock
+    - prometheus_client
     - pusherclient
     - pytest
     - pytest-cov
@@ -43,3 +43,5 @@ dependencies:
     - stringcase
     - tensorflow-gpu
     - timestamp
+    - stringcase
+#    - git+https://github.com/py-bson/bson.git#egg=bson

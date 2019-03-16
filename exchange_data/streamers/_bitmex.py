@@ -54,7 +54,6 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         self.sample_interval_s = timeparse(sample_interval)
         self._time = []
         self._index = []
-        self._orderbook = []
         self.end_date = None
         self.max_spread = max_spread
         self.start_date = None

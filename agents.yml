@@ -1,0 +1,19 @@
+version: '3.7'
+
+networks:
+  public:
+    name: public
+    external: true
+
+services:
+
+  apex-v2:
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_position_emitter.py -n apex-v2 -a ApexAgent"
+    networks:
+      - public
+    depends_on:
+      - redis
+      - influxdb
+      - pushgateway
+

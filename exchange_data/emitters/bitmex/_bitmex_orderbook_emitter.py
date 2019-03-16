@@ -79,6 +79,7 @@ class BitmexOrderBookEmitter(
         if subscriptions_enabled:
             self.on(TimeChannels.Tick.value, self.save_frame)
             self.on(TimeChannels.Tick.value, self.emit_frames)
+            self.on('5s', self.emit_frames_5s)
             self.on(self.symbol.value, self.message)
 
             if reset_orderbook:
@@ -181,34 +182,38 @@ class BitmexOrderBookEmitter(
 
         for depth in depths:
             if depth > 0:
-                self.slices[self.channel_for_depth(depth)] = \
-                    frame_slice = frame[:, :, :depth]
+                frame_slice = frame[:, :, :depth]
             else:
-                self.slices[self.channel_for_depth(depth)] = frame_slice = frame
+                frame_slice = frame
 
-            measurements.append(Measurement(
-                measurement=self.channel_for_depth(depth),
-                tags={'symbol': self.symbol.value},
-                time=timestamp,
-                fields={'data': json.dumps(frame_slice.tolist())}
-            ))
+            measurement = self.slice(depth, frame_slice, timestamp)
+
+            self.slices[self.channel_for_depth(depth)] = measurement
+
+            measurements.append(measurement)
 
         return [m.__dict__ for m in measurements]
 
-    def emit_frames(self, timestamp):
+    def slice(self, depth, frame_slice, timestamp):
+        return Measurement(measurement=self.channel_for_depth(depth),
+                           tags={'symbol': self.symbol.value},
+                           time=timestamp, fields={
+                'data': json.dumps(frame_slice.tolist())})
 
+    def emit_frames(self, timestamp):
         for depth in self.emit_depths:
             frame_slice = self.slices.get(self.channel_for_depth(depth))
+            if frame_slice is not None:
+                msg = self.channel_for_depth(depth), str(frame_slice)
+                self.publish(*msg)
+
+    def emit_frames_5s(self, timestamp):
+        for depth in self.emit_depths:
+            channel = self.channel_for_depth(depth)
+            frame_slice = self.slices.get(channel)
 
             if frame_slice is not None:
-                slice = Measurement(
-                    measurement=self.channel_for_depth(depth),
-                    tags={'symbol': self.symbol.value},
-                    time=timestamp,
-                    fields={'data': json.dumps(frame_slice.tolist())}
-                )
-                msg = self.channel_for_depth(depth), str(slice)
-                alog.info(alog.pformat(msg))
+                msg = f'{self.channel_for_depth(depth)}_5s', str(frame_slice)
                 self.publish(*msg)
 
     def save_frame(self, timestamp):
