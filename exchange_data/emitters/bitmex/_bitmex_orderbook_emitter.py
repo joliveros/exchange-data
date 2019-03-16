@@ -207,8 +207,9 @@ class BitmexOrderBookEmitter(
                     time=timestamp,
                     fields={'data': json.dumps(frame_slice.tolist())}
                 )
-
-                self.publish(self.channel_for_depth(depth), str(slice))
+                msg = self.channel_for_depth(depth), str(slice)
+                alog.info(alog.pformat(msg))
+                self.publish(*msg)
 
     def save_frame(self, timestamp):
         self.last_timestamp = timestamp

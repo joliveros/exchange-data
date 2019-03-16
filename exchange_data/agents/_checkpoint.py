@@ -41,12 +41,12 @@ class AgentCheckPoint(ApexAgent):
         assert checkpoint.exists()
         self.checkpoint = checkpoint.resolve()
 
-    def compute_action(self, observation: ndarray):
+    def compute_action(self, observation: ndarray, **kwargs):
         if self.use_lstm:
             return super().compute_action(
-                observation, state=self.state_init)
+                observation, state=self.state_init, **kwargs)
         else:
-            return super().compute_action(observation)
+            return super().compute_action(observation, **kwargs)
 
     def restore(self):
         super().restore(self.checkpoint)
