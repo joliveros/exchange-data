@@ -1,10 +1,13 @@
+from collections import deque
+
 import alog
 from bitmex import bitmex
 from datetime import datetime, timedelta
 from exchange_data import Database
 from exchange_data._measurement import Measurement
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, SignalInterceptor
+from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels, \
+    TimeEmitter
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from typing import List, Tuple
 
@@ -34,8 +37,11 @@ class BXBTIndexEmitter(
 
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)
+        self.prices = deque(maxlen=50)
+        self.index_price = None
 
         self.on(self.interval, self.fetch_price)
+        self.on(TimeChannels.Tick.value, self.emit_index)
 
     @property
     def last_minute(self):
@@ -59,10 +65,13 @@ class BXBTIndexEmitter(
 
         indexes_str, formatted_indexes = self.format_indexes(indexes)
 
+        self.prices += indexes
+
         msg = self.channel, indexes_str
 
         self.publish(*msg)
         self.write_points(formatted_indexes)
+        self.current_index()
 
     def format_indexes(self, indexes: List[dict]) -> Tuple[str, List]:
 
@@ -88,13 +97,43 @@ class BXBTIndexEmitter(
 
         super().write_points(points, time_precision='ms')
 
+    def emit_index(self, timestamp=None):
+        if timestamp is None:
+            timestamp = TimeEmitter.timestamp()
+
+        if self.index_price is not None:
+            msg = BitmexChannels.BXBT_s.value, self.index_price
+
+            self.publish(*msg)
+
+            measurement = Measurement(
+                measurement=BitmexChannels.BXBT_s.value,
+                time=self.parse_timestamp(timestamp),
+                tags=dict(symbol=BitmexChannels.BXBT.value),
+                fields=dict(index=self.index_price))
+
+            super().write_points([measurement.__dict__])
+
+    def current_index(self):
+        _index = [item for item in self.prices if item['weight'] is not None]
+        timestamps = set([item['timestamp'] for item in _index])
+        price_timestamp = [
+            (
+                timestamp, [index['lastPrice'] for index in _index
+                            if index['timestamp'] == timestamp]
+            ) for timestamp in timestamps
+        ]
+        avg_prices = [(pt[0], sum(pt[1]) / float(len(pt[1])))
+                      for pt in price_timestamp]
+        index_price = avg_prices[0][1]
+        self.index_price = index_price
+
     def start(self):
-        self.sub([self.interval])
+        self.sub([self.interval, TimeChannels.Tick.value])
 
 
 @click.command()
 @click.option('--interval', '-i', type=str, default='1m')
-@click.option('--influxdb', type=str)
 def main(**kwargs):
     emitter = BXBTIndexEmitter(**kwargs)
     emitter.start()
