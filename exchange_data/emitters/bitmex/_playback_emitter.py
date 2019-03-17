@@ -1,22 +1,20 @@
-import json
-import sys
-from copy import copy
-from multiprocessing import Process, Pool
-from time import sleep
-
-import click
 from cached_property import cached_property
+from copy import copy
 from datetime import datetime, timedelta
 from dateutil.tz import tz
-from pytimeparse.timeparse import timeparse
-
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from exchange_data.streamers._bitmex import BitmexOrderBookChannels
 from exchange_data.utils import DateTimeUtils
+from multiprocessing import Process, Pool
+from pytimeparse.timeparse import timeparse
+from time import sleep
 
 import alog
+import click
+import json
+import sys
 
 
 class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
