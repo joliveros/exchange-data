@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import ray
 from abc import ABC
 
@@ -29,16 +31,19 @@ class BitmexPositionEmitter(
     OrderBookTradingEnv,
     BitmexEmitterBase,
     Messenger,
+    DateTimeUtils,
     ABC
 ):
     def __init__(
         self,
         job_name: str,
         agent_cls: str,
+        start_date=None,
+        end_date=None,
         env='orderbook-trading-v0',
         checkpoint='/ray_results/orderbook-apex-v3/APEX_orderbook-trading'
-                   '-v0_0_2019-03-15_09-43-04v2xyo9_t/checkpoint_88/'
-                   'checkpoint-88',
+                   '-v0_0_2019-03-17_11-25-03c8b7csl0/checkpoint_20'
+                   '/checkpoint-20/',
         **kwargs
     ):
         kwargs['checkpoint'] = checkpoint
@@ -47,6 +52,7 @@ class BitmexPositionEmitter(
         DateTimeUtils.__init__(self)
         Messenger.__init__(self)
         SignalInterceptor.__init__(self, self.stop)
+        DateTimeUtils.__init__(self)
         OrderBookTradingEnv.__init__(
             self,
             should_penalize_even_trade=False,
@@ -55,12 +61,14 @@ class BitmexPositionEmitter(
             **kwargs
         )
 
-        classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-        agent_cls = pascalcase(agent_cls)
-        agent_cls = [
-            cls[1] for cls in classes
-            if agent_cls in cls[0]
-        ][0]
+        if isinstance(agent_cls, str):
+            classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+
+            agent_cls = pascalcase(agent_cls)
+            agent_cls = [
+                cls[1] for cls in classes
+                if agent_cls in cls[0]
+            ][0]
 
         self.default_action = Positions.Flat.value
         self.prev_action = None
@@ -69,10 +77,27 @@ class BitmexPositionEmitter(
         self.job_name = job_name
         self._database = 'bitmex'
         self._index = 0.0
-        self.channel = 'XBTUSD_OrderBookFrame_depth_21_5s'
+        self.channel = 'XBTUSD_OrderBookFrame_depth_21'
+        obs_len = self.observation_space.shape[0]
+
+        now = self.now()
+
+        if start_date:
+            self.start_date = start_date
+        else:
+            self.start_date = now - timedelta(seconds=obs_len)
+
+        if end_date:
+            self.end_date = end_date
+        else:
+            self.end_date = now
+
+        while self.last_observation.shape[0] < obs_len:
+            self.prev_action = self.default_action
+            self.prev_reward = 0.0
+            self.get_observation()
 
         self.on(self.channel, self.emit_position)
-        self.on(BitmexChannels.BXBT_s.value, self.set_index)
 
     def exit(self, *args):
         super().stop(*args)
@@ -85,8 +110,10 @@ class BitmexPositionEmitter(
         self._push_metrics()
 
     def _get_observation(self):
-        return self._index, self.orderbook_frame, \
-               self.last_timestamp.timestamp()
+        if self.last_observation.shape[0] < self.observation_space.shape[0]:
+            return super()._get_observation()
+        else:
+            return self.last_timestamp, self.orderbook_frame
 
     @pos_summary.time()
     def _emit_position(self, data):
@@ -95,20 +122,14 @@ class BitmexPositionEmitter(
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
 
-        if len(self.frames) < self.max_frames:
-            self.prev_action = self.default_action
-            self.prev_reward = 0.0
-            self.get_observation()
-        else:
-            action = self.agent.compute_action(
-                self.last_observation,
-                prev_action=self.prev_action,
-                prev_reward=self.prev_reward
-            )
-            # publish ???
-            self.step(action)
+        action = self.agent.compute_action(
+            self.last_observation,
+            prev_action=self.prev_action,
+            prev_reward=self.prev_reward
+        )
 
-        alog.info((self.now() - dt).total_seconds() )
+        # TODO: publish ???
+        self.step(action)
 
     def step(self, action):
         self.prev_action = action
@@ -125,7 +146,7 @@ class BitmexPositionEmitter(
         )
 
     def start(self):
-        self.sub([self.channel, BitmexChannels.BXBT_s])
+        self.sub([self.channel])
 
 
 class OrderBookTradingEvaluator(OrderBookTradingEnv):
