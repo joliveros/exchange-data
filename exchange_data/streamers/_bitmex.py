@@ -154,6 +154,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
 
         for item in orderbook.get_points(self.channel_name):
             time_index.append(self.parse_db_timestamp(item['time']))
+
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
 
             if data.shape[-1] > max_shape[-1]:
@@ -168,7 +169,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
-            raise OutOfFramesException
+            raise OutOfFramesException()
 
         resized_frames = []
         for frame in frame_list:
