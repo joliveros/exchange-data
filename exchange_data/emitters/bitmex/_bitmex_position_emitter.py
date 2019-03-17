@@ -90,6 +90,7 @@ class BitmexPositionEmitter(
 
     @pos_summary.time()
     def _emit_position(self, data):
+        dt = self.now()
         meas = Measurement(**data)
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
@@ -106,6 +107,8 @@ class BitmexPositionEmitter(
             )
             # publish ???
             self.step(action)
+
+        alog.info((self.now() - dt).total_seconds() )
 
     def step(self, action):
         self.prev_action = action

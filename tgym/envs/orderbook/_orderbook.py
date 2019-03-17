@@ -52,16 +52,15 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         should_penalize_even_trade=True,
         **kwargs
     ):
-
         kwargs['random_start_date'] = random_start_date
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
-        self._args = locals()
-        del self._args['self']
-
         kwargs['channel_name'] = \
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
+
+        self._args = locals()
+        del self._args['self']
 
         Env.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
@@ -99,17 +98,15 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.last_observation = None
         self.last_best_ask = None
         self.last_best_bid = None
-        self.index_diff = None
         self._best_bid = None
         self._best_ask = None
         self.trades = []
         self.last_price_diff = 0.0
 
         high = np.full(
-            (self.max_frames * (7 + 4 * self.orderbook_depth), ),
+            (self.max_frames * (6 + 4 * self.orderbook_depth), ),
             np.inf
         )
-
         self.observation_space = Box(-high, high, dtype=np.float32)
 
     @property
@@ -139,18 +136,20 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         new_instance = OrderBookTradingEnv(**_kwargs)
         self.__dict__ = new_instance.__dict__
 
-        try:
-            for i in range(self.max_frames):
-                self.get_observation()
-        except (OutOfFramesException, TypeError):
-            alog.info('#### exception 3##')
-            if not self.random_start_date:
-                self._set_next_window()
-                kwargs = dict(
-                    start_date=self.start_date,
-                    end_date=self.end_date
-                )
-            return self.reset(**kwargs)
+        for i in range(self.max_frames):
+            self.get_observation()
+        # try:
+        # for i in range(self.max_frames):
+        #     self.get_observation()
+        # except (OutOfFramesException, TypeError):
+        #     alog.info('#### exception 3##')
+        #     if not self.random_start_date:
+        #         self._set_next_window()
+        #         kwargs = dict(
+        #             start_date=self.start_date,
+        #             end_date=self.end_date
+        #         )
+        #     return self.reset(**kwargs)
 
         return self.last_observation
 
@@ -194,8 +193,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         if self.out_of_frames_counter > 30 and not done:
             done = True
 
-        if not done:
-            self.step_count += 1
+        self.step_count += 1
+
         try:
             observation = self.get_observation()
         except (OutOfFramesException, TypeError):
@@ -223,7 +222,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             '_position_pnl',
             'ask_diff',
             'bid_diff',
-            'index_diff',
             'max_position_pnl',
             'total_pnl'
         ]
@@ -235,10 +233,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         return np.array(list(data.values()))
 
-    def local_fromtimestamp(self, value):
-        return datetime.utcfromtimestamp(value/10**9)\
-            .astimezone(tz.tzlocal())
-
     def get_observation(self):
         if self.last_observation is not None:
             self.last_best_ask = self.best_ask
@@ -247,26 +241,19 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
                 (self.best_ask + self.best_bid)/2
             self.reward -= abs(self.last_price_diff)
 
-        index, orderbook, time = self._get_observation()
+        time, orderbook = self._get_observation()
         self.position_history.append(self.position.name[0])
-        self.last_timestamp = time
-        self.last_datetime = str(self.local_fromtimestamp(time))
+        self.last_datetime = time
 
-        self.last_index = index
         self.last_orderbook = orderbook = np.array(orderbook)
 
         if self.last_observation is not None:
             self.bid_diff = self.best_bid - self.last_best_bid
             self.ask_diff = self.best_ask - self.last_best_ask
 
-        idx_bbid_diff = self.best_ask + self.best_bid
-
-        self.index_diff = ((index * 2) - idx_bbid_diff) / 2
-
         position_data = self.position_data
 
         frame = np.concatenate((position_data, orderbook.flatten()))
-
         self.frames.append(frame)
 
         self.last_observation = np.concatenate(self.frames)
@@ -423,22 +410,21 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
 
 @click.command()
-@click.option('--test-span', default='1m')
+@click.option('--test-span', default='10m')
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
-        window_size='10m',
         random_start_date=True,
         **kwargs
     )
 
     env.reset()
 
-    for i in range(timeparse(test_span)):
+    for i in range(timeparse(test_span) - 101):
         env.step(Positions.Long.value)
-        alog.info(alog.pformat(env.summary()))
-        sleep(0.33)
+        # sleep(1)
 
     env.step(Positions.Flat.value)
+    alog.info(alog.pformat(env.summary()))
 
 
 if __name__ == '__main__':

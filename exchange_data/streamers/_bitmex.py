@@ -9,7 +9,7 @@ from exchange_data import Database, settings
 from exchange_data.emitters import SignalInterceptor
 from exchange_data.utils import random_date, DateTimeUtils, NoValue
 from numpy.core.multiarray import ndarray
-from pandas import to_datetime, DataFrame
+from pandas import to_datetime
 from pytimeparse.timeparse import timeparse
 from time import sleep
 from typing import Tuple
@@ -24,6 +24,7 @@ import traceback
 
 alog.set_level(settings.LOG_LEVEL)
 
+
 class OutOfFramesException(Exception):
     pass
 
@@ -32,7 +33,8 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC):
+class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
+                     ABC):
     def __init__(
         self,
         max_spread: float = 100.0,
@@ -48,6 +50,8 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         super().__init__(database_name='bitmex', **kwargs)
         SignalInterceptor.__init__(self)
 
+        self.counter = 0
+        self._orderbook = []
         self.random_start_date = random_start_date
         self.out_of_frames_counter = 0
         self.sample_interval = sample_interval
@@ -74,27 +78,14 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
 
             self.start_date = random_date(self.min_date, self.now())
 
-        if start_date is not None:
-            self.start_date = start_date
-        elif self.start_date is None:
-            self.start_date = self.now() - timedelta(seconds=self.window_size)
-            self.realtime = True
-        if end_date is not None:
-            self.end_date = end_date
-        else:
+        if end_date is None:
             self.end_date = self.start_date + \
-                            timedelta(seconds=self.window_size)
+                timedelta(seconds=self.window_size)
+        else:
+            self.end_date = end_date
 
         if self.start_date < self.min_date:
             raise Exception('Start date not available in DB.')
-
-        self.window_size = (self.end_date - self.start_date).total_seconds()
-
-        # alog.info(self.realtime)
-        # alog.info(self.start_date)
-        # alog.info(self.end_date)
-        #
-        # raise Exception()
 
     @cached_property
     def min_date(self):
@@ -108,7 +99,7 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         result = self.oldest_frame_query(start_date, self.end_date)
 
         for item in result.get_points(self.channel_name):
-            timestamp = datetime.utcfromtimestamp(item['time']/1000)\
+            timestamp = datetime.utcfromtimestamp(item['time'] / 1000) \
                 .replace(tzinfo=tz.tzutc())
             return timestamp
 
@@ -136,15 +127,12 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         query = f'SELECT LAST(data) as data FROM {self.channel_name} ' \
             f'WHERE time > {start_date} AND time < {end_date} ' \
             f'GROUP BY time({self.sample_interval}) tz(\'UTC\');'
-        # query = f'SELECT * FROM {self.channel_name} ' \
-        #     f'WHERE time >= {start_date} AND time < {end_date} ' \
-        #     f'tz(\'UTC\');'
 
         return self.query(query)
 
     def parse_db_timestamp(self, timestamp):
-        return datetime.utcfromtimestamp(timestamp / 1000)\
-                .replace(tzinfo=tz.tzlocal())
+        return datetime.utcfromtimestamp(timestamp / 1000) \
+            .replace(tzinfo=tz.tzlocal())
 
     def _orderbook_frames(self, start_date, end_date):
         orderbook = self.orderbook_frame_query(start_date, end_date)
@@ -153,19 +141,16 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         time_index = []
 
         for item in orderbook.get_points(self.channel_name):
+            if item['data'] is None:
+                # skip this frame, looks like a bad sample
+                continue
             time_index.append(self.parse_db_timestamp(item['time']))
-
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
 
             if data.shape[-1] > max_shape[-1]:
                 max_shape = data.shape
 
             frame_list.append(data)
-
-        time_index.reverse()
-        frame_list.reverse()
-
-        alog.info(frame_list)
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
@@ -181,90 +166,21 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
             else:
                 resized_frames.append(frame)
 
-        window = np.stack(resized_frames, axis=0)
+        index = to_datetime(np.stack(time_index), utc=True)
+        orderbook = np.stack(resized_frames, axis=0)
 
-        orderbook: Dataset = Dataset({
-            'orderbook': (['time', 'side', 'level', 'price'], window)
-        }, coords={
-            'time': to_datetime(time_index, utc=True)
-        })
+        return index, orderbook
 
-        return orderbook
+    def compose_window(self) -> Tuple[ndarray, ndarray]:
+        time_index, orderbook = self.orderbook_frames()
 
-    def index(self) -> list:
-        start_date = self.format_date_query(self.start_date)
-        end_date = self.format_date_query(self.end_date)
-
-        range_diff = (self.end_date - self.start_date).total_seconds()
-
-        if range_diff < timeparse('1m'):
-            start_date = self.format_date_query(
-                self.end_date - timedelta(seconds=timeparse('1m'))
-            )
-
-        query = f'SELECT * FROM ".BXBT_1m" ' \
-            f'WHERE time > {start_date} AND ' \
-            f'time < {end_date} tz(\'UTC\');'
-
-        index = self.query(query)
-
-        index = [item for item in index.get_points('.BXBT_1m')]
-        index.reverse()
-
-        return index
-
-    def compose_window(self) -> Tuple[ndarray, ndarray, ndarray]:
-        orderbook = self.orderbook_frames()
-
-        time_index: DataArray = orderbook.time.values.copy()
-
-        _index = [item for item in self.index() if item['weight'] is not None]
-        timestamps = set([item['timestamp'] for item in _index])
-
-        price_timestamp = [
-            (
-                timestamp * 10 ** 6, [index['lastPrice'] for index in _index
-                                      if index['timestamp'] == timestamp]
-            ) for timestamp in timestamps
-        ]
-
-        avg_prices = [(pt[0], sum(pt[1]) / float(len(pt[1])))
-                      for pt in price_timestamp]
-
-        index: DataFrame = DataFrame(
-            {'avg_price': np.NaN},
-            index=to_datetime(time_index, utc=True)
-        )
-
-        for price in avg_prices:
-            timestamp, avg_price = price
-            ts_idx = index.index.get_loc(timestamp, method='nearest')
-            index.avg_price[ts_idx] = avg_price
-
-        index = index.fillna(method='ffill')
-        index['index_diff'] = index.diff()
-
-        index: ndarray = Dataset.from_dataframe(index) \
-            .rename({'index': 'time'}) \
-            .fillna(0).to_array().values[0]
-
-        return time_index, index, \
-               orderbook.to_array().values[0][:, :, :, :self.orderbook_depth]
+        return time_index, \
+               orderbook[:, :, :, :self.orderbook_depth]
 
     def next_window(self):
-        result = np.array([]), np.array([]), np.array([])
-
-        now = self.now()
-        if self.realtime:
-            interval_delta = \
-                timedelta(seconds=self.window_size + self.sample_interval_s)
-            self.start_date = now - interval_delta
-            self.end_date = now
-
         result = self.compose_window()
 
-        if not self.realtime:
-            self._set_next_window()
+        self._set_next_window()
 
         return result
 
@@ -274,13 +190,13 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor, ABC)
         self.end_date += timedelta(seconds=self.window_size)
 
     def send(self, *args):
-        while len(self._index) == 0:
-            time, index, orderbook = self.next_window()
+        self.counter += 1
+        if len(self._time) == 0:
+            time, orderbook = self.next_window()
             self._time += time.tolist()
-            self._index += index.tolist()
             self._orderbook += orderbook.tolist()
 
-        return self._time.pop(), self._index.pop(), self._orderbook.pop()
+        return self._time.pop(), self._orderbook.pop()
 
     def throw(self, type=None, value=None, traceback=None):
         raise StopIteration
@@ -308,8 +224,9 @@ def main(**kwargs):
         timestamp, index, orderbook = next(streamer)
         orderbook_ar = np.array(orderbook)
 
-        alog.info('\n'+ str(datetime.fromtimestamp(timestamp/10**9)) +'\n' +
-                  str(index) + '\n' + str(orderbook_ar[:, :, :1]))
+        alog.info(
+            '\n' + str(datetime.fromtimestamp(timestamp / 10 ** 9)) + '\n' +
+            str(index) + '\n' + str(orderbook_ar[:, :, :1]))
         sleep(0.1)
 
 
