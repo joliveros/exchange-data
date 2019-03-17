@@ -124,7 +124,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
                 end_date += self.query_interval
 
             if end_date > end_date_max or start_date > end_date_max:
-                self.save_points(None)
+                self.save_points()
                 break
 
     def messages(self, start, end):
@@ -245,7 +245,6 @@ def main(max_workers, max_count, group_interval, **kwargs):
             worker.start()
             alog.debug(worker)
             workers.append(worker)
-
         if len(ranges) == 0 and len(workers) == 0:
             sys.exit(0)
 
