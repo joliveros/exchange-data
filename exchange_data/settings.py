@@ -1,5 +1,4 @@
 import logging
-
 import rollbar
 from os import environ
 import alog
@@ -8,7 +7,10 @@ LOG_LEVEL = environ.get('LOG_LEVEL')
 if LOG_LEVEL is None:
     LOG_LEVEL = logging.INFO
 LOG_LEVEL = logging.getLevelName(LOG_LEVEL)
+
 alog.set_level(LOG_LEVEL)
+
+alog.info(LOG_LEVEL)
 
 RUN_ENV = environ.get('RUN_ENV')
 
