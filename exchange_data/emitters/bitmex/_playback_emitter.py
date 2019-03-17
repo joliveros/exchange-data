@@ -44,8 +44,12 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         self.max_cache_len = max_cache_len
         self._measurements = []
         self.measurement = 'data'
+        self.tick_delta = timedelta(seconds=1)
+        self.tick_delta_s = self.tick_delta.total_seconds()
 
         if start_date is None:
+            self.start_date = self.min_date
+        elif start_date < self.min_date:
             self.start_date = self.min_date
         else:
             self.start_date = start_date
@@ -102,14 +106,15 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
         while True:
             for message in self.messages(start_date, end_date):
                 data = json.loads(message['data'])
+                self.last_timestamp = self.parse_db_timestamp(message['time'])
+
+                self.tick()
 
                 if data['table'] in ['orderBookL2', 'trade']:
                     try:
                         self.message(data)
                     except PriceDoesNotExistException:
                         pass
-
-                self.tick(message['time'])
 
             start_date += self.query_interval
             end_delta = self.end_date - end_date
@@ -122,30 +127,26 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
             if end_date > end_date_max or start_date > end_date_max:
                 self.save_points(None)
-                return
+                break
 
     def messages(self, start, end):
         return self.interval_query(start, end).get_points(
             self.measurement)
 
-    def save_frame(self, timestamp, dt=None, save_now=False):
-        self.last_timestamp = timestamp
+    @property
+    def orderbook_size(self):
+        return len(self.asks) + len(self.bids)
 
-        if dt:
-            date_time = dt
+    def save_frame(self, **kwargs):
+        if self._next_tick >= self.start_save and self.orderbook_size > 0:
+            self._measurements += self.measurements(self._next_tick)
+
+            if len(self._measurements) > self.max_cache_len:
+                self.save_points()
         else:
-            date_time = self.parse_timestamp(self.last_timestamp)
+            self._measurements = []
 
-        if date_time >= self.start_save:
-            self._measurements += \
-                self.measurements(date_time)
-
-        if save_now:
-            self.save_points(date_time)
-        elif len(self._measurements) >= self.max_cache_len:
-            self.save_points(date_time)
-
-    def save_points(self, dt):
+    def save_points(self):
         if self.frame_slice is not None:
             alog.debug('\n' + str(self.frame_slice[:, :, :1]))
 
@@ -153,22 +154,16 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 
         self._measurements = []
 
-        alog.debug(f'## meas saved for {dt} ##')
-
     def exit(self, *args):
         sys.exit(0)
 
-    def tick(self, timestamp):
-        dt = self.parse_db_timestamp(timestamp)
+    def tick(self):
+        while self.last_timestamp > self._next_tick:
+            diff = (self._next_tick - self.last_timestamp).total_seconds()
 
-        if dt > self._next_tick:
-            diff = self._next_tick - dt
-
-            if abs(diff.total_seconds()) > 1:
-                self._next_tick = copy(dt).replace(microsecond=0)
-
-            self._next_tick = self._next_tick + timedelta(seconds=1)
-            self.save_frame(timestamp, dt)
+            if diff < 0:
+                self.save_frame()
+                self._next_tick = self._next_tick + self.tick_delta
 
     def get_empty_ranges(
         self,
@@ -226,17 +221,19 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 @click.option('--max-workers', '-w', type=int, default=12)
 @click.option('--max-count', '-c', type=int, default=10000)
 @click.option('--group-interval', '-g', type=str, default='5d')
+@click.option('--max-cache-len', type=int, default=60*60)
 def main(max_workers, max_count, group_interval, **kwargs):
     ranges = OrderBookPlayBack(depths=[21], **kwargs)\
         .get_empty_ranges(max_count, group_interval)
 
     ranges.reverse()
 
-    def replay(depth, start_date, end_date):
+    def replay(depth, start_date, end_date, **kwargs):
         orderbook = OrderBookPlayBack(
             depths=[depth],
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            **kwargs
         )
         return orderbook.run()
 
@@ -246,7 +243,7 @@ def main(max_workers, max_count, group_interval, **kwargs):
         if len(workers) < max_workers and len(ranges) > 0:
             args = ranges.pop()
             alog.debug(f'#### ranges left {len(ranges)} ####')
-            worker = Process(target=replay, args=args)
+            worker = Process(target=replay, args=args, kwargs=kwargs)
             worker.start()
             alog.debug(worker)
             workers.append(worker)
