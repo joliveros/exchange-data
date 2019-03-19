@@ -1,3 +1,4 @@
+import alog
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
@@ -39,6 +40,7 @@ class BitmexEmitter(BitmexEmitterBase, Messenger, Instrument):
             data = json.dumps(data)
 
         msg = self.symbol, data
+
         self.publish(*msg)
 
     def start(self):

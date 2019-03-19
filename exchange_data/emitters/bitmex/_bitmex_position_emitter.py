@@ -1,10 +1,5 @@
-from datetime import timedelta
-
-import ray
 from abc import ABC
-
-from stringcase import pascalcase
-
+from datetime import timedelta
 from exchange_data import Measurement, settings
 from exchange_data.agents._apex_agent_check_point import ApexAgentCheckPoint
 from exchange_data.channels import BitmexChannels
@@ -12,16 +7,17 @@ from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.utils import DateTimeUtils
 from prometheus_client import Gauge, push_to_gateway, REGISTRY
+from stringcase import pascalcase
 from tgym.envs import OrderBookTradingEnv
+from tgym.envs.orderbook.utils import Positions
 
 import alog
 import click
 import inspect
 import json
 import numpy as np
+import ray
 import sys
-
-from tgym.envs.orderbook.utils import Positions
 
 pos_summary = Gauge('emit_position', 'Trading Position')
 profit_gauge = Gauge('profit', 'Profit', unit='BTC')
@@ -36,16 +32,21 @@ class BitmexPositionEmitter(
 ):
     def __init__(
         self,
+        checkpoint_id,
         job_name: str,
         agent_cls: str,
         start_date=None,
         end_date=None,
         env='orderbook-trading-v0',
         checkpoint='/ray_results/orderbook-apex-v3/APEX_orderbook-trading'
-                   '-v0_0_2019-03-17_11-25-03c8b7csl0/checkpoint_20'
-                   '/checkpoint-20/',
+                   '-v0_0_2019-03-17_21-16-04d6nnj_vi/checkpoint_58'
+                   '/checkpoint-58/',
         **kwargs
     ):
+        checkpoint = f'/ray_results/orderbook-apex-v3/APEX_orderbook-trading' \
+            f'-v0_0_2019-03-17_21-16-04d6nnj_vi/checkpoint_{checkpoint_id}' \
+            f'/checkpoint-{checkpoint_id}/'
+
         kwargs['checkpoint'] = checkpoint
         kwargs['env'] = env
 
@@ -56,8 +57,9 @@ class BitmexPositionEmitter(
         OrderBookTradingEnv.__init__(
             self,
             should_penalize_even_trade=False,
-            trading_fee=0.075/100.00,
+            trading_fee=0.0,
             time_fee=0.0,
+            max_summary=10,
             **kwargs
         )
 
@@ -135,7 +137,7 @@ class BitmexPositionEmitter(
         self.prev_action = action
         obs, reward, done, info = super().step(action)
         self.prev_reward = reward
-        profit_gauge.set(self.total_pnl)
+        profit_gauge.set(self.capital)
         alog.info(alog.pformat(self.summary()))
 
     def _push_metrics(self):
@@ -159,6 +161,7 @@ class OrderBookTradingEvaluator(OrderBookTradingEnv):
                 default=BitmexChannels.XBTUSD.value)
 @click.option('--job-name', '-n', default=None)
 @click.option('--agent-cls', '-a', default=None)
+@click.option('--checkpoint_id', '-c')
 def main(**kwargs):
     ray.init()
     emitter = BitmexPositionEmitter(**kwargs)
