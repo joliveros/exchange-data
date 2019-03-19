@@ -17,11 +17,31 @@ services:
     depends_on:
       - redis
 
-  emit_bitmex:
+  emit_bitmex_btc:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
+    networks:
+      - public
+    depends_on:
+      - redis
+
+  emit_bitmex_eth:
+    deploy:
+      replicas: 1
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
+    networks:
+      - public
+    depends_on:
+      - redis
+
+  emit_bitmex_:
+    deploy:
+      replicas: 1
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
     networks:
       - public
     depends_on:
@@ -66,17 +86,25 @@ services:
     networks:
       - public
 
-  emit_bitmex_account:
-    deploy:
-      replicas: 1
-    image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
+  record_bitmex_eth:
+    image: codequants.com:5000/exchange-data
     env_file:
       - ./.env.prod
+    depends_on:
+      - influxdb
+    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
     networks:
       - public
+
+  record_bitmex_xbtusd:
+    image: codequants.com:5000/exchange-data
+    env_file:
+    - ./.env.prod
     depends_on:
-      - redis
+    - influxdb
+    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD --measurement-name data"
+    networks:
+    - public
 
   emit_bitmex_account:
     deploy:

@@ -219,7 +219,7 @@ class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
 @click.option('--max-workers', '-w', type=int, default=12)
 @click.option('--max-count', '-c', type=int, default=10000)
 @click.option('--group-interval', '-g', type=str, default='5d')
-@click.option('--max-cache-len', type=int, default=60*60)
+@click.option('--max-cache-len', type=int, default=60*60*3)
 def main(max_workers, max_count, group_interval, **kwargs):
     ranges = OrderBookPlayBack(depths=[21], **kwargs)\
         .get_empty_ranges(max_count, group_interval)

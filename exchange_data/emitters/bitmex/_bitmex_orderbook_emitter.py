@@ -65,7 +65,7 @@ class BitmexOrderBookEmitter(
 
         self.subscriptions_enabled = subscriptions_enabled
         if depths is None:
-            depths = [21, 0]
+            depths = [21]
 
         self.depths = depths
         self.save_data = save_data
@@ -198,10 +198,15 @@ class BitmexOrderBookEmitter(
         return [m.__dict__ for m in measurements]
 
     def slice(self, depth, frame_slice, timestamp):
+        fields = dict(
+            data=json.dumps(frame_slice.tolist()),
+            best_bid=self.get_best_bid(),
+            best_ask=self.get_best_ask()
+        )
+
         return Measurement(measurement=self.channel_for_depth(depth),
                            tags={'symbol': self.symbol.value},
-                           time=timestamp, fields={
-                'data': json.dumps(frame_slice.tolist())})
+                           time=timestamp, fields=fields)
 
     def emit_frames(self, timestamp):
         for depth in self.emit_depths:
