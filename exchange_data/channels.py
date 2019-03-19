@@ -5,3 +5,4 @@ class BitmexChannels(NoValue):
     XBTUSD = 'XBTUSD'
     BXBT = '.BXBT'
     BXBT_s = '.BXBT_s'
+    ETHUSD = 'ETHUSD'

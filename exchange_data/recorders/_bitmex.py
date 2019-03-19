@@ -26,11 +26,13 @@ class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
 
     def __init__(
         self,
+        measurement_name,
         symbol: BitmexChannels,
         database_name='bitmex',
         no_save: bool = False,
         **kwargs,
     ):
+        self.measurement_name = measurement_name
         if isinstance(symbol, str):
             symbol = BitmexChannels[symbol]
 
@@ -72,7 +74,8 @@ class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
             row.pop('symbol', None)
 
         if not self.no_save:
-            self.save_measurement('data', self.symbol.value, data)
+            self.save_measurement(self.measurement_name,
+                                  self.symbol.value, data)
 
     def stop(self, *args):
         self.close()
@@ -90,6 +93,7 @@ class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
 @click.option('--no-save', '-n', is_flag=True, help='disable saving to disk')
 @click.option('--batch-size', '-b', type=int, default=100, help='batch size at which to save to influxdb.')
 @click.option('--influxdb', type=str, default=None, help='override influxdb connection string.')
+@click.option('--measurement-name', type=str, default=None, help='Measurent name.')
 def main(symbol: str, **kwargs):
     emitter = BitmexRecorder(symbol=BitmexChannels[symbol], **kwargs)
     emitter.start()

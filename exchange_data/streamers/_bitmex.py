@@ -40,14 +40,15 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
         max_spread: float = 100.0,
         orderbook_depth: int = 10,
         random_start_date: bool = False,
-        end_date: datetime = None,
         start_date: datetime = None,
+        end_date: datetime = None,
         window_size: str = '15s',
         sample_interval: str = '1s',
         channel_name: str = None,
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
+
         SignalInterceptor.__init__(self)
 
         self.counter = 0
@@ -60,11 +61,11 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
         self._index = []
         self.end_date = None
         self.max_spread = max_spread
-        self.start_date = None
         self.realtime = False
-        self._min_date = parser.parse('2018-06-02 22:49:31.148000+00:00')
 
+        self._min_date = parser.parse('2018-06-02 22:49:31.148000+00:00')
         self.orderbook_depth = orderbook_depth
+        self.window_size_str = window_size
         self.window_size = timeparse(window_size)
 
         if channel_name:
@@ -73,10 +74,9 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
             self.channel_name = BitmexOrderBookChannels.XBTUSD.value
 
         if self.random_start_date:
-            if start_date is not None:
-                raise Exception('start_date should be None.')
-
             self.start_date = random_date(self.min_date, self.now())
+        else:
+            self.start_date = start_date
 
         if end_date is None:
             self.end_date = self.start_date + \

@@ -292,14 +292,14 @@ class OrderBook(object):
 
     def get_best_bid(self):
         best_bid = self.bids.max_price()
-        return best_bid if best_bid else 0
+        return best_bid if best_bid else 0.0
 
     def get_worst_bid(self):
         return self.bids.min_price()
 
     def get_best_ask(self):
         best_ask = self.asks.min_price()
-        return best_ask if best_ask else 0
+        return best_ask if best_ask else 0.0
 
     @property
     def spread(self):
