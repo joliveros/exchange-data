@@ -1,8 +1,7 @@
 from abc import ABC
-from gym.spaces import Discrete
-
 from exchange_data.utils import NoValue
-from tgym.envs import OrderBookTradingEnv
+from gym.spaces import Discrete
+from tgym.envs.orderbook._orderbook import OrderBookTradingEnv
 
 
 class Positions(NoValue):

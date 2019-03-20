@@ -1,5 +1,5 @@
 from gym.envs.registration import register
-from tgym.envs.orderbook import OrderBookTradingEnv
+from tgym.envs.orderbook import OrderBookTradingEnv, LongOrderBookTradingEnv
 
 
 register(
@@ -8,6 +8,6 @@ register(
 )
 
 register(
-    id='orderbook-trading-v0',
+    id='long-orderbook-trading-v0',
     entry_point='tgym.envs:LongOrderBookTradingEnv',
 )
