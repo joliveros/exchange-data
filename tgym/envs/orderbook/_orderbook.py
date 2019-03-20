@@ -1,7 +1,6 @@
 from abc import ABC
 from collections import deque
-from datetime import datetime, timedelta
-from dateutil.tz import tz
+from datetime import timedelta
 from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
@@ -9,15 +8,11 @@ from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook.utils import Positions
-from time import sleep
 
 import alog
 import click
-import json
 import logging
 import numpy as np
-import sys
-import traceback
 
 
 class AlreadyFlatException(Exception):
