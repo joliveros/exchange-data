@@ -33,18 +33,16 @@ class BitmexPositionEmitter(
     def __init__(
         self,
         checkpoint_id,
+        result_path,
         job_name: str,
         agent_cls: str,
         start_date=None,
         end_date=None,
         env='orderbook-trading-v0',
-        checkpoint='/ray_results/orderbook-apex-v3/APEX_orderbook-trading'
-                   '-v0_0_2019-03-17_21-16-04d6nnj_vi/checkpoint_58'
-                   '/checkpoint-58/',
         **kwargs
     ):
-        checkpoint = f'/ray_results/orderbook-apex-v3/APEX_orderbook-trading' \
-            f'-v0_0_2019-03-17_21-16-04d6nnj_vi/checkpoint_{checkpoint_id}' \
+        checkpoint = result_path + \
+            f'checkpoint_{checkpoint_id}' \
             f'/checkpoint-{checkpoint_id}/'
 
         kwargs['checkpoint'] = checkpoint
@@ -72,11 +70,12 @@ class BitmexPositionEmitter(
                 if agent_cls in cls[0]
             ][0]
 
+        self.checkpoint_id = checkpoint_id
         self.default_action = Positions.Flat.value
         self.prev_action = None
         self.prev_reward = None
         self.agent = agent_cls(**kwargs)
-        self.job_name = job_name
+        self.job_name = f'{job_name}_{checkpoint_id}'
         self._database = 'bitmex'
         self._index = 0.0
         self.channel = 'XBTUSD_OrderBookFrame_depth_21'
@@ -162,6 +161,7 @@ class OrderBookTradingEvaluator(OrderBookTradingEnv):
 @click.option('--job-name', '-n', default=None)
 @click.option('--agent-cls', '-a', default=None)
 @click.option('--checkpoint_id', '-c')
+@click.option('--result-path', '-r')
 def main(**kwargs):
     ray.init()
     emitter = BitmexPositionEmitter(**kwargs)

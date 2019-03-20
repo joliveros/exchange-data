@@ -1,0 +1,47 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: [text/plain]
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [Basic am9zZTpqYWRlMTIxNDE1]
+      Connection: [keep-alive]
+      Content-Type: [application/json]
+      User-Agent: [python-requests/2.21.0]
+    method: GET
+    uri: http://influxdb:28953/query?precision=ms&q=SELECT+FIRST%28data%29+as+data+FROM+XBTUSD_OrderBookFrame_depth_21+WHERE+time+%3E+%272019-03-07+01%3A31%3A48.315491%27+AND+time+%3C+%272019-03-07+01%3A32%3A48.315491%27+GROUP+BY+time%281s%29+tz%28%27UTC%27%29%3B&db=bitmex&epoch=ms&chunked=true
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/+zdz2ojRxAG8HueYpmzZLqqq3qqfVxCrjkkgYAQRsSCmPhPsOVclrx70FQ5u+CB
+        eJWVdlv9sQe5ZjSt6er+oRUfSB+Gx+3T8+3uabhcfRiedpvd9m57v7u6uR4u02J42j7ebP3c/eZu
+        O1wOv77/+Zefvr/68fF6+/j+4eGPHx43d9ur6+2fu9+vmIbF8NvD7fPd/f6aYXdztx0Ww/VmtxnW
+        i+Gvze3zNNiKVKky52QppcX98+3tevHxYN0fHFarVbaiF2nxbnrU6bFEXaIeox6jtqgt6hp19XpM
+        Xo8paoqaouaoOeocdY5aopao9SKtF+9WhZRtupbKmLPfBVWeLufEkqcboVQyTydNC/lrKSWZRuVi
+        6ieJuIpPjTJbmppAlaVOTyyZxQeulKqfpFFFpgFVVGg6bZXLdAFJHovfHZmNPDWxjsn/IE4jT8+r
+        ySTLRVrvp7TvfsyyxKxLdKHwv49+PLpXopslului2xrd11gNjdXRWC2N1dNYTY3V1VhtjdXX2A0a
+        96Xi3V/qS4OXxFppGmZZWS37QXpp+5KzcPLzmUx8fywLWyp+njXasiTNmWMotTiYKUnyY8YaV5fq
+        nVhSIiEfJ+Wa/NWziS/XksdqNs1hObKaj8PGefTBR2PfkEsSGfd7b71eD5/QoNQVjVGKNxY0QOO/
+        aBBogAZozNFg0AAN0JijkUEDNEBjjoY0TWPklDNogMYxaChogAZozNEooAEaoDFHYwQN0ACNORoG
+        GqABGnM02k7DQQM0jkWD207D/weNkqkEjRxNAg3Q+IRG22k4aIDG0Wi0nYaDBmgcjUbbaThogMbR
+        aHSbhr/QKDWlPM2M2chvMZfsSwoY3cLoNgufgUFG5usDGqDB3Wbhc+8ZWWrsMNAAjW6z8HkayReY
+        R0u+l0CjWxoNZuFa08sH6Cwp7uoL0DAVqv5pXE3iIGi8omEl+TatRUTPVkaDUfgJZHBiS3jT6FlG
+        bjAJP4UMkeq3Cxm9ymgwCIcMyDiBjAZzcMiAjBPIaDAG/2wZZKJmoAEan0WjwRj8FDRUsmQGjZ5p
+        NBiEn4BGyRoDkxZOnGCjQxsNJuEnsKGFq7cDNvq10WAUflIbnMg44f9UPdroIQuHDdg4xEYPaThs
+        wMYBNqSHPBw2YOMQGz0k4l/IRq06VtDohkYPkThogMYBNJCJv5mG1cwEGt3QQCb+ZhqliEwjV/ZV
+        hIvzdYFAHC7g4rWLBsPwolp9qh9dcGHxrf9WGJXi52rgAi5eu2gwCIcLuDi6iwZD8G/GhVCpYHGW
+        LBrMv8ECLI7MQhuMvk/Kglgy+Rd7mgiXDBdduGgw9m7OBZXy8p25gNEKjAZDb8AAjOPDaDDy/vow
+        SDKb/wkb52ujwcwbNmDjJDYazL2/ARtsY/atAxvnawPZ99ttMJuCRjc0EH8fRKPWJKBx3jSQgIMG
+        aMzSQAoOGqAxR6MgCQcN0JilgTAcNEBjlgbicNAAjVkaCMRBAzRmaSAPBw3QmKWBOBw0QGOWBtJw
+        0ACNWRpIw0EDNGZpnEsaLpb9V/RpJBYDDdA4iMb67/2/7/4JAAD//1SSaRbLugAA
+    headers:
+      Content-Encoding: [gzip]
+      Content-Type: [application/json]
+      Date: ['Tue, 19 Mar 2019 21:21:46 GMT']
+      Request-Id: [ffe25bd5-4a8c-11e9-b955-02420aff000b]
+      Transfer-Encoding: [chunked]
+      X-Influxdb-Build: [OSS]
+      X-Influxdb-Version: [1.7.4]
+      X-Request-Id: [ffe25bd5-4a8c-11e9-b955-02420aff000b]
+    status: {code: 200, message: OK}
+version: 1

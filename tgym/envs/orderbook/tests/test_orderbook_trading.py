@@ -7,6 +7,7 @@ from tgym.envs.orderbook.utils import Positions
 from time import sleep
 import alog
 import pytest
+import numpy as np
 
 
 class TestOrderBookTradingEnv(object):
@@ -51,7 +52,7 @@ class TestOrderBookTradingEnv(object):
 
         assert env.start_date == parser.parse('2019-03-07 00:50:00-06:00')
 
-    # @pytest.mark.vcr(record_mode='all')
+    @pytest.mark.vcr()
     @mock.patch(
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
@@ -79,3 +80,46 @@ class TestOrderBookTradingEnv(object):
         env.step(Positions.Flat.value)
 
         alog.debug(alog.pformat(env.summary()))
+
+    @pytest.mark.vcr()
+    @mock.patch(
+        'exchange_data.streamers._bitmex.SignalInterceptor'
+    )
+    def test_trades(self, sig_mock):
+        start_date = parser.parse('2019-03-07 01:31:48.315491+00:00') \
+            .replace(tzinfo=tz.tzutc())
+
+        env = OrderBookTradingEnv(
+            max_frames=10,
+            max_summary=10,
+            orderbook_depth=21,
+            random_start_date=False,
+            start_date=start_date,
+            window_size='1m',
+            use_volatile_ranges=False
+        )
+
+        env.reset()
+
+        alog.info(dict(best_bid=env.best_bid, best_ask=env.best_ask))
+        alog.info(alog.pformat(env.summary()))
+        env.step(Positions.Long.value)
+        alog.info(alog.pformat(env.summary()))
+
+        env.last_orderbook[0][0][0] = 3862.0
+        env.last_orderbook[1][0][0] = 3862.5
+
+        env.step(Positions.Short.value)
+
+        env.last_orderbook[0][0][0] = 3865.0
+        env.last_orderbook[1][0][0] = 3865.5
+
+        env.step(Positions.Flat.value)
+
+        env.last_orderbook[0][0][0] = 3865.0
+        env.last_orderbook[1][0][0] = 3865.5
+
+        alog.info(alog.pformat(env.summary()))
+        alog.info(dict(best_bid=env.best_bid, best_ask=env.best_ask))
+
+
