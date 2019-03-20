@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from datetime import timedelta
 from exchange_data import Measurement, settings
@@ -42,7 +43,7 @@ class BitmexPositionEmitter(
         **kwargs
     ):
         checkpoint = result_path + \
-            f'checkpoint_{checkpoint_id}' \
+            f'/checkpoint_{checkpoint_id}' \
             f'/checkpoint-{checkpoint_id}/'
 
         kwargs['checkpoint'] = checkpoint
@@ -137,7 +138,9 @@ class BitmexPositionEmitter(
         obs, reward, done, info = super().step(action)
         self.prev_reward = reward
         profit_gauge.set(self.capital)
-        alog.info(alog.pformat(self.summary()))
+
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.info(alog.pformat(self.summary()))
 
     def _push_metrics(self):
         push_to_gateway(
@@ -163,7 +166,6 @@ class OrderBookTradingEvaluator(OrderBookTradingEnv):
 @click.option('--checkpoint_id', '-c')
 @click.option('--result-path', '-r')
 def main(**kwargs):
-    ray.init()
     emitter = BitmexPositionEmitter(**kwargs)
     emitter.start()
 
