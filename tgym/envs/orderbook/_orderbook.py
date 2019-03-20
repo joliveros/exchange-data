@@ -1,22 +1,23 @@
-import json
-import sys
-import traceback
 from abc import ABC
 from collections import deque
 from datetime import datetime, timedelta
 from dateutil.tz import tz
-from gym.spaces import Discrete, Box
-from pandas import DataFrame
-
+from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
+from gym.spaces import Discrete, Box
+from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
+from tgym.envs.orderbook.utils import Positions
 from time import sleep
+
 import alog
 import click
+import json
+import logging
 import numpy as np
-
-from tgym.envs.orderbook.utils import Positions
+import sys
+import traceback
 
 
 class AlreadyFlatException(Exception):
@@ -53,7 +54,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         sample_interval='1s',
         max_summary=50,
         volatile_ranges=None,
-        min_std_dev=3.0,
+        use_volatile_ranges=True,
+        min_std_dev=0.3,
         should_penalize_even_trade=True,
         capital=1.0,
         **kwargs
@@ -109,22 +111,25 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.total_reward = 0
         self.trades = []
         self.trading_fee = trading_fee
+        self.use_volatile_ranges = use_volatile_ranges
+        self.last_position = Positions.Flat
 
-        if volatile_ranges is None:
+        if volatile_ranges is None and use_volatile_ranges:
             self.volatile_ranges = self.get_volatile_ranges()
             self._args['volatile_ranges'] = self.volatile_ranges
         else:
             self.volatile_ranges = volatile_ranges
 
-        nearest_volatile_range = self.volatile_ranges.index\
-            .get_loc(self.start_date.timestamp() * (10**3), method='nearest')
+        if use_volatile_ranges:
+            nearest_volatile_range = self.volatile_ranges.index\
+                .get_loc(self.start_date.timestamp() * (10**3), method='nearest')
 
-        nearest_volatile_range_start = self.volatile_ranges\
-            .iloc[nearest_volatile_range].name
+            nearest_volatile_range_start = self.volatile_ranges\
+                .iloc[nearest_volatile_range].name
 
-        self.start_date = \
-            self.parse_db_timestamp(nearest_volatile_range_start)
-        self.end_date = self.start_date + timedelta(seconds=self.window_size)
+            self.start_date = \
+                self.parse_db_timestamp(nearest_volatile_range_start)
+            self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         high = np.full(
             (self.max_frames * (4 + 4 * self.orderbook_depth), ),
@@ -143,10 +148,10 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return DataFrame(ranges).set_index('time')
 
     def reset(self, **kwargs):
-        alog.debug('##### reset ######')
-
-        # if self.step_count > 0:
-        #     alog.info(alog.pformat(self.summary()))
+        if settings.LOG_LEVEL == logging.DEBUG:
+            if self.step_count > 0:
+                alog.debug('##### reset ######')
+                alog.info(alog.pformat(self.summary()))
 
         _kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -154,25 +159,23 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         new_instance = OrderBookTradingEnv(**_kwargs)
         self.__dict__ = new_instance.__dict__
 
-        for i in range(self.max_frames):
-            self.get_observation()
-        # try:
-        #     for i in range(self.max_frames):
-        #         self.get_observation()
-        # except (OutOfFramesException, TypeError):
-        #     if not self.random_start_date:
-        #         self._set_next_window()
-        #         kwargs = dict(
-        #             start_date=self.start_date,
-        #             end_date=self.end_date
-        #         )
-        #     return self.reset(**kwargs)
+        # for i in range(self.max_frames):
+        #     self.get_observation()
+        try:
+            for i in range(self.max_frames):
+                self.get_observation()
+        except (OutOfFramesException, TypeError):
+            if not self.random_start_date:
+                self._set_next_window()
+                kwargs = dict(
+                    start_date=self.start_date,
+                    end_date=self.end_date
+                )
+            return self.reset(**kwargs)
 
         return self.last_observation
 
     def step(self, action):
-        # sleep(1)
-
         assert self.action_space.contains(action)
 
         done = False
@@ -198,7 +201,6 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         reward = self.reset_reward()
 
-        # alog.info(alog.pformat(self.summary()))
         return observation, reward, done, self.summary()
 
     @property
@@ -303,7 +305,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         return pnl
 
     def pnl(self, exit_price):
-        diff = self.entry_price - exit_price
+        diff = 0.0
+        if self.last_position == Positions.Long:
+            diff = exit_price - self.entry_price
+        elif self.last_position == Positions.Short:
+            diff = self.entry_price - exit_price
 
         if self.entry_price == 0.0:
             change = 0.0
@@ -311,6 +317,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             change = diff / self.entry_price
 
         pnl = (self.capital * change) + (-1 * self.capital * self.trading_fee)
+
         if pnl == 0.0:
             self.reward -= 1.0
 
@@ -360,6 +367,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.entry_price = self.best_bid
 
     def change_position(self, action):
+        self.last_position = self.position
+
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Short.value:
