@@ -408,6 +408,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
         random_start_date=True,
+        use_volatile_ranges=True,
         **kwargs
     )
 
