@@ -5,6 +5,8 @@ from bitmex_websocket import Instrument
 from bitmex_websocket._bitmex_websocket import BitMEXWebsocketConnectionError
 from bitmex_websocket.auth import generate_nonce, generate_signature
 from bitmex_websocket.constants import SecureInstrumentChannels, SecureChannels
+from prometheus_client import Gauge, push_to_gateway, REGISTRY
+
 from exchange_data import settings, Database, Measurement
 from exchange_data.emitters import Messenger, SignalInterceptor
 
@@ -16,6 +18,7 @@ import websocket
 
 from exchange_data.utils import DateTimeUtils
 
+balance_guage = Gauge('account_balance', 'Account Balance', unit='BTC')
 
 class BitmexAccountEmitter(
     Instrument,
@@ -65,23 +68,40 @@ class BitmexAccountEmitter(
         channel_name = f'bitmex_{table}'
 
         self.log_data(data)
-
-        data_str = json.dumps(data)
-
-        m = Measurement(
-            measurement=channel_name,
-            time=self.now(),
-            tags={},
-            fields=dict(data=data_str)
-        )
+        m = self.measurement(table, data)
 
         self.write_points([m.__dict__], time_precision='ms')
 
-        self.publish(channel_name, data_str)
+        self.publish(channel_name, json.dumps(m.__dict__))
+
+    def measurement(self, table, data):
+        data_str = json.dumps(data)
+        fields = dict(data=data_str)
+
+        if table == 'wallet':
+            amount = data['data'][0]['amount']
+            amount = fields['amount'] = amount/(10**8)
+            balance_guage.set(amount)
+            self._push_metrics()
+
+        return Measurement(
+            measurement=table,
+            time=self.now(),
+            tags={},
+            fields=fields
+        )
 
     def log_data(self, data):
         if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(alog.pformat(data))
+            if data['table'] == 'wallet':
+                alog.info(alog.pformat(data))
+
+    def _push_metrics(self):
+        push_to_gateway(
+            settings.PROMETHEUS_HOST,
+            job='account',
+            registry=REGISTRY
+        )
 
     def start(self):
         self.run_forever()
