@@ -288,7 +288,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self.total_pnl += pnl
         self.capital += pnl
-        self.reward += pnl
+        self.reward += pnl * (10**3)
         self.entry_price = 0.0
 
     @property
