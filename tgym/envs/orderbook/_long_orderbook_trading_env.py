@@ -11,7 +11,7 @@ class Positions(NoValue):
 
 class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        OrderBookTradingEnv.__init__(self, **kwargs)
         self.action_space = Discrete(2)
 
     def change_position(self, action):

@@ -24,6 +24,11 @@ pos_summary = Gauge('emit_position', 'Trading Position')
 profit_gauge = Gauge('profit', 'Profit', unit='BTC')
 
 
+class OrderBookTradingEnvAbs(object):
+    def __init__(self, **kwargs):
+        pass
+
+
 class BitmexPositionEmitter(
     OrderBookTradingEnv,
     BitmexEmitterBase,

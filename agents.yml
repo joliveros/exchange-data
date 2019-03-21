@@ -23,3 +23,37 @@ services:
       - redis
       - influxdb
       - pushgateway
+
+  apex-v3-long-2:
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_position_emitter.py -n apex-v3-long -a ApexAgent -c 2 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-20_17-04-09v36uxqep"
+    volumes:
+        - /home/joliveros/ray_results:/root/ray_results
+    networks:
+        - public
+    env_file:
+        - ./.env.prod
+    environment:
+        - NVIDIA_VISIBLE_DEVICES=all
+        - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - influxdb
+      - pushgateway
+
+  apex-v3-long-4:
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_long_position_emitter.py -n apex-v3-long -a ApexAgent -c 4 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-20_17-04-09v36uxqep"
+    volumes:
+        - /home/joliveros/ray_results:/root/ray_results
+    networks:
+        - public
+    env_file:
+        - ./.env.prod
+    environment:
+        - NVIDIA_VISIBLE_DEVICES=all
+        - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - influxdb
+      - pushgateway
