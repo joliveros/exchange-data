@@ -37,16 +37,6 @@ services:
     depends_on:
       - redis
 
-  emit_bitmex_:
-    deploy:
-      replicas: 1
-    image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
-    networks:
-      - public
-    depends_on:
-      - redis
-
   emit_orderbook_l2:
     deploy:
       replicas: 1
@@ -79,7 +69,7 @@ services:
     env_file:
       - ./.env.prod
     depends_on:
-      - emit_bitmex
+      - emit_bitmex_btc
       - emit_time
       - redis
 #      - proxy
