@@ -135,8 +135,25 @@ class BitmexPositionEmitter(
             prev_reward=self.prev_reward
         )
 
-        # TODO: publish ???
+        self.publish_position(action)
         self.step(action)
+
+    def publish_position(self, action):
+        _action = None
+
+        if Positions.Flat.value == action:
+            _action = Positions.Flat
+        elif Positions.Long.value == action:
+            _action = Positions.Long
+        elif Positions.Short.value == action:
+            _action = Positions.Short
+
+        if _action:
+            self.publish(self.job_name, dict(data=_action.name))
+
+    def publish(self, channel, data):
+        # alog.info(alog.pformat(locals()))
+        super().publish(channel, json.dumps(data))
 
     def step(self, action):
         self.prev_action = action

@@ -40,19 +40,19 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self,
         episode_length=1000,
         trading_fee=0.0,
-        max_loss=-2/100.0,
-        no_pnl_reward=-1.0,
-        max_frames=100,
+        max_loss=-0.1/100.0,
+        max_frames=5,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='10m',
+        window_size='11m',
         sample_interval='1s',
-        max_summary=50,
+        max_summary=10,
         volatile_ranges=None,
         use_volatile_ranges=True,
-        min_std_dev=0.3,
+        min_std_dev=0.1,
         should_penalize_even_trade=True,
         capital=1.0,
+        action_space=None,
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
@@ -72,7 +72,8 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self._best_ask = None
         self._best_bid = None
-        self.action_space = Discrete(3)
+        self.action_space = Discrete(3) if action_space is None \
+            else action_space
         self.ask_diff = 0.0
         self.bid_diff = 0.0
         self.capital = capital
@@ -91,12 +92,11 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.last_price_diff = 0.0
         self.last_timestamp = 0
         self.max_frames = max_frames
-        self.max_position_duration = 500
+        self.max_position_duration = timeparse('20m') - max_frames
         self.max_summary = max_summary
         self.min_capital = capital * (1 + max_loss)
         self.min_std_dev = min_std_dev
-        self.negative_position_reward_factor = 1.0
-        self.no_pnl_reward = no_pnl_reward
+        self.negative_position_reward_factor = 10**5
         self.position = Positions.Flat
         self.position_history = []
         self.reward = 0
@@ -127,7 +127,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         high = np.full(
-            (self.max_frames * (4 + 4 * self.orderbook_depth), ),
+            (self.max_frames * (3 + 2 * self.orderbook_depth), ),
             np.inf
         )
 
@@ -159,7 +159,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         try:
             for i in range(self.max_frames):
                 self.get_observation()
-        except (OutOfFramesException, TypeError):
+        except (OutOfFramesException, TypeError, Exception):
             if not self.random_start_date:
                 self._set_next_window()
                 kwargs = dict(
@@ -185,7 +185,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         self.step_count += 1
 
-        if self.step_count >= 500:
+        if self.step_count >= self.max_position_duration:
             done = True
 
         try:
@@ -200,20 +200,19 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
     @property
     def best_bid(self):
-        self._best_bid = self.last_orderbook[0][0][0]
+        self._best_bid = self.last_orderbook[1][0][0]
         return self._best_bid
 
     @property
     def best_ask(self):
-        self._best_ask = self.last_orderbook[1][0][0]
+        self._best_ask = self.last_orderbook[0][0][0]
         return self._best_ask
 
     @property
     def position_data(self):
         data_keys = [
             'ask_diff',
-            'bid_diff',
-            'total_pnl'
+            'bid_diff'
         ]
 
         data = {key: self.__dict__[key] for key in
@@ -229,10 +228,14 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.last_best_bid = self.best_bid
 
         time, orderbook = self._get_observation()
+
         self.position_history.append(self.position.name[0])
         self.last_datetime = str(time)
 
         self.last_orderbook = orderbook = np.array(orderbook)
+
+        if orderbook.shape[2] != self.orderbook_depth:
+            raise Exception('Orderbook incomplete.')
 
         if self.last_observation.shape[0] > 0:
             self.bid_diff = self.best_bid - self.last_best_bid
@@ -240,7 +243,13 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         position_data = self.position_data
 
-        frame = np.concatenate((position_data, orderbook.flatten()))
+        bid_side = orderbook[1][1]
+        ask_side = orderbook[0][1]
+        orderbook_volume_levels = np.stack((ask_side, bid_side))
+
+        frame = np.concatenate((position_data,
+                                orderbook_volume_levels.flatten()))
+
         self.frames.append(frame)
 
         self.last_observation = np.concatenate(self.frames)
@@ -265,7 +274,7 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
         self.trades.append(Trade(
             self.position.name[0],
             pnl, self.entry_price,
-            self.best_bid
+            self.best_ask
         ))
 
         self.total_pnl += pnl
@@ -283,20 +292,21 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
             self.position.name[0],
             pnl,
             self.entry_price,
-            self.best_ask
+            self.best_bid
         ))
 
         self.total_pnl += pnl
         self.capital += pnl
-        self.reward += pnl * (10**3)
+        self.reward += pnl
         self.entry_price = 0.0
 
     @property
     def short_pnl(self):
         if self.entry_price > 0.0:
-            pnl = self.pnl(self.best_bid)
+            pnl = self.pnl(self.best_ask)
         else:
             pnl = 0.0
+            self.entry_price = 0.0
         return pnl
 
     def pnl(self, exit_price):
@@ -313,15 +323,12 @@ class OrderBookTradingEnv(Env, BitmexStreamer, ABC):
 
         pnl = (self.capital * change) + (-1 * self.capital * self.trading_fee)
 
-        if pnl == 0.0:
-            self.reward -= 1.0
-
         return pnl
 
     @property
     def long_pnl(self):
         if self.entry_price > 0.0:
-            pnl = self.pnl(self.best_ask)
+            pnl = self.pnl(self.best_bid)
         else:
             pnl = 0.0
         return pnl
