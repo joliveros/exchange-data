@@ -41,7 +41,7 @@ dependencies:
     - sortedcontainers
     - statsd
     - stringcase
+    - stringcase
     - tensorflow-gpu
     - timestamp
-    - stringcase
 #    - git+https://github.com/py-bson/bson.git#egg=bson
