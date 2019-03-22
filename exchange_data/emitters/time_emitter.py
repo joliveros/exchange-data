@@ -1,47 +1,64 @@
+import multiprocessing
 from datetime import datetime
-
 from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
-from exchange_data.utils import NoValue
+from exchange_data.utils import NoValue, DateTimeUtils
 from time import sleep
-
 import alog
 import click
 
 alog.set_level(settings.LOG_LEVEL)
 
 
-class TimeEmitter(Messenger):
+class TimeEmitter(Messenger, DateTimeUtils):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.minute_counter = 0
         self.five_second_counter = 0
+        self.should_stop = False
+        self.last_dt = self.now().replace(microsecond=0)
 
     @staticmethod
     def timestamp():
         return datetime.utcnow().timestamp()
 
+    def timestamp_str(self):
+        return str(self.last_dt.timestamp())
+
     def start(self):
-        while True:
-            sleep(1)
-            now = self.timestamp()
-            self.publish(TimeChannels.Tick.value, now)
+        while not self.should_stop:
+            sleep(1/10**9)
 
-            self.minute_counter += 1
-            self.five_second_counter += 1
+            if self.tick():
+                sleep(99/100)
+                t = self.timestamp_str()
+                self.publish(TimeChannels.Tick.value, t)
 
-            if self.minute_counter % 60 == 0:
-                self.publish('1m', str(now))
-                self.minute_counter = 0
+                self.minute_counter += 1
+                self.five_second_counter += 1
 
-            if self.five_second_counter % 5 == 0:
-                self.five_second_counter = 0
-                self.publish('5s', str(now))
+                if self.minute_counter % 60 == 0:
+                    self.publish('1m', t)
+                    self.minute_counter = 0
+
+                if self.five_second_counter % 5 == 0:
+                    self.five_second_counter = 0
+                    self.publish('5s', t)
 
     def publish(self, *args):
-        alog.debug(args)
         super().publish(*args)
+
+    def stop(self, *args, **kwargs):
+        super().stop(*args, **kwargs)
+
+    def tick(self):
+        dt = self.now()
+        diff = dt - self.last_dt
+
+        if diff.total_seconds() >= 1.0:
+            self.last_dt = dt.replace(microsecond=0)
+            return self.last_dt
 
 
 class TimeChannels(NoValue):
@@ -49,7 +66,6 @@ class TimeChannels(NoValue):
 
 
 @click.command()
-@click.argument('interval', nargs=1, required=False, default='1s')
 def main(**kwargs):
     time_emitter = TimeEmitter(**kwargs)
     time_emitter.start()
