@@ -1,22 +1,22 @@
 long-orderbook-apex-v3:
     checkpoint_at_end: True
-    checkpoint_freq: 2
+    checkpoint_freq: 1
     max_failures: 10000
     env: long-orderbook-trading-v0
     run: APEX
     config:
         clip_rewards: False
-        adam_epsilon: .00015
+        adam_epsilon: .00000001
         beta_annealing_fraction: 1.0
         buffer_size: 100000
         double_q: False
         dueling: False
         exploration_final_eps: 0.01
-        exploration_fraction: .1
+        exploration_fraction: 0.1
         final_prioritized_replay_beta: 1.0
-        hiddens: [1024]
-        learning_starts: 1000000
-        lr: .0001
+        hiddens: [512]
+        learning_starts: 100000
+        lr: .001
         n_step: 3
         noisy: false
         num_atoms: 1
@@ -25,10 +25,9 @@ long-orderbook-apex-v3:
         schedule_max_timesteps: 2000000
 
         # APEX
-        num_workers: 2
-        num_cpus_per_worker: 1
-        num_envs_per_worker: 4
-        sample_batch_size: 10
-        train_batch_size: 150
-        target_network_update_freq: 5000
-        timesteps_per_iteration: 1000000
+        num_workers: 10
+        num_envs_per_worker: 12
+        sample_batch_size: 100
+        train_batch_size: 1000
+        target_network_update_freq: 100000
+        timesteps_per_iteration: 200000

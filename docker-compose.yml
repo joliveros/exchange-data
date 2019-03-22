@@ -107,6 +107,7 @@ services:
       - public
     depends_on:
       - redis
+      - influxdb
 
   socketio:
     image: codequants.com:5000/ws-server

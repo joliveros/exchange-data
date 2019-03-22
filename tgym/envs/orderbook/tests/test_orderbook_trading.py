@@ -52,19 +52,19 @@ class TestOrderBookTradingEnv(object):
 
         assert env.start_date == parser.parse('2019-03-07 00:50:00-06:00')
 
-    @pytest.mark.vcr()
+    # @pytest.mark.vcr(record_mode='all')
     @mock.patch(
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
     def test_orderbook_env_step(self, sig_mock):
-        start_date = parser.parse('2019-03-07 01:31:48.315491+00:00') \
+        start_date = parser.parse('2019-03-15 01:31:00+00:00') \
             .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
             max_frames=10,
             max_summary=10,
             orderbook_depth=21,
-            random_start_date=True,
+            random_start_date=False,
             start_date=start_date,
             window_size='1m'
         )
@@ -86,7 +86,7 @@ class TestOrderBookTradingEnv(object):
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
     def test_trades(self, sig_mock):
-        start_date = parser.parse('2019-03-07 01:31:48.315491+00:00') \
+        start_date = parser.parse('2019-03-14 01:31:48.315491+00:00') \
             .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
@@ -111,8 +111,8 @@ class TestOrderBookTradingEnv(object):
 
         env.step(Positions.Short.value)
 
-        env.last_orderbook[0][0][0] = 3865.0
-        env.last_orderbook[1][0][0] = 3865.5
+        env.last_orderbook[0][0][0] = 3862.0
+        env.last_orderbook[1][0][0] = 3862.5
 
         env.step(Positions.Flat.value)
 

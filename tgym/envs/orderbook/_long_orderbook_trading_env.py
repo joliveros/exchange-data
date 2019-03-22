@@ -11,8 +11,8 @@ class Positions(NoValue):
 
 class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
     def __init__(self, **kwargs):
-        OrderBookTradingEnv.__init__(self, **kwargs)
-        self.action_space = Discrete(2)
+        action_space = Discrete(2)
+        OrderBookTradingEnv.__init__(self, action_space=action_space, **kwargs)
 
     def change_position(self, action):
         self.last_position = self.position
@@ -21,3 +21,9 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
             self.long()
         elif action == Positions.Flat.value:
             self.flat()
+
+    # def should_change_position(self, action):
+    #     if action == Positions.Flat.value:
+    #         self.reward += 0.5
+    #
+    #     return self.position.value != action

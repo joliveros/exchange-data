@@ -7,43 +7,9 @@ networks:
 
 services:
 
-  apex-v3-24:
-    image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_position_emitter.py -n apex-v3 -a ApexAgent -c 24 -r /ray_results/orderbook-apex-v3/APEX_orderbook-trading-v0_0_2019-03-19_18-58-23v0nakbpf"
-    volumes:
-        - /home/joliveros/ray_results:/root/ray_results
-    networks:
-        - public
-    env_file:
-        - ./.env.prod
-    environment:
-        - NVIDIA_VISIBLE_DEVICES=all
-        - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - influxdb
-      - pushgateway
-
-  apex-v3-long-2:
-    image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_position_emitter.py -n apex-v3-long -a ApexAgent -c 2 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-20_17-04-09v36uxqep"
-    volumes:
-        - /home/joliveros/ray_results:/root/ray_results
-    networks:
-        - public
-    env_file:
-        - ./.env.prod
-    environment:
-        - NVIDIA_VISIBLE_DEVICES=all
-        - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - influxdb
-      - pushgateway
-
   apex-v3-long-4:
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_long_position_emitter.py -n apex-v3-long -a ApexAgent -c 4 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-20_17-04-09v36uxqep"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_long_position_emitter.py -n apex-v3-long -a ApexAgent -c 188 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-22_08-07-4911izmnuh"
     volumes:
         - /home/joliveros/ray_results:/root/ray_results
     networks:
@@ -52,7 +18,7 @@ services:
         - ./.env.prod
     environment:
         - NVIDIA_VISIBLE_DEVICES=all
-        - LOG_LEVEL=INFO
+        - LOG_LEVEL=DEBUG
     depends_on:
       - redis
       - influxdb
