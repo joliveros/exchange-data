@@ -1,12 +1,17 @@
 from abc import ABC
 from collections import deque
-from datetime import timedelta
+from datetime import timedelta, datetime
+
+from pyee import EventEmitter
+
 from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
+
+from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook.utils import Positions
 
 import alog
@@ -66,6 +71,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         del self._args['self']
 
         Env.__init__(self)
+        EventEmitter.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
         self.step_reward = step_reward
@@ -96,7 +102,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.min_capital = capital * (1 + max_loss)
         self.min_std_dev = min_std_dev
         self.negative_position_reward_factor = 10**5
-        self.position = Positions.Flat
         self.position_history = []
         self.reward = 0
         self.should_penalize_even_trade = should_penalize_even_trade
@@ -104,11 +109,15 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.total_pnl = 0.0
         self.total_reward = 0
         self.trades = []
+        self.pnl = 0.0
         self.trading_fee = trading_fee
         self.use_volatile_ranges = use_volatile_ranges
         self.last_position = Positions.Flat
         self.last_bid_side = np.zeros((self.orderbook_depth,))
         self.last_ask_side = np.copy(self.last_bid_side)
+        self.position = Positions.Flat
+        self.short_pnl = 0.0
+        self.long_pnl = 0.0
 
         if volatile_ranges is None and use_volatile_ranges:
             self.volatile_ranges = self.get_volatile_ranges()
@@ -128,11 +137,22 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
             self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         high = np.full(
-            (self.max_frames * (4 + 2 * self.orderbook_depth), ),
+            (self.max_frames * (5 + 2 * self.orderbook_depth), ),
             np.inf
         )
 
         self.observation_space = Box(-high, high, dtype=np.float32)
+
+    def set_position(self, action: np.float):
+        if self.should_change_position(action):
+            self.change_position(action)
+
+        self.last_position = self.position
+        self.short_pnl = self._short_pnl()
+        self.long_pnl = self._long_pnl()
+
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.info(alog.pformat(self.summary()))
 
     def get_volatile_ranges(self):
         query = f'SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd ' \
@@ -176,12 +196,11 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         if action > 1:
             raise Exception()
 
+        self.set_position(action)
+
         assert self.action_space.contains(action)
 
         done = False
-
-        if self.should_change_position(action):
-            self.change_position(action)
 
         if self.capital < self.min_capital:
             done = True
@@ -201,8 +220,12 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
             done = True
 
         reward = self.reset_reward()
+        summary = self.summary()
 
-        return observation, reward, done, self.summary()
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.debug(alog.pformat(summary))
+
+        return observation, reward, done, summary
 
     @property
     def best_bid(self):
@@ -210,24 +233,25 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         return self._best_bid
 
     @property
-    def best_ask(self):
-        self._best_ask = self.last_orderbook[0][0][0]
-        return self._best_ask
-
-    @property
     def position_data(self):
         data_keys = [
             'ask_diff',
-            'bid_diff'
+            'bid_diff',
+            'short_pnl',
+            'long_pnl'
         ]
 
         data = {key: self.__dict__[key] for key in
                    data_keys}
 
         data['position'] = self.position.value
-        data['pnl'] = self.pnl()
 
         return np.array(list(data.values()))
+
+    @property
+    def best_ask(self):
+        self._best_ask = self.last_orderbook[0][0][0]
+        return self._best_ask
 
     def get_observation(self):
         if self.last_observation.shape[0] > 0:
@@ -280,7 +304,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         return reward
 
     def close_short(self):
-        if self.position != Positions.Short:
+        if self.position.value != Positions.Short.value:
             raise Exception('Not short.')
 
         pnl = self.short_pnl
@@ -312,29 +336,26 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.reward += pnl * 2 if pnl < 0.0 else pnl
         self.entry_price = 0.0
 
-    @property
-    def short_pnl(self):
+    def _short_pnl(self):
         if self.entry_price > 0.0:
             pnl = self._pnl(self.best_ask)
         else:
             pnl = 0.0
         return pnl
 
-    @property
-    def long_pnl(self):
-        # alog.info(self.entry_price)
-        # alog.info(self.best_bid)
+    def _long_pnl(self):
         if self.entry_price > 0.0:
             pnl = self._pnl(self.best_bid)
         else:
             pnl = 0.0
+
         return pnl
 
     def _pnl(self, exit_price):
         diff = 0.0
-        if self.last_position == Positions.Long:
+        if self.last_position.value == Positions.Long.value:
             diff = exit_price - self.entry_price
-        elif self.last_position == Positions.Short:
+        elif self.last_position.value == Positions.Short.value:
             diff = self.entry_price - exit_price
 
         if self.entry_price == 0.0:
@@ -344,17 +365,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
 
         pnl = (self.capital * change) + (-1 * self.capital * self.trading_fee)
 
-        # alog.info(pnl)
-
         return pnl
-
-    def pnl(self):
-        if self.position.value == Positions.Long.value:
-            return self.long_pnl
-        elif self.position.value == Positions.Short.value:
-            return self.short_pnl
-        else:
-            return 0.0
 
     @property
     def is_short(self):
@@ -392,8 +403,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.entry_price = self.best_bid
 
     def change_position(self, action):
-        self.last_position = self.position
-
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Short.value:
@@ -416,6 +425,8 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         summary_keys = [
             '_best_ask',
             '_best_bid',
+            'short_pnl',
+            'long_pnl',
             'capital',
             'last_datetime',
             'step_count',
@@ -429,7 +440,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         summary['position_history'] = \
             ''.join(self.position_history[-1 * self.max_summary:])
         summary['trades'] = self.trades[-1 * self.max_summary:]
-        summary['pnl'] = self.pnl()
 
         return summary
 
