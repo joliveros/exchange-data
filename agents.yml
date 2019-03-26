@@ -9,7 +9,7 @@ services:
 
   apex-v3-long-4:
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_long_position_emitter.py -n apex-v3-long -a ApexAgent -c 188 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-22_08-07-4911izmnuh"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_long_position_emitter.py -n apex-v3-long -a ApexAgent -c 146 -r /ray_results/long-orderbook-apex-v3/APEX_long-orderbook-trading-v0_0_2019-03-24_08-21-492fhchd0e"
     volumes:
         - /home/joliveros/ray_results:/root/ray_results
     networks:

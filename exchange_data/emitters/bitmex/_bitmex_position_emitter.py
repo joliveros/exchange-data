@@ -1,6 +1,8 @@
-import logging
 from abc import ABC
 from datetime import timedelta
+
+from gym import Env
+
 from exchange_data import Measurement, settings
 from exchange_data.agents._apex_agent_check_point import ApexAgentCheckPoint
 from exchange_data.channels import BitmexChannels
@@ -8,32 +10,26 @@ from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.utils import DateTimeUtils
 from prometheus_client import Gauge, push_to_gateway, REGISTRY
+from pyee import EventEmitter
 from stringcase import pascalcase
-from tgym.envs import OrderBookTradingEnv
+from tgym.envs import OrderBookTradingEnv, LongOrderBookTradingEnv
 from tgym.envs.orderbook.utils import Positions
 
 import alog
 import click
 import inspect
 import json
+import logging
 import numpy as np
-import ray
 import sys
 
 pos_summary = Gauge('emit_position', 'Trading Position')
 profit_gauge = Gauge('profit', 'Profit', unit='BTC')
 
 
-class OrderBookTradingEnvAbs(object):
-    def __init__(self, **kwargs):
-        pass
-
-
 class BitmexPositionEmitter(
-    OrderBookTradingEnv,
+    Env,
     BitmexEmitterBase,
-    Messenger,
-    DateTimeUtils,
     ABC
 ):
     def __init__(
@@ -54,18 +50,7 @@ class BitmexPositionEmitter(
         kwargs['checkpoint'] = checkpoint
         kwargs['env'] = env
 
-        DateTimeUtils.__init__(self)
-        Messenger.__init__(self)
-        SignalInterceptor.__init__(self, self.stop)
-        DateTimeUtils.__init__(self)
-        OrderBookTradingEnv.__init__(
-            self,
-            should_penalize_even_trade=False,
-            trading_fee=0.0,
-            time_fee=0.0,
-            max_summary=10,
-            **kwargs
-        )
+        BitmexEmitterBase.__init__(self, **kwargs)
 
         if isinstance(agent_cls, str):
             classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
@@ -75,7 +60,6 @@ class BitmexPositionEmitter(
                 cls[1] for cls in classes
                 if agent_cls in cls[0]
             ][0]
-
         self.checkpoint_id = checkpoint_id
         self.default_action = Positions.Flat.value
         self.prev_action = None
@@ -84,7 +68,6 @@ class BitmexPositionEmitter(
         self.job_name = f'{job_name}_{checkpoint_id}'
         self._database = 'bitmex'
         self._index = 0.0
-        self.channel = 'XBTUSD_OrderBookFrame_depth_21'
         obs_len = self.observation_space.shape[0]
 
         now = self.now()
@@ -104,7 +87,7 @@ class BitmexPositionEmitter(
             self.prev_reward = 0.0
             self.get_observation()
 
-        self.on(self.channel, self.emit_position)
+        self.on(self.channel_name, self.emit_position)
 
     def exit(self, *args):
         super().stop(*args)
@@ -124,16 +107,13 @@ class BitmexPositionEmitter(
 
     @pos_summary.time()
     def _emit_position(self, data):
-        dt = self.now()
         meas = Measurement(**data)
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
 
-        action = self.agent.compute_action(
-            self.last_observation,
-            prev_action=self.prev_action,
-            prev_reward=self.prev_reward
-        )
+        alog.info(alog.pformat(self.orderbook_frame))
+
+        action = self.agent.compute_action(self.last_observation)
 
         self.publish_position(action)
         self.step(action)
@@ -158,6 +138,7 @@ class BitmexPositionEmitter(
     def step(self, action):
         self.prev_action = action
         obs, reward, done, info = super().step(action)
+        self.last_observation = obs
         self.prev_reward = reward
         profit_gauge.set(self.capital)
 
@@ -172,12 +153,12 @@ class BitmexPositionEmitter(
         )
 
     def start(self):
-        self.sub([self.channel])
+        self.sub([self.channel_name])
 
 
-class OrderBookTradingEvaluator(OrderBookTradingEnv):
+class OrderBookTradingEnvAbs(object):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        pass
 
 
 @click.command()

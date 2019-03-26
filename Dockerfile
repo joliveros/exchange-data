@@ -7,7 +7,7 @@ WORKDIR /src
 
 COPY . .
 
-RUN bash -c "conda env update -f environment.yml"
+#RUN bash -c "conda env update -f environment.yml"
 
 RUN bash -c "source ~/.bashrc && pip install -e ."
 

@@ -4,17 +4,18 @@ import alog
 import click
 
 from exchange_data.channels import BitmexChannels
+from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex._bitmex_position_emitter import \
     BitmexPositionEmitter
 from tgym.envs import LongOrderBookTradingEnv
 from tgym.envs.orderbook._long_orderbook_trading_env import Positions
 
 
-class LongPositionEmitter(BitmexPositionEmitter, LongOrderBookTradingEnv, ABC):
+class LongPositionEmitter(BitmexPositionEmitter, LongOrderBookTradingEnv):
     def __init__(self, **kwargs):
-        super().__init__(
-            **kwargs
-        )
+        LongOrderBookTradingEnv.__init__(self, **kwargs)
+        BitmexPositionEmitter.__init__(self, env='long-orderbook-trading-v0',
+                                       **kwargs)
 
     def publish_position(self, action):
         _action = None
@@ -38,6 +39,7 @@ class LongPositionEmitter(BitmexPositionEmitter, LongOrderBookTradingEnv, ABC):
 @click.option('--result-path', '-r')
 def main(**kwargs):
     emitter = LongPositionEmitter(**kwargs)
+    alog.info(emitter.action_space)
     emitter.start()
 
 
