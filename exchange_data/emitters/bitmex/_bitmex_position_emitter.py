@@ -111,12 +111,14 @@ class BitmexPositionEmitter(
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
 
-        alog.info(alog.pformat(self.orderbook_frame))
+        # alog.info(alog.pformat(self.orderbook_frame))
+        # alog.info(self.last_observation.tolist())
 
         action = self.agent.compute_action(self.last_observation)
 
-        self.publish_position(action)
         self.step(action)
+
+        self.publish_position(action)
 
     def publish_position(self, action):
         _action = None
@@ -132,18 +134,15 @@ class BitmexPositionEmitter(
             self.publish(self.job_name, dict(data=_action.name))
 
     def publish(self, channel, data):
-        # alog.info(alog.pformat(locals()))
         super().publish(channel, json.dumps(data))
 
     def step(self, action):
         self.prev_action = action
+
         obs, reward, done, info = super().step(action)
-        self.last_observation = obs
+
         self.prev_reward = reward
         profit_gauge.set(self.capital)
-
-        if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(alog.pformat(self.summary()))
 
     def _push_metrics(self):
         push_to_gateway(
