@@ -1,5 +1,9 @@
 import sys
+from abc import ABC
 from enum import Enum, auto
+
+import alog
+
 from exchange_data import settings
 from exchange_data.utils import NoValue
 from pyee import EventEmitter
@@ -18,13 +22,15 @@ class MessageType(NoValue):
     message = auto()
 
 
-class Messenger(Redis, EventEmitter):
+class Messenger(Redis, EventEmitter, ABC):
 
     def __init__(self, **kwargs):
-        self.host: str = settings.REDIS_HOST
+        kwargs = {}
+        host = settings.REDIS_HOST
 
-        Redis.__init__(self, self.host)
+        Redis.__init__(self, host=host, **kwargs)
         EventEmitter.__init__(self)
+
         self._pubsub = None
         self.on(Events.Message.value, self.handler)
 

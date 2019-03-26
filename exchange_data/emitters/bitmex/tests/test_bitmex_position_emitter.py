@@ -9,7 +9,7 @@ from exchange_data.utils import DateTimeUtils
 
 class TestBitmexPositionEmitter(DateTimeUtils):
 
-    @pytest.mark.vcr()
+    @pytest.mark.vcr(record_mode='all')
     @mock.patch(
         'exchange_data.streamers._bitmex.SignalInterceptor'
     )
@@ -19,6 +19,9 @@ class TestBitmexPositionEmitter(DateTimeUtils):
         end_date = self.parse_datetime_str(
             '2019-03-17 20:44:36.571810+00:00')
         emitter = BitmexPositionEmitter(
+            checkpoint='',
+            checkpoint_id=1,
+            result_path='',
             job_name='test',
             start_date=start_date,
             end_date=end_date,

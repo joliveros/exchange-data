@@ -1,3 +1,7 @@
+import json
+import os
+
+import ray
 from pathlib import Path
 
 import alog
@@ -14,22 +18,28 @@ class ApexAgentCheckPoint(DQNAgent):
         config=None,
         **kwargs
     ):
-        super().__init__(env=env, config=config)
-
         self.checkpoint = None
-        self.use_lstm = False
         self.set_checkpoint_file(checkpoint)
+        DQNAgent.__init__(self, env=env)
 
         if hasattr(self, "local_evaluator"):
             state_init = self.local_evaluator.policy_map[
                 "default"].get_initial_state()
-        else:
-            state_init = []
 
-        self.state_init = state_init
-
-        if state_init:
-            self.use_lstm = True
+    def config(self):
+        config_dir = os.path.dirname(self.checkpoint)
+        config_path = os.path.join(config_dir, "params.json")
+        if not os.path.exists(config_path):
+            config_path = os.path.join(config_dir, "../params.json")
+        if not os.path.exists(config_path):
+            raise ValueError(
+                "Could not find params.json in either the checkpoint dir or "
+                "its parent directory.")
+        with open(config_path) as f:
+            config = json.load(f)
+        if "num_workers" in config:
+            config["num_workers"] = min(2, config["num_workers"])
+        return config
 
     def set_checkpoint_file(self, checkpoint):
         checkpoint = Path(f'{Path.home()}{checkpoint}')
@@ -37,11 +47,7 @@ class ApexAgentCheckPoint(DQNAgent):
         self.checkpoint = checkpoint.resolve()
 
     def compute_action(self, observation: ndarray, **kwargs):
-        if self.use_lstm:
-            return super().compute_action(
-                observation, state=self.state_init, **kwargs)
-        else:
-            return super().compute_action(observation, **kwargs)
+        return super().compute_action(observation, **kwargs)
 
     def restore(self):
         super().restore(self.checkpoint)

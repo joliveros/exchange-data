@@ -25,13 +25,16 @@ class Database(InfluxDBClient):
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
 
-        super().__init__(host=parsed_netloc['host'],
-                         port=parsed_netloc['port'],
-                         username=parsed_netloc['username'],
-                         password=parsed_netloc['password'],
-                         database=database,
-                         ssl=ssl,
-                         verify_ssl=settings.CERT_FILE)
+        InfluxDBClient.__init__(
+            self,
+            host=parsed_netloc['host'],
+            port=parsed_netloc['port'],
+            username=parsed_netloc['username'],
+            password=parsed_netloc['password'],
+            database=database,
+            ssl=ssl,
+            verify_ssl=settings.CERT_FILE
+        )
 
     def parse_netloc(self, netloc):
         info = urlparse("http://%s" % (netloc))

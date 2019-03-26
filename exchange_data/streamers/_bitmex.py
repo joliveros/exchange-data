@@ -33,7 +33,7 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
+class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
                      ABC):
     def __init__(
         self,
@@ -47,9 +47,10 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
         channel_name: str = None,
         **kwargs
     ):
-        super().__init__(database_name='bitmex', **kwargs)
-
+        Database.__init__(self, database_name='bitmex', **kwargs)
         SignalInterceptor.__init__(self)
+        Generator.__init__(self)
+        DateTimeUtils.__init__(self)
 
         self.counter = 0
         self._orderbook = []
@@ -77,14 +78,15 @@ class BitmexStreamer(Database, Generator, DateTimeUtils, SignalInterceptor,
         else:
             self.start_date = start_date
 
-        if end_date is None:
-            self.end_date = self.start_date + \
-                timedelta(seconds=self.window_size)
-        else:
-            self.end_date = end_date
+        if self.start_date:
+            if end_date is None:
+                self.end_date = self.start_date + \
+                    timedelta(seconds=self.window_size)
+            else:
+                self.end_date = end_date
 
-        if self.start_date < self.min_date:
-            raise Exception('Start date not available in DB.')
+            if self.start_date < self.min_date:
+                raise Exception('Start date not available in DB.')
 
     @cached_property
     def min_date(self):

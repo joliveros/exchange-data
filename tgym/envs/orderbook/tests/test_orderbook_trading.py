@@ -1,13 +1,11 @@
-import mock
 from dateutil import parser, tz
 from pytimeparse import timeparse
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook.utils import Positions
 
-from time import sleep
 import alog
+import mock
 import pytest
-import numpy as np
 
 
 class TestOrderBookTradingEnv(object):
