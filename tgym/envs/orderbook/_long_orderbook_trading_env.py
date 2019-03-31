@@ -56,7 +56,7 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Flat.value:
-            self.reward += self.step_reward
+            # self.reward += self.step_reward * 2
             self.flat()
 
     def _pnl(self, exit_price):

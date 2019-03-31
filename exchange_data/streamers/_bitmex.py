@@ -48,7 +48,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         **kwargs
     ):
         Database.__init__(self, database_name='bitmex', **kwargs)
-        SignalInterceptor.__init__(self)
+        # SignalInterceptor.__init__(self)
         Generator.__init__(self)
         DateTimeUtils.__init__(self)
 
@@ -126,7 +126,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
         query = f'SELECT FIRST(data) as data FROM {self.channel_name} ' \
-            f'WHERE time > {start_date} AND time < {end_date} ' \
+            f'WHERE time >= {start_date} AND time <= {end_date} ' \
             f'GROUP BY time({self.sample_interval}) tz(\'UTC\');'
 
         return self.query(query)
@@ -186,8 +186,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         return result
 
     def _set_next_window(self):
-        self.start_date += timedelta(
-            seconds=self.window_size + self.sample_interval_s)
+        self.start_date += timedelta(seconds=self.window_size)
         self.end_date += timedelta(seconds=self.window_size)
 
     def send(self, *args):
@@ -197,7 +196,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
             self._time += time.tolist()
             self._orderbook += orderbook.tolist()
 
-        return self._time.pop(), self._orderbook.pop()
+        return self._time.pop(0), self._orderbook.pop(0)
 
     def throw(self, type=None, value=None, traceback=None):
         raise StopIteration

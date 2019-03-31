@@ -77,7 +77,7 @@ class TestOrderBookTradingEnv(object):
 
         env.step(Positions.Flat.value)
 
-        alog.debug(alog.pformat(env.summary()))
+        # alog.info(alog.pformat(env.summary()))
 
     @pytest.mark.vcr()
     @mock.patch(

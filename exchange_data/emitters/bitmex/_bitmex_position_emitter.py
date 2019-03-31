@@ -110,7 +110,6 @@ class BitmexPositionEmitter(
         meas = Measurement(**data)
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
-
         # alog.info(alog.pformat(self.orderbook_frame))
         # alog.info(self.last_observation.tolist())
 
