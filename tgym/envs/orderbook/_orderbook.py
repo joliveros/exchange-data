@@ -7,7 +7,7 @@ from pyee import EventEmitter
 from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
-from gym.spaces import Discrete, Box
+from gym.spaces import Discrete, Box, Dict
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 
@@ -45,17 +45,17 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self,
         trading_fee=0.0/100.0,
         max_loss=-0.01/100.0,
-        max_frames=24,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='1m',
+        window_size='2m',
         sample_interval='1s',
         max_summary=10,
+        max_frames=99,
         volatile_ranges=None,
         use_volatile_ranges=False,
-        min_std_dev=0.1,
+        min_std_dev=0.2,
         should_penalize_even_trade=True,
-        step_reward=0.000002,
+        step_reward=0.000005,
         capital=1.0,
         action_space=None,
         **kwargs
@@ -74,6 +74,8 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         EventEmitter.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
+        self.max_frames = max_frames
+        self.frames = deque(maxlen=max_frames)
         self.step_reward = step_reward
         self._best_ask = None
         self._best_bid = None
@@ -85,19 +87,17 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.closed_plot = False
         self.entry_price = 0.0
         self.exit_price = 0
-        self.frames = deque(maxlen=max_frames)
         self.initial_capital = capital
         self.last_best_ask = None
         self.last_best_bid = None
         self.last_datetime = None
         self.last_index = None
-        self.last_observation = np.array([])
         self.last_orderbook = None
         self.last_price_diff = 0.0
         self.last_timestamp = 0
-        self.max_frames = max_frames
-        self.max_position_duration = (timeparse(self.window_size_str) * 120) \
-                                     - max_frames
+        self.max_position_duration = (
+            (timeparse(self.window_size_str) - max_frames) * 120
+        )
         self.max_summary = max_summary
         self.min_capital = capital * (1 + max_loss)
         self.min_std_dev = min_std_dev
@@ -137,11 +137,13 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
             self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         high = np.full(
-            (self.max_frames * (5 + 2 * self.orderbook_depth), ),
+            (max_frames, self.orderbook_depth, 4),
             np.inf
         )
 
         self.observation_space = Box(-high, high, dtype=np.float32)
+
+        self.last_observation = None
 
     def set_position(self, action: np.float):
         if self.should_change_position(action):
@@ -184,10 +186,10 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         except (OutOfFramesException, TypeError):
             if not self.random_start_date:
                 self._set_next_window()
-                kwargs = dict(
-                    start_date=self.start_date,
-                    end_date=self.end_date
-                )
+            kwargs = dict(
+                start_date=self.start_date,
+                end_date=self.end_date
+            )
             return self.reset(**kwargs)
 
         return self.last_observation
@@ -218,6 +220,9 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         except (OutOfFramesException, TypeError):
             observation = self.last_observation
             done = True
+
+        if done:
+            self.set_position(Positions.Flat.value)
 
         reward = self.reset_reward()
         summary = self.summary()
@@ -253,14 +258,25 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self._best_ask = self.last_orderbook[0][0][0]
         return self._best_ask
 
+    @property
+    def last_orderbook_levels(self):
+        return self.last_observation
+
+    @staticmethod
+    def normalized(a, axis=-1, order=2):
+        l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
+        l2[l2==0] = 1
+        return a / np.expand_dims(l2, axis)
+
     def get_observation(self):
-        if self.last_observation.shape[0] > 0:
+        if self.last_orderbook_levels is not None:
             self.last_best_ask = self.best_ask
             self.last_best_bid = self.best_bid
 
         time, orderbook = self._get_observation()
 
         self.position_history.append(self.position.name[0])
+
         self.last_datetime = str(time)
 
         self.last_orderbook = orderbook = np.array(orderbook)
@@ -268,33 +284,40 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         if orderbook.shape[2] != self.orderbook_depth:
             raise Exception('Orderbook incomplete.')
 
-        if self.last_observation.shape[0] > 0:
+        if self.last_orderbook_levels is not None:
             self.bid_diff = self.best_bid - self.last_best_bid
             self.ask_diff = self.best_ask - self.last_best_ask
 
-        position_data = self.position_data
+        orderbook[1][1] = -1 * orderbook[1][1]
 
-        bid_side = orderbook[1][1] * -1
-        ask_side = orderbook[0][1]
+        levels = []
+        for i in range(orderbook.shape[-1]):
+            # level = [
+            #     [orderbook[0][0][i], orderbook[0][1][i]],
+            #     [orderbook[1][0][i], orderbook[1][1][i]]
+            # ]
+            level = [
+                orderbook[0][0][i], orderbook[0][1][i],
+                orderbook[1][0][i], orderbook[1][1][i]
+            ]
+            levels.append(level)
 
-        # level_diff = np.stack((self.last_ask_side - ask_side,
-        #                        self.last_bid_side - bid_side))
-        #
-        # self.last_bid_side = bid_side
-        # self.last_ask_side = ask_side
+        levels = np.array(levels)
 
-        levels = np.stack((ask_side, bid_side))
-        frame = np.concatenate((position_data,
-                                levels.flatten()))
-
-        self.frames.append(frame)
-
-        self.last_observation = np.concatenate(self.frames)
-
+        self.frames.appendleft(levels)
+        self.last_observation = np.array(self.frames)
         return self.last_observation
 
     def _get_observation(self):
-        return next(self)
+
+        time = None
+        orderbook = None
+
+        while self.last_timestamp == time or time is None:
+            time, orderbook = next(self)
+
+        self.last_timestamp = time
+        return time, orderbook
 
     def reset_reward(self):
         reward = self.reward
@@ -445,13 +468,12 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
 
 
 @click.command()
-@click.option('--test-span', default='2m')
+@click.option('--test-span', default='5m')
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
         random_start_date=True,
         use_volatile_ranges=True,
-        window_size='1m',
-        max_frames=5,
+        window_size='30s',
         **kwargs
     )
 
@@ -459,9 +481,9 @@ def main(test_span, **kwargs):
 
     for i in range(timeparse(test_span) - 10):
         env.step(Positions.Long.value)
-        # alog.info(alog.pformat(env.summary()))
-        # if env.step_count % 5 == 0:
-        #     alog.info(env.best_bid)
+        alog.info(alog.pformat(env.summary()))
+        if env.step_count % 5 == 0:
+            alog.info(env.best_bid)
 
     env.step(Positions.Flat.value)
 
