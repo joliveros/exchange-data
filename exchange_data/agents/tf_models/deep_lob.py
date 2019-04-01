@@ -53,7 +53,7 @@ class DeepLOBModel(Model):
         # prev_actions = input_dict['prev_actions']
         # prev_rewards = input_dict['prev_rewards']
         orderbook_in = input_dict['obs']
-
+        alog.debug(orderbook_in)
         convs = [
             [16, [1, 2], 1],
             [16, [1, 4], 1],
@@ -85,6 +85,8 @@ class DeepLOBModel(Model):
                     activation_fn=activation,
                     scope="conv{}".format(i))
 
+                alog.debug(orderbook_in)
+
             out_size, kernel, stride = convs[-1]
             orderbook_in = slim.conv2d(
                 orderbook_in,
@@ -95,7 +97,7 @@ class DeepLOBModel(Model):
                 activation_fn=activation,
                 scope="conv_out")
 
-            # orderbook_in = slim.flatten(orderbook_in)
+            alog.debug(orderbook_in)
 
         with tf.name_scope('inception'):
             ob_1, ob_2, ob_3 = tf.split(orderbook_in,

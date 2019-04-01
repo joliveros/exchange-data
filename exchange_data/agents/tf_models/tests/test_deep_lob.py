@@ -31,7 +31,7 @@ def model():
     }
 
     high = np.full(
-        (framestack, 21, 4),
+        (framestack, 21, 2),
         np.inf
     )
 

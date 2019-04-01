@@ -139,7 +139,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
             self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         high = np.full(
-            (max_frames, self.orderbook_depth, 4),
+            (max_frames, self.orderbook_depth, 2),
             np.inf
         )
 
@@ -295,23 +295,10 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
 
         orderbook[1][1] = -1 * orderbook[1][1]
 
-        levels = []
-        for i in range(orderbook.shape[-1]):
-            # level = [
-            #     [orderbook[0][0][i], orderbook[0][1][i]],
-            #     [orderbook[1][0][i], orderbook[1][1][i]]
-            # ]
-            level = [
-                orderbook[0][0][i], orderbook[0][1][i],
-                orderbook[1][0][i], orderbook[1][1][i]
-            ]
-            levels.append(level)
-
-        levels = np.array(levels)
-
+        levels = np.array([orderbook[0][1], orderbook[1][1]])
+        levels = levels.reshape((2, levels.shape[1])).swapaxes(0, 1)
         self.frames.appendleft(levels)
         self.last_observation = np.array(self.frames)
-
         return self.last_observation
 
     def _get_observation(self):
