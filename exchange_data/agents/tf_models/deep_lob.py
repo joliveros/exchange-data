@@ -28,11 +28,14 @@ class DeepLOBModel(Model):
                  options,
                  state_in=None,
                  seq_lens=None):
+
         # seq_lens = tf.placeholder(
         #     dtype=tf.int32,
-        #     shape=[options.get('max_seq_len')],
+        #     shape=(options.get('max_seq_len'),),
         #     name="seq_lens"
         # )
+        # seq_lens = (options.get('max_seq_len'),)
+
         Model.__init__(
             self,
             input_dict,
@@ -47,8 +50,8 @@ class DeepLOBModel(Model):
     @override(Model)
     def _build_layers_v2(self, input_dict, num_outputs, options):
         is_training = input_dict['is_training']
-        prev_actions = input_dict['prev_actions']
-        prev_rewards = input_dict['prev_rewards']
+        # prev_actions = input_dict['prev_actions']
+        # prev_rewards = input_dict['prev_rewards']
         orderbook_in = input_dict['obs']
 
         convs = [
@@ -101,7 +104,7 @@ class DeepLOBModel(Model):
 
             inception_conv = [
                 [32, 1, 1],
-                [32, [1, 3], 1]
+                [32, [3, 1], 1]
             ]
             for i, (out_size, kernel, stride) in enumerate(inception_conv, 1):
                  ob_1 = slim.conv2d(
@@ -109,6 +112,7 @@ class DeepLOBModel(Model):
                     out_size,
                     kernel,
                     stride,
+                    activation_fn=activation,
                     scope="inception_conv_1{}".format(i))
 
             inception_conv_2 = [
@@ -121,6 +125,7 @@ class DeepLOBModel(Model):
                 out_size,
                 kernel,
                 stride,
+                activation_fn=activation,
                 scope="inception_conv_2{}".format(i))
 
             ob_3 = slim.max_pool2d(
@@ -135,15 +140,20 @@ class DeepLOBModel(Model):
                 32,
                 1,
                 1,
+                activation_fn=activation,
                 scope='inception_conv_3')
 
             orderbook_in = tf.concat([ob_1, ob_2, ob_3], axis=1)
-            orderbook_in = slim.flatten(orderbook_in)
+            orderbook_in = tf.squeeze(orderbook_in, axis=[2])
 
-        copy = input_dict.copy()
-        copy['obs'] = orderbook_in
+            copy = dict(input_dict)
+            copy['obs'] = orderbook_in
 
-        last_layer = self.lstm_layers(copy, num_outputs, options)
+            last_layer = slim.flatten(orderbook_in)
+
+            # last_layer = self.lstm_layers(copy, num_outputs, options)
+
+            # alog.info(last_layer)
 
         with tf.name_scope("orderbook_out"):
             output = slim.fully_connected(
@@ -173,8 +183,8 @@ class DeepLOBModel(Model):
         else:
             features = input_dict["obs"]
 
-        last_layer = add_time_dimension(features, self.seq_lens)
-
+        last_layer = features
+        alog.info(last_layer)
         # Setup the LSTM cell
         lstm = rnn.BasicLSTMCell(cell_size, state_is_tuple=True)
         self.state_init = [

@@ -53,6 +53,7 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
         self.entry_price = 0.0
 
     def change_position(self, action):
+        # alog.info(action)
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Flat.value:

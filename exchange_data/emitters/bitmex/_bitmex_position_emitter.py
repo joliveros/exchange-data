@@ -49,6 +49,7 @@ class BitmexPositionEmitter(
 
         kwargs['checkpoint'] = checkpoint
         kwargs['env'] = env
+        kwargs['is_training'] = False
 
         BitmexEmitterBase.__init__(self, **kwargs)
 
@@ -68,6 +69,7 @@ class BitmexPositionEmitter(
         self.job_name = f'{job_name}_{checkpoint_id}'
         self._database = 'bitmex'
         self._index = 0.0
+
         obs_len = self.observation_space.shape[0]
 
         now = self.now()
@@ -75,19 +77,25 @@ class BitmexPositionEmitter(
         if start_date:
             self.start_date = start_date
         else:
-            self.start_date = now - timedelta(seconds=obs_len)
+            self.start_date = now - timedelta(seconds=obs_len + 1)
 
         if end_date:
             self.end_date = end_date
         else:
             self.end_date = now
 
-        while self.last_observation.shape[0] < obs_len:
+        while self.last_obs_len() < obs_len:
             self.prev_action = self.default_action
             self.prev_reward = 0.0
             self.get_observation()
 
         self.on(self.channel_name, self.emit_position)
+
+    def last_obs_len(self):
+        if self.last_observation is None:
+            return 0
+        else:
+            return self.last_observation.shape[0]
 
     def exit(self, *args):
         super().stop(*args)
@@ -100,7 +108,7 @@ class BitmexPositionEmitter(
         self._push_metrics()
 
     def _get_observation(self):
-        if self.last_observation.shape[0] < self.observation_space.shape[0]:
+        if self.last_obs_len() < self.observation_space.shape[0]:
             return super()._get_observation()
         else:
             return self.last_timestamp, self.orderbook_frame

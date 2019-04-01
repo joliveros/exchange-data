@@ -13,7 +13,7 @@ from tgym.envs.orderbook._long_orderbook_trading_env import Positions
 
 class LongPositionEmitter(BitmexPositionEmitter, LongOrderBookTradingEnv):
     def __init__(self, **kwargs):
-        LongOrderBookTradingEnv.__init__(self, **kwargs)
+        LongOrderBookTradingEnv.__init__(self, is_training=False, **kwargs)
         BitmexPositionEmitter.__init__(self, env='long-orderbook-trading-v0',
                                        **kwargs)
 

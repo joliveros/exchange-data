@@ -42,7 +42,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         random_start_date: bool = False,
         start_date: datetime = None,
         end_date: datetime = None,
-        window_size: str = '15s',
+        window_size: str = '2m',
         sample_interval: str = '1s',
         channel_name: str = None,
         **kwargs

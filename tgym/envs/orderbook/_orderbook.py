@@ -50,7 +50,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         window_size='2m',
         sample_interval='1s',
         max_summary=10,
-        max_frames=99,
+        max_frames=24,
         volatile_ranges=None,
         use_volatile_ranges=False,
         min_std_dev=0.2,
@@ -58,8 +58,10 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         step_reward=0.000005,
         capital=1.0,
         action_space=None,
+        is_training=True,
         **kwargs
     ):
+
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
@@ -74,6 +76,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         EventEmitter.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
+        self.is_training = is_training
         self.max_frames = max_frames
         self.frames = deque(maxlen=max_frames)
         self.step_reward = step_reward
@@ -95,9 +98,8 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.last_orderbook = None
         self.last_price_diff = 0.0
         self.last_timestamp = 0
-        self.max_position_duration = (
-            (timeparse(self.window_size_str) - max_frames) * 120
-        )
+        self.max_position_duration = (timeparse(self.window_size_str) * 120) \
+                                     - max_frames
         self.max_summary = max_summary
         self.min_capital = capital * (1 + max_loss)
         self.min_std_dev = min_std_dev
@@ -147,14 +149,16 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
 
     def set_position(self, action: np.float):
         if self.should_change_position(action):
+            # alog.info(f'##### action {action} #####')
             self.change_position(action)
+            # alog.info(self.position)
 
         self.last_position = self.position
         self.short_pnl = self._short_pnl()
         self.long_pnl = self._long_pnl()
 
-        if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(alog.pformat(self.summary()))
+        # if settings.LOG_LEVEL == logging.DEBUG:
+        #     alog.info(alog.pformat(self.summary()))
 
     def get_volatile_ranges(self):
         query = f'SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd ' \
@@ -221,7 +225,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
             observation = self.last_observation
             done = True
 
-        if done:
+        if done and self.is_training:
             self.set_position(Positions.Flat.value)
 
         reward = self.reset_reward()
@@ -280,6 +284,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.last_datetime = str(time)
 
         self.last_orderbook = orderbook = np.array(orderbook)
+        # alog.info(self.last_orderbook)
 
         if orderbook.shape[2] != self.orderbook_depth:
             raise Exception('Orderbook incomplete.')
@@ -306,6 +311,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
 
         self.frames.appendleft(levels)
         self.last_observation = np.array(self.frames)
+
         return self.last_observation
 
     def _get_observation(self):

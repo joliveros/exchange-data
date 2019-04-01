@@ -12,7 +12,6 @@ import numpy as np
 
 @pytest.fixture()
 def model():
-    max_seq_len = 100
     framestack = 99
     options = {
         'conv_activation': 'relu',
@@ -22,11 +21,10 @@ def model():
         'fcnet_activation': 'leaky_relu',
         'free_log_std': False,
         'grayscale': False,
-        'max_seq_len': max_seq_len,
         'framestack': framestack,
         'lstm_cell_size': 64,
-        'lstm_use_prev_action_reward': True,
-        'max_seq_len': max_seq_len,
+        'lstm_use_prev_action_reward': False,
+        'max_seq_len': framestack,
         'squash_to_range': False,
         'use_lstm': True,
         'zero_mean': False
