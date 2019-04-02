@@ -52,8 +52,14 @@ class DeepLOBModel(Model):
         is_training = input_dict['is_training']
         # prev_actions = input_dict['prev_actions']
         # prev_rewards = input_dict['prev_rewards']
-        orderbook_in = input_dict['obs']
-        alog.debug(orderbook_in)
+        obs = input_dict['obs']
+        alog.debug(obs)
+        orderbook_in = obs['levels']
+        position_data_in = obs['position_data']
+
+        alog.info(orderbook_in)
+        alog.info(position_data_in)
+
         convs = [
             [16, [1, 2], 1],
             [16, [1, 4], 1],
@@ -147,17 +153,30 @@ class DeepLOBModel(Model):
 
             orderbook_in = tf.concat([ob_1, ob_2, ob_3], axis=1)
             orderbook_in = tf.squeeze(orderbook_in, axis=[2])
-
+            alog.debug(orderbook_in)
             copy = dict(input_dict)
             copy['obs'] = orderbook_in
 
             last_layer = slim.flatten(orderbook_in)
 
             # last_layer = self.lstm_layers(copy, num_outputs, options)
-
             # alog.info(last_layer)
 
+        with tf.name_scope("position_data"):
+            position_data_in = slim.fully_connected(
+                position_data_in,
+                16,
+                weights_initializer=normc_initializer(0.01),
+                activation_fn=tf.nn.softmax,
+                scope="position_data_out")
+            position_data_in = slim.flatten(position_data_in)
+
+        alog.debug(position_data_in)
+        alog.debug(last_layer)
+
         with tf.name_scope("orderbook_out"):
+            last_layer = tf.concat([last_layer, position_data_in], axis=1)
+            alog.debug(last_layer)
             output = slim.fully_connected(
                 last_layer,
                 num_outputs,

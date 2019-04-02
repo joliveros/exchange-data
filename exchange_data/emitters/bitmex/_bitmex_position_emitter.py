@@ -70,7 +70,7 @@ class BitmexPositionEmitter(
         self._database = 'bitmex'
         self._index = 0.0
 
-        obs_len = self.observation_space.shape[0]
+        obs_len = self.observation_space.spaces['levels'].shape[0]
 
         now = self.now()
 
@@ -95,7 +95,7 @@ class BitmexPositionEmitter(
         if self.last_observation is None:
             return 0
         else:
-            return self.last_observation.shape[0]
+            return self.last_observation['levels'].shape[0]
 
     def exit(self, *args):
         super().stop(*args)
@@ -108,7 +108,7 @@ class BitmexPositionEmitter(
         self._push_metrics()
 
     def _get_observation(self):
-        if self.last_obs_len() < self.observation_space.shape[0]:
+        if self.last_obs_len() < self.observation_space.spaces['levels'].shape[0]:
             return super()._get_observation()
         else:
             return self.last_timestamp, self.orderbook_frame
@@ -119,7 +119,7 @@ class BitmexPositionEmitter(
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
         # alog.info(alog.pformat(self.orderbook_frame))
-        # alog.info(self.last_observation.tolist())
+        # alog.info(alog.pformat(self.last_observation))
 
         action = self.agent.compute_action(self.last_observation)
 

@@ -13,6 +13,7 @@ import numpy as np
 @pytest.fixture()
 def model():
     framestack = 99
+    orderbook_depth = 21
     options = {
         'conv_activation': 'relu',
         'custom_model': None,
@@ -29,17 +30,38 @@ def model():
         'use_lstm': True,
         'zero_mean': False
     }
-
     high = np.full(
-        (framestack, 21, 2),
-        np.inf
+        (framestack, orderbook_depth, 2),
+        1.0,
+        dtype=np.float32
+    )
+    low = np.full(
+        (framestack, orderbook_depth, 2),
+        0.0,
+        dtype=np.float32
+    )
+    position_data_high = np.full(
+        (framestack, 5),
+        np.inf,
+        dtype=np.float32
     )
 
-    obs_space = Box(-high, high, dtype=np.float32)
-
+    obs_space = Dict(dict(
+        levels=Box(low, high, dtype=np.float32),
+        posistion_data=Box(-position_data_high,
+                           position_data_high,
+                           dtype=np.float32)
+    ))
+    # obs_space = DictFlatteningPreprocessor(obs_space).observation_space
     action_space = Discrete(2)
     prev_rewards = tf.placeholder(tf.float32, [None], name="prev_reward")
-    obs = tf.placeholder(tf.float32, [None, framestack, 21, 4], name="obs")
+    obs = dict(
+        levels=tf.placeholder(tf.float32,
+                              [None, framestack, 21, 4],
+                              name="levels"),
+        position_data=tf.placeholder(tf.float32,
+                                     [None, framestack, 5],
+                                     name="position_data"))
 
     return DeepLOBModel(
         action_space=action_space,
