@@ -44,7 +44,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         max_loss=-0.01/100.0,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='2m',
+        window_size='4m',
         sample_interval='1s',
         max_summary=10,
         max_frames=99,
@@ -165,6 +165,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         self.last_observation = None
 
     def set_position(self, action: np.float):
+        # alog.info(f'### set_position {action} ###')
         if self.should_change_position(action):
             # alog.info(f'##### action {action} #####')
             self.change_position(action)

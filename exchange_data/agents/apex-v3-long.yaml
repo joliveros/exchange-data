@@ -8,27 +8,28 @@ long-orderbook-apex-v3:
         clip_rewards: False
         adam_epsilon: .00000001
         beta_annealing_fraction: 1.0
-        buffer_size: 3072
+        buffer_size: 4012
         double_q: False
         dueling: False
         exploration_final_eps: 0.01
         exploration_fraction: 0.5
-        final_prioritized_replay_beta: 0.75
-        learning_starts: 100000
+        final_prioritized_replay_beta: 0.2
+        learning_starts: 50000
         lr: .01
         n_step: 3
         noisy: false
         num_atoms: 1
-        num_gpus: 0.5
-        num_gpus_per_worker: 0.25
+        num_gpus: 0.6
+        num_gpus_per_worker: 0.2
+        num_cpus_per_worker: 2
         prioritized_replay_alpha: 0.5
-        schedule_max_timesteps: 10000000
+        schedule_max_timesteps: 2000000
 
         # APEX
         num_workers: 2
-        num_envs_per_worker: 1
-        sample_batch_size: 32
-        train_batch_size: 128
+        num_envs_per_worker: 4
+        sample_batch_size: 16
+        train_batch_size: 16
         target_network_update_freq: 50000
         timesteps_per_iteration: 100000
         model:

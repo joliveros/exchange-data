@@ -61,9 +61,7 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
             self.flat()
 
     def _pnl(self, exit_price):
-        diff = 0.0
-        if self.last_position.value == Positions.Long.value:
-            diff = exit_price - self.entry_price
+        diff = exit_price - self.entry_price
 
         if self.entry_price == 0.0:
             change = 0.0
