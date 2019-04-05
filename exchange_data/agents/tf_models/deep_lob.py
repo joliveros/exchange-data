@@ -60,14 +60,15 @@ class DeepLOBModel(Model):
         alog.info(orderbook_in)
         alog.info(position_data_in)
 
+        out_size = 16
         convs = [
-            [16, [1, 2], 1],
-            [16, [1, 4], 1],
-            [16, [1, 4], 1],
-            [16, [1, 2], 1],
-            [16, [1, 4], 1],
-            [16, [1, 4], 1],
-            [16, [1, 7], 1],
+            [out_size, [1, 2], 1],
+            [out_size, [1, 4], 1],
+            [out_size, [1, 4], 1],
+            [out_size, [1, 2], 1],
+            [out_size, [1, 4], 1],
+            [out_size, [1, 4], 1],
+            [out_size, [1, 7], 1],
         ]
 
         fcnet_activation = options.get("fcnet_activation", "leaky_relu")

@@ -44,7 +44,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         max_loss=-0.01/100.0,
         random_start_date=True,
         orderbook_depth=21,
-        window_size='4m',
+        window_size='2m',
         sample_interval='1s',
         max_summary=10,
         max_frames=99,
@@ -264,15 +264,15 @@ class OrderBookTradingEnv(BitmexStreamer, Env, ABC):
         data_keys = [
             'ask_diff',
             'bid_diff',
-            'short_pnl',
-            'long_pnl',
+            # 'short_pnl',
+            # 'long_pnl',
             'last_spread'
         ]
 
         data = {key: self.__dict__[key] for key in
                    data_keys}
 
-        data['position'] = self.position.value
+        # data['position'] = self.position.value
 
         return np.array(list(data.values()))
 
