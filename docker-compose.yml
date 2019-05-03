@@ -72,6 +72,7 @@ services:
       - emit_bitmex_btc
       - emit_time
       - redis
+      - influxdb
 #      - proxy
     networks:
       - public

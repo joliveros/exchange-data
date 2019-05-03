@@ -78,6 +78,8 @@ class BitmexAccountEmitter(
         data_str = json.dumps(data)
         fields = dict(data=data_str)
 
+        alog.info(table)
+
         if table == 'wallet':
             amount = data['data'][0]['amount']
             amount = fields['amount'] = amount/(10**8)

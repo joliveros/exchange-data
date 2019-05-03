@@ -1,27 +1,18 @@
 from abc import ABC
 from datetime import timedelta
 
-from gym import Env
+import alog
 
 from exchange_data import Measurement, settings
-from exchange_data.agents._apex_agent_check_point import ApexAgentCheckPoint
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
-from exchange_data.utils import DateTimeUtils
+from gym import Env
 from prometheus_client import Gauge, push_to_gateway, REGISTRY
-from pyee import EventEmitter
-from stringcase import pascalcase
-from tgym.envs import OrderBookTradingEnv, LongOrderBookTradingEnv
 from tgym.envs.orderbook.utils import Positions
 
-import alog
 import click
-import inspect
 import json
-import logging
 import numpy as np
-import sys
 
 pos_summary = Gauge('emit_position', 'Trading Position')
 profit_gauge = Gauge('profit', 'Profit', unit='BTC')
@@ -34,60 +25,55 @@ class BitmexPositionEmitter(
 ):
     def __init__(
         self,
-        checkpoint_id,
-        result_path,
         job_name: str,
-        agent_cls: str,
         start_date=None,
         end_date=None,
         env='orderbook-trading-v0',
+        agent_cls=object,
+        live=True,
+        gauges=True,
         **kwargs
     ):
-        checkpoint = result_path + \
-            f'/checkpoint_{checkpoint_id}' \
-            f'/checkpoint-{checkpoint_id}/'
-
-        kwargs['checkpoint'] = checkpoint
-        kwargs['env'] = env
+        kwargs['is_training'] = False
 
         BitmexEmitterBase.__init__(self, **kwargs)
-
-        if isinstance(agent_cls, str):
-            classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-
-            agent_cls = pascalcase(agent_cls)
-            agent_cls = [
-                cls[1] for cls in classes
-                if agent_cls in cls[0]
-            ][0]
-        self.checkpoint_id = checkpoint_id
+        self.gauges = gauges
+        self.env_name = env
         self.default_action = Positions.Flat.value
         self.prev_action = None
         self.prev_reward = None
-        self.agent = agent_cls(**kwargs)
-        self.job_name = f'{job_name}_{checkpoint_id}'
+        self.job_name = job_name
         self._database = 'bitmex'
         self._index = 0.0
+        self.agent = agent_cls(env=self, **kwargs)
+
         obs_len = self.observation_space.shape[0]
 
         now = self.now()
 
         if start_date:
-            self.start_date = start_date
+            self.start_date = start_date - timedelta(seconds=obs_len + 1)
         else:
-            self.start_date = now - timedelta(seconds=obs_len)
+            self.start_date = now - timedelta(seconds=obs_len + 1)
 
         if end_date:
             self.end_date = end_date
         else:
             self.end_date = now
 
-        while self.last_observation.shape[0] < obs_len:
+        while self.last_obs_len() < obs_len:
             self.prev_action = self.default_action
             self.prev_reward = 0.0
             self.get_observation()
 
-        self.on(self.channel_name, self.emit_position)
+        if live:
+            self.on(self.channel_name, self.emit_position)
+
+    def last_obs_len(self):
+        if self.last_observation is None:
+            return 0
+        else:
+            return self.last_observation.shape[0]
 
     def exit(self, *args):
         super().stop(*args)
@@ -100,7 +86,7 @@ class BitmexPositionEmitter(
         self._push_metrics()
 
     def _get_observation(self):
-        if self.last_observation.shape[0] < self.observation_space.shape[0]:
+        if self.last_obs_len() < self.observation_space.shape[0]:
             return super()._get_observation()
         else:
             return self.last_timestamp, self.orderbook_frame
@@ -110,8 +96,6 @@ class BitmexPositionEmitter(
         meas = Measurement(**data)
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
-        # alog.info(alog.pformat(self.orderbook_frame))
-        # alog.info(self.last_observation.tolist())
 
         action = self.agent.compute_action(self.last_observation)
 
@@ -141,7 +125,9 @@ class BitmexPositionEmitter(
         obs, reward, done, info = super().step(action)
 
         self.prev_reward = reward
-        profit_gauge.set(self.capital)
+
+        if self.gauges:
+            profit_gauge.set(self.capital)
 
     def _push_metrics(self):
         push_to_gateway(
@@ -152,11 +138,6 @@ class BitmexPositionEmitter(
 
     def start(self):
         self.sub([self.channel_name])
-
-
-class OrderBookTradingEnvAbs(object):
-    def __init__(self, **kwargs):
-        pass
 
 
 @click.command()
