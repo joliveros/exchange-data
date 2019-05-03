@@ -40,6 +40,7 @@ class Messenger(Redis, EventEmitter, ABC):
             self.emit(channel_str, json.loads(msg['data']))
 
     def sub(self, channels: List):
+        alog.info(channels)
         _channels = [channel.value if isinstance(channel, Enum) else channel for channel in channels]
 
         self._pubsub = self.pubsub()

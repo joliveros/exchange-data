@@ -15,10 +15,6 @@ services:
             - public
 
     influxdb:
-#        deploy:
-#          resources:
-#              limits:
-#                  memory: 3G
         image: influxdb
         env_file:
             - ./.env.prod

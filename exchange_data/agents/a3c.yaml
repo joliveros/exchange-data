@@ -1,17 +1,17 @@
 long-orderbook-a3c-v0:
     checkpoint_at_end: True
     checkpoint_freq: 1
-#    max_failures: 10000
+    max_failures: 10000
     env: long-orderbook-trading-v0
     run: A3C
     config:
-        log_level: DEBUG
-        num_workers: 2
-        num_envs_per_worker: 1
-        remote_worker_envs: False
+        log_level: INFO
+        num_workers: 1
+        num_envs_per_worker: 4
+        remote_worker_envs: True
         clip_rewards: False
-        sample_batch_size: 24
-        train_batch_size: 1000
+        sample_batch_size: 4
+        train_batch_size: 4
         batch_mode: complete_episodes
         use_pytorch: false
         vf_loss_coeff: 0.5
@@ -19,12 +19,15 @@ long-orderbook-a3c-v0:
         gamma: 0.99
         grad_clip: 40.0
         lambda: 1.0
-        lr: 0.01
-        num_gpus: 1
+        lr: 0.001
+        num_gpus: 0.5
+        num_gpus_per_worker: 0.5
+#        num_cpus_per_worker: 4
         min_iter_time_s: 60
 
         model:
             custom_model: deep_lob
-            lstm_cell_size: 64
-            lstm_use_prev_action_reward: False
-            max_seq_len: 100
+            lstm_cell_size: 32
+            lstm_use_prev_action_reward: True
+            max_seq_len: 12
+            use_lstm: True

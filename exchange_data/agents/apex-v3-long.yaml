@@ -5,34 +5,33 @@ long-orderbook-apex-v3:
     env: long-orderbook-trading-v0
     run: APEX
     config:
-        clip_rewards: False
         adam_epsilon: .00000001
         beta_annealing_fraction: 1.0
-        buffer_size: 32000
+        buffer_size: 120
+        clip_rewards: False
         double_q: False
         dueling: False
         exploration_final_eps: 0.01
-        exploration_fraction: 0.1
-        final_prioritized_replay_beta: 0.75
-        hiddens: [1024]
-        learning_starts: 100000
-        lr: .01
+        exploration_fraction: 0.5
+        final_prioritized_replay_beta: 0.5
+        learning_starts: 100
+        lr: 0.001
         n_step: 3
         noisy: false
         num_atoms: 1
-        num_gpus: 1
-        prioritized_replay_alpha: 0.5
-        schedule_max_timesteps: 20000000
-
-        # APEX
-        num_workers: 5
-        num_envs_per_worker: 1
-        sample_batch_size: 1000
-        train_batch_size: 8000
-        target_network_update_freq: 5000
-        timesteps_per_iteration: 100000
+        num_gpus: 0.6
+        num_gpus_per_worker: 0.15
+        num_workers: 2
+        num_envs_per_worker: 6
+        prioritized_replay_alpha: 1.0
+        remote_worker_envs: True
+        schedule_max_timesteps: 3000000
+        target_network_update_freq: 43200
+        timesteps_per_iteration: 43200
+        sample_batch_size: 8
+        train_batch_size: 8
+        optimizer:
+            num_replay_buffer_shards: 4
+            prioritized_replay: True
         model:
-#            use_lstm: True
-            dim: 2256
-#            lstm_cell_size: 64
-#            max_seq_ldn: 1000
+            custom_model: deep_lob

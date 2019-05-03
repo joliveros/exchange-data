@@ -12,8 +12,9 @@ import numpy as np
 
 @pytest.fixture()
 def model():
-    max_seq_len = 100
-    framestack = 99
+    frame_width = 84
+    framestack = 6
+
     options = {
         'conv_activation': 'relu',
         'custom_model': None,
@@ -22,26 +23,33 @@ def model():
         'fcnet_activation': 'leaky_relu',
         'free_log_std': False,
         'grayscale': False,
-        'max_seq_len': max_seq_len,
         'framestack': framestack,
         'lstm_cell_size': 64,
-        'lstm_use_prev_action_reward': True,
-        'max_seq_len': max_seq_len,
+        'lstm_use_prev_action_reward': False,
+        'max_seq_len': framestack,
         'squash_to_range': False,
         'use_lstm': True,
         'zero_mean': False
     }
-
     high = np.full(
-        (framestack, 21, 4),
-        np.inf
+        (framestack, frame_width, frame_width),
+        1.0,
+        dtype=np.float32
+    )
+    low = np.full(
+        (framestack, frame_width, frame_width),
+        0.0,
+        dtype=np.float32
     )
 
-    obs_space = Box(-high, high, dtype=np.float32)
-
+    obs_space = Box(low, high, dtype=np.float32)
     action_space = Discrete(2)
     prev_rewards = tf.placeholder(tf.float32, [None], name="prev_reward")
-    obs = tf.placeholder(tf.float32, [None, framestack, 21, 4], name="obs")
+    obs = tf.placeholder(
+        tf.float32,
+        [None, framestack, frame_width, frame_width],
+        name="orderbook"
+    )
 
     return DeepLOBModel(
         action_space=action_space,

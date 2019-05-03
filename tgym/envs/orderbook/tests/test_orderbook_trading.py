@@ -2,6 +2,7 @@ from dateutil import parser, tz
 from pytimeparse import timeparse
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook.utils import Positions
+import matplotlib.pyplot as plt
 
 import alog
 import mock
@@ -59,17 +60,18 @@ class TestOrderBookTradingEnv(object):
             .replace(tzinfo=tz.tzutc())
 
         env = OrderBookTradingEnv(
-            max_frames=10,
+            max_frames=60,
             max_summary=10,
             orderbook_depth=21,
             random_start_date=False,
             start_date=start_date,
-            window_size='1m'
+            window_size='1m',
+            is_training=False
         )
 
         env.reset()
 
-        for i in range(timeparse.timeparse('1m')):
+        for i in range(timeparse.timeparse('2m')):
             if i % 2 == 0:
                 env.step(Positions.Flat.value)
             else:

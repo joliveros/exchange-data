@@ -20,7 +20,10 @@ class ApexAgentCheckPoint(DQNAgent):
     ):
         self.checkpoint = None
         self.set_checkpoint_file(checkpoint)
-        DQNAgent.__init__(self, env=env)
+
+        config = dict(model=self.config()['model'])
+
+        DQNAgent.__init__(self, env=env, config=config)
 
         if hasattr(self, "local_evaluator"):
             state_init = self.local_evaluator.policy_map[
@@ -39,6 +42,7 @@ class ApexAgentCheckPoint(DQNAgent):
             config = json.load(f)
         if "num_workers" in config:
             config["num_workers"] = min(2, config["num_workers"])
+        alog.info(config)
         return config
 
     def set_checkpoint_file(self, checkpoint):
