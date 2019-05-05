@@ -66,60 +66,23 @@ class TestOrderBookTradingEnv(object):
             random_start_date=False,
             start_date=start_date,
             window_size='1m',
+            summary_interval=60,
             is_training=False
         )
 
         env.reset()
 
-        for i in range(timeparse.timeparse('2m')):
-            if i % 2 == 0:
-                env.step(Positions.Flat.value)
-            else:
-                env.step(Positions.Long.value)
+        trade_length = 10
+        test_length = timeparse.timeparse('2m')
+        side = Positions.Long
 
-        env.step(Positions.Flat.value)
+        while test_length > 0:
+            side = Positions.Long if side.value == Positions.Short.value else Positions.Short
 
-        # alog.info(alog.pformat(env.summary()))
+            for i in range(trade_length):
+                env.step(side.value)
+                test_length -= 1
 
-    @pytest.mark.vcr()
-    @mock.patch(
-        'exchange_data.streamers._bitmex.SignalInterceptor'
-    )
-    def test_trades(self, sig_mock):
-        start_date = parser.parse('2019-03-14 01:31:48.315491+00:00') \
-            .replace(tzinfo=tz.tzutc())
-
-        env = OrderBookTradingEnv(
-            max_frames=10,
-            max_summary=10,
-            orderbook_depth=21,
-            random_start_date=False,
-            start_date=start_date,
-            window_size='1m',
-            use_volatile_ranges=False
-        )
-
-        env.reset()
-
-        alog.info(dict(best_bid=env.best_bid, best_ask=env.best_ask))
-        alog.info(alog.pformat(env.summary()))
-        env.step(Positions.Long.value)
-        alog.info(alog.pformat(env.summary()))
-
-        env.last_orderbook[0][0][0] = 3862.0
-        env.last_orderbook[1][0][0] = 3862.5
-
-        env.step(Positions.Short.value)
-
-        env.last_orderbook[0][0][0] = 3862.0
-        env.last_orderbook[1][0][0] = 3862.5
-
-        env.step(Positions.Flat.value)
-
-        env.last_orderbook[0][0][0] = 3865.0
-        env.last_orderbook[1][0][0] = 3865.5
+            env.step(Positions.Flat.value)
 
         alog.info(alog.pformat(env.summary()))
-        alog.info(dict(best_bid=env.best_bid, best_ask=env.best_ask))
-
-
