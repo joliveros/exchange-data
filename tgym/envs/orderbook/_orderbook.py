@@ -1,24 +1,20 @@
-import traceback
-import json
 import random
 from abc import ABC
 from collections import deque
-from datetime import timedelta, datetime
-
-import easy_tf_log
-from matplotlib.figure import Figure
+from datetime import timedelta
 
 from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
-from exchange_data.utils import DateTimeUtils
 from gym import Env
-from gym.spaces import Discrete, Box, Dict
+from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pyee import EventEmitter
 from pytimeparse.timeparse import timeparse
+
+from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from tgym.envs.orderbook.utils import Positions
-from skimage import data, color
+from skimage import color
 
 import alog
 import click
@@ -29,21 +25,6 @@ import matplotlib.pyplot as plt
 
 class AlreadyFlatException(Exception):
     pass
-
-
-class Trade(object):
-    def __init__(self, type: str, pnl: float, entry: float,
-                 position_exit: float,
-                 position_length: int):
-        self.position_length = position_length
-        self.type = type
-        self.pnl = pnl
-        self.entry = entry
-        self.position_exit = position_exit
-
-    def __repr__(self):
-        return f'{self.type}/{self.pnl}/{self.entry}/{self.position_exit}/' \
-            f'{self.position_length}'
 
 
 class PositionLengthExceeded(Exception):
@@ -93,7 +74,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward=0.000005,
-        capital=1.0,
+        capital=10.0,
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
@@ -170,11 +151,14 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.last_position = Positions.Flat
         self.last_bid_side = np.zeros((self.orderbook_depth,))
         self.last_ask_side = np.copy(self.last_bid_side)
-        self.position = Positions.Flat
+        self.current_trade = None
+        self._position = None
+        self.position = Positions.Flat.value
         self.short_pnl = 0.0
         self.long_pnl = 0.0
         self.print_ascii_chart = print_ascii_chart
         self.position_repeat = 0
+        self.trade_size = self.capital * (10/100)
 
         if volatile_ranges is None and use_volatile_ranges:
             self.volatile_ranges = self.get_volatile_ranges()
@@ -218,20 +202,30 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         random.seed(seed)
         np.random.seed(seed)
 
-    def set_position(self, action: np.float):
+    @property
+    def position(self):
+        if self.current_trade:
+            return self.current_trade.position_type
+        else:
+            return Positions.Flat
+
+    @position.setter
+    def position(self, action: np.float):
         self.last_position = self.position
 
         if self.should_change_position(action):
+            # alog.info(f'### should change {action} ###')
             self.change_position(action)
-            self.position_repeat = 0
 
-        self.position_repeat += 1
+    @property
+    def trade_capital(self):
+        self.capital = self.capital - self.trade_size
 
-        self.short_pnl = self._short_pnl()
-        self.long_pnl = self._long_pnl()
-
-        # if settings.LOG_LEVEL == logging.DEBUG:
-        #     alog.info(alog.pformat(self.summary()))
+        if self.capital > 0.0:
+            return self.trade_size
+        else:
+            self.done = True
+            return 0.0
 
     def get_volatile_ranges(self):
         query = f'SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd ' \
@@ -257,26 +251,29 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         n_noops = np.random.randint(low=self.max_frames,
                                     high=self.max_frames + self.max_n_noops + 1)
-        # for i in range(n_noops):
-        #     self.get_observation()
+        for i in range(n_noops):
+            self.get_observation()
 
-        try:
-            for _ in range(n_noops):
-                self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            if not self.random_start_date:
-                self._set_next_window()
-            return self.reset(**kwargs)
+        # try:
+        #     for _ in range(n_noops):
+        #         self.get_observation()
+        # except (OutOfFramesException, TypeError, Exception):
+        #     if not self.random_start_date:
+        #         self._set_next_window()
+        #     return self.reset(**kwargs)
 
         return self.last_observation
 
-    def step(self, action):
-        if action > 1:
-            raise Exception()
+    def step_position(self, action):
+        self.position = action
+        if self.current_trade is not None:
+            self.current_trade.step(self.best_bid, self.best_ask)
+            self.reward += self.current_trade.reward
 
+    def step(self, action):
         assert self.action_space.contains(action)
 
-        self.set_position(action)
+        self.step_position(action)
 
         # if self.capital < self.min_capital:
         #     self.done = True
@@ -286,13 +283,13 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         if self.step_count >= self.max_episode_length:
             self.done = True
 
-        # observation = self.get_observation()
+        observation = self.get_observation()
 
-        try:
-            observation = self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            observation = self.last_observation
-            self.done = True
+        # try:
+        #     observation = self.get_observation()
+        # except (OutOfFramesException, TypeError, Exception):
+        #     observation = self.last_observation
+        #     self.done = True
 
         reward = self.reset_reward()
 
@@ -489,40 +486,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.reward = 0.0
         return reward
 
-    def close_short(self):
-        if self.position.value != Positions.Short.value:
-            raise Exception('Not short.')
-
-        pnl = self.short_pnl
-
-        self.trades.append(Trade(
-            self.position.name[0],
-            pnl, self.entry_price,
-            self.best_ask,
-            self.position_repeat
-        ))
-
-        self.total_pnl += pnl
-        self.capital += pnl
-        self.reward += 1.0 if pnl > self.min_profit else -1.0
-        self.entry_price = 0.0
-
-    def close_long(self):
-        if self.position != Positions.Long:
-            raise Exception('Not long.')
-
-        pnl = self.long_pnl
-
-        trade = Trade(self.position.name[0], pnl, self.entry_price,
-                      self.best_bid, self.position_repeat)
-
-        self.trades.append(trade)
-
-        self.total_pnl += pnl
-        self.capital += pnl
-        self.reward += 1.0 if pnl > self.min_profit else -1.0
-        self.entry_price = 0.0
-
     @property
     def min_profit(self):
         if self.best_bid > 0:
@@ -531,73 +494,46 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         else:
             return 0.0
 
-    def _short_pnl(self):
-        if self.entry_price > 0.0:
-            pnl = self._pnl(self.best_ask)
-        else:
-            pnl = 0.0
-        return pnl
-
-    def _long_pnl(self):
-        if self.entry_price > 0.0:
-            best_bid = self.best_bid
-        else:
-            best_bid = self.entry_price
-
-        pnl = self._pnl(best_bid)
-
-        return pnl
-
-    def _pnl(self, exit_price):
-        diff = 0.0
-        if self.last_position.value == Positions.Long.value:
-            diff = exit_price - self.entry_price
-        elif self.last_position.value == Positions.Short.value:
-            diff = self.entry_price - exit_price
-
-        if self.entry_price == 0.0:
-            change = 0.0
-        else:
-            change = diff / self.entry_price
-
-        pnl = (self.capital * change) + (-1 * self.capital * self.trading_fee)
-
-        return pnl
-
-    @property
-    def is_short(self):
-        return self.position.value == Positions.Short.value
-
-    @property
-    def is_long(self):
-        return self.position.value == Positions.Long.value
-
-    @property
-    def is_flat(self):
-        return self.position.value == Positions.Flat.value
-
     def should_change_position(self, action):
+        # alog.info((self.position.value, action))
         return self.position.value != action
 
     def long(self):
-        if self.is_long:
-            raise Exception('Already long.')
-        if self.is_short:
-            self.close_short()
-
-        self.position = Positions.Long
-        # alog.info(f'set long entry price {self.best_ask}')
-        self.entry_price = self.best_ask
+        if self.current_trade is None:
+            self.current_trade = LongTrade(
+                capital=self.trade_capital,
+                entry_price=self.best_ask,
+                on_close=self.close_trade,
+                trading_fee=self.trading_fee
+            )
+        else:
+            if isinstance(self.current_trade, ShortTrade):
+                self.current_trade.close()
+            if isinstance(self.current_trade, LongTrade):
+                raise Exception('Already Long')
 
     def short(self):
-        if self.is_short:
-            raise Exception('Already short.')
-        if self.is_long:
-            self.close_long()
+        if self.current_trade is None:
+            self.current_trade = ShortTrade(
+                capital=self.trade_capital,
+                entry_price=self.best_bid,
+                on_close=self.close_trade,
+                trading_fee=self.trading_fee
+            )
+        else:
+            if isinstance(self.current_trade, LongTrade):
+                self.current_trade.close()
+            if isinstance(self.current_trade, ShortTrade):
+                raise Exception('Already Long')
 
-        self.position = Positions.Short
-        # alog.info(f'set short entry price {self.best_bid}')
-        self.entry_price = self.best_bid
+    def flat(self):
+        if self.current_trade:
+            self.current_trade.close()
+
+    def close_trade(self, trade):
+        self.capital += trade.capital
+        self.reward += trade.reward
+        self.current_trade = None
 
     def change_position(self, action):
         if action == Positions.Long.value:
@@ -607,27 +543,13 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         elif action == Positions.Flat.value:
             self.flat()
 
-    def flat(self):
-        if self.position.value == Positions.Flat.value:
-            raise AlreadyFlatException()
-
-        if self.is_long:
-            self.close_long()
-        elif self.is_short:
-            self.close_short()
-
-        self.position = Positions.Flat
-
     def summary(self):
         summary_keys = [
             '_best_ask',
             '_best_bid',
-            'short_pnl',
-            'long_pnl',
             'capital',
             'last_datetime',
             'step_count',
-            'total_pnl',
             'total_reward'
         ]
 
@@ -667,13 +589,18 @@ def main(test_span, **kwargs):
 
     env.reset()
 
-    for i in range(timeparse(test_span) - 10):
-        env.step(Positions.Long.value)
-        # alog.info(alog.pformat(env.summary()))
-        if env.step_count % 5 == 0:
-            alog.info(env.best_bid)
+    trade_length = 120
+    test_length = timeparse(test_span)
+    side = Positions.Long
 
-    env.step(Positions.Flat.value)
+    while test_length > 0:
+        side = Positions.Long if side.value == Positions.Short.value else Positions.Short
+
+        for i in range(trade_length):
+            env.step(side.value)
+            test_length -= 1
+
+        env.step(Positions.Flat.value)
 
     alog.info(alog.pformat(env.summary()))
 

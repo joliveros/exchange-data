@@ -2,8 +2,9 @@ from abc import ABC
 from exchange_data.utils import NoValue
 from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
-from tgym.envs.orderbook._orderbook import OrderBookTradingEnv, Trade, \
+from tgym.envs.orderbook._orderbook import OrderBookTradingEnv, \
     AlreadyFlatException
+from tgym.envs.orderbook._trade import Trade, LongTrade
 
 import alog
 import click
@@ -33,15 +34,13 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
         if self.is_long:
             raise Exception('Already long.')
         self.position = Positions.Long
-
-        self.entry_price = self.best_ask
+        self.current_trade = LongTrade(entry=self.best_ask)
 
     def flat(self):
+        if self.current_trade is not None:
+            self.current_trade.close()
 
-        if self.position.value == Positions.Flat.value:
-            raise AlreadyFlatException()
-
-        if self.is_long:
+        if self.current_trade.position_type == Positions.Long.value:
             self.close_long()
 
         self.position = Positions.Flat
@@ -148,14 +147,6 @@ class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
         self.total_reward += reward
         self.reward = 0.0
         return reward
-
-    @property
-    def is_long(self):
-        return self.position.value == Positions.Long.value
-
-    @property
-    def is_flat(self):
-        return self.position.value == Positions.Flat.value
 
     def close_short(self):
         raise Exception()
