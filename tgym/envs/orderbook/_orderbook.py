@@ -68,7 +68,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         window_size='2m',
         sample_interval='1s',
         max_summary=10,
-        max_frames=100,
+        max_frames=48,
         volatile_ranges=None,
         use_volatile_ranges=True,
         min_std_dev=2.0,
@@ -79,7 +79,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         is_training=True,
         print_ascii_chart=False,
         summary_interval=120,
-        min_change=3.0,
+        min_change=2.0,
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
@@ -237,10 +237,9 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         return DataFrame(ranges).set_index('time')
 
     def reset(self, **kwargs):
-        if settings.LOG_LEVEL == logging.DEBUG:
-            if self.step_count > 0:
-                alog.debug('##### reset ######')
-                alog.info(alog.pformat(self.summary()))
+        if self.step_count > 0:
+            alog.debug('##### reset ######')
+            alog.info(alog.pformat(self.summary()))
 
         _kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -251,16 +250,16 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         n_noops = np.random.randint(low=self.max_frames,
                                     high=self.max_frames + self.max_n_noops + 1)
-        for i in range(n_noops):
-            self.get_observation()
+        # for i in range(n_noops):
+        #     self.get_observation()
 
-        # try:
-        #     for _ in range(n_noops):
-        #         self.get_observation()
-        # except (OutOfFramesException, TypeError, Exception):
-        #     if not self.random_start_date:
-        #         self._set_next_window()
-        #     return self.reset(**kwargs)
+        try:
+            for _ in range(n_noops):
+                self.get_observation()
+        except (OutOfFramesException, TypeError, Exception):
+            if not self.random_start_date:
+                self._set_next_window()
+            return self.reset(**kwargs)
 
         return self.last_observation
 
@@ -285,17 +284,15 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         observation = self.get_observation()
 
-        # try:
-        #     observation = self.get_observation()
-        # except (OutOfFramesException, TypeError, Exception):
-        #     observation = self.last_observation
-        #     self.done = True
+        try:
+            observation = self.get_observation()
+        except (OutOfFramesException, TypeError, Exception):
+            observation = self.last_observation
+            self.done = True
 
         reward = self.reset_reward()
 
         self.print_summary()
-
-        # reward = np.clip(reward, -1, +1)
 
         return observation, reward, self.done, {}
 
@@ -503,12 +500,12 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
             self.current_trade = LongTrade(
                 capital=self.trade_capital,
                 entry_price=self.best_ask,
-                on_close=self.close_trade,
-                trading_fee=self.trading_fee
+                trading_fee=self.trading_fee,
+                min_change=self.min_change
             )
         else:
             if isinstance(self.current_trade, ShortTrade):
-                self.current_trade.close()
+                self.close_trade()
             if isinstance(self.current_trade, LongTrade):
                 raise Exception('Already Long')
 
@@ -517,22 +514,26 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
             self.current_trade = ShortTrade(
                 capital=self.trade_capital,
                 entry_price=self.best_bid,
-                on_close=self.close_trade,
-                trading_fee=self.trading_fee
+                trading_fee=self.trading_fee,
+                min_change=self.min_change
             )
         else:
             if isinstance(self.current_trade, LongTrade):
-                self.current_trade.close()
+                self.close_trade()
             if isinstance(self.current_trade, ShortTrade):
                 raise Exception('Already Long')
 
     def flat(self):
         if self.current_trade:
-            self.current_trade.close()
+            self.close_trade()
 
-    def close_trade(self, trade):
+    def close_trade(self):
+        trade: Trade = self.current_trade
+        reward = trade.reward
+        trade.close()
+        self.trades.append(trade)
         self.capital += trade.capital
-        self.reward += trade.reward
+        self.reward += reward
         self.current_trade = None
 
     def change_position(self, action):

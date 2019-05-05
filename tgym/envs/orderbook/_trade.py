@@ -23,14 +23,15 @@ class Trade(Logging):
         self,
         entry_price: float,
         capital: float,
-        on_close: Callable,
         trading_fee: float,
-        position_type: Positions
+        position_type: Positions,
+        min_change: float
     ):
         Logging.__init__(self)
-
+        self.min_change = min_change
         self.max_increase_reward = 1.0
         self.max_steps_reward = 3
+        self.positive_close_reward = 1.0
         self.steps_since_max = 0.0
         self.frame_width = 42
         self.capital = capital
@@ -38,7 +39,6 @@ class Trade(Logging):
         self.position_length = 0
         self.position_type = position_type
         self.entry_price = entry_price
-        self.on_close = on_close
         self.bids = np.array([])
         self.asks = np.array([])
         self.pnl_history = np.array([])
@@ -70,22 +70,35 @@ class Trade(Logging):
     @property
     def reward(self):
         reward = self._reward
-        self._reward = 0.0
         return reward
 
     @reward.setter
     def reward(self, value):
         self._reward = value
 
+    @property
+    def min_profit(self):
+        change = self.min_change / self.exit_price
+
+        pnl = (self.capital * change) + \
+                   (-1 * self.capital * self.trading_fee)
+
+        return pnl
+
     def close(self):
-        if self.steps_since_max < self.max_steps_reward:
-            self.reward += 1.0
+        if self.steps_since_max < self.max_steps_reward and \
+            self.pnl > self.min_profit:
+            self.reward += self.positive_close_reward
+
+        if self.pnl < self.min_profit:
+            self.reward += -1 * self.positive_close_reward
 
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
+        self.reward = 0.0
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
@@ -96,6 +109,12 @@ class Trade(Logging):
             self.clear_steps_since_max()
             self.max_pnl = pnl
             self.reward += self.max_increase_reward
+
+        if pnl > self.min_profit:
+            self.reward += self.max_increase_reward
+
+        # if pnl < self.min_profit:
+        #     self.reward += -1 * self.max_increase_reward
 
         self.steps_since_max += 1
 
@@ -123,7 +142,6 @@ class Trade(Logging):
         summary_keys = [
             'position_length',
             'entry_price',
-            'capital'
         ]
 
         summary = {key: self.__dict__[key] for key in
@@ -132,6 +150,8 @@ class Trade(Logging):
         summary['exit_price'] = float(self.exit_price)
         summary['pnl'] = float(self.pnl)
         summary['entry_price'] = float(self.entry_price)
+        summary['position_type'] = str(self.position_type)
+        summary['capital'] = float(self.capital)
 
         return summary
 
@@ -154,10 +174,8 @@ class LongTrade(Trade):
         Trade.__init__(self, position_type=Positions.Long, **kwargs)
 
     def close(self):
-        super().close()
         self.capital += self.pnl
-
-        self.on_close(self)
+        super().close()
 
     @property
     def exit_price(self):
@@ -167,7 +185,6 @@ class LongTrade(Trade):
     def pnl(self):
         if self._pnl:
             return self._pnl
-
 
         diff = self.exit_price - self.entry_price
         if self.entry_price == 0.0:
@@ -194,7 +211,8 @@ class ShortTrade(Trade):
         if self._pnl:
             return self._pnl
 
-        diff = self.exit_price - self.entry_price
+        diff = self.entry_price - self.exit_price
+
         if self.entry_price == 0.0:
             change = 0.0
         else:
@@ -205,8 +223,5 @@ class ShortTrade(Trade):
         return pnl
 
     def close(self):
-        super().close()
-
         self.capital += self.pnl
-
-        self.on_close(self)
+        super().close()
