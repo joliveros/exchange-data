@@ -79,7 +79,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         is_training=True,
         print_ascii_chart=False,
         summary_interval=120,
-        min_change=2.0,
+        min_change=0.0,
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
@@ -529,8 +529,8 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
     def close_trade(self):
         trade: Trade = self.current_trade
-        reward = trade.reward
         trade.close()
+        reward = trade.reward
         self.trades.append(trade)
         self.capital += trade.capital
         self.reward += reward
