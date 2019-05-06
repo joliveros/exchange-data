@@ -86,11 +86,9 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.steps_since_max < self.max_steps_reward and \
-            self.pnl > self.min_profit:
+        if self.pnl > 0.0:
             self.reward += self.positive_close_reward
-
-        if self.pnl < self.min_profit:
+        else:
             self.reward += -1 * self.positive_close_reward
 
         if settings.LOG_LEVEL == logging.DEBUG:
@@ -105,16 +103,19 @@ class Trade(Logging):
         pnl = self.pnl
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if pnl > self.max_pnl:
+        if pnl > self.max_pnl or self.max_pnl == 0.0:
             self.clear_steps_since_max()
             self.max_pnl = pnl
             self.reward += self.max_increase_reward
 
+        if self.position_length > 5 and pnl < self.max_pnl:
+            self.reward += -1 * self.max_increase_reward
+            alog.info(f'### long and less than max {self.reward}/{pnl}/{self.max_pnl} ###')
+
         if pnl > self.min_profit:
             self.reward += self.max_increase_reward
-
-        # if pnl < self.min_profit:
-        #     self.reward += -1 * self.max_increase_reward
+        else:
+            self.reward += -1 * self.max_increase_reward / 10
 
         self.steps_since_max += 1
 
