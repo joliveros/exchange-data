@@ -79,7 +79,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         is_training=True,
         print_ascii_chart=False,
         summary_interval=120,
-        min_change=0.0,
+        min_change=-0.5,
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
