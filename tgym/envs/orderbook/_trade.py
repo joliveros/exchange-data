@@ -57,11 +57,11 @@ class Trade(Logging):
 
     @property
     def best_bid(self):
-        return self.bids[0]
+        return self.bids[-1]
 
     @property
     def best_ask(self):
-        return self.asks[0]
+        return self.asks[-1]
 
     @property
     def pnl(self):
@@ -86,10 +86,11 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.pnl > 0.0:
+        if self.steps_since_max > 0 and self.steps_since_max < 10:
             self.reward += self.positive_close_reward
-        else:
-            self.reward += -1 * self.positive_close_reward
+
+        if self.pnl < self.min_profit:
+            self.reward += self.positive_close_reward * -1.0
 
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
@@ -103,21 +104,12 @@ class Trade(Logging):
         pnl = self.pnl
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if pnl > self.max_pnl or self.max_pnl == 0.0:
+        if (pnl > self.max_pnl or self.max_pnl == 0.0) and pnl > self.min_profit:
             self.clear_steps_since_max()
             self.max_pnl = pnl
-            self.reward += self.max_increase_reward
-
-        if self.position_length > 5 and pnl < self.max_pnl:
-            self.reward += -1 * self.max_increase_reward
-            alog.info(f'### long and less than max {self.reward}/{pnl}/{self.max_pnl} ###')
-
-        if pnl > self.min_profit:
-            self.reward += self.max_increase_reward
-        else:
-            self.reward += -1 * self.max_increase_reward / 10
-
-        self.steps_since_max += 1
+            # self.reward += self.max_increase_reward
+        if self.max_pnl > self.min_profit:
+            self.steps_since_max += 1
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
