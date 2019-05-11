@@ -11,7 +11,7 @@ from pandas import DataFrame
 from pyee import EventEmitter
 from pytimeparse.timeparse import timeparse
 
-from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade
+from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from tgym.envs.orderbook.utils import Positions
 from skimage import color
@@ -47,10 +47,7 @@ class PlotOrderbook(object):
 
     def hide_ticks_and_values(self, frame):
         frame.axis('off')
-        # frame.axes.get_xaxis().set_visible(False)
-        # frame.axes.get_yaxis().set_visible(False)
-        # frame.axes.get_xaxis().set_ticks([])
-        # frame.axes.get_yaxis().set_ticks([])
+
 
 class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
     """
@@ -70,7 +67,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         max_summary=10,
         max_frames=48,
         volatile_ranges=None,
-        use_volatile_ranges=True,
+        use_volatile_ranges=False,
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward=0.000005,
@@ -153,7 +150,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.last_ask_side = np.copy(self.last_bid_side)
         self.current_trade = None
         self._position = None
-        self.position = Positions.Flat.value
         self.short_pnl = 0.0
         self.long_pnl = 0.0
         self.print_ascii_chart = print_ascii_chart
@@ -214,8 +210,10 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.last_position = self.position
 
         if self.should_change_position(action):
-            # alog.info(f'### should change {action} ###')
             self.change_position(action)
+
+        if self.current_trade is None:
+            raise Exception()
 
     @property
     def trade_capital(self):
@@ -250,24 +248,23 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         n_noops = np.random.randint(low=self.max_frames,
                                     high=self.max_frames + self.max_n_noops + 1)
-        # for i in range(n_noops):
-        #     self.get_observation()
+        for i in range(n_noops):
+            self.get_observation()
 
-        try:
-            for _ in range(n_noops):
-                self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            if not self.random_start_date:
-                self._set_next_window()
-            return self.reset(**kwargs)
+        # try:
+        #     for _ in range(n_noops):
+        #         self.get_observation()
+        # except (OutOfFramesException, TypeError, Exception):
+        #     if not self.random_start_date:
+        #         self._set_next_window()
+        #     return self.reset(**kwargs)
 
         return self.last_observation
 
     def step_position(self, action):
         self.position = action
-        if self.current_trade is not None:
-            self.current_trade.step(self.best_bid, self.best_ask)
-            self.reward += self.current_trade.reward
+        self.current_trade.step(self.best_bid, self.best_ask)
+        self.reward += self.current_trade.reward
 
     def step(self, action):
         assert self.action_space.contains(action)
@@ -284,11 +281,11 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         observation = self.get_observation()
 
-        try:
-            observation = self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            observation = self.last_observation
-            self.done = True
+        # try:
+        #     observation = self.get_observation()
+        # except (OutOfFramesException, TypeError, Exception):
+        #     observation = self.last_observation
+        #     self.done = True
 
         reward = self.reset_reward()
 
@@ -356,10 +353,9 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         bids = np.array([orderbook[0][0], orderbook[0][1]])
         self.bids = bids.reshape((2, bids.shape[1])).swapaxes(0, 1)[:10]
-        # alog.info(self.bids[:10])
+
         asks = np.array([orderbook[1][0], orderbook[1][1]])
         self.asks = asks.reshape((2, asks.shape[1])).swapaxes(0, 1)[:10]
-        # alog.info(self.asks[:10])
 
         self.position_data_history.appendleft(self.position_data)
 
@@ -492,10 +488,17 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
             return 0.0
 
     def should_change_position(self, action):
-        # alog.info((self.position.value, action))
+        if self.current_trade is None:
+            return True
+
         return self.position.value != action
 
     def long(self):
+        if isinstance(self.current_trade, Trade):
+            self.close_trade()
+        if isinstance(self.current_trade, LongTrade):
+            raise Exception('Already Long')
+
         if self.current_trade is None:
             self.current_trade = LongTrade(
                 capital=self.trade_capital,
@@ -503,13 +506,13 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
-        else:
-            if isinstance(self.current_trade, ShortTrade):
-                self.close_trade()
-            if isinstance(self.current_trade, LongTrade):
-                raise Exception('Already Long')
 
     def short(self):
+        if isinstance(self.current_trade, Trade):
+            self.close_trade()
+        if isinstance(self.current_trade, ShortTrade):
+            raise Exception('Already Long')
+
         if self.current_trade is None:
             self.current_trade = ShortTrade(
                 capital=self.trade_capital,
@@ -517,15 +520,20 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
-        else:
-            if isinstance(self.current_trade, LongTrade):
-                self.close_trade()
-            if isinstance(self.current_trade, ShortTrade):
-                raise Exception('Already Long')
 
     def flat(self):
-        if self.current_trade:
+        if isinstance(self.current_trade, Trade):
             self.close_trade()
+        if isinstance(self.current_trade, FlatTrade):
+            raise Exception('Already Flat')
+
+        if self.current_trade is None:
+            self.current_trade = FlatTrade(
+                capital=self.trade_capital,
+                entry_price=(self.best_bid + self.best_ask) / 2,
+                trading_fee=self.trading_fee,
+                min_change=self.min_change
+            )
 
     def close_trade(self):
         trade: Trade = self.current_trade
@@ -592,16 +600,11 @@ def main(test_span, **kwargs):
 
     trade_length = 120
     test_length = timeparse(test_span)
-    side = Positions.Long
 
     while test_length > 0:
-        side = Positions.Long if side.value == Positions.Short.value else Positions.Short
-
         for i in range(trade_length):
-            env.step(side.value)
+            env.step(random.randint(0, 2))
             test_length -= 1
-
-        env.step(Positions.Flat.value)
 
     alog.info(alog.pformat(env.summary()))
 

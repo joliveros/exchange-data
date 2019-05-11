@@ -11,12 +11,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 
+
 class Logging(object):
     def __init__(self):
         yaml.add_representer(float, SafeRepresenter.represent_float)
 
     def yaml(self, value: dict):
         return yaml.dump(value)
+
 
 class Trade(Logging):
     def __init__(
@@ -61,7 +63,9 @@ class Trade(Logging):
 
     @property
     def best_ask(self):
-        return self.asks[-1]
+        if self.asks.shape[0] > 0:
+            return self.asks[-1]
+        return 0.0
 
     @property
     def pnl(self):
@@ -86,11 +90,8 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.steps_since_max > 0 and self.steps_since_max < 10:
+        if self.pnl > self.min_profit:
             self.reward += self.positive_close_reward
-
-        if self.pnl < self.min_profit:
-            self.reward += self.positive_close_reward * -1.0
 
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
@@ -101,15 +102,14 @@ class Trade(Logging):
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
+
         pnl = self.pnl
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if (pnl > self.max_pnl or self.max_pnl == 0.0) and pnl > self.min_profit:
-            self.clear_steps_since_max()
-            self.max_pnl = pnl
-            # self.reward += self.max_increase_reward
-        if self.max_pnl > self.min_profit:
-            self.steps_since_max += 1
+        if self.pnl > self.max_pnl and self.pnl > self.min_profit:
+            self.reward += self.positive_close_reward
+
+        self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
@@ -153,7 +153,7 @@ class Trade(Logging):
 
     def __repr__(self):
         return f'{self.position_type}/{self.pnl}/{self.entry_price}/{self.exit_price}/' \
-            f'{self.position_length}'
+            f'{self.total_reward}/{self.position_length}'
 
     def clear_pnl(self):
         self._pnl = None
@@ -218,3 +218,42 @@ class ShortTrade(Trade):
     def close(self):
         self.capital += self.pnl
         super().close()
+
+
+class FlatTrade(Trade):
+    def __init__(self, **kwargs):
+        Trade.__init__(self, position_type=Positions.Flat, **kwargs)
+
+    @property
+    def exit_price(self):
+        return (self.best_ask + self.best_bid) / 2
+
+    @property
+    def pnl(self):
+        diff = self.entry_price - self.exit_price
+
+        if self.entry_price == 0.0:
+            change = 0.0
+        else:
+            change = diff / self.entry_price
+
+        pnl = (self.capital * change) + \
+                   (-1 * self.capital * self.trading_fee)
+        return pnl
+
+    def step(self, best_bid: float, best_ask: float):
+        self.reward = 0.0
+        self.position_length += 1
+        self.bids = np.append(self.bids, [best_bid])
+        self.asks = np.append(self.asks, [best_ask])
+
+        if self.pnl != 0.0:
+            self.reward += self.positive_close_reward * -1
+        else:
+            self.reward += self.positive_close_reward
+
+        self.total_reward += self.reward
+
+    def close(self):
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.info(f'{self.yaml(self.summary())}')
