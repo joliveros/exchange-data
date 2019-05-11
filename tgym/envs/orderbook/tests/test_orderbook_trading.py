@@ -1,3 +1,5 @@
+import random
+
 from dateutil import parser, tz
 from pytimeparse import timeparse
 from tgym.envs import OrderBookTradingEnv
@@ -74,13 +76,10 @@ class TestOrderBookTradingEnv(object):
 
         trade_length = 10
         test_length = timeparse.timeparse('2m')
-        side = Positions.Long
 
         while test_length > 0:
-            side = Positions.Long if side.value == Positions.Short.value else Positions.Short
-
             for i in range(trade_length):
-                env.step(side.value)
+                env.step(random.randint(0, 2))
                 test_length -= 1
 
             env.step(Positions.Flat.value)
