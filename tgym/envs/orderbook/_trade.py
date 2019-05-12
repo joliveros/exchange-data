@@ -92,6 +92,8 @@ class Trade(Logging):
     def close(self):
         if self.pnl > self.min_profit:
             self.reward += self.positive_close_reward
+        else:
+            self.reward += self.positive_close_reward * -1
 
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
@@ -106,8 +108,14 @@ class Trade(Logging):
         pnl = self.pnl
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if self.pnl > self.max_pnl and self.pnl > self.min_profit:
-            self.reward += self.positive_close_reward
+        if pnl > self.max_pnl:
+            if pnl > self.min_profit:
+                self.reward += self.positive_close_reward * 10
+
+            self.max_pnl = pnl
+
+        if pnl < self.min_profit and pnl < self.max_pnl:
+            self.reward += self.positive_close_reward * -1
 
         self.total_reward += self.reward
 
@@ -249,8 +257,6 @@ class FlatTrade(Trade):
 
         if self.pnl != 0.0:
             self.reward += self.positive_close_reward * -1
-        else:
-            self.reward += self.positive_close_reward
 
         self.total_reward += self.reward
 
