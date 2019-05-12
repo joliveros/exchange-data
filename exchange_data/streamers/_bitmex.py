@@ -45,6 +45,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         window_size: str = '2m',
         sample_interval: str = '1s',
         channel_name: str = None,
+        min_date: datetime = parser.parse('2019-03-13 14:10:00+00:00'),
         **kwargs
     ):
         Database.__init__(self, database_name='bitmex', **kwargs)
@@ -63,7 +64,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         self.end_date = None
         self.max_spread = max_spread
         self.realtime = False
-        self._min_date = parser.parse('2019-03-13 14:10:00+00:00')
+        self._min_date = min_date
         self.orderbook_depth = orderbook_depth
         self.window_size_str = window_size
         self.window_size = timeparse(window_size)

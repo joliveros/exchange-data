@@ -11,6 +11,7 @@ from pandas import DataFrame
 from pyee import EventEmitter
 from pytimeparse.timeparse import timeparse
 
+from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from tgym.envs.orderbook.utils import Positions
@@ -76,7 +77,8 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         is_training=True,
         print_ascii_chart=False,
         summary_interval=120,
-        min_change=-0.5,
+        min_change=0.0,
+        min_date=DateTimeUtils.now() - timedelta(hours=24),
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
@@ -85,6 +87,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         kwargs['random_start_date'] = random_start_date
         kwargs['channel_name'] = \
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
+        kwargs['min_date'] = min_date
 
         self._args = locals()
         del self._args['self']
@@ -110,7 +113,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.max_frames = max_frames
         self.frames = deque(maxlen=max_frames)
         self.price_frames = deque(maxlen=max_frames)
-        self.position_data_history = deque(maxlen=max_frames * 12)
+        self.position_data_history = deque(maxlen=max_frames * 6)
         self.long_pnl_history = []
         self._best_ask = 0.0
         self._best_bid = 0.0
@@ -248,16 +251,16 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         n_noops = np.random.randint(low=self.max_frames,
                                     high=self.max_frames + self.max_n_noops + 1)
-        for i in range(n_noops):
-            self.get_observation()
+        # for i in range(n_noops):
+        #     self.get_observation()
 
-        # try:
-        #     for _ in range(n_noops):
-        #         self.get_observation()
-        # except (OutOfFramesException, TypeError, Exception):
-        #     if not self.random_start_date:
-        #         self._set_next_window()
-        #     return self.reset(**kwargs)
+        try:
+            for _ in range(n_noops):
+                self.get_observation()
+        except (OutOfFramesException, TypeError, Exception):
+            if not self.random_start_date:
+                self._set_next_window()
+            return self.reset(**kwargs)
 
         return self.last_observation
 
@@ -279,13 +282,13 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         if self.step_count >= self.max_episode_length:
             self.done = True
 
-        observation = self.get_observation()
+        # observation = self.get_observation()
 
-        # try:
-        #     observation = self.get_observation()
-        # except (OutOfFramesException, TypeError, Exception):
-        #     observation = self.last_observation
-        #     self.done = True
+        try:
+            observation = self.get_observation()
+        except (OutOfFramesException, TypeError, Exception):
+            observation = self.last_observation
+            self.done = True
 
         reward = self.reset_reward()
 
