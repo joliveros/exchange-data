@@ -108,13 +108,9 @@ class Trade(Logging):
         pnl = self.pnl
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if pnl > self.max_pnl:
-            if pnl > self.min_profit:
-                self.reward += self.positive_close_reward * 10
-
-            self.max_pnl = pnl
-
-        if pnl < self.min_profit and pnl < self.max_pnl:
+        if pnl > self.min_profit:
+            self.reward += self.positive_close_reward
+        else:
             self.reward += self.positive_close_reward * -1
 
         self.total_reward += self.reward
@@ -229,6 +225,8 @@ class ShortTrade(Trade):
 
 
 class FlatTrade(Trade):
+    flat_reward = 1.0
+
     def __init__(self, **kwargs):
         Trade.__init__(self, position_type=Positions.Flat, **kwargs)
 
@@ -256,7 +254,10 @@ class FlatTrade(Trade):
         self.asks = np.append(self.asks, [best_ask])
 
         if self.pnl != 0.0:
-            self.reward += self.positive_close_reward * -1
+            self.reward += self.flat_reward * -1
+
+        # else:
+        #     self.reward += self.flat_reward / 10
 
         self.total_reward += self.reward
 
