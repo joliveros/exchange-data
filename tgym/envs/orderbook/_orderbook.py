@@ -78,7 +78,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         print_ascii_chart=False,
         summary_interval=120,
         min_change=0.0,
-        min_date=DateTimeUtils.now() - timedelta(hours=24),
+        min_date=DateTimeUtils.now() - timedelta(hours=6),
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
