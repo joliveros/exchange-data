@@ -78,7 +78,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         print_ascii_chart=False,
         summary_interval=120,
         min_change=0.0,
-        min_date=DateTimeUtils.now() - timedelta(hours=6),
+        frame_width=96,
         **kwargs
     ):
         kwargs['orderbook_depth'] = orderbook_depth
@@ -87,7 +87,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         kwargs['random_start_date'] = random_start_date
         kwargs['channel_name'] = \
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
-        kwargs['min_date'] = min_date
 
         self._args = locals()
         del self._args['self']
@@ -96,7 +95,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         EventEmitter.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
-        self.frame_width = 96
+        self.frame_width = frame_width
 
         PlotOrderbook.__init__(self, self.frame_width)
 
@@ -355,10 +354,10 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.last_orderbook = orderbook = np.array(orderbook)
 
         bids = np.array([orderbook[0][0], orderbook[0][1]])
-        self.bids = bids.reshape((2, bids.shape[1])).swapaxes(0, 1)[:10]
+        self.bids = bids.reshape((2, bids.shape[1])).swapaxes(0, 1)
 
         asks = np.array([orderbook[1][0], orderbook[1][1]])
-        self.asks = asks.reshape((2, asks.shape[1])).swapaxes(0, 1)[:10]
+        self.asks = asks.reshape((2, asks.shape[1])).swapaxes(0, 1)
 
         self.position_data_history.appendleft(self.position_data)
 
