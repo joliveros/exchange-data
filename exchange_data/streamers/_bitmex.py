@@ -3,7 +3,6 @@ from cached_property import cached_property
 from collections import Generator
 from datetime import datetime, timedelta
 from dateutil import parser
-from dateutil import parser
 from dateutil.tz import tz
 from exchange_data import Database, settings
 from exchange_data.emitters import SignalInterceptor
