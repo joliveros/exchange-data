@@ -52,6 +52,8 @@ services:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
+    environment: &environment
+        - DB=http://$INFLUXDB_ADMIN_USER:$INFLUXDB_ADMIN_PASSWORD@influxdb:$INFLUXDB_PORT/
     env_file:
       - ./.env.prod
     networks:
