@@ -16,8 +16,11 @@ services:
 
     influxdb:
         image: influxdb
-        env_file:
-            - ./.env.prod
+        environment:
+            - INFLUXDB_ADMIN_USER=jose
+            - INFLUXDB_ADMIN_PASSWORD=/run/secrets/INFLUXDB_ADMIN_PASSWORD
+        secrets:
+            - INFLUXDB_ADMIN_PASSWORD
         ports:
             - 0.0.0.0:28953:8086
         volumes:
@@ -27,3 +30,7 @@ services:
         command: influxd -config /etc/influxdb/influxdb.conf
         networks:
             - public
+
+secrets:
+    INFLUXDB_ADMIN_PASSWORD:
+        external: true
