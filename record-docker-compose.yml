@@ -15,7 +15,7 @@ services:
             - public
 
     influxdb:
-        image: influxdb
+        image: codequants.com:5000/influxdb
         env_file:
           - ./.env.prod
         secrets:
