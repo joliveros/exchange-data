@@ -1,7 +1,9 @@
+from get_docker_secret import get_docker_secret
+from os import environ
+
+import alog
 import logging
 import rollbar
-from os import environ
-import alog
 
 LOG_LEVEL = environ.get('LOG_LEVEL')
 if LOG_LEVEL is None:
@@ -14,17 +16,17 @@ alog.info(LOG_LEVEL)
 
 RUN_ENV = environ.get('RUN_ENV')
 
-DB = environ.get('DB')
+DB = get_docker_secret('DB')
 
 HOME = environ.get('HOME')
 
-BITSTAMP_PUSHER_APP_KEY = environ.get('BITSTAMP_PUSHER_APP_KEY')
+BITSTAMP_PUSHER_APP_KEY = get_docker_secret('BITSTAMP_PUSHER_APP_KEY')
 
-BITMEX_API_KEY = environ.get('BITMEX_API_KEY')
-BITMEX_API_SECRET = environ.get('BITMEX_API_SECRET')
+BITMEX_API_KEY = get_docker_secret('BITMEX_API_KEY')
+BITMEX_API_SECRET = get_docker_secret('BITMEX_API_SECRET')
 
 if RUN_ENV != 'development':
-    ROLLBAR_API_KEY = environ.get('ROLLBAR_API_KEY')
+    ROLLBAR_API_KEY = get_docker_secret('ROLLBAR_API_KEY')
 
     if ROLLBAR_API_KEY:
         rollbar.init(ROLLBAR_API_KEY, 'production')
@@ -49,7 +51,4 @@ WS_HOST = environ.get('WS_HOST') or 'proxy'
 TICK_INTERVAL = '1s'
 
 PROMETHEUS_HOST = environ.get('PROMETHEUS_HOST')
-if PROMETHEUS_HOST is None:
-    PROMETHEUS_HOST = 'pushgateway:9091'
-
 
