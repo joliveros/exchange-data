@@ -130,11 +130,12 @@ class BitmexPositionEmitter(
             profit_gauge.set(self.capital)
 
     def _push_metrics(self):
-        push_to_gateway(
-            settings.PROMETHEUS_HOST,
-            job=self.job_name,
-            registry=REGISTRY
-        )
+        if settings.PROMETHEUS_HOST is not None:
+            push_to_gateway(
+                settings.PROMETHEUS_HOST,
+                job=self.job_name,
+                registry=REGISTRY
+            )
 
     def start(self):
         self.sub([self.channel_name])

@@ -44,4 +44,5 @@ dependencies:
     - stringcase
     - tensorflow-gpu
     - timestamp
+    - get-docker-secret
 #    - git+https://github.com/py-bson/bson.git#egg=bson
