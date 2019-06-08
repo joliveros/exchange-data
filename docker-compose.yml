@@ -19,7 +19,7 @@ services:
 
   emit_bitmex_btc:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
     networks:
@@ -29,7 +29,7 @@ services:
 
   emit_bitmex_eth:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
     networks:
@@ -39,7 +39,7 @@ services:
 
   emit_orderbook_l2:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
     networks:
@@ -49,11 +49,9 @@ services:
 
   emit_bxbt_index:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
-    environment: &environment
-        - DB=http://$INFLUXDB_ADMIN_USER:$INFLUXDB_ADMIN_PASSWORD@influxdb:$INFLUXDB_PORT/
     env_file:
       - ./.env.prod
     networks:
@@ -63,7 +61,7 @@ services:
 
   emit_bitmex_orderbook:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     volumes:
@@ -80,6 +78,8 @@ services:
       - public
 
   record_bitmex_eth:
+    deploy:
+      replicas: 0
     image: codequants.com:5000/exchange-data
     env_file:
       - ./.env.prod
@@ -90,6 +90,8 @@ services:
       - public
 
   record_bitmex_xbtusd:
+    deploy:
+      replicas: 0
     image: codequants.com:5000/exchange-data
     env_file:
     - ./.env.prod
@@ -101,7 +103,7 @@ services:
 
   emit_bitmex_account:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
     env_file:
@@ -154,6 +156,14 @@ services:
       - public
 
 
-#secrets:
-#  postgres_password:
-#    file: ./secrets/postgres_password
+secrets:
+  BITMEX_API_KEY:
+      external: true
+  BITMEX_API_SECRET:
+      external: true
+  BITSTAMP_PUSHER_APP_KEY:
+      external: true
+  DB:
+      external: true
+  ROLLBAR_API_KEY:
+      external: true
