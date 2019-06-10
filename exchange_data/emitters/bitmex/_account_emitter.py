@@ -129,6 +129,7 @@ class BitmexAccountEmitter(
             # To auth to the WS using an API key, we generate a signature
             # of a nonce and the WS API endpoint.
             alog.debug(settings.BITMEX_API_KEY)
+            alog.debug(settings.BITMEX_API_SECRET)
             nonce = generate_nonce()
             api_signature = generate_signature(
                 settings.BITMEX_API_SECRET, 'GET', '/realtime', nonce, '')

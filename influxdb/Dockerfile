@@ -1,3 +1,3 @@
 FROM influxdb
 
-COPY entrypoint.sh /
+COPY *.sh /
