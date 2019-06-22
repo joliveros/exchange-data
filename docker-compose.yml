@@ -52,9 +52,11 @@ services:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
+    environment:
+      - LOG_LEVEL=INFO
     env_file:
       - ./.env.prod
-    secrets: &secrets
+    secrets:
         - BITMEX_API_KEY
         - BITMEX_API_SECRET
         - BITSTAMP_PUSHER_APP_KEY
@@ -70,12 +72,14 @@ services:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
-    volumes:
-      - $HOME/.exchange-data:/root/.exchange-data
     env_file:
       - ./.env.prod
     secrets:
-        <<: *secrets
+      - BITMEX_API_KEY
+      - BITMEX_API_SECRET
+      - BITSTAMP_PUSHER_APP_KEY
+      - DB
+      - ROLLBAR_API_KEY
     depends_on:
       - emit_bitmex_btc
       - emit_time
@@ -87,11 +91,15 @@ services:
   record_bitmex_eth:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data
+    image: codequants.com:5000/exchange-data:latest
     env_file:
       - ./.env.prod
     secrets:
-      <<: *secrets
+      - BITMEX_API_KEY
+      - BITMEX_API_SECRET
+      - BITSTAMP_PUSHER_APP_KEY
+      - DB
+      - ROLLBAR_API_KEY
     depends_on:
       - influxdb
     command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
@@ -102,10 +110,16 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data
+    environment:
+      - LOG_LEVEL=INFO
     env_file:
     - ./.env.prod
     secrets:
-      <<: *secrets
+      - BITMEX_API_KEY
+      - BITMEX_API_SECRET
+      - BITSTAMP_PUSHER_APP_KEY
+      - DB
+      - ROLLBAR_API_KEY
     depends_on:
     - influxdb
     command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD --measurement-name data"
@@ -118,11 +132,15 @@ services:
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
     environment:
-      - LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
     env_file:
       - ./.env.prod
     secrets:
-      <<: *secrets
+      - BITMEX_API_KEY
+      - BITMEX_API_SECRET
+      - BITSTAMP_PUSHER_APP_KEY
+      - DB
+      - ROLLBAR_API_KEY
     networks:
       - public
     depends_on:

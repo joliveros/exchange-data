@@ -1,10 +1,11 @@
+from exchange_data import settings
 from influxdb import InfluxDBClient
+from influxdb.resultset import ResultSet
 from urllib.parse import urlparse
 
-from influxdb.resultset import ResultSet
-
-from exchange_data import settings
 import alog
+
+alog.set_level(settings.LOG_LEVEL)
 
 
 class Database(InfluxDBClient):
@@ -19,6 +20,8 @@ class Database(InfluxDBClient):
         self.connection_str = influxdb if influxdb else settings.DB
 
         conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
+
+        alog.debug((influxdb, settings.DB))
 
         database = conn_params.path[1:]
         netlocs = conn_params.netloc.split(',')
