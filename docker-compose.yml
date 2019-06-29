@@ -29,7 +29,7 @@ services:
 
   emit_bitmex_eth:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
     networks:
@@ -90,7 +90,7 @@ services:
 
   record_bitmex_eth:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     env_file:
       - ./.env.prod
