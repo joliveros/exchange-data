@@ -20,9 +20,6 @@ class Database(InfluxDBClient):
         self.connection_str = influxdb if influxdb else settings.DB
 
         conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
-
-        alog.debug((influxdb, settings.DB))
-
         database = conn_params.path[1:]
         netlocs = conn_params.netloc.split(',')
         netloc = netlocs[0]
