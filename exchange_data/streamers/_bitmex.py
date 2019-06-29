@@ -12,14 +12,11 @@ from pandas import to_datetime
 from pytimeparse.timeparse import timeparse
 from time import sleep
 from typing import Tuple
-from xarray import Dataset, DataArray
 
 import alog
 import click
 import json
 import numpy as np
-import re
-import traceback
 
 alog.set_level(settings.LOG_LEVEL)
 
@@ -127,13 +124,13 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         end_date = self.format_date_query(end_date)
         query = f'SELECT FIRST(data) as data FROM {self.channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date} ' \
-            f'GROUP BY time({self.sample_interval}) tz(\'UTC\');'
+            f'GROUP BY time({self.sample_interval});'
 
         return self.query(query)
 
     def parse_db_timestamp(self, timestamp):
         return datetime.utcfromtimestamp(timestamp / 1000) \
-            .replace(tzinfo=tz.tzlocal())
+            .replace(tzinfo=tz.tzutc())
 
     def _orderbook_frames(self, start_date, end_date):
         orderbook = self.orderbook_frame_query(start_date, end_date)
@@ -145,6 +142,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
             if item['data'] is None:
                 # skip this frame, looks like a bad sample
                 continue
+
             time_index.append(self.parse_db_timestamp(item['time']))
             data = np.asarray(json.loads(item['data']), dtype=np.float32)
 

@@ -8,7 +8,7 @@ from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
-from pyee import EventEmitter
+from pyee import BaseEventEmitter
 from pytimeparse.timeparse import timeparse
 
 from exchange_data.utils import DateTimeUtils
@@ -58,6 +58,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
     def __init__(
         self,
+        summary_interval,
         logger=None,
         trading_fee=0.0/100.0,
         max_loss=-0.1/100.0,
@@ -76,7 +77,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
-        summary_interval=120,
         min_change=0.0,
         frame_width=96,
         **kwargs
@@ -92,7 +92,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         del self._args['self']
 
         Env.__init__(self)
-        EventEmitter.__init__(self)
+        BaseEventEmitter.__init__(self)
         BitmexStreamer.__init__(self, **kwargs)
 
         self.frame_width = frame_width

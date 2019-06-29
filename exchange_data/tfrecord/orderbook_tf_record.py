@@ -1,3 +1,5 @@
+import re
+from datetime import timedelta, datetime
 from pathlib import Path
 
 from dateutil import parser
@@ -5,10 +7,12 @@ from pytimeparse.timeparse import timeparse
 from tensorflow.core.example.example_pb2 import Example
 from tensorflow.core.example.feature_pb2 import Features, FloatList, Feature, \
     BytesList
-from tensorflow.python.lib.io.tf_record import TFRecordWriter
+from tensorflow.python.lib.io.tf_record import TFRecordWriter, TFRecordCompressionType
 
+from exchange_data.utils import DateTimeUtils
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook.utils import Positions
+
 from time import sleep
 import alog
 import click
@@ -16,20 +20,35 @@ import random
 
 
 class OrderBookTFRecord(OrderBookTradingEnv):
-    file_path = f'{Path.home()}/.exchange-data/tfrecords/' \
-            f'orderbook.tfrecord'
-
-    def __init__(self, **kwargs):
+    def __init__(self, filename, **kwargs):
         OrderBookTradingEnv.__init__(
             self,
             random_start_date=False,
             use_volatile_ranges=False,
-            max_frames=2,
-            start_date=parser.parse('2019-03-13 14:10:00+00:00'),
             **kwargs
         )
 
         self.reset()
+
+        self.file_path = f'{Path.home()}/.exchange-data/tfrecords/' \
+            f'{filename}.tfrecord'
+
+    def reset(self, **kwargs):
+        if self.step_count > 0:
+            alog.debug('##### reset ######')
+            alog.info(alog.pformat(self.summary()))
+
+        _kwargs = self._args['kwargs']
+        del self._args['kwargs']
+        _kwargs = {**self._args, **_kwargs, **kwargs}
+
+        new_instance = OrderBookTradingEnv(**_kwargs)
+        self.__dict__ = new_instance.__dict__
+
+        for i in range(self.max_frames):
+            self.get_observation()
+
+        return self.last_observation
 
     @property
     def avg_exit_price(self):
@@ -56,7 +75,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
     def run(self):
         now = self.now()
 
-        with TFRecordWriter(self.file_path) as writer:
+        with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) as writer:
             while self._last_datetime < now:
                 self.write_observation(writer)
 
@@ -78,13 +97,20 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 
 
 @click.command()
-@click.option('--summary-interval', '-s', default=240, type=int)
-def main(**kwargs):
+@click.option('--summary-interval', '-s', default=6, type=int)
+@click.option('--interval', '-i', default='1h', type=str)
+@click.option('--max-frames', '-m', default=12, type=int)
+def main(interval, **kwargs):
+    start_date = DateTimeUtils.now() - timedelta(seconds=timeparse(interval))
+    filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
+
     record = OrderBookTFRecord(
         window_size='1m',
         is_training=False,
         print_ascii_chart=True,
         frame_width=96,
+        start_date=start_date,
+        filename=filename,
         **kwargs
     )
 
