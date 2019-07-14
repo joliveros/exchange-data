@@ -5,8 +5,8 @@ from pathlib import Path
 from dateutil import parser
 from pytimeparse.timeparse import timeparse
 from tensorflow.core.example.example_pb2 import Example
-from tensorflow.core.example.feature_pb2 import Features, FloatList, Feature, \
-    BytesList
+from tensorflow.core.example.feature_pb2 import Features, FloatList, \
+    BytesList, Feature, Int64List
 from tensorflow.python.lib.io.tf_record import TFRecordWriter, TFRecordCompressionType
 
 from exchange_data.utils import DateTimeUtils
@@ -82,15 +82,22 @@ class OrderBookTFRecord(OrderBookTradingEnv):
     def write_observation(self, writer):
         self.get_observation()
         self.step_count += 1
+        # alog.info(self.frames[-2].shape)
+        # raise Exception()
+
         data = dict(
             datetime=self.BytesFeature(self.last_datetime),
-            frame=Feature(
-                bytes_list=BytesList(value=[self.frames[-2].tobytes()])),
-            expected_position=Feature(bytes_list=BytesList(
-                value=[bytes(self.expected_position.value)])),
+            frame=self.floatFeature(self.frames[-2].flatten()),
+            expected_position=self.int64Feature(self.expected_position.value),
         )
         example: Example = Example(features=Features(feature=data))
         writer.write(example.SerializeToString())
+
+    def int64Feature(self, value):
+        return Feature(int64_list=Int64List(value=[value]))
+
+    def floatFeature(self, value):
+        return Feature(float_list=FloatList(value=value))
 
     def BytesFeature(self, value):
         return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
@@ -100,6 +107,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 @click.option('--summary-interval', '-s', default=6, type=int)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-frames', '-m', default=12, type=int)
+@click.option('--print-ascii-chart', '-a', is_flag=True)
 def main(interval, **kwargs):
     start_date = DateTimeUtils.now() - timedelta(seconds=timeparse(interval))
     filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
@@ -107,7 +115,6 @@ def main(interval, **kwargs):
     record = OrderBookTFRecord(
         window_size='1m',
         is_training=False,
-        print_ascii_chart=True,
         frame_width=96,
         start_date=start_date,
         filename=filename,

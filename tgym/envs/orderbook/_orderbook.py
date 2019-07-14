@@ -15,7 +15,6 @@ from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from tgym.envs.orderbook.utils import Positions
-from skimage import color
 
 import alog
 import click
@@ -444,7 +443,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         img = fig.canvas.renderer._renderer
         img = np.array(img)
-        img = color.rgb2gray(img)
 
         if settings.LOG_LEVEL == logging.DEBUG and self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
@@ -452,6 +450,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
                 # plt.show()
                 # traceback.print_stack()
 
+        img = img[:, :, :3]
         return img
 
     def plot_price_over_time(self):
