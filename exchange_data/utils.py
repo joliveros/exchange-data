@@ -103,7 +103,4 @@ class DateTimeUtils(object):
             last_dt = last_dt + interval_delta
             results.append(last_dt)
 
-        results.append(dt1)
-        # results.reverse()
-
         return results

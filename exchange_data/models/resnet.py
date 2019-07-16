@@ -6,9 +6,9 @@ from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.estimator import model_to_estimator
 from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D, \
     Dropout
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
-
+from pathlib import Path
 from exchange_data.tfrecord.dataset import dataset
 
 model = models.Sequential()
@@ -17,13 +17,14 @@ base.trainable = True
 model.add(base)
 model.add(GlobalAveragePooling2D())
 model.add(Dropout(0.5))
-model.add(Dense(4, activation='softmax'))
+model.add(Dense(1, activation='softmax'))
 model.compile(loss='categorical_crossentropy',
               optimizer=Adam(lr=2e-5),
               metrics=['accuracy'])
 
-est_resnet = model_to_estimator(keras_model=model)
-
+model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+est_resnet = model_to_estimator(keras_model=model, model_dir=model_dir,
+                                checkpoint_format='checkpoint')
 
 
 @click.command()
@@ -33,6 +34,7 @@ def main(epochs, **kwargs):
     train_spec = TrainSpec(input_fn=lambda: dataset(epochs).skip(eval_span))
     eval_spec = EvalSpec(input_fn=lambda: dataset(1).take(eval_span))
     train_and_evaluate(est_resnet, train_spec, eval_spec)
+
 
 if __name__ == '__main__':
     main()
