@@ -12,12 +12,12 @@ from pathlib import Path
 from exchange_data.tfrecord.dataset import dataset
 
 model = models.Sequential()
-base = ResNet50(include_top=False, input_shape=(96, 192, 3), weights=None, )
+base = ResNet50(include_top=False, input_shape=(96, 192, 3), weights=None, classes=3)
 base.trainable = True
 model.add(base)
 model.add(GlobalAveragePooling2D())
-model.add(Dropout(0.5))
-model.add(Dense(1, activation='softmax'))
+model.add(Dropout(0.2))
+model.add(Dense(3, activation='softmax'))
 model.compile(loss='categorical_crossentropy',
               optimizer=Adam(lr=2e-5),
               metrics=['accuracy'])
@@ -30,7 +30,7 @@ est_resnet = model_to_estimator(keras_model=model, model_dir=model_dir,
 @click.command()
 @click.option('--epochs', '-e', type=int, default=10)
 def main(epochs, **kwargs):
-    eval_span = timeparse('5m')
+    eval_span = timeparse('10m')
     train_spec = TrainSpec(input_fn=lambda: dataset(epochs).skip(eval_span))
     eval_spec = EvalSpec(input_fn=lambda: dataset(1).take(eval_span))
     train_and_evaluate(est_resnet, train_spec, eval_spec)

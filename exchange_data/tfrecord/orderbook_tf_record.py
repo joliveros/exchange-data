@@ -1,4 +1,6 @@
 from datetime import timedelta
+
+from exchange_data.streamers._bitmex import OutOfFramesException
 from exchange_data.utils import DateTimeUtils
 from multiprocessing import Process
 from pathlib import Path
@@ -17,25 +19,27 @@ import sys
 
 
 class OrderBookTFRecord(OrderBookTradingEnv):
-    def __init__(self, filename, end_date=None, **kwargs):
+    def __init__(self, filename, start_date=None, end_date=None, **kwargs):
         OrderBookTradingEnv.__init__(
             self,
             random_start_date=False,
             use_volatile_ranges=False,
+            start_date=start_date,
             **kwargs
         )
+        alog.info(start_date)
+        self.reset()
 
         if end_date is None:
-            self.end_date = self.now()
+            self.stop_date = self.now()
         else:
-            self.end_date = end_date
-
-        self.reset()
+            self.stop_date = end_date
 
         self.file_path = f'{Path.home()}/.exchange-data/tfrecords/' \
             f'{filename}.tfrecord'
 
     def reset(self, **kwargs):
+        alog.info(self.start_date)
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
@@ -76,7 +80,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 
     def run(self):
         with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) as writer:
-            while self._last_datetime < self.end_date:
+            while self._last_datetime < self.stop_date:
                 self.write_observation(writer)
 
     def write_observation(self, writer):
