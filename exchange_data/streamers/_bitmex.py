@@ -82,8 +82,9 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
             else:
                 self.end_date = end_date
 
-            if self.start_date < self.min_date:
-                raise Exception('Start date not available in DB.')
+        if self.start_date > start_date:
+            alog.info((self.start_date, start_date))
+            raise Exception()
 
     @cached_property
     def min_date(self):
