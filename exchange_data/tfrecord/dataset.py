@@ -27,33 +27,36 @@ def extract_fn(data_record):
 
     sample = parse_single_example(data_record, features)
     img = sample['frame']
+
     label = sample['expected_position']
 
     label = one_hot(label, NUM_CLASSES, dtype=dtypes.int64)
     return img, label
 
 
-def dataset(epochs: int):
+def dataset(epochs: int = 1):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
     files = Dataset.from_tensor_slices(files)
-    dataset = files.flat_map(
+    _dataset = files.flat_map(
         lambda filename: (TFRecordDataset(filename, compression_type='GZIP'))
     )
 
-    dataset = dataset.map(extract_fn).batch(4).repeat(epochs)
+    _dataset = _dataset.map(extract_fn).window(6).repeat(epochs)
 
-    return dataset
-    # count = 0
-    # for r in dataset:
-    #     # alog.info(r)
-    #     # alog.info(r['da
-    #     alog.info(r['expected_position'])
-    #     alog.info(AsciiImage(r['frame'].numpy()))
-    #
-    #     count += 1
-    #     if count > 1:
-    #         break
+    # alog.info(dataset.output_shapes)
+
+    # return dataset
+    count = 0
+    for r in _dataset.take(2):
+        alog.info(r)
+        # # alog.info(r['da
+        # alog.info(r['expected_position'])
+        # alog.info(AsciiImage(r['frame'].numpy()))
+
+        count += 1
+        if count > 1:
+            break
 
 
 @click.command()
