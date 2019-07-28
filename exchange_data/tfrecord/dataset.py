@@ -42,19 +42,13 @@ def dataset(epochs: int = 1):
         lambda filename: (TFRecordDataset(filename, compression_type='GZIP'))
     )
 
-    # _dataset = _dataset.map(extract_fn).repeat(epochs)
-    _dataset = _dataset.map(extract_fn).window(6)\
-        .flat_map(lambda x,y: (x.skip(1), y.skip(5)))\
+    _dataset = _dataset.map(extract_fn).window(6, drop_remainder=True)\
+        .flat_map(lambda x, y: Dataset.zip((x.batch(6), y.skip(5).batch(1))))\
         .repeat(epochs)
 
-    # alog.info(dataset.output_shapes)
-
-    # return dataset
-    for r in _dataset.take(10):
-        alog.info(r)
-        # # alog.info(r['da
-        # alog.info(r['expected_position'])
-        # alog.info(AsciiImage(r['frame'].numpy()))
+    return _dataset
+    # for r in _dataset.take(1000):
+    #     alog.info(r)
 
 
 @click.command()

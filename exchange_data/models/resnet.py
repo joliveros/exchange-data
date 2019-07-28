@@ -7,6 +7,7 @@ from tensorflow.python.keras.estimator import model_to_estimator
 from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D, \
     Dropout, TimeDistributed
 from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from tensorflow.python.layers.convolutional import Conv2D, Conv1D
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
 from pathlib import Path
@@ -21,7 +22,7 @@ model.add(GlobalAveragePooling2D())
 model.add(Dropout(0.2))
 model.add(Dense(3, activation='softmax'))
 model.compile(loss='categorical_crossentropy',
-              optimizer=Adam(lr=2e-5),
+              optimizer=SGD(lr=0.01, decay=0.95),
               metrics=['accuracy'])
 
 model_dir = f'{Path.home()}/.exchange-data/models/resnet'
