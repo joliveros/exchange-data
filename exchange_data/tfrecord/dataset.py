@@ -21,7 +21,7 @@ NUM_CLASSES = len(CLASSES)
 def extract_fn(data_record):
     features = {
         'datetime': FixedLenFeature([], tf.string),
-        'frame': FixedLenFeature([96, 192, 3], tf.float32),
+        'frame': FixedLenFeature([96, 96, 3], tf.float32),
         'expected_position': FixedLenFeature([], tf.int64),
     }
 
@@ -31,7 +31,7 @@ def extract_fn(data_record):
     label = sample['expected_position']
 
     label = one_hot(label, NUM_CLASSES, dtype=dtypes.int64)
-    return img, label
+    return img, tf.argmax(label, axis=0)
 
 
 def dataset(epochs: int = 1):
@@ -42,12 +42,17 @@ def dataset(epochs: int = 1):
         lambda filename: (TFRecordDataset(filename, compression_type='GZIP'))
     )
 
+    # _dataset = _dataset.map(extract_fn)\
+    #     .batch(10) \
+    #     .repeat(epochs)
+
     _dataset = _dataset.map(extract_fn).window(6, drop_remainder=True)\
         .flat_map(lambda x, y: Dataset.zip((x.batch(6), y.skip(5).batch(1))))\
+        .batch(2) \
         .repeat(epochs)
 
     return _dataset
-    # for r in _dataset.take(1000):
+    # for r in _dataset.take(10):
     #     alog.info(r)
 
 

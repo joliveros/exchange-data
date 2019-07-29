@@ -37,7 +37,8 @@ class PlotOrderbook(object):
 
         if 'fig' not in self.__dict__:
             plt.close()
-            fig, frames = plt.subplots(1, 2, figsize=(2, 1), dpi=self.frame_width)
+            fig, frames = plt.subplots(1, 2, figsize=(1, 1),
+                                       dpi=self.frame_width)
 
             ax1, ax2 = frames
             self.fig = fig

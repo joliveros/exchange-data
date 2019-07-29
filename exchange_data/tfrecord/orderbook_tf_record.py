@@ -114,6 +114,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 @click.option('--max-frames', '-m', default=12, type=int)
 @click.option('--max-workers', '-w', default=4, type=int)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
+@click.option('--frame-width', default=96, type=int)
 def main(interval, split, max_workers, **kwargs):
     now = DateTimeUtils.now()
     start_date = now - timedelta(seconds=timeparse(interval))
@@ -129,7 +130,6 @@ def main(interval, split, max_workers, **kwargs):
         record = OrderBookTFRecord(
             window_size='1m',
             is_training=False,
-            frame_width=96,
             start_date=start_date,
             end_date=end_date,
             filename=filename,
