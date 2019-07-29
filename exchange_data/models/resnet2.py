@@ -8,7 +8,7 @@ from tensorflow.python.keras.api.keras import models
 from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.estimator import model_to_estimator
 from tensorflow.python.keras.layers import Dense, Dropout, TimeDistributed, \
-    GlobalAveragePooling1D, GlobalAveragePooling3D
+    GlobalAveragePooling1D, GlobalAveragePooling3D, GlobalAveragePooling2D, Flatten
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, \
     train_and_evaluate
@@ -19,16 +19,16 @@ import tensorflow
 tensorflow.compat.v1.logging.set_verbosity(logging.DEBUG)
 
 model = models.Sequential()
-base = ResNet50(include_top=False, weights=None, classes=3)
+base = ResNet50(include_top=True, weights=None, classes=3)
 for layer in base.layers:
     layer.trainable = True
-model.add(Input(shape=(6, 96, 96, 3)))
+model.add(Input(shape=(6, 229, 229, 3)))
 model.add(TimeDistributed(base))
-model.add(GlobalAveragePooling3D())
-# model.add(Dropout(0.5))
+model.add(GlobalAveragePooling1D())
+model.add(Dropout(0.2))
 model.add(Dense(3, activation='softmax'))
 model.compile(loss='categorical_crossentropy',
-              optimizer=SGD(lr=0.1, decay=0.95),
+              optimizer=SGD(lr=1e-2, decay=1e-2),
               metrics=['accuracy'])
 
 model.summary()

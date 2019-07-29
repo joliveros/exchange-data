@@ -21,7 +21,7 @@ NUM_CLASSES = len(CLASSES)
 def extract_fn(data_record):
     features = {
         'datetime': FixedLenFeature([], tf.string),
-        'frame': FixedLenFeature([96, 96, 3], tf.float32),
+        'frame': FixedLenFeature([229, 229, 3], tf.float32),
         'expected_position': FixedLenFeature([], tf.int64),
     }
 
