@@ -21,7 +21,7 @@ NUM_CLASSES = len(CLASSES)
 def extract_fn(data_record):
     features = {
         'datetime': FixedLenFeature([], tf.string),
-        'frame': FixedLenFeature([229, 229, 3], tf.float32),
+        'frame': FixedLenFeature([115, 115, 3], tf.float32),
         'expected_position': FixedLenFeature([], tf.int64),
     }
 
@@ -30,11 +30,13 @@ def extract_fn(data_record):
 
     label = sample['expected_position']
 
-    label = one_hot(label, NUM_CLASSES, dtype=dtypes.int64)
-    return img, tf.argmax(label, axis=0)
+    # label = one_hot(label, NUM_CLASSES, dtype=dtypes.int64)
+    # return img, tf.argmax(label, axis=0)
+
+    return img, label
 
 
-def dataset(epochs: int = 1):
+def dataset(batch_size: int, epochs: int = 1):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
     files = Dataset.from_tensor_slices(files)
@@ -42,14 +44,14 @@ def dataset(epochs: int = 1):
         lambda filename: (TFRecordDataset(filename, compression_type='GZIP'))
     )
 
-    # _dataset = _dataset.map(extract_fn)\
-    #     .batch(10) \
-    #     .repeat(epochs)
-
-    _dataset = _dataset.map(extract_fn).window(6, drop_remainder=True)\
-        .flat_map(lambda x, y: Dataset.zip((x.batch(6), y.skip(5).batch(1))))\
-        .batch(2) \
+    _dataset = _dataset.map(extract_fn)\
+        .batch(batch_size) \
         .repeat(epochs)
+
+    # _dataset = _dataset.map(extract_fn).window(6, drop_remainder=True)\
+    #     .flat_map(lambda x, y: Dataset.zip((x.batch(6), y.skip(5).batch(1))))\
+    #     .batch(2) \
+    #     .repeat(epochs)
 
     return _dataset
     # for r in _dataset.take(10):
