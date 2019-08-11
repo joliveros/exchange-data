@@ -1,3 +1,4 @@
+import shutil
 from datetime import timedelta
 
 from exchange_data.streamers._bitmex import OutOfFramesException
@@ -19,7 +20,7 @@ import sys
 
 
 class OrderBookTFRecord(OrderBookTradingEnv):
-    def __init__(self, filename, start_date=None, end_date=None, **kwargs):
+    def __init__(self, directory_name, filename, start_date=None, end_date=None, **kwargs):
         OrderBookTradingEnv.__init__(
             self,
             random_start_date=False,
@@ -27,16 +28,19 @@ class OrderBookTFRecord(OrderBookTradingEnv):
             start_date=start_date,
             **kwargs
         )
-        alog.info(start_date)
+
         self.reset()
 
         if end_date is None:
             self.stop_date = self.now()
         else:
             self.stop_date = end_date
+        self.directory = Path(f'{Path.home()}/.exchange-data/tfrecords/{directory_name}/')
 
-        self.file_path = f'{Path.home()}/.exchange-data/tfrecords/' \
-            f'{filename}.tfrecord'
+        if not self.directory.exists():
+            self.directory.mkdir()
+
+        self.file_path = str(self.directory) + f'/{filename}.tfrecord'
 
     def reset(self, **kwargs):
         alog.info(self.start_date)
@@ -65,9 +69,13 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         return (self.last_best_ask + self.last_best_bid) / 2
 
     @property
+    def diff(self):
+        return self.avg_exit_price - self.avg_entry_price
+
+    @property
     def expected_position(self):
         position = None
-        diff = self.avg_exit_price - self.avg_entry_price
+        diff = self.diff
 
         if diff > 0.0:
             position = Positions.Long
@@ -92,6 +100,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         data = dict(
             datetime=self.BytesFeature(self.last_datetime),
             frame=self.floatFeature(self.frames[-2].flatten()),
+            diff=self.floatFeature([self.diff]),
             expected_position=self.int64Feature(self.expected_position.value),
         )
         example: Example = Example(features=Features(feature=data))
@@ -115,11 +124,20 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 @click.option('--max-workers', '-w', default=4, type=int)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--frame-width', default=96, type=int)
-def main(interval, split, max_workers, **kwargs):
+@click.option('--clear', '-c', is_flag=True)
+@click.option('--name', '-n', default='default', type=str)
+def main(interval, split, max_workers, clear, name, **kwargs):
     now = DateTimeUtils.now()
     start_date = now - timedelta(seconds=timeparse(interval))
     dates = DateTimeUtils.split_range_into_datetimes(start_date, now, split)
     intervals = []
+    directory = f'{Path.home()}/.exchange-data/tfrecords/{name}'
+
+    if clear:
+        try:
+            shutil.rmtree(directory)
+        except Exception:
+            pass
 
     for i in range(len(dates)):
         if i < len(dates) - 1:
@@ -133,6 +151,7 @@ def main(interval, split, max_workers, **kwargs):
             start_date=start_date,
             end_date=end_date,
             filename=filename,
+            directory_name=name,
             **kwargs
         )
 
