@@ -41,7 +41,8 @@ def Model(learning_rate):
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
 @click.option('--clear', '-c', is_flag=True)
 @click.option('--eval-span', type=str, default='20m')
-def main(epochs, batch_size, clear, learning_rate, eval_span, **kwargs):
+@click.option('--checkpoint-steps', type=int, default=200)
+def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps, **kwargs):
     tf.compat.v1.logging.set_verbosity(settings.LOG_LEVEL)
 
     model = Model(learning_rate)
@@ -56,13 +57,13 @@ def main(epochs, batch_size, clear, learning_rate, eval_span, **kwargs):
         except Exception:
             pass
 
-    run_config = RunConfig(save_checkpoints_steps=100)
+    run_config = RunConfig(save_checkpoints_steps=checkpoint_steps)
     resnet_estimator = model_to_estimator(
         keras_model=model, model_dir=model_dir,
         checkpoint_format='checkpoint',
         config=run_config,
     )
-    resnet_estimator.predict()
+
     eval_span = timeparse(eval_span)
     train_spec = TrainSpec(input_fn=lambda: dataset(batch_size, epochs).skip(eval_span),
                            max_steps=epochs * 6 * 60 * 60)

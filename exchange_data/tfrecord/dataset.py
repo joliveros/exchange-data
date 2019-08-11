@@ -22,6 +22,7 @@ def extract_fn(data_record):
     features = {
         'datetime': FixedLenFeature([], tf.string),
         'frame': FixedLenFeature([115, 115, 3], tf.float32),
+        'diff': FixedLenFeature([1], tf.float32),
         'expected_position': FixedLenFeature([], tf.int64),
     }
 
