@@ -16,18 +16,21 @@ import click
 import tensorflow as tf
 
 
-def Model(learning_rate):
+def Model(learning_rate, frame_size):
     model = models.Sequential()
+    model.add(Input(shape=(frame_size, frame_size, 3)))
+
     base = ResNet50(include_top=False, weights=None, classes=3)
     for layer in base.layers:
         layer.trainable = True
-    model.add(Input(shape=(115, 115, 3)))
+
     model.add(base)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(0.3))
-    model.add(Dense(64, activation='relu'))
-    model.add(Reshape((64, 1)))
-    model.add(LSTM(24))
+    model.add(Dropout(0.2))
+    model.add(Dense(96, activation='relu'))
+    model.add(Reshape((96, 1)))
+    model.add(LSTM(16, return_sequences=False))
+    # model.add(LSTM(24, return_sequences=False))
     model.add(Dense(3, activation='softmax'))
     model.compile(loss='sparse_categorical_crossentropy',
                   optimizer=SGD(lr=learning_rate, decay=5e-3),
@@ -42,10 +45,14 @@ def Model(learning_rate):
 @click.option('--clear', '-c', is_flag=True)
 @click.option('--eval-span', type=str, default='20m')
 @click.option('--checkpoint-steps', type=int, default=200)
-def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps, **kwargs):
+@click.option('--frame-size', type=int, default=224)
+def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps,
+        frame_size,
+        **kwargs
+    ):
     tf.compat.v1.logging.set_verbosity(settings.LOG_LEVEL)
 
-    model = Model(learning_rate)
+    model = Model(learning_rate, frame_size)
 
     model.summary()
 
@@ -57,7 +64,10 @@ def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps, 
         except Exception:
             pass
 
-    run_config = RunConfig(save_checkpoints_steps=checkpoint_steps)
+    run_config = RunConfig(
+        # save_checkpoints_steps=checkpoint_steps
+        save_checkpoints_secs=60
+    )
     resnet_estimator = model_to_estimator(
         keras_model=model, model_dir=model_dir,
         checkpoint_format='checkpoint',
@@ -70,7 +80,7 @@ def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps, 
     eval_spec = EvalSpec(
         input_fn=lambda: dataset(batch_size, 1).take(eval_span),
         steps=eval_span,
-        hooks=[ProfitAndLossHook(resnet_estimator)]
+        # hooks=[ProfitAndLossHook(resnet_estimator)]
     )
 
     train_and_evaluate(resnet_estimator, train_spec, eval_spec)

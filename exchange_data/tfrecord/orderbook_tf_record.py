@@ -100,7 +100,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         data = dict(
             datetime=self.BytesFeature(self.last_datetime),
             frame=self.floatFeature(self.frames[-2].flatten()),
-            diff=self.floatFeature([self.diff]),
+            # diff=self.floatFeature([self.diff]),
             expected_position=self.int64Feature(self.expected_position.value),
         )
         example: Example = Example(features=Features(feature=data))
