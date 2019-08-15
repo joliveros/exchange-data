@@ -21,8 +21,8 @@ NUM_CLASSES = len(CLASSES)
 def extract_fn(data_record):
     features = {
         'datetime': FixedLenFeature([], tf.string),
-        'frame': FixedLenFeature([115, 115, 3], tf.float32),
-        'diff': FixedLenFeature([1], tf.float32),
+        'frame': FixedLenFeature([224, 224, 3], tf.float32),
+        # 'diff': FixedLenFeature([1], tf.float32),
         'expected_position': FixedLenFeature([], tf.int64),
     }
 
@@ -37,8 +37,8 @@ def extract_fn(data_record):
     return img, label
 
 
-def dataset(batch_size: int, epochs: int = 1):
-    records_dir = f'{Path.home()}/.exchange-data/tfrecords/'
+def dataset(batch_size: int, epochs: int = 1, dataset_name='default'):
+    records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
     files = Dataset.from_tensor_slices(files)
     _dataset = files.flat_map(
