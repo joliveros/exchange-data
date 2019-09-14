@@ -1,14 +1,21 @@
-from tensorflow.python.keras.estimator import model_to_estimator
-from tensorflow_estimator.python.estimator.run_config import RunConfig
+from abc import ABC
 
+from exchange_data.emitters.bitmex._resnet_position_emitter import ResnetPositionEmitter
 from exchange_data.models.resnet.model import Model
+from exchange_data.tfrecord.dataset import dataset
 from pathlib import Path
+from tensorflow.python.keras.estimator import model_to_estimator
 
 import alog
 import click
-import tensorflow as tf
 import numpy as np
-from exchange_data.tfrecord.dataset import dataset
+import tensorflow as tf
+
+
+class BackTester(ResnetPositionEmitter, ABC):
+    def __init__(self, **kwargs):
+        super().__init__(self, **kwargs)
+
 
 
 @click.command()
@@ -18,27 +25,7 @@ from exchange_data.tfrecord.dataset import dataset
 # @click.option('--clear', '-c', is_flag=True)
 # @click.option('--eval-span', type=str, default='20m')
 def main(frame_size):
-    model = Model(0.0004, frame_size)
-    model_dir = f'{Path.home()}/.exchange-data/models/resnet'
-    checkpoint_path = f'{model_dir}/model.ckpt-146881'
 
-    def input_fn():
-        for record in dataset(batch_size=1):
-            yield record['frame']
-
-    resnet_estimator = model_to_estimator(
-        keras_model=model, model_dir=model_dir,
-        checkpoint_format='checkpoint',
-    )
-
-    predictions = resnet_estimator.predict(
-        checkpoint_path=checkpoint_path,
-        input_fn=lambda: dataset(batch_size=1)
-    )
-
-    for pred in predictions:
-        alog.info(pred)
-        alog.info(np.argmax(pred['dense_1'], 0))
 
 
 if __name__ == '__main__':

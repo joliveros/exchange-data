@@ -1,23 +1,17 @@
 from abc import ABC
-from exchange_data.utils import NoValue
+from exchange_data.trading import Positions
 from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
-from tgym.envs.orderbook._orderbook import OrderBookTradingEnv, \
-    AlreadyFlatException
+from tgym.envs.orderbook._orderbook import OrderBookTradingEnv
 from tgym.envs.orderbook._trade import Trade, LongTrade
 
 import alog
 import click
 import numpy as np
 
-
-class Positions(NoValue):
-    Flat = 0
-    Long = 1
-
-
 REWARD_BASE = 1 / 10
 NEGATIVE_FACTOR = 30/100
+
 
 class LongOrderBookTradingEnv(OrderBookTradingEnv, ABC):
     positive_pnl_reward = REWARD_BASE

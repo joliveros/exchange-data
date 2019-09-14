@@ -1,12 +1,11 @@
 from abc import ABC
-
-import alog
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 
+import alog
 import click
 import json
 import signal

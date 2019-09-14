@@ -44,10 +44,8 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         min_date: datetime = parser.parse('2019-03-13 14:10:00+00:00'),
         **kwargs
     ):
-        Database.__init__(self, database_name='bitmex', **kwargs)
-        # SignalInterceptor.__init__(self)
-        Generator.__init__(self)
-        DateTimeUtils.__init__(self)
+        super().__init__(database_name='bitmex', **kwargs)
+        SignalInterceptor.__init__(self)
 
         self.counter = 0
         self._orderbook = []
@@ -83,7 +81,6 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
                 self.end_date = end_date
 
         if self.start_date > start_date:
-            alog.info((self.start_date, start_date))
             raise Exception()
 
     @cached_property

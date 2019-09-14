@@ -1,10 +1,9 @@
-from yaml.representer import SafeRepresenter
-
 from exchange_data import settings
+from exchange_data.trading import Positions
 from skimage import color
 from tgym.envs.orderbook.ascii_image import AsciiImage
-from tgym.envs.orderbook.utils import Positions
-from typing import Callable
+from yaml.representer import SafeRepresenter
+
 import alog
 import logging
 import matplotlib.pyplot as plt
