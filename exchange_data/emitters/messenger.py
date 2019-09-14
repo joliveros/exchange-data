@@ -22,15 +22,14 @@ class MessageType(NoValue):
     message = auto()
 
 
-class Messenger(Redis, EventEmitter, ABC):
+class Messenger(EventEmitter, ABC):
 
     def __init__(self, **kwargs):
         kwargs = {}
         host = settings.REDIS_HOST
+        super().__init__(**kwargs)
 
-        Redis.__init__(self, host=host, **kwargs)
-        EventEmitter.__init__(self)
-
+        self.redis_client = Redis(host=host)
         self._pubsub = None
         self.on(Events.Message.value, self.handler)
 
@@ -43,7 +42,7 @@ class Messenger(Redis, EventEmitter, ABC):
         alog.info(channels)
         _channels = [channel.value if isinstance(channel, Enum) else channel for channel in channels]
 
-        self._pubsub = self.pubsub()
+        self._pubsub = self.redis_client.pubsub()
 
         self._pubsub.subscribe(_channels)
 

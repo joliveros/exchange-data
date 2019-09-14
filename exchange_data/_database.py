@@ -25,8 +25,7 @@ class Database(InfluxDBClient):
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
 
-        InfluxDBClient.__init__(
-            self,
+        super().__init__(
             host=parsed_netloc['host'],
             port=parsed_netloc['port'],
             username=parsed_netloc['username'],

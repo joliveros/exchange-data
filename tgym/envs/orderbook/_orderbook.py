@@ -1,56 +1,26 @@
-import random
 from abc import ABC
 from collections import deque
 from datetime import timedelta
-
 from exchange_data import settings
 from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
+from exchange_data.trading import Positions
 from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
-from pyee import BaseEventEmitter
 from pytimeparse.timeparse import timeparse
-
-from exchange_data.utils import DateTimeUtils
+from tgym.envs.orderbook._plot_orderbook import PlotOrderbook
 from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
-from tgym.envs.orderbook.utils import Positions
 
 import alog
 import click
 import logging
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import random
 
 
-class AlreadyFlatException(Exception):
-    pass
-
-
-class PositionLengthExceeded(Exception):
-    pass
-
-
-class PlotOrderbook(object):
-    def __init__(self, frame_width):
-        self.frame_width = frame_width
-
-        if 'fig' not in self.__dict__:
-            plt.close()
-            fig, frames = plt.subplots(1, 2, figsize=(1, 1),
-                                       dpi=self.frame_width)
-
-            ax1, ax2 = frames
-            self.fig = fig
-            self.ax1 = ax1
-            self.ax2 = ax2
-            # self.ax2 = fig.add_subplot(1, 2, 2, frame_on=False)
-
-    def hide_ticks_and_values(self, frame):
-        frame.axis('off')
-
-
-class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
+class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
     """
     Orderbook based trading environment.
     """
@@ -62,7 +32,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         logger=None,
         trading_fee=0.0/100.0,
         max_loss=-0.1/100.0,
-        random_start_date=True,
+        random_start_date=False,
         orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
@@ -89,15 +59,24 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
 
         self._args = locals()
-        del self._args['self']
+        self.last_observation = None
+        self.last_timestamp = 0
 
-        Env.__init__(self)
-        BaseEventEmitter.__init__(self)
-        BitmexStreamer.__init__(self, **kwargs)
+        super().__init__(
+            frame_width=frame_width,
+            max_frames=max_frames,
+            **kwargs
+        )
+        PlotOrderbook.__init__(
+            self,
+            frame_width=frame_width,
+            max_frames=max_frames,
+            **kwargs
+        )
 
         self.frame_width = frame_width
 
-        PlotOrderbook.__init__(self, self.frame_width)
+        # PlotOrderbook.__init__(self, self.frame_width)
 
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
@@ -131,7 +110,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.last_index = None
         self.last_orderbook = None
         self.last_price_diff = 0.0
-        self.last_timestamp = 0
         self.max_episode_length_str = '10m'
         self.max_episode_length = timeparse(self.max_episode_length_str)
         self.max_summary = max_summary
@@ -157,6 +135,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         self.print_ascii_chart = print_ascii_chart
         self.position_repeat = 0
         self.trade_size = self.capital * (10/100)
+        self.reset_count = 0
 
         if volatile_ranges is None and use_volatile_ranges:
             self.volatile_ranges = self.get_volatile_ranges()
@@ -175,7 +154,7 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
                 self.parse_db_timestamp(nearest_volatile_range_start)
             self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
-        self.start_date -= timedelta(seconds=self.max_frames)
+        self.start_date -= timedelta(seconds=self.max_frames + 1)
 
         high = np.full(
             (max_frames, self.frame_width, self.frame_width * 2),
@@ -189,8 +168,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         )
 
         self.observation_space = Box(low, high, dtype=np.float32)
-
-        self.last_observation = None
 
     @staticmethod
     def get_action_meanings():
@@ -237,26 +214,29 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
         return DataFrame(ranges).set_index('time')
 
     def reset(self, **kwargs):
+        self.reset_count += 1
+
+        # if self.reset_count > 2:
+        #     raise Exception()
+
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
 
-        _kwargs = self._args['kwargs']
-        del self._args['kwargs']
-        _kwargs = {**self._args, **_kwargs, **kwargs}
+        # _kwargs = self._args['kwargs']
+        # del self._args['kwargs']
+        # _kwargs = {**self._args, **_kwargs, **kwargs}
+        # del _kwargs['self']
+        # new_instance = OrderBookTradingEnv(**_kwargs)
+        # self.__dict__ = new_instance.__dict__
 
-        new_instance = OrderBookTradingEnv(**_kwargs)
-        self.__dict__ = new_instance.__dict__
-
-        n_noops = np.random.randint(low=self.max_frames,
-                                    high=self.max_frames + self.max_n_noops + 1)
         # for i in range(n_noops):
         #     self.get_observation()
 
         try:
-            for _ in range(n_noops):
+            for _ in range(self.max_frames):
                 self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
+        except (OutOfFramesException, TypeError):
             if not self.random_start_date:
                 self._set_next_window()
             return self.reset(**kwargs)
@@ -471,7 +451,6 @@ class OrderBookTradingEnv(BitmexStreamer, Env, PlotOrderbook, ABC):
 
         while self.last_timestamp == time or time is None:
             time, orderbook = next(self)
-
         self.last_timestamp = time
         return time, orderbook
 
