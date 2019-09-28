@@ -1,3 +1,4 @@
+import logging
 import sys
 from abc import ABC
 from enum import Enum, auto
@@ -25,7 +26,6 @@ class MessageType(NoValue):
 class Messenger(EventEmitter, ABC):
 
     def __init__(self, **kwargs):
-        kwargs = {}
         host = settings.REDIS_HOST
         super().__init__(**kwargs)
 
@@ -48,6 +48,11 @@ class Messenger(EventEmitter, ABC):
 
         for message in self._pubsub.listen():
             self.emit(Events.Message.value, message)
+
+    def publish(self, channel, msg):
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.debug(locals())
+        self.redis_client.publish(channel, msg)
 
     def stop(self, *args, **kwargs):
         self._pubsub.close()
