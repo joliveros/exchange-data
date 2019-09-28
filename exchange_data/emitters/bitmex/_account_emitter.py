@@ -1,24 +1,23 @@
-import logging
-import sys
 from abc import ABC
 from bitmex_websocket import Instrument
 from bitmex_websocket._bitmex_websocket import BitMEXWebsocketConnectionError
 from bitmex_websocket.auth import generate_nonce, generate_signature
 from bitmex_websocket.constants import SecureInstrumentChannels, SecureChannels
-from prometheus_client import Gauge, push_to_gateway, REGISTRY
-
 from exchange_data import settings, Database, Measurement
 from exchange_data.emitters import Messenger, SignalInterceptor
+from exchange_data.utils import DateTimeUtils
+from prometheus_client import Gauge, push_to_gateway, REGISTRY
 
 import alog
 import click
 import json
+import logging
 import signal
+import sys
 import websocket
 
-from exchange_data.utils import DateTimeUtils
-
 balance_guage = Gauge('account_balance', 'Account Balance', unit='BTC')
+
 
 class BitmexAccountEmitter(
     Instrument,
@@ -67,12 +66,11 @@ class BitmexAccountEmitter(
         table = data['table']
         channel_name = f'bitmex_{table}'
 
-        self.log_data(data)
         m = self.measurement(table, data)
 
         self.write_points([m.__dict__], time_precision='ms')
 
-        self.publish(channel_name, json.dumps(m.__dict__))
+        self.publish(channel_name, str(m))
 
     def measurement(self, table, data):
         data_str = json.dumps(data)
@@ -145,8 +143,12 @@ class BitmexAccountEmitter(
     def stop(self):
         sys.exit(0)
 
+
 @click.command()
 def main(**kwargs):
+    # loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    # alog.info(alog.pformat(loggers))
+    # logging.getLogger('requests').setLevel(logging.DEBUG)
     emitter = BitmexAccountEmitter(**kwargs)
     emitter.start()
 

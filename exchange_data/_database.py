@@ -12,12 +12,23 @@ class Database(InfluxDBClient):
     def __init__(
         self,
         ssl=False,
+        database_name=None,
         influxdb: str = None,
         **kwargs
     ):
         self.connection_str = influxdb if influxdb else settings.DB
         conn_params = urlparse(self.connection_str)
+
         database = conn_params.path[1:]
+
+        if len(database) == 0:
+            if database is None:
+                raise Exception('database name required')
+            database = database_name
+
+        # alog.info(database)
+        # raise Exception()
+
         netlocs = conn_params.netloc.split(',')
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
