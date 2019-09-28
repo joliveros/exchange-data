@@ -28,8 +28,6 @@ class BitmexEmitter(BitmexEmitterBase, Instrument, ABC):
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
         super().__init__(symbol=symbol.name, channels=self.channels, test='jose', **kwargs)
-
-        alog.info('### messenger init ###')
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
         self.on('action', self.on_action)
