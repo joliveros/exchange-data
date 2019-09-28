@@ -445,7 +445,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         self.hide_ticks_and_values(ax2)
 
     def _get_observation(self):
-
         time = None
         orderbook = None
 
