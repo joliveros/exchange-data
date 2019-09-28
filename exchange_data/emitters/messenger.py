@@ -27,7 +27,7 @@ class Messenger(EventEmitter, ABC):
 
     def __init__(self, **kwargs):
         host = settings.REDIS_HOST
-        super().__init__(**kwargs)
+        EventEmitter.__init__(self)
 
         self.redis_client = Redis(host=host)
         self._pubsub = None
