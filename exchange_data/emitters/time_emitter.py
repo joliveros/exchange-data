@@ -47,7 +47,8 @@ class TimeEmitter(Messenger, DateTimeUtils):
                     self.publish('5s', t)
 
     def publish(self, *args):
-        super().publish(*args)
+        alog.debug(args)
+        self.redis_client.publish(*args)
 
     def stop(self, *args, **kwargs):
         super().stop(*args, **kwargs)
