@@ -51,7 +51,7 @@ class Messenger(EventEmitter, ABC):
 
     def publish(self, channel, msg):
         if settings.LOG_LEVEL == logging.DEBUG:
-            alog.debug(locals())
+            alog.debug(alog.pformat(locals()))
         self.redis_client.publish(channel, msg)
 
     def stop(self, *args, **kwargs):

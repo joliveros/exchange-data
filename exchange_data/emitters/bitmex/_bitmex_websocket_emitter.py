@@ -1,4 +1,5 @@
 from abc import ABC
+
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
@@ -18,7 +19,7 @@ class BitmexEmitterBase(Messenger, ABC):
         self.symbol = symbol
 
 
-class BitmexEmitter(BitmexEmitterBase, Instrument, ABC):
+class BitmexEmitter(Instrument, BitmexEmitterBase):
     measurements = []
     channels = [
         # InstrumentChannels.quote,
@@ -27,7 +28,10 @@ class BitmexEmitter(BitmexEmitterBase, Instrument, ABC):
     ]
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        super().__init__(symbol=symbol.name, channels=self.channels, test='jose', **kwargs)
+        self.symbol = symbol
+        super().__init__(symbol=symbol.name, channels=self.channels, **kwargs)
+        # super(Messenger, self).__init__(**kwargs)
+
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
         self.on('action', self.on_action)
