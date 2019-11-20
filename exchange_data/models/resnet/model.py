@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+import alog
 from tensorflow_estimator.python.estimator.run_config import RunConfig
 from exchange_data import settings
 from exchange_data.models.pnl_hook import ProfitAndLossHook
@@ -70,7 +73,8 @@ def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps,
     )
     resnet_estimator = model_to_estimator(
         keras_model=model, model_dir=model_dir,
-        checkpoint_format='checkpoint',
+        # checkpoint_format='checkpoint',
+        checkpoint_format='saver',
         config=run_config,
     )
 
