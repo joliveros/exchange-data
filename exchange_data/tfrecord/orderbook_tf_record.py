@@ -1,49 +1,69 @@
-import shutil
-from datetime import timedelta
+#!/usr/bin/env python
 
-from exchange_data.streamers._bitmex import OutOfFramesException
+from exchange_data.emitters import Messenger
+from exchange_data.tfrecord.date_range_split_workers import DateRangeSplitWorkers
+from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
-from multiprocessing import Process
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
-from tensorflow.core.example.example_pb2 import Example
-from tensorflow.core.example.feature_pb2 import Features, FloatList, BytesList, Feature, Int64List
+from tensorflow.core.example.feature_pb2 import FloatList, BytesList, Feature, Int64List
 from tensorflow.python.lib.io.tf_record import TFRecordWriter, TFRecordCompressionType
 from tgym.envs import OrderBookTradingEnv
-from tgym.envs.orderbook.utils import Positions
 from time import sleep
 
 import alog
 import click
 import re
-import sys
+import shutil
+import tensorflow as tf
+
+Features = tf.train.Features
+Example = tf.train.Example
 
 
 class OrderBookTFRecord(OrderBookTradingEnv):
-    def __init__(self, directory_name, filename, start_date=None, end_date=None, **kwargs):
-        OrderBookTradingEnv.__init__(
-            self,
+    def __init__(
+        self,
+        directory_name=None,
+        directory=None,
+        start_date=None,
+        end_date=None,
+        **kwargs
+    ):
+        super().__init__(
             random_start_date=False,
             use_volatile_ranges=False,
             start_date=start_date,
+            end_date=end_date,
             **kwargs
         )
 
+        filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
+
+        if directory_name is None:
+            raise Exception()
+
+        if directory is None:
+            directory = f'{Path.home()}/.exchange-data/tfrecords/{directory_name}'
+
         self.reset()
+
+        self.directory_name = directory_name
+        self.directory = Path(directory)
 
         if end_date is None:
             self.stop_date = self.now()
         else:
             self.stop_date = end_date
-        self.directory = Path(f'{Path.home()}/.exchange-data/tfrecords/{directory_name}/')
 
         if not self.directory.exists():
             self.directory.mkdir()
 
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
 
+        self._last_datetime = self.start_date
+
     def reset(self, **kwargs):
-        alog.info(self.start_date)
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
@@ -52,11 +72,12 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         del self._args['kwargs']
         _kwargs = {**self._args, **_kwargs, **kwargs}
 
+        del _kwargs['self']
+
         new_instance = OrderBookTradingEnv(**_kwargs)
         self.__dict__ = new_instance.__dict__
 
-        for i in range(self.max_frames):
-            self.get_observation()
+        self.get_observation()
 
         return self.last_observation
 
@@ -94,8 +115,6 @@ class OrderBookTFRecord(OrderBookTradingEnv):
     def write_observation(self, writer):
         self.get_observation()
         self.step_count += 1
-        # alog.info(self.frames[-2].shape)
-        # raise Exception()
 
         data = dict(
             datetime=self.BytesFeature(self.last_datetime),
@@ -116,63 +135,65 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
 
 
-@click.command()
-@click.option('--summary-interval', '-s', default=6, type=int)
-@click.option('--interval', '-i', default='1h', type=str)
-@click.option('--split', '-s', default=12, type=int)
-@click.option('--max-frames', '-m', default=12, type=int)
-@click.option('--max-workers', '-w', default=4, type=int)
-@click.option('--print-ascii-chart', '-a', is_flag=True)
-@click.option('--frame-width', default=96, type=int)
-@click.option('--clear', '-c', is_flag=True)
-@click.option('--name', '-n', default='default', type=str)
-def main(interval, split, max_workers, clear, name, **kwargs):
-    now = DateTimeUtils.now()
-    start_date = now - timedelta(seconds=timeparse(interval))
-    dates = DateTimeUtils.split_range_into_datetimes(start_date, now, split)
-    intervals = []
-    directory = f'{Path.home()}/.exchange-data/tfrecords/{name}'
+class OrderBookTFRecordWorkers(DateRangeSplitWorkers):
+    worker_class = OrderBookTFRecord
 
-    if clear:
-        try:
-            shutil.rmtree(directory)
-        except Exception:
-            pass
+    def __init__(self, clear, directory_name, **kwargs):
+        directory = f'{Path.home()}/.exchange-data/tfrecords/{directory_name}'
 
-    for i in range(len(dates)):
-        if i < len(dates) - 1:
-            intervals += [(dates[i], dates[i + 1] - timedelta(seconds=1))]
-
-    def replay(start_date, end_date, **kwargs):
-        filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
-        record = OrderBookTFRecord(
-            window_size='1m',
-            is_training=False,
-            start_date=start_date,
-            end_date=end_date,
-            filename=filename,
-            directory_name=name,
+        super().__init__(
+            directory=directory,
+            directory_name=directory_name,
             **kwargs
         )
 
-        record.run()
+        if clear:
+            try:
+                shutil.rmtree(directory)
+            except Exception:
+                pass
 
-    workers = []
 
-    while True:
-        if len(workers) < max_workers and len(intervals) > 0:
-            args = intervals.pop()
-            alog.debug(f'#### ranges left {len(intervals)} ####')
-            worker = Process(target=replay, args=args, kwargs=kwargs)
-            worker.start()
-            alog.debug(worker)
-            workers.append(worker)
-        if len(intervals) == 0 and len(workers) == 0:
-            sys.exit(0)
+class RepeatOrderBookTFRecordWorkers(Messenger):
+    def __init__(self, repeat_delay, **kwargs):
+        if repeat_delay is None:
+            self.repeat_delay = None
+        else:
+            self.repeat_delay = timeparse(repeat_delay)
 
-        workers = [w for w in workers if w.is_alive()]
+        self.kwargs = kwargs
+        super(RepeatOrderBookTFRecordWorkers, self).__init__(**kwargs)
 
-        sleep(1)
+    def run(self):
+        while True:
+            start_date = DateTimeUtils.now()
+            OrderBookTFRecordWorkers(**self.kwargs).run()
+            self.publish('OrderBookTFRecordWorkers', str(start_date))
+
+            if self.repeat_delay is None:
+                return
+
+            sleep(self.repeat_delay)
+
+
+@click.command()
+@click.option('--clear', '-c', is_flag=True)
+@click.option('--directory-name', '-d', default='default', type=str)
+@click.option('--frame-width', default=96, type=int)
+@click.option('--interval', '-i', default='1h', type=str)
+@click.option('--max-frames', '-m', default=12, type=int)
+@click.option('--max-workers', '-w', default=4, type=int)
+@click.option('--print-ascii-chart', '-a', is_flag=True)
+@click.option('--repeat-delay', '-r', default=None, type=str)
+@click.option('--split', '-s', default=12, type=int)
+@click.option('--summary-interval', '-si', default=6, type=int)
+def main(**kwargs):
+    record = RepeatOrderBookTFRecordWorkers(
+        window_size='1m',
+        is_training=False,
+        **kwargs)
+    record.run()
+
 
 if __name__ == '__main__':
     main()

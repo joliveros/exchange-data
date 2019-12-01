@@ -55,7 +55,8 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         self.sample_interval_s = timeparse(sample_interval)
         self._time = []
         self._index = []
-        self.end_date = None
+        self.original_end_date = end_date
+        self._end_date = None
         self.max_spread = max_spread
         self.realtime = False
         self._min_date = min_date
@@ -82,6 +83,17 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
 
         if self.start_date > start_date:
             raise Exception()
+
+        if self.original_end_date != self.end_date:
+            raise Exception()
+
+    @property
+    def end_date(self):
+        return self._end_date
+
+    @end_date.setter
+    def end_date(self, value):
+        self._end_date = value
 
     @cached_property
     def min_date(self):
@@ -131,7 +143,16 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
             .replace(tzinfo=tz.tzutc())
 
     def _orderbook_frames(self, start_date, end_date):
+        old_end_date = end_date
+
+        # if end_date > self.original_end_date:
+        #     raise Exception()
+
         orderbook = self.orderbook_frame_query(start_date, end_date)
+
+        if old_end_date != end_date:
+            raise Exception()
+
         frame_list = []
         max_shape = (0, 0, 0)
         time_index = []
@@ -151,7 +172,10 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
-            raise OutOfFramesException()
+            raise OutOfFramesException((
+                str(self.original_end_date),
+                str(end_date)
+            ))
 
         resized_frames = []
         for frame in frame_list:

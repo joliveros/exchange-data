@@ -1,48 +1,46 @@
+#!/usr/bin/env python
+
+import sys
+
+import tensorflow as tf
 from pathlib import Path
 
-from tensorflow import one_hot
-from tensorflow.io import FixedLenFeature, VarLenFeature, parse_single_example
-from tensorflow.python.data import Dataset, TFRecordDataset
-from tensorflow.python.framework import dtypes
-from tensorflow.python.keras.utils import to_categorical
-from tensorflow.python.ops.lookup_ops import index_table_from_tensor
-
-from tgym.envs.orderbook.ascii_image import AsciiImage
-
-import alog
 import click
-import tensorflow as tf
+
 
 CLASSES = [0, 1, 2]
-table = index_table_from_tensor(tf.constant(CLASSES), dtype=dtypes.int64)
+# table = index_table_from_tensor(tf.constant(CLASSES), dtype=int64)
 NUM_CLASSES = len(CLASSES)
 
 
 def extract_fn(data_record):
     features = {
-        'datetime': FixedLenFeature([], tf.string),
-        'frame': FixedLenFeature([224, 224, 3], tf.float32),
+        'datetime': tf.io.FixedLenFeature([], tf.string),
+        'frame': tf.io.FixedLenFeature([224, 224, 3], tf.float32),
         # 'diff': FixedLenFeature([1], tf.float32),
-        'expected_position': FixedLenFeature([], tf.int64),
+        'expected_position': tf.io.FixedLenFeature([1,], tf.int64),
     }
 
-    sample = parse_single_example(data_record, features)
+    sample = tf.io.parse_single_example(data_record, features)
     img = sample['frame']
 
     label = sample['expected_position']
 
-    # label = one_hot(label, NUM_CLASSES, dtype=dtypes.int64)
+    # label = tf.one_hot(label, NUM_CLASSES, dtype=tf.dtypes.int64)
     # return img, tf.argmax(label, axis=0)
 
     return img, label
 
 
 def dataset(batch_size: int, epochs: int = 1, dataset_name='default'):
+    # raise Exception()
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
-    files = Dataset.from_tensor_slices(files)
+    files = tf.compat.v2.data.Dataset.from_tensor_slices(files)
+    # files = DatasetV2.from_tensor_slices(files)
+
     _dataset = files.flat_map(
-        lambda filename: (TFRecordDataset(filename, compression_type='GZIP'))
+        lambda filename: (tf.data.TFRecordDataset(filename, compression_type='GZIP'))
     )
 
     _dataset = _dataset.map(extract_fn)\
@@ -63,7 +61,10 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default'):
 # @click.option('--summary-interval', '-s', default=6, type=int)
 # @click.option('--max-frames', '-m', default=12, type=int)
 def main(**kwargs):
-    dataset()
+    for x in dataset(2):
+        import alog
+        alog.info(x)
+        sys.exit(0)
 
 
 if __name__ == '__main__':

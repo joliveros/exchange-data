@@ -1,0 +1,19 @@
+version: '3.7'
+
+networks:
+  public:
+    name: public
+    external: true
+
+services:
+
+  resnet:
+    deploy:
+      replicas: 1
+    image: tensorflow/serving
+    volumes:
+      - /home/joliveros/.exchange-data/models/resnet/:/models/resnet
+    environment:
+        - MODEL_NAME=resnet
+    networks:
+      - public
