@@ -28,10 +28,6 @@ class DateRangeSplitWorkers(object):
                 self.intervals += \
                     [(dates[i + 1] - timedelta(seconds=1), dates[i])]
 
-        # alog.info(alog.pformat([
-        #     (str(interval[0]), str(interval[1])) for interval in self.intervals
-        # ]))
-
     def run(self):
         while True:
             if len(self.workers) < self.max_workers and len(self.intervals) > 0:
@@ -44,11 +40,6 @@ class DateRangeSplitWorkers(object):
 
                 if interval < window_interval:
                     self.kwargs['window_size'] = f'{interval.seconds}s'
-
-                # if interval_dates[0] > self._now:
-                #     raise Exception()
-
-                alog.info(self.kwargs)
 
                 worker = Process(
                     target=self.worker,
@@ -70,8 +61,6 @@ class DateRangeSplitWorkers(object):
             sleep(1)
 
     def worker(self, *args, **kwargs):
-        alog.info(alog.pformat(args))
-        alog.info(alog.pformat(kwargs))
         record = self.worker_class(*args, **kwargs)
 
         record.run()
