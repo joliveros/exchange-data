@@ -151,7 +151,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s -m 20"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
