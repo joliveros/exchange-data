@@ -152,12 +152,14 @@ class OrderBookTFRecordWorkers(DateRangeSplitWorkers):
 
 
 class RepeatOrderBookTFRecordWorkers(Messenger):
-    def __init__(self, repeat_interval, directory_name, max_files, **kwargs):
+    def __init__(self, repeat_interval, directory_name, max_files, split, **kwargs):
         self.max_files = max_files
+        self.split = split
         self.directory = Path(f'{Path.home()}/.exchange-data/tfrecords/{directory_name}')
         self.repeat_interval = repeat_interval
         kwargs['directory_name'] = directory_name
         kwargs['directory'] = self.directory
+        kwargs['split'] = split
         self.kwargs = kwargs
         super(RepeatOrderBookTFRecordWorkers, self).__init__(**kwargs)
         self.on(repeat_interval, self.run_workers)
@@ -166,7 +168,7 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
         files = [file for file in self.directory.iterdir()]
         files.sort()
 
-        files_to_delete = files[:self.max_files * -1]
+        files_to_delete = files[:(self.max_files - self.split) * -1]
 
         for file in files_to_delete:
             file.unlink()
