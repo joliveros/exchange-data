@@ -147,11 +147,11 @@ services:
       - redis
       - influxdb
 
-  emit_records_btc:
+  emit_tfrecords_btc:
     deploy:
-      replicas: 0
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py -i 18m --frame-width 224 -c -s 16 -r 30s"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:

@@ -139,10 +139,7 @@ class OrderBookTFRecordWorkers(DateRangeSplitWorkers):
     worker_class = OrderBookTFRecord
 
     def __init__(self, clear, directory_name, **kwargs):
-        directory = f'{Path.home()}/.exchange-data/tfrecords/{directory_name}'
-
         super().__init__(
-            directory=directory,
             directory_name=directory_name,
             **kwargs
         )
@@ -155,25 +152,36 @@ class OrderBookTFRecordWorkers(DateRangeSplitWorkers):
 
 
 class RepeatOrderBookTFRecordWorkers(Messenger):
-    def __init__(self, repeat_delay, **kwargs):
-        if repeat_delay is None:
-            self.repeat_delay = None
-        else:
-            self.repeat_delay = timeparse(repeat_delay)
-
+    def __init__(self, repeat_interval, directory_name, max_files, **kwargs):
+        self.max_files = max_files
+        self.directory = Path(f'{Path.home()}/.exchange-data/tfrecords/{directory_name}')
+        self.repeat_interval = repeat_interval
+        kwargs['directory_name'] = directory_name
+        kwargs['directory'] = self.directory
         self.kwargs = kwargs
         super(RepeatOrderBookTFRecordWorkers, self).__init__(**kwargs)
+        self.on(repeat_interval, self.run_workers)
+
+    def delete_excess_files(self):
+        files = [file for file in self.directory.iterdir()]
+        files.sort()
+
+        files_to_delete = files[:self.max_files * -1]
+
+        for file in files_to_delete:
+            file.unlink()
+
+    def run_workers(self, timestamp):
+        start_date = DateTimeUtils.now()
+        self.delete_excess_files()
+        OrderBookTFRecordWorkers(**self.kwargs).run()
+        self.publish('OrderBookTFRecordWorkers', str(start_date))
 
     def run(self):
-        while True:
-            start_date = DateTimeUtils.now()
-            OrderBookTFRecordWorkers(**self.kwargs).run()
-            self.publish('OrderBookTFRecordWorkers', str(start_date))
-
-            if self.repeat_delay is None:
-                return
-
-            sleep(self.repeat_delay)
+        if self.repeat_interval:
+            self.sub([self.repeat_interval])
+        else:
+            self.run_workers(None)
 
 
 @click.command()
@@ -181,11 +189,12 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
 @click.option('--directory-name', '-d', default='default', type=str)
 @click.option('--frame-width', default=96, type=int)
 @click.option('--interval', '-i', default='1h', type=str)
+@click.option('--repeat-interval', '-r', default=None, type=str)
 @click.option('--max-frames', '-m', default=12, type=int)
 @click.option('--max-workers', '-w', default=4, type=int)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
-@click.option('--repeat-delay', '-r', default=None, type=str)
 @click.option('--split', '-s', default=12, type=int)
+@click.option('--max-files', '-m', default=6, type=int)
 @click.option('--summary-interval', '-si', default=6, type=int)
 def main(**kwargs):
     record = RepeatOrderBookTFRecordWorkers(
