@@ -42,6 +42,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         sample_interval: str = '1s',
         channel_name: str = None,
         min_date: datetime = parser.parse('2019-03-13 14:10:00+00:00'),
+        date_checks = True,
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
@@ -84,7 +85,7 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         if self.start_date > start_date:
             raise Exception()
 
-        if self.original_end_date != self.end_date:
+        if self.original_end_date != self.end_date and date_checks:
             raise Exception()
 
     @property

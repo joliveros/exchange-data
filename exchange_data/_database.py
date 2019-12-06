@@ -16,7 +16,6 @@ class Database(InfluxDBClient):
         influxdb: str = None,
         **kwargs
     ):
-
         self.connection_str = influxdb if influxdb else settings.DB
         conn_params = urlparse(self.connection_str)
 

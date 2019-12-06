@@ -20,6 +20,10 @@ import numpy as np
 import random
 
 
+class OrderBookIncompleteException(Exception):
+    pass
+
+
 class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
     """
     Orderbook based trading environment.
@@ -346,7 +350,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         plot = self.plot_orderbook()
 
         if orderbook.shape[2] != self.orderbook_depth:
-            raise Exception('Orderbook incomplete.')
+            raise OrderBookIncompleteException()
 
         if self.last_orderbook_levels is not None:
             self.bid_diff = self.best_bid - self.last_best_bid
@@ -378,7 +382,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         avxs = []
         avymins = []
         avymaxs = []
-        orderbook = self.last_orderbook
 
         bids = self.bids
         asks = self.asks
@@ -425,7 +428,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         img = fig.canvas.renderer._renderer
         img = np.array(img)
 
-        if settings.LOG_LEVEL == logging.DEBUG and self.print_ascii_chart:
+        if self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
                 alog.info(AsciiImage(img))
                 # plt.show()

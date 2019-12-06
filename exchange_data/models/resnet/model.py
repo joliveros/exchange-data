@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from exchange_data import settings
+from exchange_data.emitters import Messenger
 from exchange_data.tfrecord.dataset import dataset
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
@@ -46,56 +47,87 @@ def Model(learning_rate, frame_size):
                   metrics=['accuracy'])
     return model
 
+class ModelTrainer(Messenger):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.kwargs = kwargs
+
+    def done(self):
+        self.publish('resnet_trainer_done', '')
+
+    def run(self):
+        while True:
+            self._run(**self.kwargs)
+
+    def _run(
+            self,
+            batch_size,
+            checkpoint_steps,
+            clear,
+            epochs,
+            eval_span,
+            frame_size,
+            learning_rate,
+            max_steps,
+            save_checkpoint_secs,
+        ):
+        model = Model(learning_rate, frame_size)
+
+        model.summary()
+
+        model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+
+        if clear:
+            try:
+                shutil.rmtree(model_dir)
+            except Exception:
+                pass
+
+        run_config = RunConfig(
+            # save_checkpoints_steps=checkpoint_steps,
+            save_checkpoints_secs=save_checkpoint_secs
+        )
+        resnet_estimator = model_to_estimator(
+            keras_model=model, model_dir=model_dir,
+            # checkpoint_format='checkpoint',
+            checkpoint_format='saver',
+            config=run_config,
+        )
+
+        eval_span = timeparse(eval_span)
+
+        train_spec = TrainSpec(
+            input_fn=lambda: dataset(batch_size, epochs).skip(eval_span),
+        )
+
+        eval_spec = EvalSpec(
+            input_fn=lambda: dataset(batch_size, 1).take(eval_span),
+            steps=eval_span,
+            throttle_secs=60
+            # hooks=[ProfitAndLossHook(resnet_estimator)]
+        )
+
+        train_and_evaluate(resnet_estimator, train_spec, eval_spec)
+
+        # self.done()
+
+        alog.info('#### DONE ####')
+
 
 @click.command()
 @click.option('--epochs', '-e', type=int, default=10)
+@click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
 @click.option('--batch-size', '-b', type=int, default=1)
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
 @click.option('--clear', '-c', is_flag=True)
 @click.option('--eval-span', type=str, default='20m')
 @click.option('--checkpoint-steps', '-s', type=int, default=200)
+@click.option('--save-checkpoint-secs', '-secs', type=int, default=200)
 @click.option('--frame-size', type=int, default=224)
-def main(epochs, batch_size, clear, learning_rate, eval_span, checkpoint_steps,
-        frame_size,
-        **kwargs
-    ):
+def main(**kwargs):
     tf.compat.v1.logging.set_verbosity(settings.LOG_LEVEL)
-
-    model = Model(learning_rate, frame_size)
-
-    model.summary()
-
-    model_dir = f'{Path.home()}/.exchange-data/models/resnet'
-
-    if clear:
-        try:
-            shutil.rmtree(model_dir)
-        except Exception:
-            pass
-
-    run_config = RunConfig(
-        # save_checkpoints_steps=checkpoint_steps
-        save_checkpoints_secs=60
-    )
-    resnet_estimator = model_to_estimator(
-        keras_model=model, model_dir=model_dir,
-        # checkpoint_format='checkpoint',
-        checkpoint_format='saver',
-        config=run_config,
-    )
-
-    eval_span = timeparse(eval_span)
-    train_spec = TrainSpec(input_fn=lambda: dataset(batch_size, epochs).skip(eval_span),
-                           # max_steps=epochs * 6 * 60 * 60
-                           )
-    eval_spec = EvalSpec(
-        input_fn=lambda: dataset(batch_size, 1).take(eval_span),
-        steps=eval_span,
-        throttle_secs=60
-        # hooks=[ProfitAndLossHook(resnet_estimator)]
-    )
-
-    train_and_evaluate(resnet_estimator, train_spec, eval_spec)
+    trainer = ModelTrainer(**kwargs)
+    trainer.run()
 
 
 if __name__ == '__main__':

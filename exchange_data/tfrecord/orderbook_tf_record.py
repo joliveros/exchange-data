@@ -2,14 +2,11 @@
 
 from exchange_data.emitters import Messenger
 from exchange_data.tfrecord.date_range_split_workers import DateRangeSplitWorkers
-from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pathlib import Path
-from pytimeparse.timeparse import timeparse
 from tensorflow.core.example.feature_pb2 import FloatList, BytesList, Feature, Int64List
 from tensorflow.python.lib.io.tf_record import TFRecordWriter, TFRecordCompressionType
 from tgym.envs import OrderBookTradingEnv
-from time import sleep
 
 import alog
 import click
@@ -32,7 +29,6 @@ class OrderBookTFRecord(OrderBookTradingEnv):
     ):
         super().__init__(
             random_start_date=False,
-            use_volatile_ranges=False,
             start_date=start_date,
             end_date=end_date,
             **kwargs
@@ -80,32 +76,6 @@ class OrderBookTFRecord(OrderBookTradingEnv):
         self.get_observation()
 
         return self.last_observation
-
-    @property
-    def avg_exit_price(self):
-        return (self.best_ask + self.best_bid) / 2
-
-    @property
-    def avg_entry_price(self):
-        return (self.last_best_ask + self.last_best_bid) / 2
-
-    @property
-    def diff(self):
-        return self.avg_exit_price - self.avg_entry_price
-
-    @property
-    def expected_position(self):
-        position = None
-        diff = self.diff
-
-        if diff > 0.0:
-            position = Positions.Long
-        elif diff < 0.0:
-            position = Positions.Short
-        elif diff == 0.0:
-            position = Positions.Flat
-
-        return position
 
     def run(self):
         with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) as writer:
@@ -163,8 +133,10 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
         self.kwargs = kwargs
         super(RepeatOrderBookTFRecordWorkers, self).__init__(**kwargs)
         self.on(repeat_interval, self.run_workers)
+        self.on('resnet_trainer_done', self.delete_excess_files)
 
-    def delete_excess_files(self):
+    def delete_excess_files(self, msg):
+        alog.info('delete excess files')
         files = [file for file in self.directory.iterdir()]
         files.sort()
 
@@ -175,13 +147,12 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
 
     def run_workers(self, timestamp):
         start_date = DateTimeUtils.now()
-        self.delete_excess_files()
         OrderBookTFRecordWorkers(**self.kwargs).run()
         self.publish('OrderBookTFRecordWorkers', str(start_date))
 
     def run(self):
         if self.repeat_interval:
-            self.sub([self.repeat_interval])
+            self.sub([self.repeat_interval, 'resnet_trainer_done'])
         else:
             self.run_workers(None)
 
@@ -198,6 +169,8 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
 @click.option('--split', '-s', default=12, type=int)
 @click.option('--max-files', '-m', default=6, type=int)
 @click.option('--summary-interval', '-si', default=6, type=int)
+@click.option('--use-volatile-ranges', '-v', is_flag=True)
+@click.option('--min-std-dev', '-std', default=2.0, type=float)
 def main(**kwargs):
     record = RepeatOrderBookTFRecordWorkers(
         window_size='1m',
