@@ -34,6 +34,8 @@ class BitmexOrderBook(OrderBook, EventEmitter):
 
         table = raw_message['table']
 
+        alog.info(table)
+
         if table in ['orderBookL2', 'trade']:
             order_type = None
             if table == 'orderBookL2':

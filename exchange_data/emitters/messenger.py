@@ -1,17 +1,15 @@
-import logging
-import sys
 from abc import ABC
 from enum import Enum, auto
-
-import alog
-
 from exchange_data import settings
 from exchange_data.utils import NoValue
 from pyee import EventEmitter
 from redis import Redis
 from typing import List
 
+import alog
 import json
+import logging
+import sys
 
 
 class Events(NoValue):

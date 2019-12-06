@@ -1,24 +1,20 @@
-import json
+#!/usr/bin/env python
 
 from collections import deque
-from functools import lru_cache
-
-from dateutil.tz import tz
-
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
 from exchange_data.emitters.bitmex import BitmexEmitterBase
-from exchange_data.emitters.bitmex._orderbook_l2_emitter import \
-    OrderBookL2Emitter
+from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
 from exchange_data.orderbook._ordertree import OrderTree
 from exchange_data.utils import NoValue, DateTimeUtils
+from functools import lru_cache
 from numpy.core.multiarray import ndarray
-
 import alog
 import click
 import gc
+import json
 import numpy as np
 import sys
 import traceback
@@ -166,6 +162,8 @@ class BitmexOrderBookEmitter(
             bid_side = new_bid_side
 
         frame = np.array((ask_side, bid_side))
+
+        alog.info(frame)
 
         return frame
 

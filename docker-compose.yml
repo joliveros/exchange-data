@@ -149,9 +149,9 @@ services:
 
   emit_tfrecords_btc:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s -m 20"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
@@ -165,6 +165,24 @@ services:
       - influxdb
     secrets:
       - DB
+
+  emit_orderbook_training_data_btc:
+    deploy:
+      replicas: 1
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/orderbook_training_data.py --frame-width 225"
+    environment:
+      - LOG_LEVEL=INFO
+    env_file:
+      - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
+      - influxdb
+    secrets:
+      - DB
+
 
 secrets:
   BITMEX_API_KEY:
