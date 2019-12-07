@@ -1,3 +1,4 @@
+import alog
 from matplotlib import pyplot as plt
 
 
@@ -7,13 +8,13 @@ class PlotOrderbook(object):
 
         plt.close()
 
-        fig, frames = plt.subplots(1, 2, figsize=(1, 1),
-                                   dpi=self.frame_width)
+        fig, frames = plt.subplots(2, 1, figsize=(1, 1),
+                                   dpi=self.frame_width / 2)
 
         ax1, ax2 = frames
         self.fig = fig
-        self.ax1 = ax1
-        self.ax2 = ax2
+        self.ax1 = ax2
+        self.ax2 = ax1
         # self.ax2 = fig.add_subplot(1, 2, 2, frame_on=False)
 
     def hide_ticks_and_values(self, frame):
