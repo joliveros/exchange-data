@@ -433,6 +433,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
                 alog.info(AsciiImage(img))
                 # plt.show()
                 # traceback.print_stack()
+                # raise Exception()
 
         img = img[:, :, :3]
         return img
