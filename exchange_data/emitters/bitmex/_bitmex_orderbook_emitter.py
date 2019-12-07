@@ -163,8 +163,6 @@ class BitmexOrderBookEmitter(
 
         frame = np.array((ask_side, bid_side))
 
-        alog.info(frame)
-
         return frame
 
     def measurements(self, timestamp, depths=None):

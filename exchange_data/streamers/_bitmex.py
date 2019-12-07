@@ -64,6 +64,8 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         self.orderbook_depth = orderbook_depth
         self.window_size_str = window_size
         self.window_size = timeparse(window_size)
+        self.window_delta = timedelta(seconds=self.window_size)
+        self.stop_date = None
 
         if channel_name:
             self.channel_name = channel_name
@@ -75,12 +77,12 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         else:
             self.start_date = start_date
 
-        if self.start_date:
-            if end_date is None:
-                self.end_date = self.start_date + \
-                    timedelta(seconds=self.window_size)
-            else:
-                self.end_date = end_date
+        if end_date:
+            self.stop_date = end_date
+            self.end_date = end_date
+
+        # self.end_date = self.start_date + \
+        #     timedelta(seconds=self.window_size)
 
         if self.start_date > start_date:
             raise Exception()
@@ -207,11 +209,15 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         return result
 
     def _set_next_window(self):
-        self.start_date += timedelta(seconds=self.window_size)
+        self.start_date += timedelta(seconds=self.window_size )
         self.end_date += timedelta(seconds=self.window_size)
+
+        if self.end_date >= self.stop_date:
+            raise StopIteration()
 
     def send(self, *args):
         self.counter += 1
+
         if len(self._time) == 0:
             time, orderbook = self.next_window()
             self._time += time.tolist()
