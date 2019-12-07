@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from dateutil.tz import tz
 
 from exchange_data import Measurement, Database
 from exchange_data.channels import BitmexChannels
@@ -87,15 +88,20 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         if len(self.frames) > 2:
             frame = json.dumps(self.frames[-2].flatten().tolist())
             channel_name = f'orderbook_img_frame_{self.symbol.value}'
+
+            timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
+
             measurement = Measurement(
                 measurement=channel_name,
-                time=self.last_timestamp,
+                time=timestamp,
                 tags=dict(symbol=self.symbol.value),
                 fields=dict(
                     frame=frame,
                     expected_position=self.expected_position.value
                 )
             )
+
+            alog.info(self.frames[-1].shape)
 
             self.publish(channel_name, json.dumps(dict(
                 frame=self.frames[-1].flatten().tolist()

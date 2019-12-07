@@ -6,6 +6,7 @@ class PlotOrderbook(object):
         self.frame_width = frame_width
 
         plt.close()
+
         fig, frames = plt.subplots(1, 2, figsize=(1, 1),
                                    dpi=self.frame_width)
 
