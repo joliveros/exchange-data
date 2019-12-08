@@ -18,9 +18,50 @@ NUM_CLASSES = len(CLASSES)
 
 
 class OrderBookImgStreamer(BitmexStreamer, ABC):
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        steps_epoch: str,
+        min_std_dev: float = 0.0,
+        stddev_group_interval: str = '15s',
+        use_volatile_ranges: bool = False,
+        **kwargs
+    ):
         super().__init__(**kwargs)
+
         self.data = []
+        self.steps_epoch = timeparse(steps_epoch)
+        self.min_std_dev = min_std_dev
+        self.use_volatile_ranges = use_volatile_ranges
+        self.current_range = None
+        self.stddev_group_interval = stddev_group_interval
+
+        if use_volatile_ranges:
+            self.volatile_ranges = self.get_volatile_ranges()
+
+    def get_volatile_ranges(self, start_date=None, end_date=None):
+        start_date = start_date if start_date else self.start_date
+        end_date = end_date if end_date else self.end_date
+
+        start_date = self.format_date_query(start_date)
+        end_date = self.format_date_query(end_date)
+
+        query = f'SELECT bbd FROM (SELECT STDDEV(entry_price) as bbd ' \
+            f'from {self.channel_name} ' \
+            f'WHERE time >= {start_date} AND time <= {end_date} ' \
+            f'GROUP BY time({self.stddev_group_interval})) '\
+            f'WHERE bbd > {self.min_std_dev};'
+
+        alog.info(query)
+
+        ranges = self.query(query).get_points(self.channel_name)
+
+        timestamps = [data['time'] for data in ranges]
+
+        return [(
+               DateTimeUtils.parse_db_timestamp(timestamp),
+               DateTimeUtils.parse_db_timestamp(timestamp) +
+               timedelta(seconds=timeparse(self.stddev_group_interval))
+            ) for timestamp in timestamps]
 
     def orderbook_frame_query(self, start_date=None, end_date=None):
         start_date = start_date if start_date else self.start_date
@@ -34,10 +75,7 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
 
         alog.info(query)
 
-        return self.query(
-            query,
-            chunk_size=4112
-        )
+        return self.query(query)
 
     def _orderbook_frames(self, start_date, end_date):
         orderbook = self.orderbook_frame_query(start_date, end_date)
@@ -45,27 +83,45 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         return orderbook.get_points(self.channel_name)
 
     def orderbook_frames(self):
-        diff = self.start_date - self.end_date
-        diff2 = self.start_date - self.original_end_date
-
-        if diff == diff2:
-            self.end_date = self.start_date + self.window_delta
-
         return self._orderbook_frames(self.start_date, self.end_date)
 
-    def next_window(self):
-        result = self.orderbook_frames()
+    def _set_next_window(self):
+        if self.use_volatile_ranges:
+            if self.current_range is None:
+                self.current_range = self.volatile_ranges.pop(0)
+                alog.info('#### new range ###')
+                self.start_date = self.current_range[0]
+            else:
+                self.start_date += self.window_delta
 
+            self.end_date = self.start_date + self.window_delta
+
+            if self.end_date >= self.current_range[1]:
+                self.current_range = None
+        else:
+            if self.counter > 0:
+                self.start_date += timedelta(seconds=self.window_size)
+            self.end_date = self.start_date + self.window_delta
+
+        if self.end_date >= self.stop_date:
+            raise StopIteration()
+
+    def next_window(self):
         self._set_next_window()
+
+        result = self.orderbook_frames()
 
         return result
 
     def send(self, *args):
-        self.counter += 1
-
         if len(self.data) == 0:
             self.data = [frame for frame in self.next_window()]
             self.data.pop(0)
+
+        if self.counter >= self.steps_epoch:
+            raise StopIteration()
+
+        self.counter += 1
 
         return self.data.pop(0)
 
@@ -77,7 +133,6 @@ def data_streamer(frame_width, interval: str = '15s', **kwargs):
     streamer = OrderBookImgStreamer(
         start_date=start_date,
         end_date=end_date,
-        window_size='2s',
         channel_name='orderbook_img_frame_XBTUSD',
         **kwargs
     )
@@ -105,8 +160,11 @@ def dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
 
 @click.command()
 # @click.option('--summary-interval', '-s', default=6, type=int)
-@click.option('--interval', '-i', default='15s', type=str)
 @click.option('--frame-width', '-f', default=225, type=int)
+@click.option('--interval', '-i', default='15s', type=str)
+@click.option('--steps-epoch', '-s', default='1m', type=str)
+@click.option('--use-volatile-ranges', '-v', is_flag=True)
+@click.option('--window-size', '-w', default='3s', type=str)
 def main(**kwargs):
     for frame, expected_position in dataset(batch_size=2, **kwargs):
         alog.info((expected_position, frame.shape))

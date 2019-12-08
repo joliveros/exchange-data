@@ -26,10 +26,9 @@ Sequential = tf.keras.models.Sequential
 SGD = tf.keras.optimizers.SGD
 
 
-
-def Model(learning_rate, frame_size):
+def Model(learning_rate, frame_width):
     model = Sequential()
-    model.add(Input(shape=(frame_size, frame_size, 3)))
+    model.add(Input(shape=(frame_width, frame_width, 3)))
 
     base = ResNet50(include_top=False, weights=None, classes=3)
     for layer in base.layers:
@@ -48,6 +47,7 @@ def Model(learning_rate, frame_size):
                   metrics=['accuracy'])
     return model
 
+
 class ModelTrainer(Messenger):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -57,37 +57,35 @@ class ModelTrainer(Messenger):
         self.publish('resnet_trainer_done', '')
 
     def run(self):
-        while True:
-            self._run(**self.kwargs)
+        self._run(**self.kwargs)
 
     def _run(
             self,
             batch_size,
             checkpoint_steps,
-            clear,
             epochs,
             eval_span,
-            frame_size,
+            eval_steps,
+            frame_width,
+            interval,
             learning_rate,
             max_steps,
-            save_checkpoint_secs,
+            min_std_dev,
+            steps_epoch,
+            stddev_group_interval,
+            window_size,
         ):
-        model = Model(learning_rate, frame_size)
+        model = Model(learning_rate, frame_width)
 
         model.summary()
 
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
-        if clear:
-            try:
-                shutil.rmtree(model_dir)
-            except Exception:
-                pass
-
         run_config = RunConfig(
             # save_checkpoints_steps=checkpoint_steps,
-            save_checkpoints_secs=save_checkpoint_secs
+            save_checkpoints_secs=timeparse(steps_epoch) * epochs
         )
+
         resnet_estimator = model_to_estimator(
             keras_model=model, model_dir=model_dir,
             # checkpoint_format='checkpoint',
@@ -95,37 +93,60 @@ class ModelTrainer(Messenger):
             config=run_config,
         )
 
-        eval_span = timeparse(eval_span)
-
         train_spec = TrainSpec(
-            input_fn=lambda: dataset(batch_size, epochs, frame_size)
-                .skip(eval_span),
+            input_fn=lambda: dataset(
+                batch_size = batch_size,
+                epochs=epochs,
+                frame_width=frame_width,
+                interval=interval,
+                min_std_dev=min_std_dev,
+                steps_epoch=steps_epoch,
+                use_volatile_ranges=True,
+                window_size=window_size,
+                stddev_group_interval=stddev_group_interval,
+            )
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(batch_size, 1).take(eval_span),
-            steps=eval_span,
-            throttle_secs=60
+            input_fn=lambda: dataset(
+                batch_size=batch_size,
+                epochs=1,
+                frame_width=frame_width,
+                interval=eval_span,
+                min_std_dev=min_std_dev,
+                steps_epoch=steps_epoch,
+                use_volatile_ranges=True,
+                window_size=window_size,
+                stddev_group_interval=stddev_group_interval,
+            ),
+            steps=timeparse(eval_steps),
+            throttle_secs=timeparse(steps_epoch) * epochs
             # hooks=[ProfitAndLossHook(resnet_estimator)]
         )
 
         train_and_evaluate(resnet_estimator, train_spec, eval_spec)
 
-        # self.done()
+        # resnet_estimator.export_saved_model()
+
+        self.done()
 
         alog.info('#### DONE ####')
 
 
 @click.command()
-@click.option('--epochs', '-e', type=int, default=10)
-@click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
 @click.option('--batch-size', '-b', type=int, default=1)
-@click.option('--learning-rate', '-l', type=float, default=0.3e-4)
-@click.option('--clear', '-c', is_flag=True)
-@click.option('--eval-span', type=str, default='20m')
 @click.option('--checkpoint-steps', '-s', type=int, default=200)
-@click.option('--save-checkpoint-secs', '-secs', type=int, default=200)
-@click.option('--frame-size', type=int, default=224)
+@click.option('--epochs', '-e', type=int, default=10)
+@click.option('--eval-span', type=str, default='20m')
+@click.option('--eval-steps', type=str, default='15s')
+@click.option('--frame-width', type=int, default=224)
+@click.option('--interval', '-i', type=str, default='1m')
+@click.option('--learning-rate', '-l', type=float, default=0.3e-4)
+@click.option('--min-std-dev', type=float, default=0.0)
+@click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
+@click.option('--steps-epoch', default='1m', type=str)
+@click.option('--window-size', '-w', default='3s', type=str)
+@click.option('--stddev-group-interval', default='15s', type=str)
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     trainer = ModelTrainer(**kwargs)

@@ -60,12 +60,17 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         position = None
         diff = self.diff
 
+
+
+
         if diff > 0.0:
             position = Positions.Long
         elif diff < 0.0:
             position = Positions.Short
         elif diff == 0.0:
             position = Positions.Flat
+
+        alog.debug((diff, position))
 
         return position
 
@@ -82,8 +87,11 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
         try:
             self.get_observation()
+
         except OrderBookIncompleteException as e:
             pass
+
+        self.last_position
 
         if len(self.frames) > 2:
             frame = json.dumps(self.frames[-2].flatten().tolist())
@@ -91,13 +99,16 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
             timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
 
+            alog.debug((self.expected_position, self.best_ask, self.best_bid))
+
             measurement = Measurement(
                 measurement=channel_name,
                 time=timestamp,
                 tags=dict(symbol=self.symbol.value),
                 fields=dict(
                     frame=frame,
-                    expected_position=self.expected_position.value
+                    expected_position=self.expected_position.value,
+                    entry_price=self.avg_entry_price
                 )
             )
 
