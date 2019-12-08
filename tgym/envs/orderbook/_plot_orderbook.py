@@ -9,7 +9,7 @@ class PlotOrderbook(object):
         plt.close()
 
         fig, frames = plt.subplots(2, 1, figsize=(1, 1),
-                                   dpi=self.frame_width / 2)
+                                   dpi=self.frame_width)
 
         ax1, ax2 = frames
         self.fig = fig
