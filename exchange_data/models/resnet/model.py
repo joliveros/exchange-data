@@ -1,18 +1,19 @@
 #!/usr/bin/env python
+import tensorflow as tf
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
-from exchange_data.tfrecord.dataset import dataset
+from exchange_data.tfrecord.dataset_query import dataset
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
 from tensorflow_core.python.keras.estimator import model_to_estimator
 from tensorflow_estimator.python.estimator.run_config import RunConfig
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
-
 import alog
 import click
+import logging
 import shutil
-import tensorflow as tf
+
 
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
@@ -126,7 +127,7 @@ class ModelTrainer(Messenger):
 @click.option('--save-checkpoint-secs', '-secs', type=int, default=200)
 @click.option('--frame-size', type=int, default=224)
 def main(**kwargs):
-    tf.compat.v1.logging.set_verbosity(settings.LOG_LEVEL)
+    logging.getLogger('tensorflow').setLevel(logging.INFO)
     trainer = ModelTrainer(**kwargs)
     trainer.run()
 
