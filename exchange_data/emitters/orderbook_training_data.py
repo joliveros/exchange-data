@@ -101,8 +101,6 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
                 )
             )
 
-            alog.info(self.frames[-1].shape)
-
             self.publish(channel_name, json.dumps(dict(
                 frame=self.frames[-1].flatten().tolist()
             )))
