@@ -82,13 +82,11 @@ class ModelTrainer(Messenger):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            # save_checkpoints_steps=checkpoint_steps,
             save_checkpoints_secs=timeparse(steps_epoch) * epochs
         )
 
         resnet_estimator = model_to_estimator(
             keras_model=model, model_dir=model_dir,
-            # checkpoint_format='checkpoint',
             checkpoint_format='saver',
             config=run_config,
         )
@@ -121,7 +119,6 @@ class ModelTrainer(Messenger):
             ),
             steps=timeparse(eval_steps),
             throttle_secs=timeparse(steps_epoch) * epochs
-            # hooks=[ProfitAndLossHook(resnet_estimator)]
         )
 
         train_and_evaluate(resnet_estimator, train_spec, eval_spec)
