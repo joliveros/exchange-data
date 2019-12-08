@@ -29,7 +29,7 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
+class BitmexStreamer(Database, Generator, DateTimeUtils,
                      ABC):
     def __init__(
         self,
@@ -46,7 +46,6 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
-        SignalInterceptor.__init__(self)
 
         self.counter = 0
         self._orderbook = []

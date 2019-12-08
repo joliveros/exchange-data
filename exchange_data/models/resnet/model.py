@@ -97,7 +97,8 @@ class ModelTrainer(Messenger):
         eval_span = timeparse(eval_span)
 
         train_spec = TrainSpec(
-            input_fn=lambda: dataset(batch_size, epochs).skip(eval_span),
+            input_fn=lambda: dataset(batch_size, epochs, frame_size)
+                .skip(eval_span),
         )
 
         eval_spec = EvalSpec(

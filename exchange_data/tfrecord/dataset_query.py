@@ -70,7 +70,7 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         return self.data.pop(0)
 
 
-def data_streamer(interval: str = '15s', **kwargs):
+def data_streamer(frame_width, interval: str = '15s', **kwargs):
     end_date = DateTimeUtils.now()
     start_date = end_date - timedelta(seconds=timeparse(interval))
 
@@ -83,38 +83,35 @@ def data_streamer(interval: str = '15s', **kwargs):
     )
 
     for data in streamer:
-        time = data['time']
         expected_position = data['data_expected_position']
-        frame = np.array(json.loads(data['data_frame']))
 
-        alog.info((time, expected_position, frame.shape))
+        frame = np.array(json.loads(data['data_frame']))\
+            .reshape((frame_width, frame_width, 3))
 
-        yield data
+        yield frame, expected_position
 
-def dataset(batch_size: int, epochs: int = 1, **kwargs):
-    return data_streamer(**kwargs)
 
-    #
-    # tf.data.Dataset.from_generator(
-    #     streamer,
-    #     output_types=(tf.int32, tf.float32),
-    #     output_shapes=((), (None,))
-    # )
-    #
-    # _dataset = _dataset.map(extract_fn)\
-    #     .batch(batch_size) \
-    #     .repeat(epochs)
-    #
-    # return _dataset
+def dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
+    kwargs['frame_width'] = frame_width
+
+    return tf.data.Dataset.from_generator(
+        lambda: data_streamer(**kwargs),
+        output_types=(tf.float32, tf.int32),
+        output_shapes=((frame_width, frame_width, 3,), ())
+    ) \
+        .batch(batch_size) \
+        .repeat(epochs)
 
 
 @click.command()
 # @click.option('--summary-interval', '-s', default=6, type=int)
 @click.option('--interval', '-i', default='15s', type=str)
+@click.option('--frame-width', '-f', default=225, type=int)
 def main(**kwargs):
-    for x in dataset(2, **kwargs):
-        # alog.info(x['time'])
-        pass
+    for frame, expected_position in dataset(batch_size=2, **kwargs):
+        alog.info((expected_position, frame.shape))
+        alog.info(expected_position.numpy())
+
 
 
 if __name__ == '__main__':
