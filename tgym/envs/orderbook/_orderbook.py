@@ -428,10 +428,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         img = fig.canvas.renderer._renderer
         img = np.array(img)
 
-        if img.shape[0] != self.frame_width:
-            raise Exception(
-                f'Frame {img.shape} does not match requested size ({self.frame_width}).'
-            )
+        # if img.shape[0] != self.frame_width:
+        #     raise Exception(
+        #         f'Frame {img.shape} does not match requested size ({self.frame_width}).'
+        #     )
 
         if self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
