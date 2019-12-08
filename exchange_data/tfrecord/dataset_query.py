@@ -87,17 +87,13 @@ def data_streamer(interval: str = '15s', **kwargs):
         expected_position = data['data_expected_position']
         frame = np.array(json.loads(data['data_frame']))
 
-
         alog.info((time, expected_position, frame.shape))
 
-        # if frame is None:
-        #     raise Exception()
-
-        # raise Exception()
         yield data
 
 def dataset(batch_size: int, epochs: int = 1, **kwargs):
     return data_streamer(**kwargs)
+
     #
     # tf.data.Dataset.from_generator(
     #     streamer,
