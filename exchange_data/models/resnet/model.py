@@ -126,7 +126,17 @@ class ModelTrainer(Messenger):
 
         train_and_evaluate(resnet_estimator, train_spec, eval_spec)
 
-        # resnet_estimator.export_saved_model()
+        def serving_input_receiver_fn():
+            inputs = {
+            'INPUT_FEATURE': tf.placeholder(tf.float32, [None, frame_width, frame_width, 3]),
+            }
+            return tf.estimator.export.ServingInputReceiver(inputs, inputs)
+
+        saved_dir = model_dir + '/saved'
+        resnet_estimator.export_saved_model(
+            saved_dir=saved_dir,
+            serving_input_receiver_fn=serving_input_receiver_fn
+        )
 
         self.done()
 
