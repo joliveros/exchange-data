@@ -57,6 +57,8 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
 
         timestamps = [data['time'] for data in ranges]
 
+        timestamps.reverse()
+
         return [(
                DateTimeUtils.parse_db_timestamp(timestamp),
                DateTimeUtils.parse_db_timestamp(timestamp) +
