@@ -90,6 +90,9 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
     def _set_next_window(self):
         if self.use_volatile_ranges:
             if self.current_range is None:
+                if len(self.volatile_ranges) == 0:
+                    raise StopIteration()
+
                 self.current_range = self.volatile_ranges.pop(0)
                 alog.info('#### new range ###')
                 self.start_date = self.current_range[0]
