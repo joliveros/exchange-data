@@ -1,6 +1,7 @@
-FROM codequants.com:5000/cuda:latest
+FROM nvidia/cuda:10.0-cudnn7-devel
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+# ENV LD_LIBRARY_PATH /usr/local/cuda-10.1/compat/:$LD_LIBRARY_PATH
 ENV PATH /opt/conda/bin:$PATH
 
 RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \

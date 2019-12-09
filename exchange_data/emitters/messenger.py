@@ -1,16 +1,15 @@
-import sys
 from abc import ABC
 from enum import Enum, auto
-
-import alog
-
 from exchange_data import settings
 from exchange_data.utils import NoValue
 from pyee import EventEmitter
 from redis import Redis
 from typing import List
 
+import alog
 import json
+import logging
+import sys
 
 
 class Events(NoValue):
@@ -22,15 +21,13 @@ class MessageType(NoValue):
     message = auto()
 
 
-class Messenger(Redis, EventEmitter, ABC):
+class Messenger(EventEmitter, ABC):
 
     def __init__(self, **kwargs):
-        kwargs = {}
         host = settings.REDIS_HOST
-
-        Redis.__init__(self, host=host, **kwargs)
         EventEmitter.__init__(self)
 
+        self.redis_client = Redis(host=host)
         self._pubsub = None
         self.on(Events.Message.value, self.handler)
 
@@ -43,12 +40,17 @@ class Messenger(Redis, EventEmitter, ABC):
         alog.info(channels)
         _channels = [channel.value if isinstance(channel, Enum) else channel for channel in channels]
 
-        self._pubsub = self.pubsub()
+        self._pubsub = self.redis_client.pubsub()
 
         self._pubsub.subscribe(_channels)
 
         for message in self._pubsub.listen():
             self.emit(Events.Message.value, message)
+
+    def publish(self, channel, msg):
+        if settings.LOG_LEVEL == logging.DEBUG:
+            alog.debug(alog.pformat(locals()))
+        self.redis_client.publish(channel, msg)
 
     def stop(self, *args, **kwargs):
         self._pubsub.close()

@@ -9,7 +9,7 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
-  - pip=10.0.1
+  - pip
   - python=3.6.5
   - toolz
   - xarray

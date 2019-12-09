@@ -975,7 +975,7 @@ interactions:
         :[\"Schema\"],\"summary\":\"Get model schemata for data objects returned by\
         \ this API.\",\"operationId\":\"Schema.get\",\"parameters\":[{\"name\":\"\
         model\",\"in\":\"query\",\"description\":\"Optional model filter. If omitted,\
-        \ will return all models.\",\"required\":false,\"type\":\"string\"}],\"responses\"\
+        \ will return all resnet.\",\"required\":false,\"type\":\"string\"}],\"responses\"\
         :{\"200\":{\"description\":\"Request was successful\",\"schema\":{\"type\"\
         :\"object\"}},\"400\":{\"description\":\"Parameter Error\",\"schema\":{\"\
         $ref\":\"#/definitions/Error\"}},\"401\":{\"description\":\"Unauthorized\"\

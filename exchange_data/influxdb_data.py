@@ -11,8 +11,8 @@ import os
 class InfluxDBData(Database):
     def __init__(self, database: str, symbol: str, total_time='1d',
                  read_from_json: bool = False):
-        Database.__init__(self, database_name=database)
-
+        super().__init__(database_name=database)
+        raise Exception()
         self.read_from_json = read_from_json
         self.total_time = total_time
         self.symbol = symbol

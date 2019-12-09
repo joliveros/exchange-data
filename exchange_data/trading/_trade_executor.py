@@ -24,7 +24,7 @@ class TradeExecutor(
 
     def __init__(
         self,
-        algo_channel: str,
+        job_name: str,
         symbol: str,
         position_size: int = 1,
         **kwargs):
@@ -34,7 +34,7 @@ class TradeExecutor(
         DateTimeUtils.__init__(self)
 
         self.symbol = BitmexChannels[symbol]
-        self.algo_channel = algo_channel
+        self.job_name = job_name
 
         self.last_position = self._last_position()
         self.position_size = position_size
@@ -44,7 +44,7 @@ class TradeExecutor(
             api_secret=settings.BITMEX_API_SECRET
         )
 
-        self.on(self.algo_channel, self.execute)
+        self.on(self.job_name, self.execute)
 
     def _last_position(self):
         end_date = self.now()
@@ -71,7 +71,7 @@ class TradeExecutor(
         return position
 
     def start(self):
-        self.sub([self.algo_channel])
+        self.sub([self.job_name])
 
     def execute(self, action):
         position = Positions[action['data']]
@@ -131,7 +131,7 @@ class TradeExecutor(
 
 @click.command()
 @click.argument(
-    'algo_channel',
+    'job_name',
     type=str,
     default=None
 )

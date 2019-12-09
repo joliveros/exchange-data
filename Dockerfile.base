@@ -5,4 +5,5 @@ WORKDIR /src
 COPY environment.yml .
 COPY .bashrc /root
 
+RUN bash -c "conda update -n base -c defaults conda"
 RUN bash -c "conda env create -f environment.yml"

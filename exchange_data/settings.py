@@ -15,7 +15,7 @@ RUN_ENV = environ.get('RUN_ENV')
 
 DB = sec.load('DB', lowercase=False)
 
-alog.info(f'## db conn {DB} ##')
+alog.debug(f'## db conn {DB} ##')
 
 HOME = environ.get('HOME')
 

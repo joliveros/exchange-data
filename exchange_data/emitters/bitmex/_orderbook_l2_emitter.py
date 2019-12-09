@@ -1,13 +1,8 @@
-from enum import Enum
-
 from bitmex import bitmex
-from exchange_data import settings
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, TimeChannels
+from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex import BitmexEmitterBase
-from pytimeparse.timeparse import timeparse
 
-import alog
 import click
 import json
 import signal
@@ -15,9 +10,8 @@ import signal
 
 class OrderBookL2Emitter(BitmexEmitterBase, Messenger):
 
-    def __init__(self, symbol: BitmexChannels, interval: str = '1m'):
-        BitmexEmitterBase.__init__(self, symbol)
-        Messenger.__init__(self)
+    def __init__(self, symbol: BitmexChannels, interval: str = '1m', **kwargs):
+        super().__init__(symbol, **kwargs)
 
         self.bitmex = bitmex(test=False)
         self.interval = interval
