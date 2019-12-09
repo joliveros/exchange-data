@@ -11,22 +11,34 @@ alog.set_level(settings.LOG_LEVEL)
 class Database(InfluxDBClient):
     def __init__(
         self,
-        database_name,
         ssl=False,
+        database_name=None,
         influxdb: str = None,
         **kwargs
     ):
-        self.database_name = database_name
         self.connection_str = influxdb if influxdb else settings.DB
+        conn_params = urlparse(self.connection_str)
 
-        conn_params = urlparse('{}{}'.format(self.connection_str, database_name))
         database = conn_params.path[1:]
+
+        if len(database) == 0:
+            if database is None:
+                raise Exception('database name required')
+            database = database_name
+
+        self.database_name = database
+
+        # alog.info(database)
+        # raise Exception()
+
         netlocs = conn_params.netloc.split(',')
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
 
-        InfluxDBClient.__init__(
-            self,
+        # alog.info((self.database_name, database, database_name))
+        # raise Exception()
+
+        super().__init__(
             host=parsed_netloc['host'],
             port=parsed_netloc['port'],
             username=parsed_netloc['username'],

@@ -29,7 +29,7 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
+class BitmexStreamer(Database, Generator, DateTimeUtils,
                      ABC):
     def __init__(
         self,
@@ -42,12 +42,10 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         sample_interval: str = '1s',
         channel_name: str = None,
         min_date: datetime = parser.parse('2019-03-13 14:10:00+00:00'),
+        date_checks = True,
         **kwargs
     ):
-        Database.__init__(self, database_name='bitmex', **kwargs)
-        # SignalInterceptor.__init__(self)
-        Generator.__init__(self)
-        DateTimeUtils.__init__(self)
+        super().__init__(database_name='bitmex', **kwargs)
 
         self.counter = 0
         self._orderbook = []
@@ -57,13 +55,16 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         self.sample_interval_s = timeparse(sample_interval)
         self._time = []
         self._index = []
-        self.end_date = None
+        self.original_end_date = end_date
+        self._end_date = None
         self.max_spread = max_spread
         self.realtime = False
         self._min_date = min_date
         self.orderbook_depth = orderbook_depth
         self.window_size_str = window_size
         self.window_size = timeparse(window_size)
+        self.window_delta = timedelta(seconds=self.window_size)
+        self.stop_date = None
 
         if channel_name:
             self.channel_name = channel_name
@@ -75,15 +76,26 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         else:
             self.start_date = start_date
 
-        if self.start_date:
-            if end_date is None:
-                self.end_date = self.start_date + \
-                    timedelta(seconds=self.window_size)
-            else:
-                self.end_date = end_date
+        if end_date:
+            self.stop_date = end_date
+            self.end_date = end_date
 
-            if self.start_date < self.min_date:
-                raise Exception('Start date not available in DB.')
+        # self.end_date = self.start_date + \
+        #     timedelta(seconds=self.window_size)
+
+        if self.start_date > start_date:
+            raise Exception()
+
+        if self.original_end_date != self.end_date and date_checks:
+            raise Exception()
+
+    @property
+    def end_date(self):
+        return self._end_date
+
+    @end_date.setter
+    def end_date(self, value):
+        self._end_date = value
 
     @cached_property
     def min_date(self):
@@ -133,7 +145,16 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
             .replace(tzinfo=tz.tzutc())
 
     def _orderbook_frames(self, start_date, end_date):
+        old_end_date = end_date
+
+        # if end_date > self.original_end_date:
+        #     raise Exception()
+
         orderbook = self.orderbook_frame_query(start_date, end_date)
+
+        if old_end_date != end_date:
+            raise Exception()
+
         frame_list = []
         max_shape = (0, 0, 0)
         time_index = []
@@ -153,7 +174,10 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
 
         if len(frame_list) == 0:
             self.out_of_frames_counter += 1
-            raise OutOfFramesException()
+            raise OutOfFramesException((
+                str(self.original_end_date),
+                str(end_date)
+            ))
 
         resized_frames = []
         for frame in frame_list:
@@ -184,11 +208,15 @@ class BitmexStreamer(Database, SignalInterceptor, Generator, DateTimeUtils,
         return result
 
     def _set_next_window(self):
-        self.start_date += timedelta(seconds=self.window_size)
+        self.start_date += timedelta(seconds=self.window_size )
         self.end_date += timedelta(seconds=self.window_size)
+
+        if self.end_date >= self.stop_date:
+            raise StopIteration()
 
     def send(self, *args):
         self.counter += 1
+
         if len(self._time) == 0:
             time, orderbook = self.next_window()
             self._time += time.tolist()

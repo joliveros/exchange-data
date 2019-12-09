@@ -1,0 +1,45 @@
+version: '3.7'
+
+networks:
+  public:
+    name: public
+    external: true
+
+services:
+
+  resnet_train:
+    deploy:
+      replicas: 1
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && ./exchange_data/models/resnet/model.py --eval-span 30m -e 1 --frame-width 224 -i 30m -w 2s --steps-epoch 10m --min-std-dev 0.0 --stddev-group-interval 15s --eval-steps 15s"
+    volumes:
+      - "${HOME}/.exchange-data/:/root/.exchange-data/"
+    environment:
+        - NVIDIA_VISIBLE_DEVICES=all
+    depends_on:
+      - influxdb
+      - redis
+    networks:
+      - public
+    secrets:
+      - DB
+
+  resnet_server:
+    deploy:
+      replicas: 1
+    image: tensorflow/serving
+    ports:
+      - 0.0.0.0:8500:8500
+      - 0.0.0.0:8501:8501
+    volumes:
+      - /home/joliveros/.exchange-data/models/resnet/saved:/models/resnet
+    environment:
+        - MODEL_NAME=resnet
+        - NVIDIA_VISIBLE_DEVICES=all
+    networks:
+      - public
+
+secrets:
+  DB:
+      external: true
+

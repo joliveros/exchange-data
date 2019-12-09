@@ -1,12 +1,12 @@
 from abc import ABC
 
-import alog
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 
+import alog
 import click
 import json
 import signal
@@ -19,7 +19,7 @@ class BitmexEmitterBase(Messenger, ABC):
         self.symbol = symbol
 
 
-class BitmexEmitter(BitmexEmitterBase, Instrument, ABC):
+class BitmexEmitter(Instrument, BitmexEmitterBase):
     measurements = []
     channels = [
         # InstrumentChannels.quote,
@@ -28,15 +28,11 @@ class BitmexEmitter(BitmexEmitterBase, Instrument, ABC):
     ]
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        # super().__init__(symbol=symbol, channels=self.channels, should_auth=False, **kwargs)
-        BitmexEmitterBase.__init__(self, symbol)
-        Messenger.__init__(self)
-        alog.info('### messenger init ###')
-        websocket.enableTrace(settings.RUN_ENV == 'development')
+        self.symbol = symbol
+        super().__init__(symbol=symbol.name, channels=self.channels, **kwargs)
+        # super(Messenger, self).__init__(**kwargs)
 
-        Instrument.__init__(self, symbol=symbol.value,
-                            channels=self.channels,
-                            should_auth=False)
+        websocket.enableTrace(settings.RUN_ENV == 'development')
 
         self.on('action', self.on_action)
 

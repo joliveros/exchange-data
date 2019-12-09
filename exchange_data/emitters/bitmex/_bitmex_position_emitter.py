@@ -8,35 +8,34 @@ from exchange_data.channels import BitmexChannels
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from gym import Env
 from prometheus_client import Gauge, push_to_gateway, REGISTRY
-from tgym.envs.orderbook.utils import Positions
 
 import click
 import json
 import numpy as np
 
+from exchange_data.trading import Positions
+
 pos_summary = Gauge('emit_position', 'Trading Position')
-profit_gauge = Gauge('profit', 'Profit', unit='BTC')
 
 
 class BitmexPositionEmitter(
-    Env,
     BitmexEmitterBase,
+    Env,
     ABC
 ):
     def __init__(
         self,
         job_name: str,
+        max_frames,
         start_date=None,
         end_date=None,
         env='orderbook-trading-v0',
-        agent_cls=object,
         live=True,
         gauges=True,
         **kwargs
     ):
         kwargs['is_training'] = False
-
-        BitmexEmitterBase.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self.gauges = gauges
         self.env_name = env
         self.default_action = Positions.Flat.value
@@ -45,26 +44,18 @@ class BitmexPositionEmitter(
         self.job_name = job_name
         self._database = 'bitmex'
         self._index = 0.0
-        self.agent = agent_cls(env=self, **kwargs)
-
-        obs_len = self.observation_space.shape[0]
 
         now = self.now()
 
         if start_date:
-            self.start_date = start_date - timedelta(seconds=obs_len + 1)
+            self.start_date = start_date - timedelta(seconds=max_frames + 1)
         else:
-            self.start_date = now - timedelta(seconds=obs_len + 1)
+            self.start_date = now - timedelta(seconds=max_frames + 1)
 
         if end_date:
             self.end_date = end_date
         else:
             self.end_date = now
-
-        while self.last_obs_len() < obs_len:
-            self.prev_action = self.default_action
-            self.prev_reward = 0.0
-            self.get_observation()
 
         if live:
             self.on(self.channel_name, self.emit_position)
@@ -96,12 +87,13 @@ class BitmexPositionEmitter(
         meas = Measurement(**data)
         self.last_timestamp = meas.time
         self.orderbook_frame = np.asarray(json.loads(meas.fields['data']))
+        alog.info(self.orderbook_frame)
 
-        action = self.agent.compute_action(self.last_observation)
+        # action = self.agent.compute_action(self.last_observation)
 
-        self.step(action)
-
-        self.publish_position(action)
+        # self.step(action)
+        #
+        # self.publish_position(action)
 
     def publish_position(self, action):
         _action = None
@@ -139,6 +131,9 @@ class BitmexPositionEmitter(
 
     def start(self):
         self.sub([self.channel_name])
+
+
+profit_gauge = Gauge('profit', 'Profit', unit='BTC')
 
 
 @click.command()
