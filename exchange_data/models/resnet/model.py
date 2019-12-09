@@ -82,7 +82,7 @@ class ModelTrainer(Messenger):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse(steps_epoch) * epochs
+            save_checkpoints_secs=timeparse(steps_epoch) * epochs / 2
         )
 
         resnet_estimator = model_to_estimator(
