@@ -28,7 +28,7 @@ class PredictionEmitter(Messenger):
             instances=[json.loads(data['frame'])]
         ))
 
-        headers = {"content-type": "application/json"}
+        headers = {'content-type': 'application/json'}
 
         json_response = requests.post(
             f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict',
