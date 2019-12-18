@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import tensorflow as tf
 
 from exchange_data import settings
@@ -12,11 +13,11 @@ from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, 
 import alog
 import click
 import logging
-import shutil
 
 
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
+Flatten = tf.keras.layers.Flatten
 GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
 Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
@@ -24,27 +25,37 @@ Reshape = tf.keras.layers.Reshape
 ResNet50 = tf.keras.applications.ResNet50
 Sequential = tf.keras.models.Sequential
 SGD = tf.keras.optimizers.SGD
+TimeDistributed = tf.keras.layers.TimeDistributed
 
 
-def Model(learning_rate, frame_width):
+def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
     model = Sequential()
     model.add(Input(shape=(frame_width, frame_width, 3)))
 
-    base = ResNet50(include_top=False, weights=None, classes=3)
+    base = ResNet50(
+        include_top=False,
+        weights=None,
+        classes=3,
+        pooling=None
+    )
+
     for layer in base.layers:
         layer.trainable = True
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
     model.add(Dropout(0.2))
-    model.add(Dense(72, activation='relu'))
-    model.add(Reshape((72, 1)))
-    model.add(LSTM(3, return_sequences=False))
-    # model.add(LSTM(24, return_sequences=False))
     model.add(Dense(3, activation='softmax'))
-    model.compile(loss='sparse_categorical_crossentropy',
-                  optimizer=SGD(lr=learning_rate, decay=5e-3),
-                  metrics=['accuracy'])
+    model.compile(
+        loss='sparse_categorical_crossentropy',
+        metrics=['sparse_categorical_accuracy'],
+        optimizer=SGD(
+            lr=learning_rate,
+            decay=learning_rate_decay,
+            momentum=0.9
+        )
+    )
+
     return model
 
 
@@ -70,19 +81,20 @@ class ModelTrainer(Messenger):
             interval,
             learning_rate,
             max_steps,
-            min_std_dev,
+            learning_rate_decay,
             steps_epoch,
-            stddev_group_interval,
             window_size,
+            seed
         ):
-        model = Model(learning_rate, frame_width)
+        model = Model(learning_rate, frame_width, learning_rate_decay)
 
         model.summary()
 
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse(steps_epoch) * epochs / 2
+            save_checkpoints_secs=timeparse(steps_epoch) * epochs / 2,
+            tf_random_seed=seed
         )
 
         resnet_estimator = model_to_estimator(
@@ -97,11 +109,9 @@ class ModelTrainer(Messenger):
                 epochs=epochs,
                 frame_width=frame_width,
                 interval=interval,
-                min_std_dev=min_std_dev,
                 steps_epoch=steps_epoch,
                 use_volatile_ranges=True,
                 window_size=window_size,
-                stddev_group_interval=stddev_group_interval,
             )
         )
 
@@ -111,11 +121,9 @@ class ModelTrainer(Messenger):
                 epochs=1,
                 frame_width=frame_width,
                 interval=eval_span,
-                min_std_dev=min_std_dev,
                 steps_epoch=steps_epoch,
                 use_volatile_ranges=True,
                 window_size=window_size,
-                stddev_group_interval=stddev_group_interval,
             ),
             steps=timeparse(eval_steps),
             throttle_secs=timeparse(steps_epoch) * epochs
@@ -147,11 +155,11 @@ class ModelTrainer(Messenger):
 @click.option('--frame-width', type=int, default=224)
 @click.option('--interval', '-i', type=str, default='1m')
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
-@click.option('--min-std-dev', type=float, default=0.0)
+@click.option('--learning-rate-decay', default=5e-3, type=float)
 @click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
+@click.option('--seed', type=int, default=6*6*6)
 @click.option('--steps-epoch', default='1m', type=str)
 @click.option('--window-size', '-w', default='3s', type=str)
-@click.option('--stddev-group-interval', default='15s', type=str)
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     trainer = ModelTrainer(**kwargs)

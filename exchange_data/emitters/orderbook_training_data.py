@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from dateutil.tz import tz
 
-from exchange_data import Measurement, Database
+from exchange_data import Measurement, Database, NumpyEncoder
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
@@ -13,6 +13,8 @@ import alog
 import click
 import json
 import numpy as np
+
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
@@ -60,9 +62,6 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         position = None
         diff = self.diff
 
-
-
-
         if diff > 0.0:
             position = Positions.Long
         elif diff < 0.0:
@@ -93,27 +92,30 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
         self.last_position
 
-        if len(self.frames) > 2:
-            frame = json.dumps(self.frames[-2].flatten().tolist())
+        if len(self.frames) >= self.max_frames:
+            frame = self.frames[-2]
+            frame_str = json.dumps(frame, cls=NumpyEncoder)
+
             channel_name = f'orderbook_img_frame_{self.symbol.value}'
 
             timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
 
-            alog.debug((self.expected_position, self.best_ask, self.best_bid))
+            if self.expected_position != Positions.Flat:
+                alog.info((self.expected_position, self.best_ask, self.best_bid))
 
             measurement = Measurement(
                 measurement=channel_name,
                 time=timestamp,
                 tags=dict(symbol=self.symbol.value),
                 fields=dict(
-                    frame=frame,
+                    frame=frame_str,
                     expected_position=self.expected_position.value,
                     entry_price=self.avg_entry_price
                 )
             )
 
             self.publish(channel_name, json.dumps(dict(
-                frame=self.frames[-1].flatten().tolist()
+                frame=frame_str
             )))
 
             super().write_points([measurement.__dict__])
@@ -127,6 +129,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
+@click.option('--max-frames', '-m', default=6, type=int)
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 def main(**kwargs):
     record = OrderBookTrainingData(**kwargs)

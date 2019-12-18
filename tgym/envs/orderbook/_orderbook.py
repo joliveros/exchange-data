@@ -435,8 +435,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         if self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
-                alog.info(AsciiImage(img))
-                alog.info(img.shape)
+                alog.info(AsciiImage(img, new_width=10))
                 # plt.show()
                 # traceback.print_stack()
                 # raise Exception()
