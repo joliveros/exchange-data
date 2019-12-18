@@ -12,6 +12,8 @@ import json
 import numpy as np
 import tensorflow as tf
 
+from tgym.envs.orderbook.ascii_image import AsciiImage
+
 CLASSES = [0, 1, 2]
 # table = index_table_from_tensor(tf.constant(CLASSES), dtype=int64)
 NUM_CLASSES = len(CLASSES)
@@ -21,8 +23,6 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
     def __init__(
         self,
         steps_epoch: str,
-        min_std_dev: float = 0.0,
-        stddev_group_interval: str = '15s',
         use_volatile_ranges: bool = False,
         **kwargs
     ):
@@ -30,10 +30,8 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
 
         self.data = []
         self.steps_epoch = timeparse(steps_epoch)
-        self.min_std_dev = min_std_dev
         self.use_volatile_ranges = use_volatile_ranges
         self.current_range = None
-        self.stddev_group_interval = stddev_group_interval
 
         if use_volatile_ranges:
             self.volatile_ranges = self.get_volatile_ranges()
@@ -45,24 +43,19 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT bbd FROM (SELECT STDDEV(entry_price) as bbd ' \
+        query = f'SELECT e FROM (SELECT expected_position as e ' \
             f'from {self.channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date} ' \
-            f'GROUP BY time({self.stddev_group_interval})) '\
-            f'WHERE bbd > {self.min_std_dev};'
+            f'WHERE time >= {start_date} AND time <= {end_date}) ' \
+            f'WHERE e != 0;'
 
         alog.info(query)
 
         ranges = self.query(query).get_points(self.channel_name)
-
         timestamps = [data['time'] for data in ranges]
 
-        timestamps.reverse()
-
         return [(
-               DateTimeUtils.parse_db_timestamp(timestamp),
-               DateTimeUtils.parse_db_timestamp(timestamp) +
-               timedelta(seconds=timeparse(self.stddev_group_interval))
+               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
+               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
             ) for timestamp in timestamps]
 
     def orderbook_frame_query(self, start_date=None, end_date=None):
@@ -101,6 +94,13 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
 
             self.end_date = self.start_date + self.window_delta
 
+            now = DateTimeUtils.now()
+
+            alog.info((str(self.end_date), str(now)))
+
+            if self.end_date > now:
+                self.end_date = now
+
             if self.end_date >= self.current_range[1]:
                 self.current_range = None
         else:
@@ -121,6 +121,10 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
     def send(self, *args):
         if len(self.data) == 0:
             self.data = [frame for frame in self.next_window()]
+
+            if len(self.data) == 0:
+                raise StopIteration()
+
             self.data.pop(0)
 
         if self.counter >= self.steps_epoch:
@@ -145,8 +149,9 @@ def data_streamer(frame_width, interval: str = '15s', **kwargs):
     for data in streamer:
         expected_position = data['data_expected_position']
 
-        frame = np.array(json.loads(data['data_frame']))\
-            .reshape((frame_width, frame_width, 3))
+        frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
+
+        # alog.info(AsciiImage(frame, new_width=10))
 
         yield frame, expected_position
 
