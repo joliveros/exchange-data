@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from abc import ABC
 from bitmex_websocket import Instrument
 from bitmex_websocket._bitmex_websocket import BitMEXWebsocketConnectionError
@@ -20,12 +22,11 @@ balance_guage = Gauge('account_balance', 'Account Balance', unit='BTC')
 
 
 class BitmexAccountEmitter(
-    Instrument,
-    Messenger,
     Database,
+    Messenger,
     SignalInterceptor,
-    DateTimeUtils,
-    ABC
+    Instrument,
+    DateTimeUtils
 ):
     measurements = []
 
@@ -46,16 +47,15 @@ class BitmexAccountEmitter(
 
     def __init__(self, **kwargs):
         websocket.enableTrace(settings.RUN_ENV == 'development')
-        Instrument.__init__(
+
+        super().__init__(
             self,
             channels=self.channels,
             should_auth=True,
+            database_name='bitmex',
+            exit_func=self.stop,
             **kwargs
         )
-        Messenger.__init__(self)
-        Database.__init__(self, database_name='bitmex')
-        SignalInterceptor.__init__(self, self.stop)
-        DateTimeUtils.__init__(self)
 
         self.on('action', self.on_action)
 

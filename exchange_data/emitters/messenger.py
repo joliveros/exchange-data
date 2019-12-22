@@ -1,7 +1,7 @@
 from abc import ABC
 from enum import Enum, auto
-from exchange_data import settings, IEventEmitter
-from exchange_data.utils import NoValue
+from exchange_data import settings
+from exchange_data.utils import NoValue, EventEmitterBase
 from pyee import EventEmitter
 from redis import Redis
 from typing import List
@@ -21,14 +21,16 @@ class MessageType(NoValue):
     message = auto()
 
 
-class Messenger(IEventEmitter, ABC):
+class Messenger(EventEmitterBase):
 
     def __init__(self, **kwargs):
         host = settings.REDIS_HOST
+
         super().__init__(**kwargs)
 
         self.redis_client = Redis(host=host)
         self._pubsub = None
+
         self.on(Events.Message.value, self.handler)
 
     def handler(self, msg):
@@ -37,9 +39,14 @@ class Messenger(IEventEmitter, ABC):
             self.emit(channel_str, json.loads(msg['data']))
 
     def sub(self, channels: List):
-        _channels = [channel.value if isinstance(channel, Enum) else channel for channel in channels]
+        _channels = [
+            channel.value if isinstance(channel, Enum) else channel
+            for channel in channels
+        ]
 
         self._pubsub = self.redis_client.pubsub()
+
+        alog.info(_channels)
 
         self._pubsub.subscribe(_channels)
 

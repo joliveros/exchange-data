@@ -1,4 +1,3 @@
-from abc import ABC
 from collections import deque
 from datetime import timedelta
 from exchange_data import settings
@@ -24,7 +23,7 @@ class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
+class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
     """
     Orderbook based trading environment.
     """
@@ -68,20 +67,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         super().__init__(
             frame_width=frame_width,
-            max_frames=max_frames,
-            **kwargs
-        )
-        PlotOrderbook.__init__(
-            self,
-            frame_width=frame_width,
-            max_frames=max_frames,
             **kwargs
         )
 
         self.frame_width = frame_width
-
-        # PlotOrderbook.__init__(self, self.frame_width)
-
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
         self.done = False

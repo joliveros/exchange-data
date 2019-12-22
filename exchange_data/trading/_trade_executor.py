@@ -8,7 +8,7 @@ from exchange_data.emitters import SignalInterceptor
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
-from exchange_data.utils import DateTimeUtils
+from exchange_data.utils import DateTimeUtils, EventEmitterBase
 from time import sleep
 
 import alog
@@ -18,6 +18,7 @@ import json
 
 
 class TradeExecutor(
+    EventEmitterBase,
     TradeJob,
     DateTimeUtils,
     SignalInterceptor,
@@ -32,7 +33,6 @@ class TradeExecutor(
         position_size: int = 1,
         **kwargs
     ):
-        raise Exception()
         if exit_func is None:
             exit_func=self.stop
 

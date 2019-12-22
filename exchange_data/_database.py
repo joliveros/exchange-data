@@ -1,6 +1,7 @@
 from abc import ABC
 
 from exchange_data import settings
+from exchange_data.utils import EventEmitterBase
 from influxdb import InfluxDBClient
 from influxdb.resultset import ResultSet
 from urllib.parse import urlparse
@@ -10,7 +11,7 @@ import alog
 alog.set_level(settings.LOG_LEVEL)
 
 
-class Database(InfluxDBClient, ABC):
+class Database(EventEmitterBase):
     def __init__(
         self,
         ssl=False,
@@ -34,7 +35,7 @@ class Database(InfluxDBClient, ABC):
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
 
-        super().__init__(
+        self.influxdb_client = InfluxDBClient(
             host=parsed_netloc['host'],
             port=parsed_netloc['port'],
             username=parsed_netloc['username'],
@@ -43,6 +44,8 @@ class Database(InfluxDBClient, ABC):
             ssl=ssl,
             verify_ssl=settings.CERT_FILE
         )
+
+        super().__init__(**kwargs)
 
     def parse_netloc(self, netloc):
         info = urlparse("http://%s" % (netloc))
@@ -53,11 +56,13 @@ class Database(InfluxDBClient, ABC):
 
     def query(self, query: str, *args, **kwargs) -> ResultSet:
         alog.debug(query)
-
-        return super().query(
+        return self.influxdb_client.query(
             database=self.database_name,
             query=query,
             epoch='ms',
             params={'precision': 'ms'},
             chunked=True,
             *args, **kwargs)
+
+    def write_points(self, *args, **kwargs):
+        self.influxdb_client.write_points(*args, **kwargs)

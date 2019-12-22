@@ -21,7 +21,6 @@ class Recorder(Database, DateTimeUtils):
 
     def __init__(self, symbol, database_name, batch_size: int = 100, **kwargs):
         super().__init__(database_name=database_name, **kwargs)
-
         self.batch_size = batch_size
         self.symbol = symbol
 

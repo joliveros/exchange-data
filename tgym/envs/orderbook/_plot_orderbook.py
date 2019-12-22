@@ -16,6 +16,7 @@ class PlotOrderbook(object):
         self.ax1 = ax2
         self.ax2 = ax1
         # self.ax2 = fig.add_subplot(1, 2, 2, frame_on=False)
+
         super().__init__(**kwargs)
 
     def hide_ticks_and_values(self, frame):

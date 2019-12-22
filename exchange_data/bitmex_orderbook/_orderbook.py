@@ -1,4 +1,4 @@
-from exchange_data import IEventEmitter
+from exchange_data.utils import EventEmitterBase
 from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
 from exchange_data.bitmex_orderbook._bitmex_message import BitmexMessage
 from exchange_data.bitmex_orderbook._instrument_info import InstrumentInfo
@@ -10,7 +10,7 @@ from typing import Optional
 import alog
 
 
-class BitmexOrderBook(OrderBook, IEventEmitter):
+class BitmexOrderBook(OrderBook, EventEmitterBase):
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
         super().__init__(symbol=symbol, **kwargs)
@@ -30,8 +30,6 @@ class BitmexOrderBook(OrderBook, IEventEmitter):
         message = None
 
         table = raw_message['table']
-
-        alog.info(table)
 
         if table in ['orderBookL2', 'trade']:
             order_type = None

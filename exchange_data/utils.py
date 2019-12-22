@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from dateutil.tz import tz
 from enum import Enum
+from pyee import EventEmitter
 from pytimeparse import parse as dateparse
 from random import random
 
@@ -63,7 +64,7 @@ class MemoryTracing(object):
 
 class DateTimeUtils(ABC):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        pass
 
     @staticmethod
     def now():
@@ -108,3 +109,20 @@ class DateTimeUtils(ABC):
             results.append(last_dt)
 
         return results
+
+
+class EventEmitterBase(ABC):
+
+    def __init__(self, **kwargs):
+        if 'event_emitter' not in self.__dict__:
+            self.event_emitter = EventEmitter()
+
+        alog.info(alog.pformat(kwargs))
+
+        super().__init__(**kwargs)
+
+    def on(self, event, f=None):
+        self.event_emitter.on(event, f)
+
+    def emit(self, event, *args, **kwargs):
+        self.event_emitter.emit(event, *args, **kwargs)

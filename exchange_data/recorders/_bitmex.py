@@ -1,25 +1,21 @@
 #!/usr/bin/env python
 
 from bitmex_websocket.constants import InstrumentChannels
-from exchange_data import settings, EventEmitterBase
+from exchange_data import settings
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, TimeEmitter
+from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
 from exchange_data.recorders import Recorder
 
 import alog
 import click
 import json
-import signal
 import sys
-
-from exchange_data.utils import DateTimeUtils
 
 alog.set_level(settings.LOG_LEVEL)
 
 
 class BitmexRecorder(
-    EventEmitterBase,
     Messenger,
     Recorder
 ):

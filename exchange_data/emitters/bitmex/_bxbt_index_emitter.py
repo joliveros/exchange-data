@@ -5,10 +5,10 @@ from collections import deque
 import alog
 from bitmex import bitmex
 from datetime import datetime, timedelta
-from exchange_data import Database, EventEmitterBase
+from exchange_data import Database
 from exchange_data._measurement import Measurement
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels, \
+from exchange_data.emitters import SignalInterceptor, TimeChannels, \
     TimeEmitter
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from typing import List, Tuple
@@ -20,24 +20,16 @@ from exchange_data.utils import DateTimeUtils
 
 
 class BXBTIndexEmitter(
-    EventEmitterBase,
-    SignalInterceptor,
-    DateTimeUtils,
     BitmexEmitterBase,
-    Database
+    Database,
+    SignalInterceptor,
+    DateTimeUtils
 ):
 
     def __init__(self, interval: str = '1m', **kwargs):
         self.symbol = BitmexChannels.BXBT
 
         super().__init__(
-            symbol=self.symbol,
-            database_name='bitmex',
-            exit_func=self.stop,
-            **kwargs
-        )
-        Database.__init__(
-            self,
             symbol=self.symbol,
             database_name='bitmex',
             exit_func=self.stop,

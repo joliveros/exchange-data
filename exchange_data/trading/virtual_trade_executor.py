@@ -33,9 +33,10 @@ class VirtualTradeExecutor(BitmexOrderBook, TradeExecutor):
         self._last_position = value
 
     def start(self, channels=[]):
-        super().start([self.job_name] + channels + [self.symbol])
+        super().start(channels + [self.symbol])
 
     def execute(self, action):
+        raise Exception()
         position = self.parse_position_value(int(action['data']))
 
         alog.info(position)
@@ -86,15 +87,6 @@ class VirtualTradeExecutor(BitmexOrderBook, TradeExecutor):
         #     side='Sell'
         # ).result()[0]
         # alog.info(alog.pformat(result))
-        pass
-
-    def save_frame(self, timestamp):
-        pass
-
-    def emit_frames(self, timestamp):
-        pass
-
-    def emit_frames_5s(self, timestamp):
         pass
 
 

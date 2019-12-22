@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-from dateutil.tz import tz
 
-from exchange_data import Measurement, Database, NumpyEncoder, EventEmitterBase
+from exchange_data import Measurement, NumpyEncoder
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
@@ -17,7 +16,7 @@ import numpy as np
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
-class OrderBookTrainingData(EventEmitterBase, OrderBookTradingEnv, Messenger):
+class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
     def __init__(
         self,
         symbol=BitmexChannels.XBTUSD,
@@ -75,7 +74,6 @@ class OrderBookTrainingData(EventEmitterBase, OrderBookTradingEnv, Messenger):
         return time, orderbook
 
     def write_observation(self, data):
-        raise Exception()
         self.last_data = data
 
         try:

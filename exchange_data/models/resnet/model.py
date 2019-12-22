@@ -2,7 +2,8 @@
 
 import tensorflow as tf
 
-from exchange_data import settings, EventEmitterBase
+from exchange_data import settings
+from exchange_data.utils import EventEmitterBase
 from exchange_data.emitters import Messenger
 from exchange_data.tfrecord.dataset_query import dataset
 from pathlib import Path
@@ -59,9 +60,9 @@ def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
     return model
 
 
-class ModelTrainer(EventEmitterBase, Messenger):
+class ModelTrainer(Messenger):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.kwargs = kwargs
 
     def done(self):
