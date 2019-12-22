@@ -21,7 +21,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/instrument_emitter.py XBTUSD"
     networks:
       - public
     depends_on:
@@ -31,7 +31,7 @@ services:
     deploy:
       replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
+    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/instrument_emitter.py ETHUSD"
     networks:
       - public
     depends_on:

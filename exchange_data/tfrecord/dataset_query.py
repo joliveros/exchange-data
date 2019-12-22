@@ -151,7 +151,7 @@ def data_streamer(frame_width, interval: str = '15s', **kwargs):
 
         frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
 
-        # alog.info(AsciiImage(frame, new_width=10))
+        alog.info(AsciiImage(frame, new_width=10))
 
         yield frame, expected_position
 

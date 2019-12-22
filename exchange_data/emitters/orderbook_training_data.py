@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from dateutil.tz import tz
 
-from exchange_data import Measurement, Database, NumpyEncoder
+from exchange_data import Measurement, Database, NumpyEncoder, EventEmitterBase
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
@@ -17,7 +17,7 @@ import numpy as np
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
-class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
+class OrderBookTrainingData(EventEmitterBase, OrderBookTradingEnv, Messenger):
     def __init__(
         self,
         symbol=BitmexChannels.XBTUSD,
@@ -25,20 +25,13 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
     ):
         start_date = DateTimeUtils.now()
 
-        super(OrderBookTrainingData, self).__init__(
+        super().__init__(
             start_date=start_date,
             random_start_date=False,
             date_checks=False,
             **kwargs
         )
 
-        OrderBookTradingEnv.__init__(
-            self,
-            start_date=start_date,
-            random_start_date=False,
-            date_checks=False,
-            **kwargs
-        )
         self.symbol = symbol
         self._last_datetime = self.start_date
         self.last_data = []
@@ -82,6 +75,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         return time, orderbook
 
     def write_observation(self, data):
+        raise Exception()
         self.last_data = data
 
         try:
@@ -89,8 +83,6 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
         except OrderBookIncompleteException as e:
             pass
-
-        self.last_position
 
         if len(self.frames) >= self.max_frames:
             frame = self.frames[-2]
@@ -100,8 +92,8 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
             timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
 
-            if self.expected_position != Positions.Flat:
-                alog.info((self.expected_position, self.best_ask, self.best_bid))
+            # if self.expected_position != Positions.Flat:
+            alog.info((self.expected_position, self.best_ask, self.best_bid))
 
             measurement = Measurement(
                 measurement=channel_name,

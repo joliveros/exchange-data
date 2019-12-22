@@ -1,3 +1,5 @@
+from abc import ABC
+
 from exchange_data import settings
 from influxdb import InfluxDBClient
 from influxdb.resultset import ResultSet
@@ -8,7 +10,7 @@ import alog
 alog.set_level(settings.LOG_LEVEL)
 
 
-class Database(InfluxDBClient):
+class Database(InfluxDBClient, ABC):
     def __init__(
         self,
         ssl=False,
@@ -28,15 +30,9 @@ class Database(InfluxDBClient):
 
         self.database_name = database
 
-        # alog.info(database)
-        # raise Exception()
-
         netlocs = conn_params.netloc.split(',')
         netloc = netlocs[0]
         parsed_netloc = self.parse_netloc(netloc)
-
-        # alog.info((self.database_name, database, database_name))
-        # raise Exception()
 
         super().__init__(
             host=parsed_netloc['host'],
