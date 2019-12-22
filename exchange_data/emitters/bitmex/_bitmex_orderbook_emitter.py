@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from collections import deque
-from exchange_data import settings, Database, Measurement
+from exchange_data import settings, Database, Measurement, EventEmitterBase
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
@@ -11,6 +11,8 @@ from exchange_data.orderbook._ordertree import OrderTree
 from exchange_data.utils import NoValue, DateTimeUtils
 from functools import lru_cache
 from numpy.core.multiarray import ndarray
+from pyee import EventEmitter
+
 import alog
 import click
 import gc
@@ -25,29 +27,31 @@ class BitmexOrderBookChannels(NoValue):
 
 
 class BitmexOrderBookEmitter(
+    EventEmitterBase,
     BitmexEmitterBase,
-    Messenger,
     BitmexOrderBook,
     Database,
     SignalInterceptor,
-    DateTimeUtils
+    DateTimeUtils,
 ):
     def __init__(
         self, symbol: BitmexChannels,
         depths=None,
         emit_depths=None,
         emit_interval=None,
+        database_name='bitmex',
         reset_orderbook: bool = True,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
     ):
-        DateTimeUtils.__init__(self)
-        BitmexOrderBook.__init__(self, symbol)
-        Messenger.__init__(self)
-        BitmexEmitterBase.__init__(self, symbol)
-        Database.__init__(self, database_name='bitmex')
-        SignalInterceptor.__init__(self, self.exit)
+        super().__init__(
+            symbol=symbol,
+            database_name=database_name,
+            **kwargs
+        )
+
+        EventEmitter.__init__(self)
 
         if emit_interval is None:
             self.emit_interval = '5s'
@@ -109,13 +113,13 @@ class BitmexOrderBookEmitter(
     def garbage_collect(self):
         gc.collect()
 
-    def start(self):
+    def start(self, channels=[]):
         self.sub([
             '5s',
             self.orderbook_l2_channel,
             self.symbol,
             TimeChannels.Tick,
-        ])
+        ] + channels)
 
     def exit(self, *args):
         self.stop()
@@ -242,6 +246,7 @@ class BitmexOrderBookEmitter(
 def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],
+        subscriptions_enabled=False,
         **kwargs
     )
 

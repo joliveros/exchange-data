@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 from abc import ABC
 
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
-from exchange_data import settings
+from exchange_data import settings, EventEmitterBase
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 
@@ -15,11 +17,12 @@ import websocket
 
 class BitmexEmitterBase(Messenger, ABC):
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        super().__init__(symbol=symbol, **kwargs)
         self.symbol = symbol
 
+        super().__init__(symbol=symbol, **kwargs)
 
-class BitmexEmitter(Instrument, BitmexEmitterBase):
+
+class BitmexInstrumentEmitter(Instrument, BitmexEmitterBase):
     measurements = []
     channels = [
         # InstrumentChannels.quote,
@@ -28,9 +31,14 @@ class BitmexEmitter(Instrument, BitmexEmitterBase):
     ]
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        self.symbol = symbol
-        super().__init__(symbol=symbol.name, channels=self.channels, **kwargs)
-        # super(Messenger, self).__init__(**kwargs)
+        super().__init__(symbol=symbol.value, channels=self.channels, **kwargs)
+        BitmexEmitterBase.__init__(
+            self,
+            symbol=symbol,
+            channels=self.channels,
+            **kwargs
+        )
+        self.symbol = symbol.value
 
         websocket.enableTrace(settings.RUN_ENV == 'development')
 
@@ -51,7 +59,7 @@ class BitmexEmitter(Instrument, BitmexEmitterBase):
 @click.command()
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol: str):
-    emitter = BitmexEmitter(BitmexChannels[symbol])
+    emitter = BitmexInstrumentEmitter(BitmexChannels[symbol])
     emitter.start()
 
 

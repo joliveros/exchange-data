@@ -46,7 +46,6 @@ class BitmexStreamer(Database, Generator, DateTimeUtils,
         **kwargs
     ):
         super().__init__(database_name='bitmex', **kwargs)
-
         self.counter = 0
         self._orderbook = []
         self.random_start_date = random_start_date

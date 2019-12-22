@@ -18,14 +18,12 @@ alog.set_level(settings.LOG_LEVEL)
 class Recorder(Database, DateTimeUtils):
     measurements = []
     channels = []
-    symbols = []
 
-    def __init__(self, symbols, database_name, batch_size: int = 100, **kwargs):
-        DateTimeUtils.__init__(self)
-        Database.__init__(self, database_name=database_name, **kwargs)
+    def __init__(self, symbol, database_name, batch_size: int = 100, **kwargs):
+        super().__init__(database_name=database_name, **kwargs)
 
         self.batch_size = batch_size
-        self.symbols = symbols
+        self.symbol = symbol
 
     def to_lowercase_keys(self, data):
         return dict((k.lower(), v) for k, v in data.items())

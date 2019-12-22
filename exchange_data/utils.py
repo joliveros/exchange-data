@@ -1,3 +1,4 @@
+from abc import ABC
 from datetime import datetime, timedelta
 from dateutil import parser
 from dateutil.tz import tz
@@ -60,7 +61,10 @@ class MemoryTracing(object):
         self.snapshot = snapshot2
 
 
-class DateTimeUtils(object):
+class DateTimeUtils(ABC):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @staticmethod
     def now():
         return datetime.utcnow().replace(tzinfo=tz.tzutc())

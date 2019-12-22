@@ -1,6 +1,7 @@
-import multiprocessing
+#!/usr/bin/env python
+
 from datetime import datetime
-from exchange_data import settings
+from exchange_data import settings, EventEmitterBase
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.utils import NoValue, DateTimeUtils
 from time import sleep
@@ -10,7 +11,7 @@ import click
 alog.set_level(settings.LOG_LEVEL)
 
 
-class TimeEmitter(Messenger, DateTimeUtils):
+class TimeEmitter(EventEmitterBase, Messenger, DateTimeUtils):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

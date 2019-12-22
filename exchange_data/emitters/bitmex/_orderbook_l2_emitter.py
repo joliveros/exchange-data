@@ -1,4 +1,8 @@
+#!/usr/bin/env python
+
 from bitmex import bitmex
+
+from exchange_data import EventEmitterBase
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex import BitmexEmitterBase
@@ -8,10 +12,10 @@ import json
 import signal
 
 
-class OrderBookL2Emitter(BitmexEmitterBase, Messenger):
+class OrderBookL2Emitter(EventEmitterBase, BitmexEmitterBase):
 
     def __init__(self, symbol: BitmexChannels, interval: str = '1m', **kwargs):
-        super().__init__(symbol, **kwargs)
+        super().__init__(symbol=symbol, **kwargs)
 
         self.bitmex = bitmex(test=False)
         self.interval = interval

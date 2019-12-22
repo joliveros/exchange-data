@@ -1,29 +1,26 @@
-from dateutil.tz import tz
-
+from exchange_data import IEventEmitter
 from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
 from exchange_data.bitmex_orderbook._bitmex_message import BitmexMessage
 from exchange_data.bitmex_orderbook._instrument_info import InstrumentInfo
 from exchange_data.channels import BitmexChannels
 from exchange_data.orderbook import OrderBook, OrderType
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
-from pyee import EventEmitter
 from typing import Optional
-from datetime import datetime
 
 import alog
 
 
-class BitmexOrderBook(OrderBook, EventEmitter):
+class BitmexOrderBook(OrderBook, IEventEmitter):
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        OrderBook.__init__(self, **kwargs)
-        EventEmitter.__init__(self)
+        super().__init__(symbol=symbol, **kwargs)
 
         instrument_info = InstrumentInfo.get_instrument(symbol.value)
 
         self.__dict__.update(instrument_info.__dict__)
 
-        self.symbol = symbol.value
+        self.symbol = symbol
+
         self.on('orderBookL2', self.message)
 
     def message(self, raw_message) -> Optional[BitmexMessage]:
