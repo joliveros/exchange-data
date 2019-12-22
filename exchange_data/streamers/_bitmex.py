@@ -29,8 +29,7 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, Generator, DateTimeUtils,
-                     ABC):
+class BitmexStreamer(Database, DateTimeUtils, Generator):
     def __init__(
         self,
         max_spread: float = 100.0,

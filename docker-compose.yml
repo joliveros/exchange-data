@@ -23,7 +23,7 @@ services:
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py XBTUSD"
     environment:
-      - LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
     networks:
       - public
     depends_on:
@@ -31,7 +31,7 @@ services:
 
   emit_bitmex_eth:
     deploy:
-      replicas: 0
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py ETHUSD"
     networks:
@@ -73,7 +73,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     env_file:
       - ./.env.prod
     secrets:
@@ -92,7 +92,7 @@ services:
 
   record_bitmex_eth:
     deploy:
-      replicas: 0
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
     env_file:
       - ./.env.prod
@@ -104,7 +104,7 @@ services:
       - ROLLBAR_API_KEY
     depends_on:
       - influxdb
-    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
+    command: bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
     networks:
       - public
 
@@ -132,7 +132,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_account_emitter.py"
     environment:
       - LOG_LEVEL=INFO
     env_file:

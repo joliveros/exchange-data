@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from exchange_data import settings, EventEmitterBase
+from exchange_data import settings
+from exchange_data.utils import EventEmitterBase
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 
@@ -22,7 +23,7 @@ class TradeJob(object):
         super().__init__()
 
 
-class PredictionEmitter(EventEmitterBase, TradeJob, Messenger):
+class PredictionEmitter(TradeJob, Messenger):
     def __init__(self, symbol, model_name, **kwargs):
         self.symbol = BitmexChannels[symbol]
 
@@ -51,14 +52,18 @@ class PredictionEmitter(EventEmitterBase, TradeJob, Messenger):
 
         predictions = json.loads(json_response.text)['predictions']
         max_index = np.argmax(predictions[0])
-        position = [position for position in Positions if position.value == max_index][0]
+
+        position = [
+            position for position in Positions
+            if position.value == max_index
+        ][0]
 
         if max_index != 0:
             alog.info(AsciiImage(frame, new_width=12))
             alog.info(alog.pformat(json.loads(json_response.text)))
             alog.info((position, max_index, predictions[0][max_index]))
 
-        self.publish(self.jobname, json.dumps({'data': position.value}))
+        self.publish(self.job_name, json.dumps({'data': position.value}))
 
     def run(self):
         self.sub([self.orderbook_channel])

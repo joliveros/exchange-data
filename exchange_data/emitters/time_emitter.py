@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from datetime import datetime
-from exchange_data import settings, EventEmitterBase
+from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
-from exchange_data.utils import NoValue, DateTimeUtils
+from exchange_data.utils import NoValue, DateTimeUtils, EventEmitterBase
 from time import sleep
 import alog
 import click
@@ -11,7 +11,7 @@ import click
 alog.set_level(settings.LOG_LEVEL)
 
 
-class TimeEmitter(EventEmitterBase, Messenger, DateTimeUtils):
+class TimeEmitter(Messenger, DateTimeUtils):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

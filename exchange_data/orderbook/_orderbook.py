@@ -29,7 +29,7 @@ class OrderBook(object):
         self._next_order_id = 0
         self.last_trades = []
 
-        super().__init__()
+        super().__init__(**kwargs)
 
     @property
     def next_order_id(self):
