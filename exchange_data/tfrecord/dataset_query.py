@@ -83,7 +83,7 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         return self._orderbook_frames(self.start_date, self.end_date)
 
     def _set_next_window(self):
-        if self.use_volatile_ranges:
+        if self.use_volatile_ranges and self.side != 0:
             if self.current_range is None:
                 if len(self.volatile_ranges) == 0:
                     raise StopIteration()
@@ -155,10 +155,13 @@ def data_streamer(frame_width, side, interval: str = '15s', **kwargs):
 
         frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
 
-        alog.info(AsciiImage(frame, new_width=10))
-        alog.info(side)
+        if side != 0:
+            expected_position = side
 
-        yield frame, side
+        alog.info(AsciiImage(frame, new_width=10))
+        alog.info(expected_position)
+
+        yield frame, expected_position
 
 
 def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
@@ -173,7 +176,9 @@ def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
         .repeat(epochs)
 
 def dataset(**kwargs):
-    return _dataset(side=1, **kwargs).concatenate(_dataset(side=2, **kwargs))
+    return _dataset(side=1, **kwargs)\
+        .concatenate(_dataset(side=2, **kwargs))\
+        .concatenate(_dataset(side=0, **kwargs))
 
 
 

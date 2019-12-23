@@ -94,7 +94,7 @@ class ModelTrainer(Messenger):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse(steps_epoch) * epochs / 2,
+            save_checkpoints_secs=timeparse(steps_epoch) * epochs * 3,
             tf_random_seed=seed
         )
 
@@ -127,7 +127,7 @@ class ModelTrainer(Messenger):
                 window_size=window_size,
             ),
             steps=timeparse(eval_steps),
-            throttle_secs=timeparse(steps_epoch) * epochs
+            throttle_secs=timeparse(steps_epoch) * epochs * 3
         )
 
         train_and_evaluate(resnet_estimator, train_spec, eval_spec)
