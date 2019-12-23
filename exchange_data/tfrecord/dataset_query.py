@@ -3,6 +3,7 @@
 from abc import ABC
 from datetime import timedelta
 from exchange_data.streamers._bitmex import BitmexStreamer
+from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 
@@ -22,21 +23,22 @@ NUM_CLASSES = len(CLASSES)
 class OrderBookImgStreamer(BitmexStreamer, ABC):
     def __init__(
         self,
+        side,
         steps_epoch: str,
         use_volatile_ranges: bool = False,
         **kwargs
     ):
-        super().__init__(**kwargs)
-
+        super().__init__(database_name='bitmex', **kwargs)
+        self.side = side
         self.data = []
         self.steps_epoch = timeparse(steps_epoch)
         self.use_volatile_ranges = use_volatile_ranges
         self.current_range = None
 
         if use_volatile_ranges:
-            self.volatile_ranges = self.get_volatile_ranges()
+            self.volatile_ranges = self.get_volatile_ranges(side)
 
-    def get_volatile_ranges(self, start_date=None, end_date=None):
+    def get_volatile_ranges(self, side, start_date=None, end_date=None):
         start_date = start_date if start_date else self.start_date
         end_date = end_date if end_date else self.end_date
 
@@ -46,7 +48,7 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         query = f'SELECT e FROM (SELECT expected_position as e ' \
             f'from {self.channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date}) ' \
-            f'WHERE e != 0;'
+            f'WHERE e = {side};'
 
         alog.info(query)
 
@@ -54,7 +56,7 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
+               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=3),
                DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
             ) for timestamp in timestamps]
 
@@ -132,10 +134,11 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
 
         self.counter += 1
 
-        return self.data.pop(0)
+        data = self.data.pop(0)
+        return data
 
 
-def data_streamer(frame_width, interval: str = '15s', **kwargs):
+def data_streamer(frame_width, side, interval: str = '15s', **kwargs):
     end_date = DateTimeUtils.now()
     start_date = end_date - timedelta(seconds=timeparse(interval))
 
@@ -143,6 +146,7 @@ def data_streamer(frame_width, interval: str = '15s', **kwargs):
         start_date=start_date,
         end_date=end_date,
         channel_name='orderbook_img_frame_XBTUSD',
+        side=side,
         **kwargs
     )
 
@@ -151,12 +155,13 @@ def data_streamer(frame_width, interval: str = '15s', **kwargs):
 
         frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
 
-        # alog.info(AsciiImage(frame, new_width=10))
+        alog.info(AsciiImage(frame, new_width=10))
+        alog.info(side)
 
-        yield frame, expected_position
+        yield frame, side
 
 
-def dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
+def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
     kwargs['frame_width'] = frame_width
 
     return tf.data.Dataset.from_generator(
@@ -166,6 +171,10 @@ def dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
     ) \
         .batch(batch_size) \
         .repeat(epochs)
+
+def dataset(**kwargs):
+    return _dataset(side=1, **kwargs).concatenate(_dataset(side=2, **kwargs))
+
 
 
 @click.command()

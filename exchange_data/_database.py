@@ -28,9 +28,11 @@ class Database(EventEmitterBase):
         database = conn_params.path[1:]
 
         if len(database) == 0:
-            if database is None:
-                raise Exception('database name required')
+
             database = database_name
+
+        if database is None:
+            raise Exception('database name required')
 
         self.database_name = database
 
