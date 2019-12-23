@@ -26,7 +26,9 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
         super().__init__(
             start_date=start_date,
+            database_name='bitmex',
             random_start_date=False,
+            database_batch_size=3,
             date_checks=False,
             **kwargs
         )
@@ -35,6 +37,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         self._last_datetime = self.start_date
         self.last_data = []
         self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
+
         self.on(self.orderbook_channel, self.write_observation)
 
     @property
@@ -84,14 +87,15 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 
         if len(self.frames) >= self.max_frames:
             frame = self.frames[-2]
+
             frame_str = json.dumps(frame, cls=NumpyEncoder)
 
             channel_name = f'orderbook_img_frame_{self.symbol.value}'
 
             timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
 
-            # if self.expected_position != Positions.Flat:
-            alog.info((self.expected_position, self.best_ask, self.best_bid))
+            if self.expected_position != Positions.Flat:
+                alog.info((self.expected_position, self.best_ask, self.best_bid))
 
             measurement = Measurement(
                 measurement=channel_name,

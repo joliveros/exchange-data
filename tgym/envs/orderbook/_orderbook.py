@@ -23,7 +23,7 @@ class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
+class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     """
     Orderbook based trading environment.
     """
@@ -31,7 +31,7 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
 
     def __init__(
         self,
-        summary_interval,
+        summary_interval=120,
         logger=None,
         trading_fee=0.0/100.0,
         max_loss=-0.1/100.0,
@@ -69,6 +69,8 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
             frame_width=frame_width,
             **kwargs
         )
+
+        PlotOrderbook.__init__(self, frame_width=frame_width)
 
         self.frame_width = frame_width
         self.position_pnl_history = np.array([])
@@ -119,6 +121,7 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
         self.trading_fee = trading_fee
         self.use_volatile_ranges = use_volatile_ranges
         self.last_position = Positions.Flat
+        self.orderbook_depth = orderbook_depth
         self.last_bid_side = np.zeros((self.orderbook_depth,))
         self.last_ask_side = np.copy(self.last_bid_side)
         self.current_trade = None
@@ -484,6 +487,7 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def short(self):
         if isinstance(self.current_trade, Trade):
@@ -498,6 +502,7 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def flat(self):
         if isinstance(self.current_trade, Trade):
@@ -507,22 +512,28 @@ class OrderBookTradingEnv(PlotOrderbook, BitmexStreamer, Env):
 
         if self.current_trade is None:
             self.current_trade = FlatTrade(
-                capital=self.trade_capital,
+                capital=self.trade_size,
                 entry_price=(self.best_bid + self.best_ask) / 2,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
         reward = trade.reward
         self.trades.append(trade)
-        self.capital += trade.capital
+
+        if type(trade) != FlatTrade:
+            self.capital += trade.capital
+
         self.reward += reward
         self.current_trade = None
 
     def change_position(self, action):
+        action = int(action)
+
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Short.value:

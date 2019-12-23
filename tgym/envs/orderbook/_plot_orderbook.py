@@ -1,8 +1,10 @@
 import alog
 from matplotlib import pyplot as plt
 
+from exchange_data.utils import Base
 
-class PlotOrderbook(object):
+
+class PlotOrderbook(Base):
     def __init__(self, frame_width, **kwargs):
         self.frame_width = frame_width
 

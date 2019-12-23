@@ -16,9 +16,12 @@ class Database(EventEmitterBase):
         self,
         ssl=False,
         database_name=None,
+        database_batch_size=1,
         influxdb: str = None,
         **kwargs
     ):
+        self.batch_size = database_batch_size
+        self.points = []
         self.connection_str = influxdb if influxdb else settings.DB
         conn_params = urlparse(self.connection_str)
 
@@ -42,7 +45,8 @@ class Database(EventEmitterBase):
             password=parsed_netloc['password'],
             database=database,
             ssl=ssl,
-            verify_ssl=settings.CERT_FILE
+            verify_ssl=settings.CERT_FILE,
+            timeout=10000
         )
 
         super().__init__(**kwargs)
@@ -64,5 +68,9 @@ class Database(EventEmitterBase):
             chunked=True,
             *args, **kwargs)
 
-    def write_points(self, *args, **kwargs):
-        self.influxdb_client.write_points(*args, **kwargs)
+    def write_points(self, points, *args, **kwargs):
+        self.points += points
+
+        if len(self.points) >= self.batch_size:
+            self.influxdb_client.write_points(self.points, *args, **kwargs)
+            self.points = []
