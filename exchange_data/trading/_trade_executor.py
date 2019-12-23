@@ -16,14 +16,19 @@ import click
 import json
 
 
+class TradeExecutorUtil(object):
+    def parse_position_value(self, value):
+        return [position for position in Positions
+                if position.value == value][0]
+
 
 class TradeExecutor(
-    EventEmitterBase,
     TradeJob,
-    DateTimeUtils,
-    SignalInterceptor,
     Messenger,
-    Database
+    Database,
+    TradeExecutorUtil,
+    SignalInterceptor,
+    DateTimeUtils
 ):
 
     def __init__(
@@ -78,10 +83,6 @@ class TradeExecutor(
 
     def start(self, channels=[]):
         self.sub([self.job_name] + channels)
-
-    def parse_position_value(self, value):
-        return [position for position in Positions
-                    if position.value == value][0]
 
     def execute(self, action):
         position = self.parse_position_value(int(action['data']))

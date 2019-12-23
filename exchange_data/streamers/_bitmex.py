@@ -44,7 +44,9 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         date_checks = True,
         **kwargs
     ):
-        super().__init__(database_name='bitmex', **kwargs)
+
+        super().__init__(**kwargs)
+
         self.counter = 0
         self._orderbook = []
         self.random_start_date = random_start_date
@@ -81,8 +83,9 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         # self.end_date = self.start_date + \
         #     timedelta(seconds=self.window_size)
 
-        if self.start_date > start_date:
-            raise Exception()
+        if start_date is not None:
+            if self.start_date > start_date:
+                raise Exception()
 
         if self.original_end_date != self.end_date and date_checks:
             raise Exception()

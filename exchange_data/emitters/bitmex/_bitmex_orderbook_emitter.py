@@ -50,6 +50,7 @@ class BitmexOrderBookEmitter(
         super().__init__(
             symbol=symbol,
             database_name=database_name,
+            database_batch_size=10,
             **kwargs
         )
 

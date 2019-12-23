@@ -23,8 +23,8 @@ services:
         ports:
             - 0.0.0.0:28736:8086
         volumes:
-            - "./influxdb.conf:/etc/influxdb/influxdb.conf"
-            - "${HOME}/influxdb:/var/lib/influxdb"
+            - "/home/joliveros/exchange-data/influxdb.conf:/etc/influxdb/influxdb.conf"
+            - "/home/joliveros/influxdb:/var/lib/influxdb"
 
         command: influxd -config /etc/influxdb/influxdb.conf
         networks:

@@ -20,7 +20,10 @@ class Recorder(Database, DateTimeUtils):
     channels = []
 
     def __init__(self, symbol, database_name, batch_size: int = 100, **kwargs):
-        super().__init__(database_name=database_name, **kwargs)
+        super().__init__(
+            database_name=database_name,
+            database_batch_size=10000,
+            **kwargs)
         self.batch_size = batch_size
         self.symbol = symbol
 
@@ -71,10 +74,9 @@ class Recorder(Database, DateTimeUtils):
 
         self.measurements.append(measurement)
 
-        if len(self.measurements) >= self.batch_size:
-            self.write_points(self.measurements, time_precision='ms')
+        self.write_points(self.measurements, time_precision='ms')
 
-            self.measurements = []
+        self.measurements = []
 
     def get_timestamp(self, table):
         return float(

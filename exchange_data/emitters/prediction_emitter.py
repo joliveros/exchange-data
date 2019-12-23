@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 from exchange_data import settings
-from exchange_data.utils import EventEmitterBase
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
+from exchange_data.trading import Positions
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
 import click
@@ -11,26 +12,21 @@ import json
 import numpy as np
 import requests
 
-from exchange_data.trading import Positions
-from tgym.envs.orderbook.ascii_image import AsciiImage
-
 
 class TradeJob(object):
     def __init__(self, symbol: BitmexChannels, **kwargs):
         self.symbol = symbol
         self.job_name = f'trade_{self.symbol.value}'
 
-        super().__init__()
 
-
-class PredictionEmitter(TradeJob, Messenger):
+class PredictionEmitter(Messenger, TradeJob):
     def __init__(self, symbol, model_name, **kwargs):
-        self.symbol = BitmexChannels[symbol]
+        self.symbol = symbol
 
-        super().__init__(symbol=BitmexChannels[symbol], **kwargs)
+        super().__init__(symbol=symbol, **kwargs)
 
         self.model_name = model_name
-        self.orderbook_channel = f'orderbook_img_frame_{symbol}'
+        self.orderbook_channel = f'orderbook_img_frame_{symbol.value}'
 
         self.on(self.orderbook_channel, self.emit_prediction)
 
@@ -72,8 +68,11 @@ class PredictionEmitter(TradeJob, Messenger):
 @click.command()
 @click.option('--model-name', '-m', default=None, type=str)
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-def main(**kwargs):
-    emitter = PredictionEmitter(**kwargs)
+def main(symbol, **kwargs):
+
+    emitter = PredictionEmitter(
+        symbol=BitmexChannels[symbol],
+        **kwargs)
     emitter.run()
 
 

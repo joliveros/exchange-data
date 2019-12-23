@@ -32,6 +32,7 @@ class BXBTIndexEmitter(
         super().__init__(
             symbol=self.symbol,
             database_name='bitmex',
+            database_batch_size=10,
             exit_func=self.stop,
             **kwargs
         )

@@ -111,17 +111,22 @@ class DateTimeUtils(ABC):
         return results
 
 
+class Base(object):
+     def __init__(self, **kwargs):
+        pass
+
+
 class EventEmitterBase(ABC):
 
     def __init__(self, **kwargs):
         if 'event_emitter' not in self.__dict__:
             self.event_emitter = EventEmitter()
 
-        alog.info(alog.pformat(kwargs))
-
         super().__init__(**kwargs)
 
-    def on(self, event, f=None):
+    def on(self, event, f=None, once=True):
+        # alog.info(self.event_emitter._events.keys())
+        # if event not in self.event_emitter._events.keys():
         self.event_emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):

@@ -1,27 +1,46 @@
 #! /usr/bin/env python
+import json
 
-from bitmex import bitmex
-from datetime import timedelta
-from exchange_data import settings
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
+from exchange_data.emitters import Messenger, TimeChannels
+from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
-from exchange_data.trading._trade_executor import TradeExecutor
+from exchange_data.trading._trade_executor import TradeExecutorUtil
+from tgym.envs import OrderBookTradingEnv
 
 import alog
 import click
+import random
+import numpy as np
 
-
-class VirtualTradeExecutor(BitmexOrderBook, TradeExecutor):
-
+class VirtualTradeExecutor(
+    OrderBookTradingEnv,
+    Messenger,
+    TradeExecutorUtil,
+    TradeJob
+):
     def __init__(
         self,
+        symbol,
         **kwargs
     ):
-        super().__init__(database_name='bitmex', exit_func=self.stop, **kwargs)
-        self._last_position = Positions.Flat
+        TradeJob.__init__(self, symbol=symbol)
 
-        self.on(self.symbol.value, self.message)
+        super().__init__(
+            symbol=symbol,
+            database_name='bitmex',
+            random_start_date=True,
+            # exit_func=self.stop,
+            **kwargs
+        )
+
+        self._last_position = Positions.Flat
+        self.orderbook_frame_channel = 'XBTUSD_OrderBookFrame_depth_21'
+        self.last_frame = None
+        self.on(self.orderbook_frame_channel, self.handle_frame)
+        self.on(self.job_name, self.execute)
+        # self.on(TimeChannels.Tick.value, self.execute)
 
     @property
     def last_position(self):
@@ -33,70 +52,44 @@ class VirtualTradeExecutor(BitmexOrderBook, TradeExecutor):
         self._last_position = value
 
     def start(self, channels=[]):
-        super().start(channels + [self.symbol])
+        self.sub(channels + [self.job_name, self.orderbook_frame_channel])
+
+    def handle_frame(self, frame):
+        self.last_frame = (
+            self.parse_datetime_str(frame['time']),
+            np.array(json.loads(frame['fields']['data']))
+        )
+
+    def _get_observation(self):
+        return self.last_frame
 
     def execute(self, action):
-        raise Exception()
+        if self.last_frame:
+            self._execute(action)
+
+    def _execute(self, action):
         position = self.parse_position_value(int(action['data']))
+        # position = self.parse_position_value(random.randint(0, 2))
 
-        alog.info(position)
+        if len(self.position_history) == 0:
+            self.get_observation()
 
-        if position.value != self.last_position.value:
-            if position == Positions.Flat:
-                self.close()
-            elif position == Positions.Long:
-                self.long()
-            elif position == Positions.Short:
-                self.short()
+        self.get_observation()
 
-            self.last_position = position
+        self.step_position(position.value)
 
-    def close(self):
-        side = None
-        if self.last_position == Positions.Long:
-            side = 'Sell'
-        elif self.last_position == Positions.Short:
-            side = 'Buy'
-        elif self.last_position == Positions.Flat:
-            return
-
-        # result = self.bitmex_client.Order.Order_new(
-        #     symbol=self.symbol.value,
-        #     orderQty=self.position_size,
-        #     side=side,
-        #     ordType='Market'
-        # ).result()[0]
-        #
-        # alog.info(alog.pformat(result))
-
-    def long(self):
-        # result = self.bitmex_client.Order.Order_new(
-        #     symbol=self.symbol.value,
-        #     ordType='Market',
-        #     orderQty=self.position_size,
-        #     side='Buy'
-        # ).result()[0]
-        # alog.info(alog.pformat(result))
-        pass
-
-    def short(self):
-        # result = self.bitmex_client.Order.Order_new(
-        #     symbol=self.symbol.value,
-        #     ordType='Market',
-        #     orderQty=self.position_size,
-        #     side='Sell'
-        # ).result()[0]
-        # alog.info(alog.pformat(result))
-        pass
-
+        alog.info(alog.pformat(self.summary()))
 
 @click.command()
 @click.option('--position-size', '-p', type=int, default=1)
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol, **kwargs):
-    executor = VirtualTradeExecutor(symbol=BitmexChannels[symbol], **kwargs)
-    executor.start()
+    executor = VirtualTradeExecutor(
+        symbol=BitmexChannels[symbol],
+        capital=1.0,
+        **kwargs)
 
+    executor.start()
 
 if __name__ == '__main__':
     main()
