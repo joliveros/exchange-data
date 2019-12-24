@@ -175,10 +175,10 @@ def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
         .batch(batch_size) \
         .repeat(epochs)
 
-def dataset(**kwargs):
-    return _dataset(side=1, **kwargs)\
-        .concatenate(_dataset(side=2, **kwargs))\
-        .concatenate(_dataset(side=0, **kwargs))
+def dataset(interval, **kwargs):
+    return _dataset(side=1, interval=interval, **kwargs)\
+        .concatenate(_dataset(side=2, interval=interval, **kwargs))\
+        .concatenate(_dataset(side=0, interval='15s', **kwargs))
 
 
 
