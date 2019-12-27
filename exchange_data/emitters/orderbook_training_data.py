@@ -4,7 +4,7 @@ from exchange_data import Measurement, NumpyEncoder
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
-from exchange_data.utils import DateTimeUtils
+from exchange_data.utils import DateTimeUtils, Base
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook._orderbook import OrderBookIncompleteException
 
@@ -16,29 +16,12 @@ import numpy as np
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
-class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
-    def __init__(
-        self,
-        symbol=BitmexChannels.XBTUSD,
-        **kwargs
-    ):
-        start_date = DateTimeUtils.now()
-
-        super().__init__(
-            start_date=start_date,
-            database_name='bitmex',
-            random_start_date=False,
-            database_batch_size=3,
-            date_checks=False,
-            **kwargs
-        )
-
-        self.symbol = symbol
-        self._last_datetime = self.start_date
-        self.last_data = []
-        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
-
-        self.on(self.orderbook_channel, self.write_observation)
+class TrainingDataBase(object):
+    def __init__(self):
+        self.last_best_bid = None
+        self.last_best_ask = None
+        self.best_bid = None
+        self.best_ask = None
 
     @property
     def avg_exit_price(self):
@@ -64,9 +47,34 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         elif diff == 0.0:
             position = Positions.Flat
 
-        alog.debug((diff, position))
+        # alog.debug((diff, position))
 
         return position
+
+
+class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
+    def __init__(
+        self,
+        symbol=BitmexChannels.XBTUSD,
+        **kwargs
+    ):
+        start_date = DateTimeUtils.now()
+
+        super().__init__(
+            start_date=start_date,
+            database_name='bitmex',
+            random_start_date=False,
+            database_batch_size=3,
+            date_checks=False,
+            **kwargs
+        )
+
+        self.symbol = symbol
+        self._last_datetime = self.start_date
+        self.last_data = []
+        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
+
+        self.on(self.orderbook_channel, self.write_observation)
 
     def _get_observation(self):
         time = self.last_data['time']

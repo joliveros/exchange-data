@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from exchange_data.emitters import Messenger
+from exchange_data.emitters.orderbook_training_data import TrainingDataBase
+from exchange_data.tfrecord.dataset_query import PriceChangeRanges
 from exchange_data.tfrecord.date_range_split_workers import DateRangeSplitWorkers
 from exchange_data.utils import DateTimeUtils
 from pathlib import Path
@@ -18,7 +20,7 @@ Features = tf.train.Features
 Example = tf.train.Example
 
 
-class OrderBookTFRecord(OrderBookTradingEnv):
+class OrderBookTFRecord(OrderBookTradingEnv, TrainingDataBase):
     def __init__(
         self,
         directory_name=None,
@@ -92,6 +94,7 @@ class OrderBookTFRecord(OrderBookTradingEnv):
             # diff=self.floatFeature([self.diff]),
             expected_position=self.int64Feature(self.expected_position.value),
         )
+
         example: Example = Example(features=Features(feature=data))
         writer.write(example.SerializeToString())
 
@@ -108,11 +111,8 @@ class OrderBookTFRecord(OrderBookTradingEnv):
 class OrderBookTFRecordWorkers(DateRangeSplitWorkers):
     worker_class = OrderBookTFRecord
 
-    def __init__(self, clear, directory_name, **kwargs):
-        super().__init__(
-            directory_name=directory_name,
-            **kwargs
-        )
+    def __init__(self, clear, directory, **kwargs):
+        super().__init__(**kwargs)
 
         if clear:
             try:
@@ -131,7 +131,9 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
         kwargs['directory'] = self.directory
         kwargs['split'] = split
         self.kwargs = kwargs
-        super(RepeatOrderBookTFRecordWorkers, self).__init__(**kwargs)
+
+        super().__init__()
+
         self.on(repeat_interval, self.run_workers)
         self.on('resnet_trainer_done', self.delete_excess_files)
 
@@ -169,12 +171,13 @@ class RepeatOrderBookTFRecordWorkers(Messenger):
 @click.option('--split', '-s', default=12, type=int)
 @click.option('--max-files', '-m', default=6, type=int)
 @click.option('--summary-interval', '-si', default=6, type=int)
-@click.option('--use-volatile-ranges', '-v', is_flag=True)
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
 def main(**kwargs):
     record = RepeatOrderBookTFRecordWorkers(
         window_size='1m',
+        database_name='bitmex',
         is_training=False,
+        channel_name='orderbook_img_frame_XBTUSD',
         **kwargs)
     record.run()
 
