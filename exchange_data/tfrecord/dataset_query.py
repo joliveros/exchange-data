@@ -43,7 +43,7 @@ class PriceChangeRanges(object):
 
         return [(
                DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
-               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=0)
+               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
             ) for timestamp in timestamps]
 
     def format_date_query(self, start_date):
@@ -163,16 +163,13 @@ def data_streamer(frame_width, side, interval: str = '15s', **kwargs):
 
         frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
 
-        if side != 0:
-            expected_position = side
-
         alog.info(AsciiImage(frame, new_width=10))
         alog.info(expected_position)
 
         yield frame, expected_position
 
 
-def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
+def _dataset(frame_width, batch_size: int, **kwargs):
     kwargs['frame_width'] = frame_width
 
     return tf.data.Dataset.from_generator(
@@ -181,20 +178,23 @@ def _dataset(frame_width, batch_size: int, epochs: int = 1, **kwargs):
         output_shapes=((frame_width, frame_width, 3,), ())
     ) \
         .batch(batch_size) \
-        .repeat(epochs)
 
-def dataset(interval, **kwargs):
+
+def dataset(interval, epochs, steps_epoch, **kwargs):
+    kwargs['steps_epoch'] = steps_epoch
+
     return _dataset(side=1, interval=interval, **kwargs)\
         .concatenate(_dataset(side=2, interval=interval, **kwargs))\
-        .concatenate(_dataset(side=0, interval=interval, **kwargs))
-
+        .shuffle(buffer_size=timeparse(steps_epoch))\
+        .repeat(epochs)\
+        .prefetch(buffer_size=int(timeparse(steps_epoch)/10))
 
 
 @click.command()
-# @click.option('--summary-interval', '-s', default=6, type=int)
-@click.option('--frame-width', '-f', default=225, type=int)
+@click.option('--frame-width', '-f', default=224, type=int)
 @click.option('--interval', '-i', default='15s', type=str)
 @click.option('--steps-epoch', '-s', default='1m', type=str)
+@click.option('--epochs', '-e', default=1, type=int)
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3s', type=str)
 def main(**kwargs):
