@@ -6,27 +6,46 @@ from time import sleep
 import alog
 from pytimeparse.timeparse import timeparse
 
+from exchange_data import Database
+from exchange_data.tfrecord.dataset_query import PriceChangeRanges
+from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 
 
-class DateRangeSplitWorkers(object):
+class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
-    def __init__(self, interval, window_size, split, max_workers, **kwargs):
+    def __init__(
+        self,
+        interval,
+        window_size,
+        max_workers,
+        channel_name,
+        **kwargs
+    ):
+        DateTimeUtils.__init__(self)
+        PriceChangeRanges.__init__(self)
+
+        super().__init__(**kwargs)
+
         self.kwargs = kwargs
+        self.channel_name = channel_name
         self.max_workers = max_workers
         self._now = now = DateTimeUtils.now()
         interval_delta = timedelta(seconds=timeparse(interval))
         self.window_size = window_size
         kwargs['window_size'] = window_size
-        start_date = now - interval_delta
-        dates = DateTimeUtils.split_range_into_datetimes(start_date, now, split)
+        self.start_date = now - interval_delta
+        self.end_date = now
+
+        ranges = [self.price_change_ranges(p.value) for p in Positions]
+
         self.intervals = []
+
+        for range in ranges:
+            self.intervals += range
+
         self.workers = []
 
-        for i in range(len(dates)):
-            if i < len(dates) - 1:
-                self.intervals += \
-                    [(dates[i + 1] - timedelta(seconds=1), dates[i])]
 
     def run(self):
         while True:
@@ -48,8 +67,8 @@ class DateRangeSplitWorkers(object):
                 )
 
                 worker.start()
-
                 alog.debug(worker)
+
                 self.workers.append(worker)
 
             if len(self.intervals) == 0 and len(self.workers) == 0:

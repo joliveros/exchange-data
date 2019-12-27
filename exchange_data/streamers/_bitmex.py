@@ -209,8 +209,8 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         return result
 
     def _set_next_window(self):
-        self.start_date += timedelta(seconds=self.window_size )
-        self.end_date += timedelta(seconds=self.window_size)
+        self.start_date += timedelta(seconds=self.window_size)
+        self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
         if self.end_date >= self.stop_date:
             raise StopIteration()

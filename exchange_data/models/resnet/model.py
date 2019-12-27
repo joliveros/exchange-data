@@ -26,6 +26,7 @@ Reshape = tf.keras.layers.Reshape
 ResNet50 = tf.keras.applications.ResNet50
 Sequential = tf.keras.models.Sequential
 SGD = tf.keras.optimizers.SGD
+Adam = tf.keras.optimizers.Adam
 TimeDistributed = tf.keras.layers.TimeDistributed
 
 
@@ -45,16 +46,23 @@ def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.1))
     model.add(Dense(3, activation='softmax'))
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['sparse_categorical_accuracy'],
-        optimizer=SGD(
-            lr=learning_rate,
-            decay=learning_rate_decay,
-            momentum=0.9
-        )
+        optimizer='adam'
+        # optimizer=Adam(
+        #     learning_rate=learning_rate,
+        #     beta_1=0.9,
+        #     beta_2=0.999,
+        #     amsgrad=False
+        # )
+        # optimizer=SGD(
+        #     lr=learning_rate,
+        #     decay=learning_rate_decay,
+        #     momentum=0.9
+        # )
     )
 
     return model

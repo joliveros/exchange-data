@@ -87,6 +87,7 @@ def main(symbol, **kwargs):
     executor = VirtualTradeExecutor(
         symbol=BitmexChannels[symbol],
         capital=1.0,
+        max_summary=10,
         **kwargs)
 
     executor.start()

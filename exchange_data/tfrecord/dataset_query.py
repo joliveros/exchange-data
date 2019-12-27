@@ -20,25 +20,11 @@ CLASSES = [0, 1, 2]
 NUM_CLASSES = len(CLASSES)
 
 
-class OrderBookImgStreamer(BitmexStreamer, ABC):
-    def __init__(
-        self,
-        side,
-        steps_epoch: str,
-        use_volatile_ranges: bool = False,
-        **kwargs
-    ):
-        super().__init__(database_name='bitmex', **kwargs)
-        self.side = side
-        self.data = []
-        self.steps_epoch = timeparse(steps_epoch)
-        self.use_volatile_ranges = use_volatile_ranges
-        self.current_range = None
+class PriceChangeRanges(object):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        if use_volatile_ranges:
-            self.volatile_ranges = self.get_volatile_ranges(side)
-
-    def get_volatile_ranges(self, side, start_date=None, end_date=None):
+    def price_change_ranges(self, side, start_date=None, end_date=None):
         start_date = start_date if start_date else self.start_date
         end_date = end_date if end_date else self.end_date
 
@@ -56,9 +42,31 @@ class OrderBookImgStreamer(BitmexStreamer, ABC):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=3),
-               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
+               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
+               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=0)
             ) for timestamp in timestamps]
+
+    def format_date_query(self, start_date):
+        raise NotImplemented()
+
+
+class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
+    def __init__(
+        self,
+        side,
+        steps_epoch: str,
+        use_volatile_ranges: bool = False,
+        **kwargs
+    ):
+        super().__init__(database_name='bitmex', **kwargs)
+        self.side = side
+        self.data = []
+        self.steps_epoch = timeparse(steps_epoch)
+        self.use_volatile_ranges = use_volatile_ranges
+        self.current_range = None
+
+        if use_volatile_ranges:
+            self.volatile_ranges = self.price_change_ranges(side)
 
     def orderbook_frame_query(self, start_date=None, end_date=None):
         start_date = start_date if start_date else self.start_date
