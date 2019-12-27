@@ -102,25 +102,26 @@ class ModelTrainer(Messenger):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse(steps_epoch) * epochs * 3,
+            save_checkpoints_secs=timeparse(steps_epoch),
             tf_random_seed=seed
         )
 
         resnet_estimator = model_to_estimator(
-            keras_model=model, model_dir=model_dir,
+            keras_model=model,
+            model_dir=model_dir,
             checkpoint_format='saver',
             config=run_config,
         )
 
         train_spec = TrainSpec(
             input_fn=lambda: dataset(
-                batch_size = batch_size,
+                batch_size=batch_size,
                 epochs=epochs,
                 frame_width=frame_width,
                 interval=interval,
                 steps_epoch=steps_epoch,
-                use_volatile_ranges=True,
                 window_size=window_size,
+                use_volatile_ranges=True
             )
         )
 
@@ -131,8 +132,8 @@ class ModelTrainer(Messenger):
                 frame_width=frame_width,
                 interval=eval_span,
                 steps_epoch=steps_epoch,
-                use_volatile_ranges=True,
                 window_size=window_size,
+                use_volatile_ranges=True
             ),
             steps=timeparse(eval_steps),
             throttle_secs=timeparse(steps_epoch) * epochs * 3
