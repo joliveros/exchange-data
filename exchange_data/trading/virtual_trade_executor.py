@@ -14,6 +14,9 @@ import click
 import random
 import numpy as np
 
+from tgym.envs.orderbook._trade import FlatTrade, Trade
+
+
 class VirtualTradeExecutor(
     OrderBookTradingEnv,
     Messenger,
@@ -43,6 +46,14 @@ class VirtualTradeExecutor(
         # self.on(TimeChannels.Tick.value, self.execute)
 
     @property
+    def trade_capital(self):
+        if self.capital > 0.0:
+            return self.capital
+        else:
+            self.done = True
+            return 0.0
+
+    @property
     def last_position(self):
         return self._last_position
 
@@ -50,6 +61,20 @@ class VirtualTradeExecutor(
     def last_position(self, value):
         assert type(value) == Positions
         self._last_position = value
+
+    def close_trade(self):
+        trade: Trade = self.current_trade
+        trade.close()
+        reward = trade.reward
+        self.trades.append(trade)
+
+        if type(trade) != FlatTrade:
+            self.capital = trade.capital
+            if self.capital < 0.0:
+                raise Exception('Out of capital.')
+
+        self.reward += reward
+        self.current_trade = None
 
     def start(self, channels=[]):
         self.sub(channels + [self.job_name, self.orderbook_frame_channel])
@@ -82,6 +107,7 @@ class VirtualTradeExecutor(
 
 @click.command()
 @click.option('--position-size', '-p', type=int, default=1)
+@click.option('--leverage', '-l', type=float, default=1.0)
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol, **kwargs):
     executor = VirtualTradeExecutor(
