@@ -42,8 +42,8 @@ class PriceChangeRanges(object):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-               DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
-               DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
+           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
+           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
             ) for timestamp in timestamps]
 
     def format_date_query(self, start_date):
@@ -146,9 +146,10 @@ class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
         return data
 
 
-def data_streamer(frame_width, side, interval: str = '15s', **kwargs):
+def data_streamer(frame_width, side, interval: str = '15s', interval_ratio=1.0,
+                  **kwargs):
     end_date = DateTimeUtils.now()
-    start_date = end_date - timedelta(seconds=timeparse(interval))
+    start_date = end_date - (timedelta(seconds=timeparse(interval)) * interval_ratio)
 
     streamer = OrderBookImgStreamer(
         start_date=start_date,
@@ -183,7 +184,7 @@ def _dataset(frame_width, batch_size: int, **kwargs):
 def dataset(interval, epochs, steps_epoch, **kwargs):
     kwargs['steps_epoch'] = steps_epoch
 
-    return _dataset(side=1, interval=interval, **kwargs)\
+    return _dataset(side=1, interval=interval, interval_ratio=1.5, **kwargs)\
         .concatenate(_dataset(side=2, interval=interval, **kwargs))\
         .shuffle(buffer_size=timeparse(steps_epoch))\
         .repeat(epochs)\
