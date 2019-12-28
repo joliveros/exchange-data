@@ -177,8 +177,7 @@ def _dataset(frame_width, batch_size: int, **kwargs):
         lambda: data_streamer(**kwargs),
         output_types=(tf.float32, tf.int32),
         output_shapes=((frame_width, frame_width, 3,), ())
-    ) \
-        .batch(batch_size) \
+    ).batch(batch_size)
 
 
 def dataset(interval, epochs, steps_epoch, **kwargs):
