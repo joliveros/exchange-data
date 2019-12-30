@@ -7,13 +7,12 @@ from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils, Base
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook._orderbook import OrderBookIncompleteException
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
 import click
 import json
 import numpy as np
-
-from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TrainingDataBase(object):
