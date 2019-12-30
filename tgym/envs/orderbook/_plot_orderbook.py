@@ -5,19 +5,16 @@ from exchange_data.utils import Base
 
 
 class PlotOrderbook(Base):
-    def __init__(self, frame_width, **kwargs):
+    def __init__(self, frame_width, top_limit=1e4, **kwargs):
         self.frame_width = frame_width
 
         plt.close()
+        fig, ax = plt.subplots(1, 1, figsize=(1, 1),
+                               dpi=self.frame_width)
+        self.top_limit = top_limit
 
-        fig, frames = plt.subplots(2, 1, figsize=(1, 1),
-                                   dpi=self.frame_width)
-
-        ax1, ax2 = frames
         self.fig = fig
-        self.ax1 = ax2
-        self.ax2 = ax1
-        # self.ax2 = fig.add_subplot(1, 2, 2, frame_on=False)
+        self.ax1 = ax
 
         super().__init__(**kwargs)
 

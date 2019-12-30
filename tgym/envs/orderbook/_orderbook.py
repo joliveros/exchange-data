@@ -71,7 +71,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
             **kwargs
         )
 
-        PlotOrderbook.__init__(self, frame_width=frame_width)
+        PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+
         self.leverage = leverage
         self.capital = capital
         self.frame_width = frame_width
@@ -379,42 +380,14 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         bids = self.bids
         asks = self.asks
+        levels = np.concatenate((np.flip(bids[:10], 0), asks[:10]))
 
-        for (p1, s1), (p2, s2) in zip(bids, bids[1:]):
-            if bsizeacc == 0:
-                bvxs.append(p1)
-                bvymins.append(0.0)
-                bvymaxs.append(s1)
-                bsizeacc += s1
-            bvymins.append(bsizeacc)
-            bhys.append(bsizeacc)
-            bhxmins.append(p2)
-            bhxmaxs.append(p1)
-            bvxs.append(p2)
-            bsizeacc += s2
-            bvymaxs.append(bsizeacc)
+        for price, volume in levels:
+            ax1.bar(price, volume)
 
-        for (p1, s1), (p2, s2) in zip(asks, asks[1:]):
-            if asizeacc == 0:
-                avxs.append(p1)
-                avymins.append(0.0)
-                avymaxs.append(s1)
-                asizeacc += s1
+        plt.ylim(0, self.top_limit)
+        plt.xlim(levels[0, 0], levels[-1, 0])
 
-            avymins.append(asizeacc)
-            ahys.append(asizeacc)
-            ahxmins.append(p1)
-            ahxmaxs.append(p2)
-            avxs.append(p2)
-            asizeacc += s2
-            avymaxs.append(asizeacc)
-
-        ax1.hlines(bhys, bhxmins, bhxmaxs, color="green")
-        ax1.vlines(bvxs, bvymins, bvymaxs, color="green")
-        ax1.hlines(ahys, ahxmins, ahxmaxs, color="red")
-        ax1.vlines(avxs, avymins, avymaxs, color="red")
-        self.plot_price_over_time()
-        plt.autoscale(tight=True)
         self.hide_ticks_and_values(ax1)
         fig.patch.set_visible(False)
         fig.canvas.draw()
@@ -422,30 +395,12 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         img = fig.canvas.renderer._renderer
         img = np.array(img)
 
-        # if img.shape[0] != self.frame_width:
-        #     raise Exception(
-        #         f'Frame {img.shape} does not match requested size ({self.frame_width}).'
-        #     )
-
         if self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
                 alog.info(AsciiImage(img, new_width=10))
-                # plt.show()
-                # traceback.print_stack()
-                # raise Exception()
 
         img = img[:, :, :3]
         return img
-
-    def plot_price_over_time(self):
-        self.ax2.clear()
-        ax2 = self.ax2
-        bid_ask = np.array(self.position_data_history)[:-1, :2]
-        bid_ask = np.flip(bid_ask, axis=0)
-        bid_ask = bid_ask.swapaxes(1, 0)
-        avg = np.add(bid_ask[0], bid_ask[1]) / 2
-        ax2.plot(avg, color='orange')
-        self.hide_ticks_and_values(ax2)
 
     def _get_observation(self):
         time = None
