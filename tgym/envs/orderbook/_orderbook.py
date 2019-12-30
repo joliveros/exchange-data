@@ -383,7 +383,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         levels = np.concatenate((np.flip(bids[:10], 0), asks[:10]))
 
         for price, volume in levels:
-            ax1.bar(price, volume)
+            ax1.bar(price, volume, color='blue')
 
         plt.ylim(0, self.top_limit)
         plt.xlim(levels[0, 0], levels[-1, 0])
