@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from exchange_data import Measurement, NumpyEncoder
+from exchange_data import Measurement, NumpyEncoder, settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
-from exchange_data.utils import DateTimeUtils, Base
+from exchange_data.utils import DateTimeUtils
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook._orderbook import OrderBookIncompleteException
 from tgym.envs.orderbook.ascii_image import AsciiImage
@@ -12,6 +12,7 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 import alog
 import click
 import json
+import logging
 import numpy as np
 
 
@@ -104,7 +105,8 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
             if self.expected_position != Positions.Flat:
                 alog.info((self.expected_position, self.best_ask, self.best_bid))
 
-            alog.info(AsciiImage(frame, new_width=12))
+            if settings.LOG_LEVEL == logging.DEBUG:
+                alog.info(AsciiImage(frame, new_width=12))
 
             measurement = Measurement(
                 measurement=channel_name,
