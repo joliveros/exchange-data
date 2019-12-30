@@ -5,7 +5,7 @@ import tensorflow as tf
 from exchange_data import settings
 from exchange_data.utils import EventEmitterBase
 from exchange_data.emitters import Messenger
-from exchange_data.tfrecord.dataset_query import dataset
+from exchange_data.tfrecord.dataset_query import dataset, _dataset
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
 from tensorflow_core.python.keras.estimator import model_to_estimator
@@ -102,7 +102,7 @@ class ModelTrainer(Messenger):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse(steps_epoch),
+            save_checkpoints_secs=540,
             tf_random_seed=seed
         )
 
@@ -125,18 +125,25 @@ class ModelTrainer(Messenger):
             )
         )
 
+        def eval_dataset(**kwargs):
+            return _dataset(
+                side=1, **kwargs
+            ) \
+                .concatenate(_dataset(side=2, **kwargs))
+
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(
+            input_fn=lambda: eval_dataset(
                 batch_size=batch_size,
                 epochs=1,
                 frame_width=frame_width,
                 interval=eval_span,
-                steps_epoch=steps_epoch,
+                steps_epoch=eval_steps,
                 window_size=window_size,
                 use_volatile_ranges=True
             ),
-            steps=timeparse(eval_steps),
-            throttle_secs=timeparse(steps_epoch) * epochs * 3
+            start_delay_secs=60*30,
+            steps=timeparse(eval_steps)*2,
+            throttle_secs=60*30
         )
 
         train_and_evaluate(resnet_estimator, train_spec, eval_spec)
