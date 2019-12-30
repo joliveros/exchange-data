@@ -104,6 +104,8 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
             if self.expected_position != Positions.Flat:
                 alog.info((self.expected_position, self.best_ask, self.best_bid))
 
+            alog.info(AsciiImage(frame, new_width=12))
+
             measurement = Measurement(
                 measurement=channel_name,
                 time=timestamp,
@@ -128,6 +130,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
 @click.command()
 @click.option('--frame-width', default=96, type=int)
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
+@click.option('--top-limit', '-l', default=5e5, type=float)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
 @click.option('--max-frames', '-m', default=6, type=int)
