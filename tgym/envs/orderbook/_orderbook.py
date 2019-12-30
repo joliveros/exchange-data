@@ -362,22 +362,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.ax1.clear()
         ax1 = self.ax1
         fig = self.fig
-
-        bsizeacc = 0
-        bhys = []    # bid - horizontal - ys
-        bhxmins = [] # bid - horizontal - xmins
-        bhxmaxs = [] # ...
-        bvxs = []
-        bvymins = []
-        bvymaxs = []
-        asizeacc = 0
-        ahys = []
-        ahxmins = []
-        ahxmaxs = []
-        avxs = []
-        avymins = []
-        avymaxs = []
-
         bids = self.bids
         asks = self.asks
         levels = np.concatenate((np.flip(bids[:10], 0), asks[:10]))
