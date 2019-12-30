@@ -42,8 +42,8 @@ class PriceChangeRanges(object):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
-           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
+           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=2),
+           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=2)
             ) for timestamp in timestamps]
 
     def format_date_query(self, start_date):
@@ -146,7 +146,8 @@ class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
         return data
 
 
-def data_streamer(frame_width, side, interval: str = '15s', interval_ratio=1.0,
+def data_streamer(frame_width, side=None, interval: str = '15s',
+                  interval_ratio=1.0,
                   **kwargs):
     end_date = DateTimeUtils.now()
     start_date = end_date - (timedelta(seconds=timeparse(interval)) * interval_ratio)
@@ -159,6 +160,8 @@ def data_streamer(frame_width, side, interval: str = '15s', interval_ratio=1.0,
         **kwargs
     )
 
+    count = 0
+
     for data in streamer:
         expected_position = data['data_expected_position']
 
@@ -167,6 +170,9 @@ def data_streamer(frame_width, side, interval: str = '15s', interval_ratio=1.0,
         alog.info(AsciiImage(frame, new_width=10))
         alog.info(expected_position)
 
+        count += 1
+
+        alog.info(f'## count: {count} ##')
         yield frame, expected_position
 
 
@@ -183,12 +189,11 @@ def _dataset(frame_width, batch_size: int, **kwargs):
 def dataset(interval, epochs, steps_epoch, **kwargs):
     kwargs['steps_epoch'] = steps_epoch
 
-    return _dataset(side=1, interval=interval, interval_ratio=1.5, **kwargs)\
-        .concatenate(_dataset(side=2, interval=interval, **kwargs))\
-        .shuffle(buffer_size=timeparse(steps_epoch))\
-        .repeat(epochs)\
-        .prefetch(buffer_size=int(timeparse(steps_epoch)/10))
-
+    return _dataset(side=1, interval=interval, interval_ratio=1.0, **kwargs)\
+        .concatenate(_dataset(side=2, interval=interval, **kwargs)) \
+        .cache() \
+        .shuffle(buffer_size=timeparse(steps_epoch)*2)\
+        .repeat(epochs)
 
 @click.command()
 @click.option('--frame-width', '-f', default=224, type=int)
@@ -198,10 +203,13 @@ def dataset(interval, epochs, steps_epoch, **kwargs):
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3s', type=str)
 def main(**kwargs):
+    count = 0
+
     for frame, expected_position in dataset(batch_size=2, **kwargs):
         alog.info((expected_position, frame.shape))
         alog.info(expected_position.numpy())
-
+        count += 1
+        alog.info(f'## count: {count} ##')
 
 
 if __name__ == '__main__':

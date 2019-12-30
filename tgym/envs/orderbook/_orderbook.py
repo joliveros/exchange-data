@@ -47,7 +47,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward=0.000005,
-        capital=10.0,
+        capital=1.0,
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
@@ -73,6 +73,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         PlotOrderbook.__init__(self, frame_width=frame_width)
         self.leverage = leverage
+        self.capital = capital
         self.frame_width = frame_width
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
@@ -484,7 +485,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         if self.current_trade is None:
             self.current_trade = LongTrade(
                 leverage=self.leverage,
-                capital=self.trade_capital,
+                capital=self.capital,
                 entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
@@ -500,7 +501,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         if self.current_trade is None:
             self.current_trade = ShortTrade(
                 leverage=self.leverage,
-                capital=self.trade_capital,
+                capital=self.capital,
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change

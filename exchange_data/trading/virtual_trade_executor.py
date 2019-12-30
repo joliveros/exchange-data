@@ -108,11 +108,11 @@ class VirtualTradeExecutor(
 @click.command()
 @click.option('--position-size', '-p', type=int, default=1)
 @click.option('--leverage', '-l', type=float, default=1.0)
+@click.option('--capital', '-c', type=float, default=1.0)
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol, **kwargs):
     executor = VirtualTradeExecutor(
         symbol=BitmexChannels[symbol],
-        capital=1.0,
         max_summary=10,
         **kwargs)
 
