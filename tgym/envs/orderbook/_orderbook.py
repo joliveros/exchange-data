@@ -362,17 +362,21 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.ax1.clear()
         ax1 = self.ax1
         fig = self.fig
-        bids = self.bids
+        bids = np.flip(self.bids[:10], 0)
         asks = self.asks
-        levels = np.concatenate((np.flip(bids[:10], 0), asks[:10]))
 
-        for price, volume in levels:
-            ax1.bar(price, volume, color='blue')
+        for price, volume in bids:
+            ax1.bar(price, volume, color='red', width=0.45)
+
+        for price, volume in asks:
+            ax1.bar(price, volume, color='blue', width=0.45)
 
         plt.ylim(0, self.top_limit)
-        plt.xlim(levels[0, 0], levels[-1, 0])
+
+        plt.xlim(bids[0, 0], asks[-1, 0])
 
         self.hide_ticks_and_values(ax1)
+
         fig.patch.set_visible(False)
         fig.canvas.draw()
 
