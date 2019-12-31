@@ -55,7 +55,7 @@ class PredictionEmitter(Messenger, TradeJob):
             if position.value == max_index
         ][0]
 
-        if max_index != 0 and settings.LOG_LEVEL == logging.DEBUG:
+        if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(AsciiImage(frame, new_width=12))
             alog.info(alog.pformat(json.loads(json_response.text)))
             alog.info((position, max_index, predictions[0][max_index]))
