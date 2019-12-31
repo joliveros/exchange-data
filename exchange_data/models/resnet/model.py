@@ -23,7 +23,7 @@ GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
 Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
 Reshape = tf.keras.layers.Reshape
-ResNet50 = tf.keras.applications.ResNet50
+ResNet = tf.keras.applications.ResNet152V2
 Sequential = tf.keras.models.Sequential
 SGD = tf.keras.optimizers.SGD
 Adam = tf.keras.optimizers.Adam
@@ -34,7 +34,7 @@ def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
     model = Sequential()
     model.add(Input(shape=(frame_width, frame_width, 3)))
 
-    base = ResNet50(
+    base = ResNet(
         include_top=False,
         weights=None,
         classes=3,
