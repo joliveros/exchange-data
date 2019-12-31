@@ -47,8 +47,6 @@ class TrainingDataBase(object):
         elif diff == 0.0:
             position = Positions.Flat
 
-        # alog.debug((diff, position))
-
         return position
 
 
