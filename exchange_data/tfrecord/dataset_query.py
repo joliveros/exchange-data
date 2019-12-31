@@ -97,7 +97,6 @@ class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
                     raise StopIteration()
 
                 self.current_range = self.volatile_ranges.pop(0)
-                alog.info('#### new range ###')
                 self.start_date = self.current_range[0]
             else:
                 self.start_date += self.window_delta
@@ -105,8 +104,6 @@ class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
             self.end_date = self.start_date + self.window_delta
 
             now = DateTimeUtils.now()
-
-            alog.info((str(self.end_date), str(now)))
 
             if self.end_date > now:
                 self.end_date = now
