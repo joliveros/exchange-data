@@ -36,13 +36,9 @@ def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
 
     base = ResNet(
         include_top=False,
-        weights=None,
         classes=3,
         pooling=None
     )
-
-    for layer in base.layers:
-        layer.trainable = True
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
