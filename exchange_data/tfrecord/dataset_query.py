@@ -42,8 +42,8 @@ class PriceChangeRanges(object):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=2),
-           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=2)
+           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
+           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
             ) for timestamp in timestamps]
 
     def format_date_query(self, start_date):
