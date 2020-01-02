@@ -11,7 +11,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && ./exchange_data/models/resnet/model.py --eval-span 30m -e 30 --frame-width 224 -i 6h -w 4s --steps-epoch 10m --eval-steps 30s -l 0.0000001 --learning-rate-decay 0.00001"
+    command: bash -c "source ~/.bashrc && ./exchange_data/models/resnet/model.py --eval-span 30m -e 15 --frame-width 224 -i 6h -w 3s --steps-epoch 6m --eval-steps 30s -l 0.0000001 --learning-rate-decay 0.00001"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
