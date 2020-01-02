@@ -139,6 +139,7 @@ class ActorCriticTrain:
         dones = []
 
         state = env.reset()
+
         for e in range(epi):
             total_reward = 0
             for t in range(t_end):
