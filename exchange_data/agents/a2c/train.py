@@ -88,7 +88,6 @@ class ActorCriticTrain:
         critic_grads = tape_critic.gradient(critic_loss, critic_variable)
         self.critic_opt.apply_gradients(zip(critic_grads, critic_variable))
 
-
         advantages = self.compute_advantages(states, rewards, dones)
         actor_variable = self.actor_model.trainable_variables
 
@@ -104,6 +103,7 @@ class ActorCriticTrain:
 
     def compute_advantages(self, states, rewards, dones):
         last_state = states[-1]
+
         if dones[-1] == True:
             reward_sum = 0
         else:
