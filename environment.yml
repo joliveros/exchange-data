@@ -37,7 +37,6 @@ dependencies:
     - pytest-vcr
     - python-socketio[client]
     - pytimeparse
-    - ray[rllib,debug]
     - redis
     - rollbar>=0.13.12
     - sortedcontainers
