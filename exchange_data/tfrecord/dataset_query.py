@@ -42,8 +42,8 @@ class PriceChangeRanges(object):
         timestamps = [data['time'] for data in ranges]
 
         return [(
-           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=1),
-           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=1)
+           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=3),
+           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=0)
             ) for timestamp in timestamps]
 
     def format_date_query(self, start_date):
@@ -161,6 +161,8 @@ def data_streamer(frame_width, side=None, interval: str = '15s',
 
     for data in streamer:
         expected_position = data['data_expected_position']
+        if side != 0:
+            expected_position = side
 
         frame = np.array(json.loads(data['data_frame']), dtype=np.uint8)
 
@@ -186,11 +188,13 @@ def _dataset(frame_width, batch_size: int, **kwargs):
 def dataset(interval, epochs, steps_epoch, **kwargs):
     kwargs['steps_epoch'] = steps_epoch
 
-    return _dataset(side=1, interval=interval, interval_ratio=1.0, **kwargs)\
+    return _dataset(side=0, interval=interval, **kwargs)\
+        .concatenate(_dataset(side=1, interval=interval, **kwargs)) \
         .concatenate(_dataset(side=2, interval=interval, **kwargs)) \
         .cache() \
         .shuffle(buffer_size=timeparse(steps_epoch)*2)\
         .repeat(epochs)
+
 
 @click.command()
 @click.option('--frame-width', '-f', default=224, type=int)
