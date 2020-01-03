@@ -60,9 +60,10 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
 
         super().__init__(
             start_date=start_date,
+            end_date=start_date,
             database_name='bitmex',
             random_start_date=False,
-            database_batch_size=3,
+            database_batch_size=1,
             date_checks=False,
             **kwargs
         )
@@ -71,8 +72,11 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
         self._last_datetime = self.start_date
         self.last_data = []
         self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
+        self.channel_name = f'orderbook_img_frame_{self.symbol.value}'
 
         self.on(self.orderbook_channel, self.write_observation)
+        self.on('frame_str', self.publish_to_channels)
+        self.on('frame_str', self.write_to_db)
 
     def _get_observation(self):
         time = self.last_data['time']
@@ -94,34 +98,38 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
         if len(self.frames) >= self.max_frames:
             frame = self.frames[-2]
 
-            frame_str = json.dumps(frame, cls=NumpyEncoder)
-
-            channel_name = f'orderbook_img_frame_{self.symbol.value}'
-
-            timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
-
             if self.expected_position != Positions.Flat:
                 alog.info((self.expected_position, self.best_ask, self.best_bid))
 
             if settings.LOG_LEVEL == logging.DEBUG:
                 alog.info(AsciiImage(frame, new_width=12))
 
-            measurement = Measurement(
-                measurement=channel_name,
-                time=timestamp,
-                tags=dict(symbol=self.symbol.value),
-                fields=dict(
-                    frame=frame_str,
-                    expected_position=self.expected_position.value,
-                    entry_price=self.avg_entry_price
-                )
+            frame_str = json.dumps(frame, cls=NumpyEncoder)
+
+            self.emit('frame_str', frame_str)
+
+    def publish_to_channels(self, frame_str):
+        self.publish(self.channel_name, json.dumps(dict(
+            frame=frame_str
+        )))
+
+    def write_to_db(self, frame_str):
+        timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
+
+        measurement = Measurement(
+            measurement=self.channel_name,
+            time=timestamp,
+            tags=dict(symbol=self.symbol.value),
+            fields=dict(
+                frame=frame_str,
+                expected_position=self.expected_position.value,
+                entry_price=self.avg_entry_price,
+                best_ask=self.best_ask,
+                best_bid=self.best_bid
             )
+        )
 
-            self.publish(channel_name, json.dumps(dict(
-                frame=frame_str
-            )))
-
-            super().write_points([measurement.__dict__])
+        super().write_points([measurement.__dict__])
 
     def run(self):
         self.sub([self.orderbook_channel, BitmexChannels.XBTUSD])
