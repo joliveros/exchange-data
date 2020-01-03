@@ -80,15 +80,15 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
             self.stop_date = end_date
             self.end_date = end_date
 
-        # self.end_date = self.start_date + \
-        #     timedelta(seconds=self.window_size)
-
         if start_date is not None:
             if self.start_date > start_date:
                 raise Exception()
 
         if self.original_end_date != self.end_date and date_checks:
             raise Exception()
+
+        self.end_date = self.start_date + \
+            timedelta(seconds=self.window_size)
 
     @property
     def end_date(self):
@@ -212,9 +212,6 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         self.start_date += timedelta(seconds=self.window_size)
         self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
-        if self.end_date >= self.stop_date:
-            raise StopIteration()
-
     def send(self, *args):
         self.counter += 1
 
@@ -222,6 +219,9 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
             time, orderbook = self.next_window()
             self._time += time.tolist()
             self._orderbook += orderbook.tolist()
+
+        if self._time[-1] > self.stop_date:
+            raise StopIteration()
 
         return self._time.pop(0), self._orderbook.pop(0)
 
