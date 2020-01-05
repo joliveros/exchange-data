@@ -24,7 +24,7 @@ class OrderbookImgStreamer(BitmexStreamer):
         end_date = self.format_date_query(end_date)
 
         query = f'SELECT * as data FROM {self.channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date};' \
+            f'WHERE time > {start_date} AND time <= {end_date};' \
 
         alog.info(query)
 
