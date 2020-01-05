@@ -24,27 +24,46 @@ class PriceChangeRanges(object):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def price_change_ranges(self, side, start_date=None, end_date=None):
+    def price_change_ranges(
+        self,
+        record_window: str='15s',
+        group_by_interval='1s',
+        start_date=None,
+        end_date=None
+    ):
+        record_window = int(timeparse(record_window) / 2)
+
         start_date = start_date if start_date else self.start_date
         end_date = end_date if end_date else self.end_date
 
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT e FROM (SELECT expected_position as e ' \
-            f'from {self.channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date}) ' \
-            f'WHERE e = {side};'
+        ranges = []
+        ranges += self.position_changes(group_by_interval, end_date, start_date)
 
-        alog.info(query)
-
-        ranges = self.query(query).get_points(self.channel_name)
         timestamps = [data['time'] for data in ranges]
 
-        return [(
-           DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(seconds=3),
-           DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(seconds=0)
-            ) for timestamp in timestamps]
+        ranges = [(
+            DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(
+                            seconds=record_window),
+            DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(
+                            seconds=record_window)
+        ) for timestamp in timestamps]
+
+        return ranges
+
+    def position_changes(self, group_by_interval, end_date, start_date):
+        query = f'SELECT ecount FROM (SELECT COUNT(e) as ecount ' \
+            f'FROM(SELECT e FROM (SELECT expected_position as e ' \
+            f'from {self.channel_name} ' \
+            f'WHERE time >= {start_date} AND time <= {end_date}) ' \
+            f'WHERE e > 0) GROUP BY time({group_by_interval})) WHERE ecount > 0;'
+
+        alog.info(query)
+        ranges = self.query(query).get_points(self.channel_name)
+
+        return list(ranges)
 
     def format_date_query(self, start_date):
         raise NotImplemented()
@@ -66,7 +85,7 @@ class OrderBookImgStreamer(BitmexStreamer, PriceChangeRanges):
         self.current_range = None
 
         if use_volatile_ranges:
-            self.volatile_ranges = self.price_change_ranges(side)
+            self.volatile_ranges = self.price_change_ranges()
 
     def orderbook_frame_query(self, start_date=None, end_date=None):
         start_date = start_date if start_date else self.start_date

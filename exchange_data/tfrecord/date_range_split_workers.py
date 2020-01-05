@@ -16,10 +16,12 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
     def __init__(
         self,
-        interval,
         window_size,
         max_workers,
         channel_name,
+        interval,
+        record_window='15s',
+        limit: int = 0,
         **kwargs
     ):
         DateTimeUtils.__init__(self)
@@ -27,35 +29,40 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
         super().__init__(**kwargs)
 
+        self.window_size = window_size
+        kwargs['window_size'] = window_size
         self.kwargs = kwargs
         self.channel_name = channel_name
         self.max_workers = max_workers
         self._now = now = DateTimeUtils.now()
         interval_delta = timedelta(seconds=timeparse(interval))
-        self.window_size = window_size
-        kwargs['window_size'] = window_size
         self.start_date = now - interval_delta
         self.end_date = now
 
-        ranges = [self.price_change_ranges(p.value) for p in Positions]
+        self.intervals = self.price_change_ranges(
+            record_window=record_window,
+            start_date=self.start_date,
+            end_date=self.end_date
+        )
 
-        self.intervals = []
-
-        for range in ranges:
-            self.intervals += range
+        if limit > 0:
+            self.intervals = self.intervals[(limit * -1):]
 
         self.workers = []
-
 
     def run(self):
         while True:
             if len(self.workers) < self.max_workers and len(self.intervals) > 0:
                 interval_dates = self.intervals.pop()
                 alog.debug(f'#### ranges left {len(self.intervals)} ####')
-                self.kwargs['start_date'] = interval_dates[1]
-                self.kwargs['end_date'] = interval_dates[0]
-                window_interval = timedelta(seconds=timeparse(self.window_size))
-                interval = interval_dates[0] - interval_dates[1]
+                self.kwargs['start_date'] = interval_dates[0]
+                self.kwargs['end_date'] = interval_dates[1]
+                self.kwargs['directory_name'] = self.directory_name
+
+                window_interval = \
+                    timedelta(seconds=timeparse(self.window_size))
+
+                interval = interval_dates[1] - interval_dates[0]
 
                 if interval < window_interval:
                     self.kwargs['window_size'] = f'{interval.seconds}s'
