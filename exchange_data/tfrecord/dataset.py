@@ -26,8 +26,7 @@ def extract_fn(data_record):
     return tf.io.parse_single_example(data_record, features)
 
 
-def dataset(batch_size: int, epochs: int = 1, dataset_name='default'):
-    # raise Exception()
+def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
     num_files = len(files)
