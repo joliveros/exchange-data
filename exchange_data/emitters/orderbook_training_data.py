@@ -17,11 +17,13 @@ import numpy as np
 
 
 class TrainingDataBase(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.last_best_bid = None
         self.last_best_ask = None
         self.best_bid = None
         self.best_ask = None
+
+        super().__init__(**kwargs)
 
     @property
     def avg_exit_price(self):
