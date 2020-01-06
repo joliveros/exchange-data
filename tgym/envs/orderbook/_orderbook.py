@@ -31,12 +31,14 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
     def __init__(
         self,
+        start_date,
+        end_date,
         summary_interval=120,
+        database_name = 'bitmex',
         logger=None,
         leverage=1.0,
         trading_fee=0.125/100.0,
         max_loss=-0.1/100.0,
-        random_start_date=False,
         orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
@@ -55,16 +57,19 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         frame_width=96,
         **kwargs
     ):
+        kwargs['start_date'] = start_date
+        kwargs['end_date'] = end_date
+        kwargs['database_name'] = database_name
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
-        kwargs['random_start_date'] = random_start_date
         kwargs['channel_name'] = \
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
 
         self._args = locals()
         self.last_observation = None
         self.last_timestamp = 0
+        self.reset_class = OrderBookTradingEnv
 
         super().__init__(
             frame_width=frame_width,
@@ -135,23 +140,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.position_repeat = 0
         self.trade_size = self.capital * (10/100)
         self.reset_count = 0
-
-        if volatile_ranges is None and use_volatile_ranges:
-            self.volatile_ranges = self.get_volatile_ranges()
-            self._args['volatile_ranges'] = self.volatile_ranges
-        else:
-            self.volatile_ranges = volatile_ranges
-
-        if use_volatile_ranges:
-            nearest_volatile_range = self.volatile_ranges.index\
-                .get_loc(self.start_date.timestamp() * (10**3), method='nearest')
-
-            nearest_volatile_range_start = self.volatile_ranges\
-                .iloc[nearest_volatile_range].name
-
-            self.start_date = \
-                self.parse_db_timestamp(nearest_volatile_range_start)
-            self.end_date = self.start_date + timedelta(seconds=self.window_size)
+        self.start_date = start_date
+        self.end_date = end_date
 
         self.start_date -= timedelta(seconds=self.max_frames + 1)
 
@@ -215,30 +205,23 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def reset(self, **kwargs):
         self.reset_count += 1
 
-        # if self.reset_count > 2:
-        #     raise Exception()
-
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
 
-        # _kwargs = self._args['kwargs']
-        # del self._args['kwargs']
-        # _kwargs = {**self._args, **_kwargs, **kwargs}
-        # del _kwargs['self']
-        # new_instance = OrderBookTradingEnv(**_kwargs)
-        # self.__dict__ = new_instance.__dict__
+        _kwargs = self._args['kwargs']
+        del self._args['kwargs']
+        _kwargs = {**self._args, **_kwargs, **kwargs}
+        del _kwargs['self']
+        new_instance = self.reset_class(**_kwargs)
 
-        # for i in range(n_noops):
+        self.__dict__ = {**self.__dict__, **new_instance.__dict__}
+
+        # for i in range(noops):
         #     self.get_observation()
 
-        try:
-            for _ in range(self.max_frames):
-                self.get_observation()
-        except (OutOfFramesException, TypeError):
-            if not self.random_start_date:
-                self._set_next_window()
-            return self.reset(**kwargs)
+        for _ in range(self.max_frames):
+            self.get_observation()
 
         return self.last_observation
 
@@ -252,15 +235,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         self.step_position(action)
 
-        # if self.capital < self.min_capital:
-        #     self.done = True
-
         self.step_count += 1
 
         if self.step_count >= self.max_episode_length:
             self.done = True
-
-        # observation = self.get_observation()
 
         try:
             observation = self.get_observation()
@@ -396,6 +374,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         while self.last_timestamp == time or time is None:
             time, orderbook = next(self)
+
         self.last_timestamp = time
         return time, orderbook
 
@@ -527,7 +506,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 @click.option('--summary-interval', '-s', default=120, type=int)
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
-        random_start_date=True,
         use_volatile_ranges=False,
         window_size='30s',
         is_training=False,
