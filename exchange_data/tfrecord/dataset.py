@@ -38,6 +38,7 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
 
     _dataset = _dataset.map(extract_fn)\
         .batch(batch_size) \
+        .prefetch(10)\
         .repeat(epochs)
 
     return _dataset
