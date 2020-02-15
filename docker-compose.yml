@@ -153,7 +153,7 @@ services:
     deploy:
       replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
+    command: bash -c "source ~/.bashrc && ./exchange_data/tfrecord/orderbook_tf_record_workers.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
@@ -187,7 +187,7 @@ services:
 
   emit_prediction_btc:
     deploy:
-      replicas: 1
+      replicas: 0
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD"
     environment:
