@@ -1,3 +1,4 @@
+import alog
 from tensorflow_core.python.keras.layers.core import Dense
 from tensorflow_core.python.keras.models import Model
 
@@ -12,5 +13,7 @@ class ActorModel(Model):
     def call(self, state):
         layer_a1 = self.layer_a1(state)
         layer_a2 = self.layer_a2(layer_a1)
+        alog.info(layer_a2.shape)
         logits = self.logits(layer_a2)
+        alog.info(logits.shape)
         return logits
