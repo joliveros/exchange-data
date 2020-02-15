@@ -1,38 +1,51 @@
 #!/usr/bin/env python
-
+import alog
 import tensorflow as tf
+
+from exchange_data.agents.a2c.critic_model import CriticModel
+from exchange_data.agents.a2c.model_directory_info import ModelDirectoryInfo
+from exchange_data.models.resnet.model import Model
+from tensorflow.keras import optimizers, losses
 from tensorflow_core.python.keras.metrics import Mean
 from tensorflow_core.python.ops.summary_ops_v2 import create_file_writer
-
-from exchange_data.agents.a2c.actor_model import ActorModel
-from exchange_data.agents.a2c.critic_model import CriticModel
-from tensorflow.keras import optimizers, losses
 
 import gym
 import numpy as np
 
 
+class ActorCriticTrain(ModelDirectoryInfo):
+    def __init__(self, **kwargs):
+        super().__init__(
+            directory_name = 'a2c',
+            **kwargs
+        )
 
-class ActorCriticTrain:
-    def __init__(self):
         # hyper parameters
-        self.env = gym.make('CartPole-v0')
+        self.env = gym.make(
+            'tf-orderbook-v0',
+            directory_name='default',
+            max_frames=100
+        )
+
         self.num_action = self.env.action_space.n
+
         self.lr =0.001
         self.lr2 = 0.001
         self.df = 0.99
         self.en = 0.001
 
-        self.actor_model = ActorModel(num_action=self.num_action)
+        self.actor_model = Model(num_categories=self.num_action)
         self.actor_opt = optimizers.Adam(lr=self.lr, )
 
         self.critic_model = CriticModel()
         self.critic_opt = optimizers.Adam(lr=self.lr2, )
 
         # tensorboard
-        self.log_dir = 'logs/'
+        self.log_dir = str(self.directory) + '/logs'
+
         self.train_summary_writer = create_file_writer(self.log_dir)
         self.reward_board = Mean('reward_board', dtype=tf.float32)
+
         #self.train_loss = Mean('train_loss', dtype=tf.float32)
         #self.train_loss_c = Mean('train_loss_c', dtype=tf.float32)
 
@@ -69,9 +82,15 @@ class ActorCriticTrain:
         discounted_rewards = tf.convert_to_tensor(
             np.array(discounted_rewards)[:, None], dtype=tf.float32
         )
+
+        alog.info(states)
+
         values = self.critic_model(tf.convert_to_tensor(
             np.vstack(states), dtype=tf.float32)
         )
+
+        alog.info((values.shape, discounted_rewards.shape))
+
         error = tf.square(values - discounted_rewards)*0.5
         error = tf.reduce_mean(error)
         return error
@@ -128,7 +147,6 @@ class ActorCriticTrain:
 
     def run(self):
         env = self.env
-        t_end = 500
         epi = 100000
         train_size = 20
 
@@ -142,21 +160,15 @@ class ActorCriticTrain:
 
         for e in range(epi):
             total_reward = 0
-            for t in range(t_end):
+
+            while True:
                 policy = self.actor_model(
                     tf.convert_to_tensor(state[None, :], dtype=tf.float32)
                 )
+
                 action = tf.squeeze(tf.random.categorical(policy, 1), axis=-1)
                 action = np.array(action)[0]
                 next_state, reward, done, _ = env.step(action)
-
-                #env.render()
-                if t == t_end :
-                    done = True
-                    reward += 10
-                if t < t_end and done :
-                    reward = -1
-
                 total_reward += reward
 
                 states.append(state)
@@ -167,8 +179,7 @@ class ActorCriticTrain:
 
                 state = next_state
 
-
-                if len(states) == train_size or done :
+                if len(states) == train_size or done:
                     self.train(states, actions, rewards, next_states, dones)
                     states = []
                     actions = []
@@ -178,8 +189,11 @@ class ActorCriticTrain:
 
                 if done:
                     self.reward_board(total_reward)
-                    print("e : ", e, " reward : ", total_reward, " step : ", t)
+                    alog.info("e : ", e, " reward : ", total_reward, " step : ",
+                          env.step_count)
+
                     env.reset()
+
                     with self.train_summary_writer.as_default():
                         # tf.summary.scalar('reward', self.reward_board.result(), step=e)
                         tf.summary.scalar('actor_loss', self.train_loss, step=e)

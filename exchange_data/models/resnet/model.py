@@ -30,7 +30,12 @@ Adam = tf.keras.optimizers.Adam
 TimeDistributed = tf.keras.layers.TimeDistributed
 
 
-def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
+def Model(
+    learning_rate=5e-5,
+    frame_width=224,
+    num_categories=3,
+    learning_rate_decay=5e-3
+):
     model = Sequential()
     model.add(Input(shape=(frame_width, frame_width, 3)))
 
@@ -43,22 +48,11 @@ def Model(learning_rate, frame_width, learning_rate_decay=5e-3):
     model.add(base)
     model.add(GlobalAveragePooling2D())
     model.add(Dropout(0.1))
-    model.add(Dense(3, activation='softmax'))
+    model.add(Dense(num_categories, activation='softmax'))
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['sparse_categorical_accuracy'],
         optimizer='adam'
-        # optimizer=Adam(
-        #     learning_rate=learning_rate,
-        #     beta_1=0.9,
-        #     beta_2=0.999,
-        #     amsgrad=False
-        # )
-        # optimizer=SGD(
-        #     lr=learning_rate,
-        #     decay=learning_rate_decay,
-        #     momentum=0.9
-        # )
     )
 
     return model
