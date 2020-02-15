@@ -1,9 +1,10 @@
+import sys
 from abc import ABC
 from datetime import datetime, timedelta
 from dateutil import parser
 from dateutil.tz import tz
 from enum import Enum
-from pyee import EventEmitter
+from pyee import EventEmitter, AsyncIOEventEmitter
 from pytimeparse import parse as dateparse
 from random import random
 
@@ -124,10 +125,14 @@ class EventEmitterBase(ABC):
 
         super().__init__(**kwargs)
 
-    def on(self, event, f=None, once=True):
-        # alog.info(self.event_emitter._events.keys())
-        # if event not in self.event_emitter._events.keys():
-        self.event_emitter.on(event, f)
+        self.on('error', self.raise_error)
 
-    def emit(self, event, *args, **kwargs):
-        self.event_emitter.emit(event, *args, **kwargs)
+    def raise_error(self, error):
+        alog.info(error)
+        raise Exception(error)
+
+    def on(self, event, f=None):
+        return self.event_emitter.on(event, f)
+
+    def emit(self, *args, **kwargs):
+        return self.event_emitter.emit(*args, **kwargs)
