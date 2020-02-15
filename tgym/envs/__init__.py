@@ -1,6 +1,6 @@
 from gym.envs.registration import register
-from tgym.envs.orderbook import OrderBookTradingEnv, LongOrderBookTradingEnv, \
-    TFOrderBookEnv
+from tgym.envs.orderbook import OrderBookTradingEnv, LongOrderBookTradingEnv
+from tgym.envs.orderbook import TFOrderBookEnv
 
 register(
     id='orderbook-trading-v0',
