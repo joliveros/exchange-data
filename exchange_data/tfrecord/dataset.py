@@ -46,8 +46,13 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
 
 @click.command()
 def main(**kwargs):
+    count = 0
     for x in dataset(1, **kwargs):
         alog.info(x)
+
+        count += 1
+
+        alog.info(count)
 
 
 if __name__ == '__main__':
