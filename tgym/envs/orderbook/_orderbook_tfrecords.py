@@ -5,16 +5,18 @@ from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
-from tgym.envs import OrderBookTradingEnv
+from ._orderbook import OrderBookTradingEnv
 
 import alog
 import click
 import numpy as np
 import random
+import tensorflow as tf
+
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, **kwargs):
+    def __init__(self, max_steps=30, **kwargs):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
@@ -28,9 +30,10 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         super().__init__(
             start_date=start_date,
             end_date=end_date,
+            directory_name='default',
             **kwargs
         )
-
+        self.max_steps = max_steps
         self.dataset = dataset(batch_size=1, **kwargs)
         self._expected_position = None
 
@@ -51,7 +54,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self._expected_position = [p for p in Positions if p.value == action][0]
 
     def _get_observation(self):
-        for data in self.dataset:
+        for data in self.dataset.make_one_shot_iterator():
             timestamp = DateTimeUtils\
                 .parse_datetime_str(data.get('datetime').numpy()[-1])
 
@@ -84,17 +87,21 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_count += 1
 
-        if self.step_count >= self.max_episode_length:
+        if self.step_count >= self.max_steps:
             self.done = True
 
         observation = self.get_observation()
 
         if self.expected_position == self.position:
             self.reward += 1.0
+        else:
+            self.reward -= 1.0
 
         reward = self.reset_reward()
 
         self.print_summary()
+
+        alog.info(alog.pformat(self.summary()))
 
         return observation, reward, self.done, {}
 
