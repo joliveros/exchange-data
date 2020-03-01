@@ -203,7 +203,6 @@ def _dataset(frame_width, batch_size: int, **kwargs):
         output_shapes=((frame_width, frame_width, 3,), ())
     ).batch(batch_size)
 
-
 def dataset(interval, epochs, steps_epoch, **kwargs):
     kwargs['steps_epoch'] = steps_epoch
 
