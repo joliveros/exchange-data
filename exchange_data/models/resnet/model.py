@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+import shutil
 
 import tensorflow as tf
 
 from exchange_data import settings
+from exchange_data.tfrecord.dataset import dataset
 from exchange_data.utils import EventEmitterBase
 from exchange_data.emitters import Messenger
-from exchange_data.tfrecord.dataset_query import dataset, _dataset
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
 from tensorflow_core.python.keras.estimator import model_to_estimator
@@ -31,6 +32,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 
 def Model(
+    batch_size,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -41,7 +43,7 @@ def Model(
 
     base = ResNet(
         include_top=False,
-        classes=3,
+        classes=num_categories,
         pooling=None
     )
 
@@ -49,9 +51,10 @@ def Model(
     model.add(GlobalAveragePooling2D())
     model.add(Dropout(0.1))
     model.add(Dense(num_categories, activation='softmax'))
+
     model.compile(
         loss='sparse_categorical_crossentropy',
-        metrics=['sparse_categorical_accuracy'],
+        metrics=['accuracy'],
         optimizer='adam'
     )
 
@@ -72,6 +75,7 @@ class ModelTrainer(Messenger):
     def _run(
             self,
             batch_size,
+            clear,
             checkpoint_steps,
             epochs,
             eval_span,
@@ -85,11 +89,22 @@ class ModelTrainer(Messenger):
             window_size,
             seed
         ):
-        model = Model(learning_rate, frame_width, learning_rate_decay)
+        model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+
+        if clear:
+            try:
+                shutil.rmtree(model_dir)
+            except Exception:
+                pass
+
+        model = Model(
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            frame_width=frame_width,
+            learning_rate_decay=learning_rate_decay
+        )
 
         model.summary()
-
-        model_dir = f'{Path.home()}/.exchange-data/models/resnet'
 
         run_config = RunConfig(
             save_checkpoints_secs=540,
@@ -107,19 +122,11 @@ class ModelTrainer(Messenger):
             input_fn=lambda: dataset(
                 batch_size=batch_size,
                 epochs=epochs,
-                frame_width=frame_width,
-                interval=interval,
-                steps_epoch=steps_epoch,
-                window_size=window_size,
-                use_volatile_ranges=True
             )
         )
 
         def eval_dataset(**kwargs):
-            return _dataset(
-                side=1, **kwargs
-            ) \
-                .concatenate(_dataset(side=2, **kwargs))
+            return dataset(batch_size=batch_size)
 
         eval_spec = EvalSpec(
             input_fn=lambda: eval_dataset(
@@ -167,6 +174,7 @@ class ModelTrainer(Messenger):
 @click.option('--seed', type=int, default=6*6*6)
 @click.option('--steps-epoch', default='1m', type=str)
 @click.option('--window-size', '-w', default='3s', type=str)
+@click.option('--clear', '-c', is_flag=True)
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     trainer = ModelTrainer(**kwargs)
