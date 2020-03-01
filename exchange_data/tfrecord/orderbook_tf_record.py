@@ -73,14 +73,14 @@ class OrderBookTFRecord(
                 frame=self.floatFeature(self.frames[-2][-1].flatten()),
                 best_bid=self.floatFeature([self.last_best_bid]),
                 best_ask=self.floatFeature([self.last_best_ask]),
-                expected_position=self.int64Feature(self.expected_position.value),
+                expected_position=self.int64Feature([self.expected_position.value]),
             )
 
             example: Example = Example(features=Features(feature=data))
             writer.write(example.SerializeToString())
 
     def int64Feature(self, value):
-        return Feature(int64_list=Int64List(value=[value]))
+        return Feature(int64_list=Int64List(value=value))
 
     def floatFeature(self, value):
         return Feature(float_list=FloatList(value=value))
