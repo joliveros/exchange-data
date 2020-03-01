@@ -7,7 +7,6 @@ from pathlib import Path
 import alog
 import click
 
-
 FixedLenFeature = tf.io.FixedLenFeature
 
 CLASSES = [0, 1, 2]
@@ -15,15 +14,19 @@ NUM_CLASSES = len(CLASSES)
 
 
 def extract_fn(data_record):
+    alog.info(data_record)
+
     features = dict(
-        best_ask=FixedLenFeature([1], tf.float32),
-        best_bid=FixedLenFeature([1], tf.float32),
-        datetime=FixedLenFeature([], tf.string),
-        expected_position=tf.io.FixedLenFeature([1, ], tf.int64),
+        # best_ask=FixedLenFeature([1], tf.float32),
+        # best_bid=FixedLenFeature([1], tf.float32),
+        # datetime=FixedLenFeature([], tf.string),
+        expected_position=tf.io.FixedLenFeature([1], tf.int64),
         frame=FixedLenFeature([224, 224, 3], tf.float32),
     )
 
-    return tf.io.parse_single_example(data_record, features)
+    data = tf.io.parse_single_example(data_record, features)
+
+    return data['frame'], data['expected_position']
 
 
 def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
@@ -36,7 +39,7 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
         lambda filename: (tf.data.TFRecordDataset(filename, compression_type='GZIP'))
     ).shuffle(buffer_size=num_files)
 
-    _dataset = _dataset.map(extract_fn)\
+    _dataset = _dataset.map(map_func=extract_fn)\
         .batch(batch_size) \
         .prefetch(10)\
         .repeat(epochs)
@@ -47,11 +50,10 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
 @click.command()
 def main(**kwargs):
     count = 0
-    for x in dataset(1, **kwargs):
+    for x, y in dataset(2, **kwargs):
         alog.info(x)
-
+        alog.info(y)
         count += 1
-
         alog.info(count)
 
 
