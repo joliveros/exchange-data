@@ -21,8 +21,9 @@ def run(run_name, hparams):
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
             'batch_size': 1,
-            'checkpoint_steps': 200,
+            'checkpoint_steps': 1000,
             'clear': True,
+            'directory': 'tune',
             'epochs': 3,
             'eval_span': '2m',
             'eval_steps': '30s',
@@ -32,8 +33,8 @@ def run(run_name, hparams):
             'learning_rate_decay': 0,
             'max_steps': 21600,
             'seed': 216,
-            'steps_epoch': '5m',
-            'window_size': '3s'
+            'steps_epoch': '10m',
+            'window_size': '3s',
         }
 
 
