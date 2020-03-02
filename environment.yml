@@ -9,7 +9,7 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
-  - pip
+  - pip==19.3.1
   - python=3.6.5
   - toolz
   - xarray
@@ -37,12 +37,11 @@ dependencies:
     - pytest-vcr
     - python-socketio[client]
     - pytimeparse
-    - ray[rllib,debug]
     - redis
     - rollbar>=0.13.12
     - sortedcontainers
     - statsd
     - stringcase
-    - tensorflow-gpu
+    - tensorflow-gpu==2.0.0
     - timestamp
 #    - git+https://github.com/py-bson/bson.git#egg=bson

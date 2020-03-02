@@ -1,7 +1,10 @@
+import sys
+from abc import ABC
 from datetime import datetime, timedelta
 from dateutil import parser
 from dateutil.tz import tz
 from enum import Enum
+from pyee import EventEmitter, AsyncIOEventEmitter
 from pytimeparse import parse as dateparse
 from random import random
 
@@ -60,7 +63,10 @@ class MemoryTracing(object):
         self.snapshot = snapshot2
 
 
-class DateTimeUtils(object):
+class DateTimeUtils(ABC):
+    def __init__(self, **kwargs):
+        pass
+
     @staticmethod
     def now():
         return datetime.utcnow().replace(tzinfo=tz.tzutc())
@@ -104,3 +110,29 @@ class DateTimeUtils(object):
             results.append(last_dt)
 
         return results
+
+
+class Base(object):
+     def __init__(self, **kwargs):
+        pass
+
+
+class EventEmitterBase(ABC):
+
+    def __init__(self, **kwargs):
+        if 'event_emitter' not in self.__dict__:
+            self.event_emitter = EventEmitter()
+
+        super().__init__(**kwargs)
+
+        self.on('error', self.raise_error)
+
+    def raise_error(self, error):
+        alog.info(error)
+        raise Exception(error)
+
+    def on(self, event, f=None):
+        return self.event_emitter.on(event, f)
+
+    def emit(self, *args, **kwargs):
+        return self.event_emitter.emit(*args, **kwargs)

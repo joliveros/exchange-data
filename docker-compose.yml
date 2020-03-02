@@ -11,7 +11,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/time_emitter.py"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/time_emitter.py"
     networks:
       - public
     depends_on:
@@ -21,7 +21,9 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py XBTUSD"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py XBTUSD"
+    environment:
+      - LOG_LEVEL=INFO
     networks:
       - public
     depends_on:
@@ -31,7 +33,7 @@ services:
     deploy:
       replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_websocket_emitter.py ETHUSD"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py ETHUSD"
     networks:
       - public
     depends_on:
@@ -41,7 +43,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
     networks:
       - public
     depends_on:
@@ -51,7 +53,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
     environment:
       - LOG_LEVEL=INFO
     env_file:
@@ -71,7 +73,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     env_file:
       - ./.env.prod
     secrets:
@@ -102,7 +104,7 @@ services:
       - ROLLBAR_API_KEY
     depends_on:
       - influxdb
-    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
+    command: bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py ETHUSD --measurement-name ETHUSD_ws"
     networks:
       - public
 
@@ -122,7 +124,7 @@ services:
       - ROLLBAR_API_KEY
     depends_on:
     - influxdb
-    command: bash -c "source ~/.bashrc && python ./exchange_data/recorders/_bitmex.py XBTUSD --measurement-name data"
+    command: bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py XBTUSD --measurement-name data"
     networks:
     - public
 
@@ -130,7 +132,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/bitmex/_account_emitter.py"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_account_emitter.py"
     environment:
       - LOG_LEVEL=INFO
     env_file:
@@ -151,7 +153,7 @@ services:
     deploy:
       replicas: 0
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/tfrecord/orderbook_tf_record.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
+    command: bash -c "source ~/.bashrc && ./exchange_data/tfrecord/orderbook_tf_record_workers.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
@@ -170,7 +172,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && python ./exchange_data/emitters/orderbook_training_data.py --frame-width 224"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l 5e4"
     environment:
       - LOG_LEVEL=INFO
     env_file:
@@ -183,6 +185,23 @@ services:
     secrets:
       - DB
 
+  emit_prediction_btc:
+    deploy:
+      replicas: 0
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD"
+    environment:
+      - LOG_LEVEL=INFO
+    env_file:
+      - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - resnet_server
+      - redis
+      - influxdb
+    secrets:
+      - DB
 
 secrets:
   BITMEX_API_KEY:

@@ -11,7 +11,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && ./exchange_data/models/resnet/model.py --eval-span 30m -e 1 --frame-width 224 -i 30m -w 2s --steps-epoch 10m --min-std-dev 0.0 --stddev-group-interval 15s --eval-steps 15s"
+    command: bash -c "source ~/.bashrc && ./exchange_data/models/resnet/model.py --eval-span 30m -e 15 --frame-width 224 -i 6h -w 3s --steps-epoch 6m --eval-steps 30s -l 0.0000001 --learning-rate-decay 0.00001"
     volumes:
       - "${HOME}/.exchange-data/:/root/.exchange-data/"
     environment:
@@ -38,6 +38,20 @@ services:
         - NVIDIA_VISIBLE_DEVICES=all
     networks:
       - public
+
+  virtual_executor:
+    deploy:
+        replicas: 1
+    image: codequants.com:5000/exchange-data:latest
+    command: bash -c "source ~/.bashrc && ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 10.0 -c 0.0034482758620689655"
+    environment:
+        - NVIDIA_VISIBLE_DEVICES=all
+    depends_on:
+        - redis
+    networks:
+        - public
+    secrets:
+        - DB
 
 secrets:
   DB:

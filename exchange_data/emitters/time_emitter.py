@@ -1,8 +1,9 @@
-import multiprocessing
+#!/usr/bin/env python
+
 from datetime import datetime
 from exchange_data import settings
 from exchange_data.emitters.messenger import Messenger
-from exchange_data.utils import NoValue, DateTimeUtils
+from exchange_data.utils import NoValue, DateTimeUtils, EventEmitterBase
 from time import sleep
 import alog
 import click

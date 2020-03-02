@@ -29,8 +29,7 @@ class BitmexOrderBookChannels(NoValue):
     XBTUSD = 'XBTUSD_OrderBookFrame'
 
 
-class BitmexStreamer(Database, Generator, DateTimeUtils,
-                     ABC):
+class BitmexStreamer(Database, DateTimeUtils, Generator):
     def __init__(
         self,
         max_spread: float = 100.0,
@@ -45,7 +44,8 @@ class BitmexStreamer(Database, Generator, DateTimeUtils,
         date_checks = True,
         **kwargs
     ):
-        super().__init__(database_name='bitmex', **kwargs)
+
+        super().__init__(**kwargs)
 
         self.counter = 0
         self._orderbook = []
@@ -80,14 +80,15 @@ class BitmexStreamer(Database, Generator, DateTimeUtils,
             self.stop_date = end_date
             self.end_date = end_date
 
-        # self.end_date = self.start_date + \
-        #     timedelta(seconds=self.window_size)
-
-        if self.start_date > start_date:
-            raise Exception()
+        if start_date is not None:
+            if self.start_date > start_date:
+                raise Exception()
 
         if self.original_end_date != self.end_date and date_checks:
             raise Exception()
+
+        self.end_date = self.start_date + \
+            timedelta(seconds=self.window_size)
 
     @property
     def end_date(self):
@@ -208,11 +209,8 @@ class BitmexStreamer(Database, Generator, DateTimeUtils,
         return result
 
     def _set_next_window(self):
-        self.start_date += timedelta(seconds=self.window_size )
-        self.end_date += timedelta(seconds=self.window_size)
-
-        if self.end_date >= self.stop_date:
-            raise StopIteration()
+        self.start_date += timedelta(seconds=self.window_size)
+        self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
     def send(self, *args):
         self.counter += 1
@@ -221,6 +219,9 @@ class BitmexStreamer(Database, Generator, DateTimeUtils,
             time, orderbook = self.next_window()
             self._time += time.tolist()
             self._orderbook += orderbook.tolist()
+
+        if self._time[-1] > self.stop_date:
+            raise StopIteration()
 
         return self._time.pop(0), self._orderbook.pop(0)
 

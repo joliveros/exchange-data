@@ -1,10 +1,10 @@
-from ._bitmex_websocket_emitter import (
-    BitmexEmitterBase, BitmexEmitter
+from .instrument_emitter import (
+    BitmexEmitterBase, BitmexInstrumentEmitter
 )
 from ._bitmex_orderbook_emitter import BitmexOrderBookEmitter
 
 __all__ = [
-    BitmexEmitter,
+    BitmexInstrumentEmitter,
     BitmexEmitterBase,
     BitmexOrderBookEmitter,
 ]

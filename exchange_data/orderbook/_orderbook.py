@@ -17,7 +17,7 @@ class OrderBook(object):
     asks: OrderTree
     bids: OrderTree
 
-    def __init__(self, tick_size=0.0001):
+    def __init__(self, tick_size=0.0001, **kwargs):
         # Index[0] is most recent trade
         self.tape = deque(maxlen=10)
         self.bids = OrderTree()
@@ -28,6 +28,8 @@ class OrderBook(object):
         self.time = 0
         self._next_order_id = 0
         self.last_trades = []
+
+        super().__init__(**kwargs)
 
     @property
     def next_order_id(self):

@@ -1,4 +1,3 @@
-from abc import ABC
 from collections import deque
 from datetime import timedelta
 from exchange_data import settings
@@ -24,7 +23,7 @@ class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
+class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     """
     Orderbook based trading environment.
     """
@@ -32,11 +31,14 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
     def __init__(
         self,
-        summary_interval,
+        start_date,
+        end_date,
+        summary_interval=120,
+        database_name = 'bitmex',
         logger=None,
-        trading_fee=0.0/100.0,
+        leverage=1.0,
+        trading_fee=0.125/100.0,
         max_loss=-0.1/100.0,
-        random_start_date=False,
         orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
@@ -47,7 +49,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward=0.000005,
-        capital=10.0,
+        capital=1.0,
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
@@ -55,33 +57,30 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         frame_width=96,
         **kwargs
     ):
+        kwargs['start_date'] = start_date
+        kwargs['end_date'] = end_date
+        kwargs['database_name'] = database_name
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
-        kwargs['random_start_date'] = random_start_date
         kwargs['channel_name'] = \
             f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
 
         self._args = locals()
         self.last_observation = None
         self.last_timestamp = 0
+        self.reset_class = OrderBookTradingEnv
 
         super().__init__(
             frame_width=frame_width,
-            max_frames=max_frames,
-            **kwargs
-        )
-        PlotOrderbook.__init__(
-            self,
-            frame_width=frame_width,
-            max_frames=max_frames,
             **kwargs
         )
 
+        PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+
+        self.leverage = leverage
+        self.capital = capital
         self.frame_width = frame_width
-
-        # PlotOrderbook.__init__(self, self.frame_width)
-
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
         self.done = False
@@ -130,6 +129,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         self.trading_fee = trading_fee
         self.use_volatile_ranges = use_volatile_ranges
         self.last_position = Positions.Flat
+        self.orderbook_depth = orderbook_depth
         self.last_bid_side = np.zeros((self.orderbook_depth,))
         self.last_ask_side = np.copy(self.last_bid_side)
         self.current_trade = None
@@ -140,23 +140,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         self.position_repeat = 0
         self.trade_size = self.capital * (10/100)
         self.reset_count = 0
-
-        if volatile_ranges is None and use_volatile_ranges:
-            self.volatile_ranges = self.get_volatile_ranges()
-            self._args['volatile_ranges'] = self.volatile_ranges
-        else:
-            self.volatile_ranges = volatile_ranges
-
-        if use_volatile_ranges:
-            nearest_volatile_range = self.volatile_ranges.index\
-                .get_loc(self.start_date.timestamp() * (10**3), method='nearest')
-
-            nearest_volatile_range_start = self.volatile_ranges\
-                .iloc[nearest_volatile_range].name
-
-            self.start_date = \
-                self.parse_db_timestamp(nearest_volatile_range_start)
-            self.end_date = self.start_date + timedelta(seconds=self.window_size)
+        self.start_date = start_date
+        self.end_date = end_date
 
         self.start_date -= timedelta(seconds=self.max_frames + 1)
 
@@ -220,30 +205,23 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
     def reset(self, **kwargs):
         self.reset_count += 1
 
-        # if self.reset_count > 2:
-        #     raise Exception()
-
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
 
-        # _kwargs = self._args['kwargs']
-        # del self._args['kwargs']
-        # _kwargs = {**self._args, **_kwargs, **kwargs}
-        # del _kwargs['self']
-        # new_instance = OrderBookTradingEnv(**_kwargs)
-        # self.__dict__ = new_instance.__dict__
+        _kwargs = self._args['kwargs']
+        del self._args['kwargs']
+        _kwargs = {**self._args, **_kwargs, **kwargs}
+        del _kwargs['self']
+        new_instance = self.reset_class(**_kwargs)
 
-        # for i in range(n_noops):
+        self.__dict__ = {**self.__dict__, **new_instance.__dict__}
+
+        # for i in range(noops):
         #     self.get_observation()
 
-        try:
-            for _ in range(self.max_frames):
-                self.get_observation()
-        except (OutOfFramesException, TypeError):
-            if not self.random_start_date:
-                self._set_next_window()
-            return self.reset(**kwargs)
+        for _ in range(self.max_frames):
+            self.get_observation()
 
         return self.last_observation
 
@@ -257,15 +235,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         self.step_position(action)
 
-        # if self.capital < self.min_capital:
-        #     self.done = True
-
         self.step_count += 1
 
         if self.step_count >= self.max_episode_length:
             self.done = True
-
-        # observation = self.get_observation()
 
         try:
             observation = self.get_observation()
@@ -367,92 +340,33 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
         self.ax1.clear()
         ax1 = self.ax1
         fig = self.fig
-
-        bsizeacc = 0
-        bhys = []    # bid - horizontal - ys
-        bhxmins = [] # bid - horizontal - xmins
-        bhxmaxs = [] # ...
-        bvxs = []
-        bvymins = []
-        bvymaxs = []
-        asizeacc = 0
-        ahys = []
-        ahxmins = []
-        ahxmaxs = []
-        avxs = []
-        avymins = []
-        avymaxs = []
-
-        bids = self.bids
+        bids = np.flip(self.bids[:10], 0)
         asks = self.asks
 
-        for (p1, s1), (p2, s2) in zip(bids, bids[1:]):
-            if bsizeacc == 0:
-                bvxs.append(p1)
-                bvymins.append(0.0)
-                bvymaxs.append(s1)
-                bsizeacc += s1
-            bvymins.append(bsizeacc)
-            bhys.append(bsizeacc)
-            bhxmins.append(p2)
-            bhxmaxs.append(p1)
-            bvxs.append(p2)
-            bsizeacc += s2
-            bvymaxs.append(bsizeacc)
+        for price, volume in bids:
+            ax1.bar(price, volume, color='red', width=0.45)
 
-        for (p1, s1), (p2, s2) in zip(asks, asks[1:]):
-            if asizeacc == 0:
-                avxs.append(p1)
-                avymins.append(0.0)
-                avymaxs.append(s1)
-                asizeacc += s1
+        for price, volume in asks:
+            ax1.bar(price, volume, color='blue', width=0.45)
 
-            avymins.append(asizeacc)
-            ahys.append(asizeacc)
-            ahxmins.append(p1)
-            ahxmaxs.append(p2)
-            avxs.append(p2)
-            asizeacc += s2
-            avymaxs.append(asizeacc)
+        plt.ylim(0, self.top_limit)
 
-        ax1.hlines(bhys, bhxmins, bhxmaxs, color="green")
-        ax1.vlines(bvxs, bvymins, bvymaxs, color="green")
-        ax1.hlines(ahys, ahxmins, ahxmaxs, color="red")
-        ax1.vlines(avxs, avymins, avymaxs, color="red")
-        self.plot_price_over_time()
-        plt.autoscale(tight=True)
+        plt.xlim(bids[0, 0], asks[-1, 0])
+
         self.hide_ticks_and_values(ax1)
+
         fig.patch.set_visible(False)
         fig.canvas.draw()
 
         img = fig.canvas.renderer._renderer
         img = np.array(img)
 
-        # if img.shape[0] != self.frame_width:
-        #     raise Exception(
-        #         f'Frame {img.shape} does not match requested size ({self.frame_width}).'
-        #     )
-
         if self.print_ascii_chart:
             if self.step_count % self.summary_interval == 0:
-                alog.info(AsciiImage(img))
-                alog.info(img.shape)
-                # plt.show()
-                # traceback.print_stack()
-                # raise Exception()
+                alog.info(AsciiImage(img, new_width=10))
 
         img = img[:, :, :3]
         return img
-
-    def plot_price_over_time(self):
-        self.ax2.clear()
-        ax2 = self.ax2
-        bid_ask = np.array(self.position_data_history)[:-1, :2]
-        bid_ask = np.flip(bid_ask, axis=0)
-        bid_ask = bid_ask.swapaxes(1, 0)
-        avg = np.add(bid_ask[0], bid_ask[1]) / 2
-        ax2.plot(avg, color='orange')
-        self.hide_ticks_and_values(ax2)
 
     def _get_observation(self):
         time = None
@@ -460,6 +374,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         while self.last_timestamp == time or time is None:
             time, orderbook = next(self)
+
         self.last_timestamp = time
         return time, orderbook
 
@@ -491,11 +406,13 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         if self.current_trade is None:
             self.current_trade = LongTrade(
-                capital=self.trade_capital,
+                leverage=self.leverage,
+                capital=self.capital,
                 entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def short(self):
         if isinstance(self.current_trade, Trade):
@@ -505,11 +422,13 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         if self.current_trade is None:
             self.current_trade = ShortTrade(
-                capital=self.trade_capital,
+                leverage=self.leverage,
+                capital=self.capital,
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def flat(self):
         if isinstance(self.current_trade, Trade):
@@ -519,22 +438,28 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         if self.current_trade is None:
             self.current_trade = FlatTrade(
-                capital=self.trade_capital,
+                capital=self.trade_size,
                 entry_price=(self.best_bid + self.best_ask) / 2,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change
             )
+            self.current_trade.step(self.best_bid, self.best_ask)
 
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
         reward = trade.reward
         self.trades.append(trade)
-        self.capital += trade.capital
+
+        if type(trade) != FlatTrade:
+            self.capital += trade.capital
+
         self.reward += reward
         self.current_trade = None
 
     def change_position(self, action):
+        action = int(action)
+
         if action == Positions.Long.value:
             self.long()
         elif action == Positions.Short.value:
@@ -547,6 +472,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
             '_best_ask',
             '_best_bid',
             'capital',
+            'leverage',
             'last_datetime',
             'step_count',
             'total_reward'
@@ -557,7 +483,9 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 
         summary['position_history'] = \
             ''.join(self.position_history[-1 * self.max_summary:])
-        summary['trades'] = self.trades[-1 * self.max_summary:]
+
+        summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
+                             if type(trade) != FlatTrade]
 
         return summary
 
@@ -578,7 +506,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env, ABC):
 @click.option('--summary-interval', '-s', default=120, type=int)
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
-        random_start_date=True,
         use_volatile_ranges=False,
         window_size='30s',
         is_training=False,

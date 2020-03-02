@@ -8,9 +8,11 @@ from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
 from exchange_data.orderbook._ordertree import OrderTree
-from exchange_data.utils import NoValue, DateTimeUtils
+from exchange_data.utils import NoValue, DateTimeUtils, EventEmitterBase
 from functools import lru_cache
 from numpy.core.multiarray import ndarray
+from pyee import EventEmitter
+
 import alog
 import click
 import gc
@@ -26,28 +28,31 @@ class BitmexOrderBookChannels(NoValue):
 
 class BitmexOrderBookEmitter(
     BitmexEmitterBase,
-    Messenger,
     BitmexOrderBook,
     Database,
     SignalInterceptor,
-    DateTimeUtils
+    DateTimeUtils,
 ):
     def __init__(
         self, symbol: BitmexChannels,
         depths=None,
         emit_depths=None,
         emit_interval=None,
+        database_name='bitmex',
         reset_orderbook: bool = True,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
     ):
-        DateTimeUtils.__init__(self)
-        BitmexOrderBook.__init__(self, symbol)
-        Messenger.__init__(self)
-        BitmexEmitterBase.__init__(self, symbol)
-        Database.__init__(self, database_name='bitmex')
-        SignalInterceptor.__init__(self, self.exit)
+        self.subscriptions_enabled = subscriptions_enabled
+        self.should_reset_orderbook = reset_orderbook
+
+        super().__init__(
+            symbol=symbol,
+            database_name=database_name,
+            database_batch_size=10,
+            **kwargs
+        )
 
         if emit_interval is None:
             self.emit_interval = '5s'
@@ -59,7 +64,6 @@ class BitmexOrderBookEmitter(
         else:
             self.emit_depths = emit_depths
 
-        self.subscriptions_enabled = subscriptions_enabled
         if depths is None:
             depths = [21]
 
@@ -67,26 +71,29 @@ class BitmexOrderBookEmitter(
         self.save_data = save_data
         self.slices = {}
         self.frame_slice = None
-        self.orderbook_l2_channel = \
-            OrderBookL2Emitter.generate_channel_name('1m', self.symbol)
+
+        self.orderbook_l2_channel = OrderBookL2Emitter\
+            .generate_channel_name('1m', self.symbol)
+
         self.freq = settings.TICK_INTERVAL
         self.frame_channel = f'{self.symbol.value}_' \
             f'{BitmexOrderBookChannels.OrderBookFrame.value}'
 
-        if subscriptions_enabled:
+        if self.subscriptions_enabled:
             self.on(TimeChannels.Tick.value, self.save_frame)
             self.on(TimeChannels.Tick.value, self.emit_frames)
             self.on('5s', self.emit_frames_5s)
             self.on(self.symbol.value, self.message)
 
-            if reset_orderbook:
-                self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
+        if self.should_reset_orderbook:
+            self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
 
     def print_stats(self):
         alog.info(self.print(depth=4))
         alog.info(self.dataset.dims)
 
     def process_orderbook_l2(self, data):
+
         self.reset_orderbook()
 
         self.message({
@@ -109,13 +116,13 @@ class BitmexOrderBookEmitter(
     def garbage_collect(self):
         gc.collect()
 
-    def start(self):
+    def start(self, channels=[]):
         self.sub([
             '5s',
             self.orderbook_l2_channel,
             self.symbol,
             TimeChannels.Tick,
-        ])
+        ] + channels)
 
     def exit(self, *args):
         self.stop()
@@ -242,6 +249,7 @@ class BitmexOrderBookEmitter(
 def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
         symbol=BitmexChannels[symbol],
+        subscriptions_enabled=True,
         **kwargs
     )
 

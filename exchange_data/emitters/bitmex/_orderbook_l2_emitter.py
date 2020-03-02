@@ -1,18 +1,20 @@
+#!/usr/bin/env python
+
 from bitmex import bitmex
+
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
-from exchange_data.emitters.bitmex import BitmexEmitterBase
 
 import click
 import json
 import signal
 
 
-class OrderBookL2Emitter(BitmexEmitterBase, Messenger):
+class OrderBookL2Emitter(Messenger):
 
     def __init__(self, symbol: BitmexChannels, interval: str = '1m', **kwargs):
-        super().__init__(symbol, **kwargs)
-
+        super().__init__(**kwargs)
+        self.symbol = symbol
         self.bitmex = bitmex(test=False)
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)

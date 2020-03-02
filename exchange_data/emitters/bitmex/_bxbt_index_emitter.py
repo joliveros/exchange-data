@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from collections import deque
 
 import alog
@@ -6,7 +8,7 @@ from datetime import datetime, timedelta
 from exchange_data import Database
 from exchange_data._measurement import Measurement
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, SignalInterceptor, TimeChannels, \
+from exchange_data.emitters import SignalInterceptor, TimeChannels, \
     TimeEmitter
 from exchange_data.emitters.bitmex import BitmexEmitterBase
 from typing import List, Tuple
@@ -19,7 +21,6 @@ from exchange_data.utils import DateTimeUtils
 
 class BXBTIndexEmitter(
     BitmexEmitterBase,
-    Messenger,
     Database,
     SignalInterceptor,
     DateTimeUtils
@@ -28,10 +29,13 @@ class BXBTIndexEmitter(
     def __init__(self, interval: str = '1m', **kwargs):
         self.symbol = BitmexChannels.BXBT
 
-        BitmexEmitterBase.__init__(self, symbol=self.symbol, **kwargs)
-        Database.__init__(self, database_name='bitmex', **kwargs)
-        Messenger.__init__(self)
-        SignalInterceptor.__init__(self, self.stop)
+        super().__init__(
+            symbol=self.symbol,
+            database_name='bitmex',
+            database_batch_size=10,
+            exit_func=self.stop,
+            **kwargs
+        )
 
         self.bitmex_client = bitmex(test=False)
 
@@ -103,7 +107,6 @@ class BXBTIndexEmitter(
 
         if self.index_price is not None:
             msg = BitmexChannels.BXBT_s.value, self.index_price
-
             self.publish(*msg)
 
             measurement = Measurement(
