@@ -32,6 +32,7 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
 @click.option('--window-size', '-g', default='1m', type=str)
+@click.option('--record-window', '-r', default='15s', type=str)
 def main(**kwargs):
     record = OrderBookTFRecordWorkers(
         database_name='bitmex',
