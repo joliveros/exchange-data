@@ -7,6 +7,7 @@ from exchange_data.emitters import Messenger, TimeChannels
 from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
 from exchange_data.trading._trade_executor import TradeExecutorUtil
+from exchange_data.utils import DateTimeUtils
 from tgym.envs import OrderBookTradingEnv
 
 import alog
@@ -31,6 +32,8 @@ class VirtualTradeExecutor(
         TradeJob.__init__(self, symbol=symbol)
 
         super().__init__(
+            start_date=DateTimeUtils.now(),
+            end_date=DateTimeUtils.now(),
             symbol=symbol,
             database_name='bitmex',
             random_start_date=True,

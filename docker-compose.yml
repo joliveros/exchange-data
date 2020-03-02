@@ -187,7 +187,7 @@ services:
 
   emit_prediction_btc:
     deploy:
-      replicas: 0
+      replicas: 1
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD"
     environment:

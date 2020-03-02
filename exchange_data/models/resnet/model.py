@@ -33,7 +33,6 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     batch_size,
-    dropout_rate=0.1,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -76,6 +75,7 @@ class ModelTrainer(object):
             self,
             batch_size,
             clear,
+            directory,
             dropout_rate,
             export_model,
             checkpoint_steps,
@@ -91,7 +91,7 @@ class ModelTrainer(object):
             window_size,
             seed
         ):
-        model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+        model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
 
         if clear:
             try:
@@ -131,7 +131,7 @@ class ModelTrainer(object):
         )
 
         def eval_dataset():
-            return dataset(batch_size=batch_size)
+            return dataset(batch_size=batch_size, take=timeparse(eval_span))
 
         eval_spec = EvalSpec(
             input_fn=lambda: eval_dataset(),
@@ -161,6 +161,7 @@ class ModelTrainer(object):
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
 @click.option('--checkpoint-steps', '-s', type=int, default=200)
+@click.option('--directory', type=str, default='default')
 @click.option('--epochs', '-e', type=int, default=10)
 @click.option('--eval-span', type=str, default='20m')
 @click.option('--eval-steps', type=str, default='15s')
