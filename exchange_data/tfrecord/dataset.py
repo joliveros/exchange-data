@@ -42,8 +42,8 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
 
     _dataset = _dataset.map(map_func=extract_fn)\
         .batch(batch_size) \
-        .prefetch(10) \
         .skip(skip) \
+        .prefetch(10) \
         .repeat(epochs)
 
     return _dataset
