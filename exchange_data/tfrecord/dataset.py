@@ -29,7 +29,8 @@ def extract_fn(data_record):
     return data['frame'], data['expected_position']
 
 
-def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
+def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
+                                                       dataset_name='default',
             **kwargs):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
@@ -43,6 +44,7 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
     _dataset = _dataset.map(map_func=extract_fn)\
         .batch(batch_size) \
         .skip(skip) \
+        .take(take) \
         .prefetch(10) \
         .repeat(epochs)
 

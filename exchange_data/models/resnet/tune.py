@@ -32,7 +32,7 @@ def run(run_name, hparams):
             'learning_rate_decay': 0,
             'max_steps': 21600,
             'seed': 216,
-            'steps_epoch': '1m',
+            'steps_epoch': '5m',
             'window_size': '3s'
         }
 
