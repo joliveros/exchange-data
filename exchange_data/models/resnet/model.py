@@ -33,6 +33,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     batch_size,
+    epsilon,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -49,13 +50,16 @@ def Model(
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(dropout_rate))
     model.add(Dense(num_categories, activation='softmax'))
+
+    optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
+
+    alog.info(optimizer)
 
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'],
-        optimizer=Adam(lr=learning_rate, decay=learning_rate_decay)
+        optimizer=optimizer
     )
 
     return model
@@ -76,7 +80,6 @@ class ModelTrainer(object):
             batch_size,
             clear,
             directory,
-            dropout_rate,
             export_model,
             checkpoint_steps,
             epochs,
@@ -85,6 +88,7 @@ class ModelTrainer(object):
             frame_width,
             interval,
             learning_rate,
+            epsilon,
             max_steps,
             learning_rate_decay,
             steps_epoch,
@@ -100,7 +104,7 @@ class ModelTrainer(object):
                 pass
 
         model = Model(
-            dropout_rate=dropout_rate,
+            epsilon=epsilon,
             batch_size=batch_size,
             learning_rate=learning_rate,
             frame_width=frame_width,
@@ -167,7 +171,7 @@ class ModelTrainer(object):
 @click.option('--eval-steps', type=str, default='15s')
 @click.option('--frame-width', type=int, default=224)
 @click.option('--interval', '-i', type=str, default='1m')
-@click.option('--dropout-rate', '-d', type=float, default=0.3e-4)
+@click.option('--epsilon', type=float, default=0.3e-4)
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
 @click.option('--learning-rate-decay', default=5e-3, type=float)
 @click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
