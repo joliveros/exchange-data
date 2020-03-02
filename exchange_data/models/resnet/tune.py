@@ -10,8 +10,7 @@ import logging
 import tensorflow as tf
 
 HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000001, 0.0001))
-HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.01,
-                                                     1.0))
+HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.01, 1.0))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
