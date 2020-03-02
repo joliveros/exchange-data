@@ -18,14 +18,14 @@ alog.set_level(settings.LOG_LEVEL)
 class Recorder(Database, DateTimeUtils):
     measurements = []
     channels = []
-    symbols = []
 
-    def __init__(self, symbols, database_name, batch_size: int = 100, **kwargs):
-        DateTimeUtils.__init__(self)
-        Database.__init__(self, database_name=database_name, **kwargs)
-
+    def __init__(self, symbol, database_name, batch_size: int = 100, **kwargs):
+        super().__init__(
+            database_name=database_name,
+            database_batch_size=10000,
+            **kwargs)
         self.batch_size = batch_size
-        self.symbols = symbols
+        self.symbol = symbol
 
     def to_lowercase_keys(self, data):
         return dict((k.lower(), v) for k, v in data.items())
@@ -74,10 +74,9 @@ class Recorder(Database, DateTimeUtils):
 
         self.measurements.append(measurement)
 
-        if len(self.measurements) >= self.batch_size:
-            self.write_points(self.measurements, time_precision='ms')
+        self.write_points(self.measurements, time_precision='ms')
 
-            self.measurements = []
+        self.measurements = []
 
     def get_timestamp(self, table):
         return float(

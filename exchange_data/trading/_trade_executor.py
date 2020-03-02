@@ -1,42 +1,52 @@
-import json
-from datetime import timedelta
-from time import sleep
+#! /usr/bin/env python
 
-import alog
 from bitmex import bitmex
-
+from datetime import timedelta
 from exchange_data import settings, Database
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import SignalInterceptor
 from exchange_data.emitters.messenger import Messenger
-from exchange_data.utils import DateTimeUtils
-from tgym.envs.orderbook.utils import Positions
+from exchange_data.emitters.prediction_emitter import TradeJob
+from exchange_data.trading import Positions
+from exchange_data.utils import DateTimeUtils, EventEmitterBase
+from time import sleep
 
+import alog
 import click
+import json
+
+
+class TradeExecutorUtil(object):
+    def parse_position_value(self, value):
+        return [position for position in Positions
+                if position.value == value][0]
 
 
 class TradeExecutor(
-    Database,
+    TradeJob,
     Messenger,
-    DateTimeUtils,
-    SignalInterceptor
+    Database,
+    TradeExecutorUtil,
+    SignalInterceptor,
+    DateTimeUtils
 ):
 
     def __init__(
         self,
-        job_name: str,
-        symbol: str,
+        exit_func,
+        database_name='bitmex',
         position_size: int = 1,
-        **kwargs):
-        Database.__init__(self, database_name='bitmex', **kwargs)
-        SignalInterceptor.__init__(self, exit_func=self.stop, **kwargs)
-        Messenger.__init__(self, **kwargs)
-        DateTimeUtils.__init__(self)
+        **kwargs
+    ):
+        if exit_func is None:
+            exit_func=self.stop
 
-        self.symbol = BitmexChannels[symbol]
-        self.job_name = job_name
+        super().__init__(
+            database_name=database_name,
+            exit_func=exit_func,
+            **kwargs
+        )
 
-        self.last_position = self._last_position()
         self.position_size = position_size
         self.bitmex_client = bitmex(
             test=False,
@@ -46,7 +56,8 @@ class TradeExecutor(
 
         self.on(self.job_name, self.execute)
 
-    def _last_position(self):
+    @property
+    def last_position(self):
         end_date = self.now()
         start_date = end_date - timedelta(hours=24)
         start_date = self.format_date_query(start_date)
@@ -70,11 +81,11 @@ class TradeExecutor(
 
         return position
 
-    def start(self):
-        self.sub([self.job_name])
+    def start(self, channels=[]):
+        self.sub([self.job_name] + channels)
 
     def execute(self, action):
-        position = Positions[action['data']]
+        position = self.parse_position_value(int(action['data']))
 
         if position.value != self.last_position.value:
             if position == Positions.Flat:

@@ -1,47 +1,29 @@
 #!/usr/bin/env python
-from dateutil.tz import tz
 
-from exchange_data import Measurement, Database
+from exchange_data import Measurement, NumpyEncoder, settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from tgym.envs import OrderBookTradingEnv
 from tgym.envs.orderbook._orderbook import OrderBookIncompleteException
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
 import click
 import json
+import logging
 import numpy as np
 
 
-class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
-    def __init__(
-        self,
-        symbol=BitmexChannels.XBTUSD,
-        **kwargs
-    ):
-        start_date = DateTimeUtils.now()
+class TrainingDataBase(object):
+    def __init__(self, **kwargs):
+        self.last_best_bid = None
+        self.last_best_ask = None
+        self.best_bid = None
+        self.best_ask = None
 
-        super(OrderBookTrainingData, self).__init__(
-            start_date=start_date,
-            random_start_date=False,
-            date_checks=False,
-            **kwargs
-        )
-
-        OrderBookTradingEnv.__init__(
-            self,
-            start_date=start_date,
-            random_start_date=False,
-            date_checks=False,
-            **kwargs
-        )
-        self.symbol = symbol
-        self._last_datetime = self.start_date
-        self.last_data = []
-        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
-        self.on(self.orderbook_channel, self.write_observation)
+        super().__init__(**kwargs)
 
     @property
     def avg_exit_price(self):
@@ -60,9 +42,6 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         position = None
         diff = self.diff
 
-
-
-
         if diff > 0.0:
             position = Positions.Long
         elif diff < 0.0:
@@ -70,9 +49,36 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         elif diff == 0.0:
             position = Positions.Flat
 
-        alog.debug((diff, position))
-
         return position
+
+
+class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
+    def __init__(
+        self,
+        symbol=BitmexChannels.XBTUSD,
+        **kwargs
+    ):
+        start_date = DateTimeUtils.now()
+
+        super().__init__(
+            start_date=start_date,
+            end_date=start_date,
+            database_name='bitmex',
+            random_start_date=False,
+            database_batch_size=1,
+            date_checks=False,
+            **kwargs
+        )
+
+        self.symbol = symbol
+        self._last_datetime = self.start_date
+        self.last_data = []
+        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
+        self.channel_name = f'orderbook_img_frame_{self.symbol.value}'
+
+        self.on(self.orderbook_channel, self.write_observation)
+        self.on('frame_str', self.publish_to_channels)
+        self.on('frame_str', self.write_to_db)
 
     def _get_observation(self):
         time = self.last_data['time']
@@ -91,32 +97,41 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
         except OrderBookIncompleteException as e:
             pass
 
-        self.last_position
+        if len(self.frames) >= self.max_frames:
+            frame = self.frames[-2]
 
-        if len(self.frames) > 2:
-            frame = json.dumps(self.frames[-2].flatten().tolist())
-            channel_name = f'orderbook_img_frame_{self.symbol.value}'
+            if self.expected_position != Positions.Flat:
+                alog.info((self.expected_position, self.best_ask, self.best_bid))
 
-            timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
+            if settings.LOG_LEVEL == logging.DEBUG:
+                alog.info(AsciiImage(frame, new_width=12))
 
-            alog.debug((self.expected_position, self.best_ask, self.best_bid))
+            frame_str = json.dumps(frame, cls=NumpyEncoder)
 
-            measurement = Measurement(
-                measurement=channel_name,
-                time=timestamp,
-                tags=dict(symbol=self.symbol.value),
-                fields=dict(
-                    frame=frame,
-                    expected_position=self.expected_position.value,
-                    entry_price=self.avg_entry_price
-                )
+            self.emit('frame_str', frame_str)
+
+    def publish_to_channels(self, frame_str):
+        self.publish(self.channel_name, json.dumps(dict(
+            frame=frame_str
+        )))
+
+    def write_to_db(self, frame_str):
+        timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
+
+        measurement = Measurement(
+            measurement=self.channel_name,
+            time=timestamp,
+            tags=dict(symbol=self.symbol.value),
+            fields=dict(
+                frame=frame_str,
+                expected_position=self.expected_position.value,
+                entry_price=self.avg_entry_price,
+                best_ask=self.best_ask,
+                best_bid=self.best_bid
             )
+        )
 
-            self.publish(channel_name, json.dumps(dict(
-                frame=self.frames[-1].flatten().tolist()
-            )))
-
-            super().write_points([measurement.__dict__])
+        super().write_points([measurement.__dict__])
 
     def run(self):
         self.sub([self.orderbook_channel, BitmexChannels.XBTUSD])
@@ -125,8 +140,10 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv):
 @click.command()
 @click.option('--frame-width', default=96, type=int)
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
+@click.option('--top-limit', '-l', default=5e5, type=float)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
+@click.option('--max-frames', '-m', default=6, type=int)
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 def main(**kwargs):
     record = OrderBookTrainingData(**kwargs)

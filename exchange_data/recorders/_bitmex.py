@@ -1,22 +1,24 @@
+#!/usr/bin/env python
+
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger, TimeEmitter
+from exchange_data.emitters import Messenger
 from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
 from exchange_data.recorders import Recorder
 
 import alog
 import click
 import json
-import signal
 import sys
-
-from exchange_data.utils import DateTimeUtils
 
 alog.set_level(settings.LOG_LEVEL)
 
 
-class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
+class BitmexRecorder(
+    Messenger,
+    Recorder
+):
     measurements = []
     channels = [
         InstrumentChannels.quote,
@@ -36,11 +38,14 @@ class BitmexRecorder(Recorder, Messenger, DateTimeUtils):
         if isinstance(symbol, str):
             symbol = BitmexChannels[symbol]
 
-        signal.signal(signal.SIGINT, self.stop)
-        signal.signal(signal.SIGTERM, self.stop)
-        DateTimeUtils.__init__(self)
-        Messenger.__init__(self)
-        Recorder.__init__(self, symbol, database_name, **kwargs)
+        super().__init__(symbol=symbol, database_name=database_name, **kwargs)
+
+        Recorder.__init__(
+            self,
+            symbol=symbol,
+            database_name=database_name,
+            **kwargs
+        )
 
         self.symbol = symbol
         self.no_save = no_save

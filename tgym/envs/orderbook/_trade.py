@@ -26,9 +26,11 @@ class Trade(Logging):
         capital: float,
         trading_fee: float,
         position_type: Positions,
-        min_change: float
+        min_change: float,
+        leverage: float = 1.0
     ):
         Logging.__init__(self)
+        self.leverage = leverage
         self.min_change = min_change
         self.max_increase_reward = 1.0
         self.max_steps_reward = 3
@@ -36,7 +38,12 @@ class Trade(Logging):
         self.steps_since_max = 0.0
         self.frame_width = 42
         self.capital = capital
-        self.trading_fee = trading_fee
+
+        if self.leverage > 1.0:
+            self.trading_fee = trading_fee
+        else:
+            self.trading_fee = 0.0
+
         self.position_length = 0
         self.position_type = position_type
         self.entry_price = entry_price
@@ -188,7 +195,7 @@ class LongTrade(Trade):
         else:
             change = diff / self.entry_price
 
-        pnl = (self.capital * change) + \
+        pnl = (self.capital * (change * self.leverage)) + \
                    (-1 * self.capital * self.trading_fee)
 
         return pnl
@@ -214,7 +221,7 @@ class ShortTrade(Trade):
         else:
             change = diff / self.entry_price
 
-        pnl = (self.capital * change) + \
+        pnl = (self.capital * (change * self.leverage)) + \
                    (-1 * self.capital * self.trading_fee)
         return pnl
 
