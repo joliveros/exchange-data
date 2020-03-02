@@ -33,6 +33,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     batch_size,
+    dropout_rate=0.1,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -49,33 +50,34 @@ def Model(
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(0.1))
+    model.add(Dropout(dropout_rate))
     model.add(Dense(num_categories, activation='softmax'))
 
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'],
-        optimizer='adam'
+        optimizer=Adam(lr=learning_rate, decay=learning_rate_decay)
     )
 
     return model
 
 
-class ModelTrainer(Messenger):
+class ModelTrainer(object):
     def __init__(self, **kwargs):
-        super().__init__()
         self.kwargs = kwargs
 
     def done(self):
         self.publish('resnet_trainer_done', '')
 
     def run(self):
-        self._run(**self.kwargs)
+        return self._run(**self.kwargs)
 
     def _run(
             self,
             batch_size,
             clear,
+            dropout_rate,
+            export_model,
             checkpoint_steps,
             epochs,
             eval_span,
@@ -98,6 +100,7 @@ class ModelTrainer(Messenger):
                 pass
 
         model = Model(
+            dropout_rate=dropout_rate,
             batch_size=batch_size,
             learning_rate=learning_rate,
             frame_width=frame_width,
@@ -120,6 +123,7 @@ class ModelTrainer(Messenger):
 
         train_spec = TrainSpec(
             input_fn=lambda: dataset(
+                skip=timeparse(eval_span),
                 batch_size=batch_size,
                 epochs=epochs,
             )
@@ -143,7 +147,9 @@ class ModelTrainer(Messenger):
             throttle_secs=60*30
         )
 
-        train_and_evaluate(resnet_estimator, train_spec, eval_spec)
+        result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
+
+        alog.info(result)
 
         def serving_input_receiver_fn():
             inputs = {
@@ -153,11 +159,10 @@ class ModelTrainer(Messenger):
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
-        resnet_estimator.export_saved_model(model_dir + '/saved', serving_input_receiver_fn)
+        if export_model:
+            resnet_estimator.export_saved_model(model_dir + '/saved', serving_input_receiver_fn)
 
-        self.done()
-
-        alog.info('#### DONE ####')
+        return result
 
 
 @click.command()
@@ -175,6 +180,7 @@ class ModelTrainer(Messenger):
 @click.option('--steps-epoch', default='1m', type=str)
 @click.option('--window-size', '-w', default='3s', type=str)
 @click.option('--clear', '-c', is_flag=True)
+@click.option('--export-model', is_flag=True)
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     trainer = ModelTrainer(**kwargs)

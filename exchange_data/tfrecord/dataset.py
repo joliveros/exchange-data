@@ -29,7 +29,8 @@ def extract_fn(data_record):
     return data['frame'], data['expected_position']
 
 
-def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
+def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
+            **kwargs):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
     num_files = len(files)
@@ -37,11 +38,12 @@ def dataset(batch_size: int, epochs: int = 1, dataset_name='default', **kwargs):
 
     _dataset = files.flat_map(
         lambda filename: (tf.data.TFRecordDataset(filename, compression_type='GZIP'))
-    ).shuffle(buffer_size=num_files)
+    )
 
     _dataset = _dataset.map(map_func=extract_fn)\
         .batch(batch_size) \
-        .prefetch(10)\
+        .prefetch(10) \
+        .skip(skip) \
         .repeat(epochs)
 
     return _dataset
