@@ -123,28 +123,20 @@ class ModelTrainer(object):
 
         train_spec = TrainSpec(
             input_fn=lambda: dataset(
-                skip=timeparse(eval_span),
+                skip=timeparse(eval_steps),
                 batch_size=batch_size,
                 epochs=epochs,
             )
         )
 
-        def eval_dataset(**kwargs):
+        def eval_dataset():
             return dataset(batch_size=batch_size)
 
         eval_spec = EvalSpec(
-            input_fn=lambda: eval_dataset(
-                batch_size=batch_size,
-                epochs=1,
-                frame_width=frame_width,
-                interval=eval_span,
-                steps_epoch=eval_steps,
-                window_size=window_size,
-                use_volatile_ranges=True
-            ),
-            start_delay_secs=60*30,
+            input_fn=lambda: eval_dataset(),
+            start_delay_secs=60*3,
             steps=timeparse(eval_steps)*2,
-            throttle_secs=60*30
+            throttle_secs=60*3
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
@@ -173,6 +165,7 @@ class ModelTrainer(object):
 @click.option('--eval-steps', type=str, default='15s')
 @click.option('--frame-width', type=int, default=224)
 @click.option('--interval', '-i', type=str, default='1m')
+@click.option('--dropout-rate', '-d', type=float, default=0.3e-4)
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
 @click.option('--learning-rate-decay', default=5e-3, type=float)
 @click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
