@@ -124,6 +124,7 @@ class ModelTrainer(object):
         train_spec = TrainSpec(
             input_fn=lambda: dataset(
                 skip=timeparse(eval_steps),
+                take=timeparse(steps_epoch),
                 batch_size=batch_size,
                 epochs=epochs,
             )
