@@ -9,8 +9,9 @@ import click
 import logging
 import tensorflow as tf
 
-HP_DROPOUT = hp.HParam('dropout', hp.RealInterval(0.0, 0.05))
-HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(.00001, .0001))
+HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000001, 0.0001))
+HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.01,
+                                                     1.0))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
@@ -72,12 +73,11 @@ def main(**kwargs):
 
     while session_num <= session_limit:
         learning_rate = HP_LRATE.domain.sample_uniform()
-
-        for l in range(0, 2):
-            dropout_rate = HP_DROPOUT.domain.sample_uniform()
+        for i in range(0, 2):
+            epsilon = HP_EPSILON.domain.sample_uniform()
             hparams = dict(
-                dropout_rate=dropout_rate,
                 learning_rate=learning_rate,
+                epsilon=epsilon
             )
 
             run_name = "run-%d" % session_num
@@ -91,6 +91,7 @@ def main(**kwargs):
                 pass
 
             session_num += 1
+
 
 
 if __name__ == '__main__':
