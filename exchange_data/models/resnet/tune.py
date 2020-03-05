@@ -9,8 +9,8 @@ import click
 import logging
 import tensorflow as tf
 
-HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000001, 0.0001))
-HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.01, 1.0))
+HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000012049, 0.000029553))
+HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
@@ -20,6 +20,7 @@ def run(run_name, hparams):
 
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
+            'epsilon': 0.090979,
             'batch_size': 1,
             'checkpoint_steps': 1000,
             'clear': True,
@@ -72,24 +73,19 @@ def main(**kwargs):
 
     while session_num <= session_limit:
         learning_rate = HP_LRATE.domain.sample_uniform()
-        for i in range(0, 2):
-            epsilon = HP_EPSILON.domain.sample_uniform()
-            hparams = dict(
-                learning_rate=learning_rate,
-                epsilon=epsilon
-            )
 
-            run_name = "run-%d" % session_num
-            print('--- Starting trial: %s' % run_name)
+        hparams = dict(
+            learning_rate=learning_rate,
+        )
 
-            alog.info(alog.pformat(hparams))
-            try:
-                run(run_name, hparams)
-            except Exception as e:
-                alog.info(e)
-                pass
+        run_name = "run-%d" % session_num
+        print('--- Starting trial: %s' % run_name)
 
-            session_num += 1
+        alog.info(alog.pformat(hparams))
+
+        run(run_name, hparams)
+
+        session_num += 1
 
 
 
