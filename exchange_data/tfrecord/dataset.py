@@ -54,11 +54,14 @@ def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
 @click.command()
 def main(**kwargs):
     count = 0
-    for x, y in dataset(2, **kwargs):
-        alog.info(x)
-        alog.info(y)
+
+    for data in dataset(batch_size=1, take=60*10, **kwargs):
+        # alog.info(x)
+        # alog.info(y)
+        alog.info(data)
         count += 1
         alog.info(count)
+        return
 
 
 if __name__ == '__main__':
