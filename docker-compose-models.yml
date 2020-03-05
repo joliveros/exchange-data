@@ -34,8 +34,8 @@ services:
     volumes:
       - /home/joliveros/.exchange-data/models/resnet_export:/models/resnet
     environment:
+        - CUDA_VISIBLE_DEVICES=0
         - MODEL_NAME=resnet
-        - NVIDIA_VISIBLE_DEVICES=all
     networks:
       - public
 
@@ -45,7 +45,7 @@ services:
     image: codequants.com:5000/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 10.0 -c 1.0"
     environment:
-        - NVIDIA_VISIBLE_DEVICES=all
+        - CUDA_VISIBLE_DEVICES=0
     depends_on:
         - redis
     networks:
