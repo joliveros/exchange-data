@@ -31,6 +31,8 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 @click.option('--directory-name', '-d', default='default', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--limit', '-l', default=0, type=int)
+@click.option('--padding', default=2, type=int)
+@click.option('--padding-after', default=0, type=int)
 @click.option('--max-workers', '-w', default=4, type=int)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)

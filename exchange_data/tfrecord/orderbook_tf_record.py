@@ -29,6 +29,8 @@ class OrderBookTFRecord(
         self,
         start_date=None,
         end_date=None,
+        padding=2,
+        padding_after=0,
         **kwargs
     ):
         super().__init__(
@@ -45,15 +47,23 @@ class OrderBookTFRecord(
             self.stop_date = end_date
 
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
-
+        self.padding = padding
+        self.padding_after = padding_after
         self._last_datetime = self.start_date
         self.frames = deque(maxlen=2)
+        self.features = deque(maxlen=padding)
+        self.done = False
 
     def run(self):
         with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) \
         as writer:
             while self._last_datetime < self.stop_date:
                 self.write_observation(writer)
+
+            self.done = True
+
+            # while len(self.features) > 0:
+            #     self.write_observation(writer)
 
     def write_observation(self, writer):
         timestamp, best_ask, best_bid, orderbook_img = next(self)
@@ -73,11 +83,40 @@ class OrderBookTFRecord(
                 frame=self.floatFeature(self.frames[-2][-1].flatten()),
                 best_bid=self.floatFeature([self.last_best_bid]),
                 best_ask=self.floatFeature([self.last_best_ask]),
-                expected_position=self.int64Feature([self.expected_position.value]),
+                expected_position=self.int64Feature([0]),
             )
 
-            example: Example = Example(features=Features(feature=data))
-            writer.write(example.SerializeToString())
+            position = self.expected_position.value
+            self.features.append((position, data))
+
+            position_change_index = None
+            position_change = None
+
+            for i in range(len(self.features)):
+                current_position = self.features[i][0]
+                if current_position != 0:
+                    position_change_index = i + self.padding_after
+                    max_index = len(self.features) - 1
+                    if position_change_index > max_index:
+                        position_change_index = max_index
+
+                    position_change = current_position
+
+            if position_change_index is not None:
+                for i in range(len(self.features)):
+                    if i <= position_change_index:
+                        feature = self.features[i][-1]
+                        feature['expected_position'] = \
+                            self.int64Feature([position_change])
+                        self.features[i] = (position_change, feature)
+
+            if len(self.features) == self.padding or self.done:
+                feature = self.features[0][-1]
+
+                example: Example = Example(
+                    features=Features(feature=feature)
+                )
+                writer.write(example.SerializeToString())
 
     def int64Feature(self, value):
         return Feature(int64_list=Int64List(value=value))
