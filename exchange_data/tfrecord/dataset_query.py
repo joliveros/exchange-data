@@ -31,7 +31,7 @@ class PriceChangeRanges(object):
         start_date=None,
         end_date=None
     ):
-        record_window = int(timeparse(record_window) / 2)
+        record_window = timeparse(record_window)
 
         start_date = start_date if start_date else self.start_date
         end_date = end_date if end_date else self.end_date
@@ -48,7 +48,7 @@ class PriceChangeRanges(object):
             DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(
                             seconds=record_window),
             DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(
-                            seconds=record_window)
+                            seconds=0)
         ) for timestamp in timestamps]
 
         return ranges
