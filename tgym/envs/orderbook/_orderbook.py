@@ -7,6 +7,8 @@ from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
+
+from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook._plot_orderbook import PlotOrderbook
 from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
@@ -486,6 +488,11 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
                              if type(trade) != FlatTrade]
+
+        lag = DateTimeUtils.now() - DateTimeUtils.parse_datetime_str(
+            self.last_datetime)
+
+        summary['lag'] = str(lag)
 
         return summary
 
