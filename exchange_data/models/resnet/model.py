@@ -157,7 +157,9 @@ class ModelTrainer(object):
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
         if export_model:
-            resnet_estimator.export_saved_model(model_dir + '/saved', serving_input_receiver_fn)
+            export_dir = f'{Path.home()}/.exchange-data/models/resnet_export'
+            resnet_estimator.export_saved_model(export_dir,
+                                                serving_input_receiver_fn)
 
         return result
 
