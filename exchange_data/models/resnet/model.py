@@ -139,9 +139,9 @@ class ModelTrainer(object):
 
         eval_spec = EvalSpec(
             input_fn=lambda: eval_dataset(),
-            start_delay_secs=60*3,
+            start_delay_secs=60*30,
             steps=timeparse(eval_steps)*2,
-            throttle_secs=60*3
+            throttle_secs=60*30
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
