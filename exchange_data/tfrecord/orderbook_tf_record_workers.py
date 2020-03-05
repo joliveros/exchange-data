@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+import time
+
 import alog
 
 from exchange_data.tfrecord.date_range_split_workers import DateRangeSplitWorkers
 from exchange_data.tfrecord.orderbook_tf_record import OrderBookTFRecord
+from pytimeparse.timeparse import timeparse
 
 import click
 import shutil
@@ -41,6 +44,7 @@ def main(**kwargs):
         **kwargs)
 
     record.run()
+    time.sleep(timeparse('4m'))
 
 
 if __name__ == '__main__':
