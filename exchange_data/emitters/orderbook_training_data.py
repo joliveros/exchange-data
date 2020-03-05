@@ -17,7 +17,8 @@ import numpy as np
 
 
 class TrainingDataBase(object):
-    def __init__(self, **kwargs):
+    def __init__(self, min_change=0.0, **kwargs):
+        self.min_change = min_change
         self.last_best_bid = None
         self.last_best_ask = None
         self.best_bid = None
@@ -41,12 +42,13 @@ class TrainingDataBase(object):
     def expected_position(self):
         position = None
         diff = self.diff
+        abs_diff = abs(diff)
 
-        if diff > 0.0:
+        if diff > 0.0 and abs_diff >= self.min_change:
             position = Positions.Long
-        elif diff < 0.0:
+        elif diff < 0.0 and abs_diff >= self.min_change:
             position = Positions.Short
-        elif diff == 0.0:
+        else:
             position = Positions.Flat
 
         return position
@@ -101,7 +103,8 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
             frame = self.frames[-2]
 
             if self.expected_position != Positions.Flat:
-                alog.info((self.expected_position, self.best_ask, self.best_bid))
+                alog.info((self.expected_position, self.diff, self.best_ask,
+                           self.best_bid))
 
             if settings.LOG_LEVEL == logging.DEBUG:
                 alog.info(AsciiImage(frame, new_width=12))
@@ -139,6 +142,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
 
 @click.command()
 @click.option('--frame-width', default=96, type=int)
+@click.option('--min-change', default=2.0, type=float)
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
 @click.option('--top-limit', '-l', default=5e5, type=float)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
