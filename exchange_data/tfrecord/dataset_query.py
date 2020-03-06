@@ -46,7 +46,7 @@ class PriceChangeRanges(object):
 
         ranges = [(
             DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(
-                            seconds=record_window - 6),
+                            seconds=record_window - 4),
             DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(
                             seconds=4)
         ) for timestamp in timestamps]

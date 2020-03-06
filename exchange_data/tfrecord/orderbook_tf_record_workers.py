@@ -46,7 +46,7 @@ def main(**kwargs):
         **kwargs)
 
     record.run()
-    time.sleep(timeparse('4m'))
+    time.sleep(timeparse('30s'))
 
 
 if __name__ == '__main__':

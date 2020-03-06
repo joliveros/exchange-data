@@ -47,25 +47,63 @@ class OrderBookTFRecord(
             self.stop_date = end_date
 
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
+        padding = padding
+        self.padding_window = padding + padding_after
         self.padding = padding
         self.padding_after = padding_after
         self._last_datetime = self.start_date
         self.frames = deque(maxlen=2)
-        self.features = deque(maxlen=padding)
+        self.features = []
         self.done = False
 
     def run(self):
         with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) \
         as writer:
             while self._last_datetime < self.stop_date:
-                self.write_observation(writer)
+                self.queue_obs()
 
-            self.done = True
+            # some data transformations here
+            self.window_position_change()
 
-            # while len(self.features) > 0:
-            #     self.write_observation(writer)
+            for d in self.features:
+                self.write_observation(writer, d)
 
-    def write_observation(self, writer):
+    def window_position_change(self):
+        first_change_index = None
+        last_change_index = None
+        position = None
+
+        for i in range(len(self.features)):
+            feature = self.features[i]
+            current_position = feature[0]
+
+            if current_position != 0 and first_change_index is None:
+                position = feature[-1]['expected_position']
+                first_change_index = i
+
+            if current_position != 0:
+                last_change_index = i
+
+
+        left_padding_index = first_change_index - self.padding
+        right_padding_index = last_change_index + self.padding_after
+
+        max_index = len(self.features) - 1
+
+        if left_padding_index < 0:
+            left_padding_index = 0
+
+        if right_padding_index > max_index:
+            right_padding_index = max_index
+
+        self.features = [feature[-1] for feature in self.features]
+
+        for i in range(left_padding_index, right_padding_index + 1):
+            feature = self.features[i]
+            feature['expected_position'] = position
+            self.features[i] = feature
+
+    def queue_obs(self):
         timestamp, best_ask, best_bid, orderbook_img = next(self)
         orderbook_img = np.asarray(json.loads(orderbook_img))
 
@@ -78,45 +116,23 @@ class OrderBookTFRecord(
         self.frames.append((timestamp, best_ask, best_bid, orderbook_img))
 
         if len(self.frames) > 1:
+            position = self.expected_position.value
+
             data = dict(
                 datetime=self.BytesFeature(str(timestamp)),
                 frame=self.floatFeature(self.frames[-2][-1].flatten()),
                 best_bid=self.floatFeature([self.last_best_bid]),
                 best_ask=self.floatFeature([self.last_best_ask]),
-                expected_position=self.int64Feature([0]),
+                expected_position=self.int64Feature([position]),
             )
-
-            position = self.expected_position.value
             self.features.append((position, data))
 
-            position_change_index = None
-            position_change = None
+    def write_observation(self, writer, features):
+        example: Example = Example(
+            features=Features(feature=features)
+        )
 
-            for i in range(len(self.features)):
-                current_position = self.features[i][0]
-                if current_position != 0:
-                    position_change_index = i + self.padding_after
-                    max_index = len(self.features) - 1
-                    if position_change_index > max_index:
-                        position_change_index = max_index
-
-                    position_change = current_position
-
-            if position_change_index is not None:
-                for i in range(len(self.features)):
-                    if i <= position_change_index:
-                        feature = self.features[i][-1]
-                        feature['expected_position'] = \
-                            self.int64Feature([position_change])
-                        self.features[i] = (position_change, feature)
-
-            if len(self.features) == self.padding or self.done:
-                feature = self.features[0][-1]
-
-                example: Example = Example(
-                    features=Features(feature=feature)
-                )
-                writer.write(example.SerializeToString())
+        writer.write(example.SerializeToString())
 
     def int64Feature(self, value):
         return Feature(int64_list=Int64List(value=value))
