@@ -15,6 +15,7 @@ import alog
 import re
 import numpy as np
 
+from exchange_data.trading import Positions
 
 Features = tf.train.Features
 Example = tf.train.Example
@@ -27,6 +28,7 @@ class OrderBookTFRecord(
 ):
     def __init__(
         self,
+        side,
         start_date=None,
         end_date=None,
         padding=2,
@@ -34,6 +36,7 @@ class OrderBookTFRecord(
         **kwargs
     ):
         super().__init__(
+            side=side,
             start_date=start_date,
             end_date=end_date,
             **kwargs
@@ -46,6 +49,7 @@ class OrderBookTFRecord(
         else:
             self.stop_date = end_date
 
+        self.side = side
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
         padding = padding
         self.padding_window = padding + padding_after
@@ -113,6 +117,10 @@ class OrderBookTFRecord(
 
         if len(self.frames) > 1:
             position = self.expected_position.value
+
+            if position != Positions[self.side].value and \
+                position != Positions.Flat.value:
+                position = Positions.Flat.value
 
             data = dict(
                 datetime=self.BytesFeature(str(timestamp)),
