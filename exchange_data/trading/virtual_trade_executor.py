@@ -68,6 +68,7 @@ class VirtualTradeExecutor(
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
+
         reward = trade.reward
         self.trades.append(trade)
 
