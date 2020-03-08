@@ -69,39 +69,35 @@ class OrderBookTFRecord(
                 self.write_observation(writer, d)
 
     def window_position_change(self):
-        first_change_index = None
-        last_change_index = None
-        position = None
+        change_indexes = []
 
         for i in range(len(self.features)):
             feature = self.features[i]
             current_position = feature[0]
 
-            if current_position != 0 and first_change_index is None:
-                position = feature[-1]['expected_position']
-                first_change_index = i
-
             if current_position != 0:
-                last_change_index = i
-
-
-        left_padding_index = first_change_index - self.padding
-        right_padding_index = last_change_index + self.padding_after
+                position = feature[-1]['expected_position']
+                change_indexes.append((i, position))
 
         max_index = len(self.features) - 1
 
-        if left_padding_index < 0:
-            left_padding_index = 0
-
-        if right_padding_index > max_index:
-            right_padding_index = max_index
-
         self.features = [feature[-1] for feature in self.features]
 
-        for i in range(left_padding_index, right_padding_index + 1):
-            feature = self.features[i]
-            feature['expected_position'] = position
-            self.features[i] = feature
+        for position_change in change_indexes:
+            i, position = position_change
+            left_padding_index = i - self.padding
+            right_padding_index = i + self.padding_after
+
+            if left_padding_index < 0:
+                left_padding_index = 0
+
+            if right_padding_index > max_index:
+                right_padding_index = max_index
+
+            for ix in range(left_padding_index, right_padding_index + 1):
+                feature = self.features[ix]
+                feature['expected_position'] = position
+                self.features[ix] = feature
 
     def queue_obs(self):
         timestamp, best_ask, best_bid, orderbook_img = next(self)
@@ -128,6 +124,9 @@ class OrderBookTFRecord(
             self.features.append((position, data))
 
     def write_observation(self, writer, features):
+        # alog.info(features['datetime'])
+        # alog.info(features['expected_position'])
+
         example: Example = Example(
             features=Features(feature=features)
         )
