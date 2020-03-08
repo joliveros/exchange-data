@@ -11,6 +11,7 @@ import click
 import shutil
 
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
+from exchange_data.trading import Positions
 
 
 class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
@@ -38,6 +39,8 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 @click.option('--summary-interval', '-si', default=6, type=int)
 @click.option('--window-size', '-g', default='1m', type=str)
 @click.option('--record-window', '-r', default='15s', type=str)
+@click.option('--side', type=click.Choice(Positions.__members__),
+                default='Short')
 def main(**kwargs):
     record = OrderBookTFRecordWorkers(
         database_name='bitmex',
