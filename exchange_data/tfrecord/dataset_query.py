@@ -6,6 +6,7 @@ from exchange_data.streamers._bitmex import BitmexStreamer
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
+from exchange_data.trading import Positions
 
 import alog
 import click
@@ -26,6 +27,7 @@ class PriceChangeRanges(object):
 
     def price_change_ranges(
         self,
+        side,
         record_window: str='15s',
         group_by_interval='1s',
         start_date=None,
@@ -40,7 +42,8 @@ class PriceChangeRanges(object):
         end_date = self.format_date_query(end_date)
 
         ranges = []
-        ranges += self.position_changes(group_by_interval, end_date, start_date)
+        ranges += self.position_changes(side, group_by_interval, end_date,
+                                        start_date)
 
         timestamps = [data['time'] for data in ranges]
 
@@ -53,12 +56,15 @@ class PriceChangeRanges(object):
 
         return ranges
 
-    def position_changes(self, group_by_interval, end_date, start_date):
+    def position_changes(self, side, group_by_interval, end_date, start_date):
+        side = Positions[side].value
+
         query = f'SELECT ecount FROM (SELECT COUNT(e) as ecount ' \
             f'FROM(SELECT e FROM (SELECT expected_position as e ' \
             f'from {self.channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date}) ' \
-            f'WHERE e > 0) GROUP BY time({group_by_interval})) WHERE ecount > 0;'
+            f'WHERE e = {side}) GROUP BY time({group_by_interval})) WHERE ' \
+            f'ecount > 0;'
 
         alog.info(query)
         ranges = self.query(query).get_points(self.channel_name)

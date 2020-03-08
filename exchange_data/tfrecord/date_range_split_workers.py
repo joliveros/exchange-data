@@ -20,6 +20,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         max_workers,
         channel_name,
         interval,
+        side,
         record_window='15s',
         limit: int = 0,
         **kwargs
@@ -40,6 +41,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         self.end_date = now
 
         self.intervals = self.price_change_ranges(
+            side=side,
             record_window=record_window,
             start_date=self.start_date,
             end_date=self.end_date
