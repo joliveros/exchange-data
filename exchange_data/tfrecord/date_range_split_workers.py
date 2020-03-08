@@ -32,6 +32,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
         self.window_size = window_size
         kwargs['window_size'] = window_size
+        kwargs['side'] = side
         self.kwargs = kwargs
         self.channel_name = channel_name
         self.max_workers = max_workers
