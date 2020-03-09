@@ -21,13 +21,13 @@ class TradeJob(object):
 
 
 class PredictionEmitter(Messenger, TradeJob):
-    def __init__(self, symbol, model_name, **kwargs):
+    def __init__(self, depth, symbol, model_name, **kwargs):
         self.symbol = symbol
 
         super().__init__(symbol=symbol, **kwargs)
 
         self.model_name = model_name
-        self.orderbook_channel = f'orderbook_img_frame_{symbol.value}'
+        self.orderbook_channel = f'orderbook_img_frame_{symbol.value}_{depth}'
 
         self.on(self.orderbook_channel, self.emit_prediction)
 
@@ -68,6 +68,7 @@ class PredictionEmitter(Messenger, TradeJob):
 
 @click.command()
 @click.option('--model-name', '-m', default=None, type=str)
+@click.option('--depth', '-d', default=21, type=int)
 @click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
 def main(symbol, **kwargs):
 
