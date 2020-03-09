@@ -10,10 +10,10 @@ import click
 
 
 class OrderbookImgStreamer(BitmexStreamer):
-    def __init__(self, symbol = BitmexChannels.XBTUSD, **kwargs):
+    def __init__(self, depth, symbol = BitmexChannels.XBTUSD, **kwargs):
         super().__init__(**kwargs)
         self.last_timestamp = self.start_date
-        self.channel_name = f'orderbook_img_frame_{symbol.value}'
+        self.channel_name = f'orderbook_img_frame_{symbol.value}_{depth}'
         self.current_query = self.get_orderbook_frames()
 
     def orderbook_frame_query(self):
