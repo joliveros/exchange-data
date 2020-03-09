@@ -57,26 +57,28 @@ class TrainingDataBase(object):
 class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
     def __init__(
         self,
+        depth=21,
         symbol=BitmexChannels.XBTUSD,
         **kwargs
     ):
         start_date = DateTimeUtils.now()
 
         super().__init__(
-            start_date=start_date,
-            end_date=start_date,
-            database_name='bitmex',
-            random_start_date=False,
             database_batch_size=1,
+            database_name='bitmex',
             date_checks=False,
+            end_date=start_date,
+            orderbook_depth=depth,
+            random_start_date=False,
+            start_date=start_date,
             **kwargs
         )
 
         self.symbol = symbol
         self._last_datetime = self.start_date
         self.last_data = []
-        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
-        self.channel_name = f'orderbook_img_frame_{self.symbol.value}'
+        self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}'
+        self.channel_name = f'orderbook_img_frame_{self.symbol.value}_{depth}'
 
         self.on(self.orderbook_channel, self.write_observation)
         self.on('frame_str', self.publish_to_channels)
@@ -93,11 +95,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
     def write_observation(self, data):
         self.last_data = data
 
-        try:
-            self.get_observation()
-
-        except OrderBookIncompleteException as e:
-            pass
+        self.get_observation()
 
         if len(self.frames) >= self.max_frames:
             frame = self.frames[-2]
@@ -107,7 +105,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
                            self.best_bid))
 
             if settings.LOG_LEVEL == logging.DEBUG:
-                alog.info(AsciiImage(frame, new_width=12))
+                alog.info(AsciiImage(frame, new_width=21))
 
             frame_str = json.dumps(frame, cls=NumpyEncoder)
 
@@ -148,6 +146,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
 @click.option('--max-frames', '-m', default=6, type=int)
+@click.option('--depth', '-d', default=21, type=int)
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 def main(**kwargs):
     record = OrderBookTrainingData(**kwargs)

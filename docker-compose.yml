@@ -172,7 +172,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l 5e4"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l 200000 -d 8"
     environment:
       - LOG_LEVEL=INFO
     env_file:
