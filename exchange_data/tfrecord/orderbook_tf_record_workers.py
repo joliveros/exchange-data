@@ -17,8 +17,9 @@ from exchange_data.trading import Positions
 class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
     worker_class = OrderBookTFRecord
 
-    def __init__(self, clear, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, depth, clear, **kwargs):
+        channel_name=f'orderbook_img_frame_XBTUSD_{depth}'
+        super().__init__(depth=depth, channel_name=channel_name, **kwargs)
 
         if clear:
             try:
@@ -46,11 +47,9 @@ def main(**kwargs):
     record = OrderBookTFRecordWorkers(
         database_name='bitmex',
         is_training=False,
-        channel_name='orderbook_img_frame_XBTUSD',
         **kwargs)
 
     record.run()
-    time.sleep(timeparse('30s'))
 
 
 if __name__ == '__main__':
