@@ -36,7 +36,6 @@ class BitmexOrderBookEmitter(
     def __init__(
         self, symbol: BitmexChannels,
         depths=None,
-        emit_depths=None,
         emit_interval=None,
         database_name='bitmex',
         reset_orderbook: bool = True,
@@ -58,11 +57,6 @@ class BitmexOrderBookEmitter(
             self.emit_interval = '5s'
         else:
             self.emit_interval = emit_interval
-
-        if emit_depths is None:
-            self.emit_depths = [21]
-        else:
-            self.emit_depths = emit_depths
 
         if depths is None:
             depths = [21]
@@ -172,7 +166,7 @@ class BitmexOrderBookEmitter(
 
         return frame
 
-    def measurements(self, timestamp, depths=None):
+    def measurements(self, timestamp):
         frame = self.generate_frame()
         measurements = []
 
@@ -181,10 +175,7 @@ class BitmexOrderBookEmitter(
         elif isinstance(timestamp, float):
             timestamp = self.parse_timestamp(timestamp)
 
-        if depths is None:
-            depths = self.depths
-
-        for depth in depths:
+        for depth in self.depths:
             if depth > 0:
                 frame_slice = frame[:, :, :depth]
             else:
@@ -212,14 +203,14 @@ class BitmexOrderBookEmitter(
                            time=timestamp, fields=fields)
 
     def emit_frames(self, timestamp):
-        for depth in self.emit_depths:
+        for depth in self.depths:
             frame_slice = self.slices.get(self.channel_for_depth(depth))
             if frame_slice is not None:
                 msg = self.channel_for_depth(depth), str(frame_slice)
                 self.publish(*msg)
 
     def emit_frames_5s(self, timestamp):
-        for depth in self.emit_depths:
+        for depth in self.depths:
             channel = self.channel_for_depth(depth)
             frame_slice = self.slices.get(channel)
 
@@ -248,6 +239,7 @@ class BitmexOrderBookEmitter(
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
+        depths=[8, 21],
         symbol=BitmexChannels[symbol],
         subscriptions_enabled=True,
         **kwargs
