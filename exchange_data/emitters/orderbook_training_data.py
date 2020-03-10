@@ -104,8 +104,8 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
                 alog.info((self.expected_position, self.diff, self.best_ask,
                            self.best_bid))
 
-            if settings.LOG_LEVEL == logging.DEBUG:
-                alog.info(AsciiImage(frame, new_width=21))
+            # if settings.LOG_LEVEL == logging.DEBUG:
+            # alog.info(AsciiImage(frame, new_width=21))
 
             frame_str = json.dumps(frame, cls=NumpyEncoder)
 
