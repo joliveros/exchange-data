@@ -16,11 +16,11 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
     def __init__(
         self,
+        position_ratio,
         window_size,
         max_workers,
         channel_name,
         interval,
-        side,
         record_window='15s',
         limit: int = 0,
         **kwargs
@@ -32,7 +32,6 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
         self.window_size = window_size
         kwargs['window_size'] = window_size
-        kwargs['side'] = side
         self.kwargs = kwargs
         self.channel_name = channel_name
         self.max_workers = max_workers
@@ -42,7 +41,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         self.end_date = now
 
         self.intervals = self.price_change_ranges(
-            side=side,
+            position_ratio=position_ratio,
             record_window=record_window,
             start_date=self.start_date,
             end_date=self.end_date

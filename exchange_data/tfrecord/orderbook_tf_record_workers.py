@@ -39,6 +39,7 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 @click.option('--max-workers', '-w', default=4, type=int)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
+@click.option('--position-ratio', default=1.0, type=float)
 @click.option('--window-size', '-g', default='1m', type=str)
 @click.option('--record-window', '-r', default='15s', type=str)
 @click.option('--side', type=click.Choice(Positions.__members__),

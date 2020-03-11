@@ -27,7 +27,7 @@ class PriceChangeRanges(object):
 
     def price_change_ranges(
         self,
-        side,
+        position_ratio,
         record_window: str='15s',
         group_by_interval='1s',
         start_date=None,
@@ -42,8 +42,27 @@ class PriceChangeRanges(object):
         end_date = self.format_date_query(end_date)
 
         ranges = []
-        ranges += self.position_changes(side, group_by_interval, end_date,
-                                        start_date)
+
+        short_ranges = self.position_changes(
+            Positions.Short,
+            group_by_interval,
+            end_date,
+            start_date
+        )
+        long_ranges = self.position_changes(
+            Positions.Long,
+            group_by_interval,
+            end_date,
+            start_date
+        )
+
+        short_ranges_count = len(short_ranges)
+        proportional_longs = -1 * int(position_ratio * short_ranges_count)
+
+        long_ranges = long_ranges[proportional_longs:]
+
+        ranges += short_ranges
+        ranges += long_ranges
 
         timestamps = [data['time'] for data in ranges]
 
@@ -57,7 +76,7 @@ class PriceChangeRanges(object):
         return ranges
 
     def position_changes(self, side, group_by_interval, end_date, start_date):
-        side = Positions[side].value
+        side = side.value
 
         query = f'SELECT ecount FROM (SELECT COUNT(e) as ecount ' \
             f'FROM(SELECT e FROM (SELECT expected_position as e ' \
