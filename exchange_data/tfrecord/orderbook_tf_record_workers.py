@@ -30,6 +30,7 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 
 @click.command()
 @click.option('--clear', '-c', is_flag=True)
+@click.option('--overwrite', '-o', is_flag=True)
 @click.option('--directory-name', '-d', default='default', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--limit', '-l', default=0, type=int)

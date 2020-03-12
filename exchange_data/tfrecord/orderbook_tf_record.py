@@ -1,5 +1,6 @@
 import json
 from collections import deque
+from pathlib import Path
 
 import tensorflow as tf
 from tensorflow_core.core.example.feature_pb2 import Feature, Int64List, \
@@ -29,6 +30,7 @@ class OrderBookTFRecord(
     def __init__(
         self,
         side,
+        overwrite: bool,
         start_date=None,
         end_date=None,
         padding=2,
@@ -51,6 +53,10 @@ class OrderBookTFRecord(
 
         self.side = side
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
+
+        if not overwrite and Path(self.file_path).exists():
+            raise Exception('File Exists')
+
         padding = padding
         self.padding_window = padding + padding_after
         self.padding = padding
