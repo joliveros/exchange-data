@@ -1,4 +1,5 @@
 import json
+import shutil
 from collections import deque
 from pathlib import Path
 
@@ -22,11 +23,7 @@ Features = tf.train.Features
 Example = tf.train.Example
 
 
-class OrderBookTFRecord(
-    TFRecordDirectoryInfo,
-    TrainingDataBase,
-    OrderbookImgStreamer
-):
+class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
     def __init__(
         self,
         side,
@@ -37,12 +34,7 @@ class OrderBookTFRecord(
         padding_after=0,
         **kwargs
     ):
-        super().__init__(
-            side=side,
-            start_date=start_date,
-            end_date=end_date,
-            **kwargs
-        )
+        super().__init__(**kwargs)
 
         filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
 
@@ -53,6 +45,7 @@ class OrderBookTFRecord(
 
         self.side = side
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
+        self.temp_file_path = str(self.directory) + f'/{filename}.temp'
 
         if not overwrite and Path(self.file_path).exists():
             raise Exception('File Exists')
@@ -65,18 +58,6 @@ class OrderBookTFRecord(
         self.frames = deque(maxlen=2)
         self.features = []
         self.done = False
-
-    def run(self):
-        with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) \
-        as writer:
-            while self._last_datetime < self.stop_date:
-                self.queue_obs()
-
-            # some data transformations here
-            self.window_position_change()
-
-            for d in self.features:
-                self.write_observation(writer, d)
 
     def window_position_change(self):
         change_indexes = []
@@ -155,3 +136,29 @@ class OrderBookTFRecord(
 
     def BytesFeature(self, value):
         return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
+
+
+class OrderBookTFRecord(OrderbookImgStreamer, OrderBookTFRecordBase):
+    def __init__(
+        self,
+        **kwargs
+    ):
+        super().__init__(
+            **kwargs
+        )
+
+        OrderBookTFRecordBase.__init__(self, **kwargs)
+
+    def run(self):
+        with TFRecordWriter(self.temp_file_path, TFRecordCompressionType.GZIP) \
+        as writer:
+            while self._last_datetime < self.stop_date:
+                self.queue_obs()
+
+            # some data transformations here
+            self.window_position_change()
+
+            for d in self.features:
+                self.write_observation(writer, d)
+
+        shutil.move(self.temp_file_path, self.file_path)

@@ -24,7 +24,7 @@ class TrainingDataBase(object):
         self.best_bid = None
         self.best_ask = None
 
-        super().__init__(**kwargs)
+        super().__init__()
 
     @property
     def avg_exit_price(self):

@@ -21,6 +21,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         max_workers,
         channel_name,
         interval,
+        contiguous_interval,
         record_window='15s',
         limit: int = 0,
         **kwargs
@@ -39,13 +40,25 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         interval_delta = timedelta(seconds=timeparse(interval))
         self.start_date = now - interval_delta
         self.end_date = now
+        self.intervals = []
 
-        self.intervals = self.price_change_ranges(
-            position_ratio=position_ratio,
-            record_window=record_window,
-            start_date=self.start_date,
-            end_date=self.end_date
-        )
+        if contiguous_interval:
+            now = DateTimeUtils.now()
+            start_date = self.start_date.replace(second=0, microsecond=0)
+            intervals = int(interval_delta.total_seconds()/60)
+
+            for i in range(intervals):
+                end_date = start_date + timedelta(minutes=1)
+                self.intervals.append((start_date, end_date))
+                start_date = start_date + timedelta(minutes=1)
+
+        else:
+            self.intervals = self.price_change_ranges(
+                position_ratio=position_ratio,
+                record_window=record_window,
+                start_date=self.start_date,
+                end_date=self.end_date
+            )
 
         if limit > 0:
             self.intervals = self.intervals[(limit * -1):]
