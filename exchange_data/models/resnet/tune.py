@@ -9,8 +9,8 @@ import click
 import logging
 import tensorflow as tf
 
-HP_DROPOUT = hp.HParam('dropout', hp.RealInterval(0.0, 0.05))
-HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(.00001, .0001))
+HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000012049, 0.000029553))
+HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
@@ -20,20 +20,22 @@ def run(run_name, hparams):
 
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
+            'epsilon': 0.090979,
             'batch_size': 1,
-            'checkpoint_steps': 200,
+            'checkpoint_steps': 1000,
             'clear': True,
-            'epochs': 3,
-            'eval_span': '2m',
-            'eval_steps': '30s',
+            'directory': 'tune',
+            'epochs': 1,
+            'eval_span': '4m',
+            'eval_steps': '2m',
             'export_model': False,
             'frame_width': 224,
             'interval': '1m',
             'learning_rate_decay': 0,
             'max_steps': 21600,
             'seed': 216,
-            'steps_epoch': '1m',
-            'window_size': '3s'
+            'steps_epoch': '2h',
+            'window_size': '3s',
         }
 
 
@@ -72,24 +74,19 @@ def main(**kwargs):
     while session_num <= session_limit:
         learning_rate = HP_LRATE.domain.sample_uniform()
 
-        for l in range(0, 2):
-            dropout_rate = HP_DROPOUT.domain.sample_uniform()
-            hparams = dict(
-                dropout_rate=dropout_rate,
-                learning_rate=learning_rate,
-            )
+        hparams = dict(
+            learning_rate=learning_rate,
+        )
 
-            run_name = "run-%d" % session_num
-            print('--- Starting trial: %s' % run_name)
+        run_name = "run-%d" % session_num
+        print('--- Starting trial: %s' % run_name)
 
-            alog.info(alog.pformat(hparams))
-            try:
-                run(run_name, hparams)
-            except Exception as e:
-                alog.info(e)
-                pass
+        alog.info(alog.pformat(hparams))
 
-            session_num += 1
+        run(run_name, hparams)
+
+        session_num += 1
+
 
 
 if __name__ == '__main__':

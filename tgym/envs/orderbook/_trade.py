@@ -186,9 +186,6 @@ class LongTrade(Trade):
 
     @property
     def pnl(self):
-        if self._pnl:
-            return self._pnl
-
         diff = self.exit_price - self.entry_price
         if self.entry_price == 0.0:
             change = 0.0
@@ -211,9 +208,6 @@ class ShortTrade(Trade):
 
     @property
     def pnl(self):
-        if self._pnl:
-            return self._pnl
-
         diff = self.entry_price - self.exit_price
 
         if self.entry_price == 0.0:

@@ -17,13 +17,14 @@ import numpy as np
 
 
 class TrainingDataBase(object):
-    def __init__(self, **kwargs):
+    def __init__(self, min_change=0.0, **kwargs):
+        self.min_change = min_change
         self.last_best_bid = None
         self.last_best_ask = None
         self.best_bid = None
         self.best_ask = None
 
-        super().__init__(**kwargs)
+        super().__init__()
 
     @property
     def avg_exit_price(self):
@@ -41,12 +42,13 @@ class TrainingDataBase(object):
     def expected_position(self):
         position = None
         diff = self.diff
+        abs_diff = abs(diff)
 
-        if diff > 0.0:
+        if diff > 0.0 and abs_diff >= self.min_change:
             position = Positions.Long
-        elif diff < 0.0:
+        elif diff < 0.0 and abs_diff >= self.min_change:
             position = Positions.Short
-        elif diff == 0.0:
+        else:
             position = Positions.Flat
 
         return position
@@ -55,26 +57,28 @@ class TrainingDataBase(object):
 class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
     def __init__(
         self,
+        depth=21,
         symbol=BitmexChannels.XBTUSD,
         **kwargs
     ):
         start_date = DateTimeUtils.now()
 
         super().__init__(
-            start_date=start_date,
-            end_date=start_date,
-            database_name='bitmex',
-            random_start_date=False,
             database_batch_size=1,
+            database_name='bitmex',
             date_checks=False,
+            end_date=start_date,
+            orderbook_depth=depth,
+            random_start_date=False,
+            start_date=start_date,
             **kwargs
         )
 
         self.symbol = symbol
         self._last_datetime = self.start_date
         self.last_data = []
-        self.orderbook_channel = 'XBTUSD_OrderBookFrame_depth_21'
-        self.channel_name = f'orderbook_img_frame_{self.symbol.value}'
+        self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}'
+        self.channel_name = f'orderbook_img_frame_{self.symbol.value}_{depth}'
 
         self.on(self.orderbook_channel, self.write_observation)
         self.on('frame_str', self.publish_to_channels)
@@ -91,20 +95,17 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
     def write_observation(self, data):
         self.last_data = data
 
-        try:
-            self.get_observation()
-
-        except OrderBookIncompleteException as e:
-            pass
+        self.get_observation()
 
         if len(self.frames) >= self.max_frames:
             frame = self.frames[-2]
 
             if self.expected_position != Positions.Flat:
-                alog.info((self.expected_position, self.best_ask, self.best_bid))
+                alog.info((self.expected_position, self.diff, self.best_ask,
+                           self.best_bid))
 
-            if settings.LOG_LEVEL == logging.DEBUG:
-                alog.info(AsciiImage(frame, new_width=12))
+            # if settings.LOG_LEVEL == logging.DEBUG:
+            # alog.info(AsciiImage(frame, new_width=21))
 
             frame_str = json.dumps(frame, cls=NumpyEncoder)
 
@@ -139,11 +140,13 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
 
 @click.command()
 @click.option('--frame-width', default=96, type=int)
+@click.option('--min-change', default=2.0, type=float)
 @click.option('--min-std-dev', '-std', default=2.0, type=float)
 @click.option('--top-limit', '-l', default=5e5, type=float)
 @click.option('--print-ascii-chart', '-a', is_flag=True)
 @click.option('--summary-interval', '-si', default=6, type=int)
 @click.option('--max-frames', '-m', default=6, type=int)
+@click.option('--depth', '-d', default=21, type=int)
 @click.option('--use-volatile-ranges', '-v', is_flag=True)
 def main(**kwargs):
     record = OrderBookTrainingData(**kwargs)
