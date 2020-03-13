@@ -43,11 +43,10 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         self.intervals = []
 
         if contiguous_interval:
-            now = DateTimeUtils.now()
             start_date = self.start_date.replace(second=0, microsecond=0)
             intervals = int(interval_delta.total_seconds()/60)
 
-            for i in range(intervals):
+            for i in range(intervals - 1):
                 end_date = start_date + timedelta(minutes=1)
                 self.intervals.append((start_date, end_date))
                 start_date = start_date + timedelta(minutes=1)
