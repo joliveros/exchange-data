@@ -53,7 +53,7 @@ def main(**kwargs):
         **kwargs)
 
     record.run()
-
+    time.sleep(60)
 
 if __name__ == '__main__':
     main()
