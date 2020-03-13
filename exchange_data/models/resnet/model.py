@@ -21,6 +21,7 @@ Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
 Flatten = tf.keras.layers.Flatten
 GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
+GlobalAveragePooling1D = tf.keras.layers.GlobalAveragePooling1D
 Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
 Reshape = tf.keras.layers.Reshape
@@ -40,7 +41,7 @@ def Model(
     learning_rate_decay=5e-3
 ):
     model = Sequential()
-    model.add(Input(shape=(frame_width, frame_width, 3)))
+    model.add(Input(shape=(frame_width, frame_width, 3), batch_size=batch_size))
 
     base = ResNet(
         include_top=False,
