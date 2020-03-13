@@ -1,5 +1,7 @@
 import json
+import shutil
 from collections import deque
+from pathlib import Path
 
 import tensorflow as tf
 from tensorflow_core.core.example.feature_pb2 import Feature, Int64List, \
@@ -15,27 +17,24 @@ import alog
 import re
 import numpy as np
 
+from exchange_data.trading import Positions
 
 Features = tf.train.Features
 Example = tf.train.Example
 
 
-class OrderBookTFRecord(
-    TFRecordDirectoryInfo,
-    TrainingDataBase,
-    OrderbookImgStreamer
-):
+class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
     def __init__(
         self,
+        side,
+        overwrite: bool,
         start_date=None,
         end_date=None,
+        padding=2,
+        padding_after=0,
         **kwargs
     ):
-        super().__init__(
-            start_date=start_date,
-            end_date=end_date,
-            **kwargs
-        )
+        super().__init__(**kwargs)
 
         filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
 
@@ -44,18 +43,54 @@ class OrderBookTFRecord(
         else:
             self.stop_date = end_date
 
+        self.side = side
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
+        self.temp_file_path = str(self.directory) + f'/{filename}.temp'
 
+        if not overwrite and Path(self.file_path).exists():
+            raise Exception('File Exists')
+
+        padding = padding
+        self.padding_window = padding + padding_after
+        self.padding = padding
+        self.padding_after = padding_after
         self._last_datetime = self.start_date
         self.frames = deque(maxlen=2)
+        self.features = []
+        self.done = False
 
-    def run(self):
-        with TFRecordWriter(self.file_path, TFRecordCompressionType.GZIP) \
-        as writer:
-            while self._last_datetime < self.stop_date:
-                self.write_observation(writer)
+    def window_position_change(self):
+        change_indexes = []
 
-    def write_observation(self, writer):
+        for i in range(len(self.features)):
+            feature = self.features[i]
+            current_position = feature[0]
+
+            if current_position != 0:
+                position = feature[-1]['expected_position']
+                change_indexes.append((i, position))
+
+        max_index = len(self.features) - 1
+
+        self.features = [feature[-1] for feature in self.features]
+
+        for position_change in change_indexes:
+            i, position = position_change
+            left_padding_index = i - self.padding
+            right_padding_index = i + self.padding_after
+
+            if left_padding_index < 0:
+                left_padding_index = 0
+
+            if right_padding_index > max_index:
+                right_padding_index = max_index
+
+            for ix in range(left_padding_index, right_padding_index + 1):
+                feature = self.features[ix]
+                feature['expected_position'] = position
+                self.features[ix] = feature
+
+    def queue_obs(self):
         timestamp, best_ask, best_bid, orderbook_img = next(self)
         orderbook_img = np.asarray(json.loads(orderbook_img))
 
@@ -68,16 +103,30 @@ class OrderBookTFRecord(
         self.frames.append((timestamp, best_ask, best_bid, orderbook_img))
 
         if len(self.frames) > 1:
+            position = self.expected_position.value
+
+            if position != Positions[self.side].value and \
+                position != Positions.Flat.value:
+                position = Positions.Flat.value
+
             data = dict(
                 datetime=self.BytesFeature(str(timestamp)),
                 frame=self.floatFeature(self.frames[-2][-1].flatten()),
                 best_bid=self.floatFeature([self.last_best_bid]),
                 best_ask=self.floatFeature([self.last_best_ask]),
-                expected_position=self.int64Feature([self.expected_position.value]),
+                expected_position=self.int64Feature([position]),
             )
+            self.features.append((position, data))
 
-            example: Example = Example(features=Features(feature=data))
-            writer.write(example.SerializeToString())
+    def write_observation(self, writer, features):
+        # alog.info(features['datetime'])
+        # alog.info(features['expected_position'])
+
+        example: Example = Example(
+            features=Features(feature=features)
+        )
+
+        writer.write(example.SerializeToString())
 
     def int64Feature(self, value):
         return Feature(int64_list=Int64List(value=value))
@@ -87,3 +136,29 @@ class OrderBookTFRecord(
 
     def BytesFeature(self, value):
         return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
+
+
+class OrderBookTFRecord(OrderbookImgStreamer, OrderBookTFRecordBase):
+    def __init__(
+        self,
+        **kwargs
+    ):
+        super().__init__(
+            **kwargs
+        )
+
+        OrderBookTFRecordBase.__init__(self, **kwargs)
+
+    def run(self):
+        with TFRecordWriter(self.temp_file_path, TFRecordCompressionType.GZIP) \
+        as writer:
+            while self._last_datetime < self.stop_date:
+                self.queue_obs()
+
+            # some data transformations here
+            self.window_position_change()
+
+            for d in self.features:
+                self.write_observation(writer, d)
+
+        shutil.move(self.temp_file_path, self.file_path)

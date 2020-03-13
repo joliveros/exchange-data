@@ -6,6 +6,7 @@ from exchange_data.streamers._bitmex import BitmexStreamer
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
+from exchange_data.trading import Positions
 
 import alog
 import click
@@ -26,12 +27,13 @@ class PriceChangeRanges(object):
 
     def price_change_ranges(
         self,
+        position_ratio,
         record_window: str='15s',
         group_by_interval='1s',
         start_date=None,
         end_date=None
     ):
-        record_window = int(timeparse(record_window) / 2)
+        record_window = timeparse(record_window)
 
         start_date = start_date if start_date else self.start_date
         end_date = end_date if end_date else self.end_date
@@ -40,25 +42,48 @@ class PriceChangeRanges(object):
         end_date = self.format_date_query(end_date)
 
         ranges = []
-        ranges += self.position_changes(group_by_interval, end_date, start_date)
+
+        short_ranges = self.position_changes(
+            Positions.Short,
+            group_by_interval,
+            end_date,
+            start_date
+        )
+        long_ranges = self.position_changes(
+            Positions.Long,
+            group_by_interval,
+            end_date,
+            start_date
+        )
+
+        short_ranges_count = len(short_ranges)
+        proportional_longs = -1 * int(position_ratio * short_ranges_count)
+
+        long_ranges = long_ranges[proportional_longs:]
+
+        ranges += short_ranges
+        ranges += long_ranges
 
         timestamps = [data['time'] for data in ranges]
 
         ranges = [(
             DateTimeUtils.parse_db_timestamp(timestamp) - timedelta(
-                            seconds=record_window),
+                            seconds=record_window - 4),
             DateTimeUtils.parse_db_timestamp(timestamp) + timedelta(
-                            seconds=record_window)
+                            seconds=4)
         ) for timestamp in timestamps]
 
         return ranges
 
-    def position_changes(self, group_by_interval, end_date, start_date):
+    def position_changes(self, side, group_by_interval, end_date, start_date):
+        side = side.value
+
         query = f'SELECT ecount FROM (SELECT COUNT(e) as ecount ' \
             f'FROM(SELECT e FROM (SELECT expected_position as e ' \
             f'from {self.channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date}) ' \
-            f'WHERE e > 0) GROUP BY time({group_by_interval})) WHERE ecount > 0;'
+            f'WHERE e = {side}) GROUP BY time({group_by_interval})) WHERE ' \
+            f'ecount > 0;'
 
         alog.info(query)
         ranges = self.query(query).get_points(self.channel_name)

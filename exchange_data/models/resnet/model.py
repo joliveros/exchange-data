@@ -33,7 +33,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     batch_size,
-    dropout_rate=0.1,
+    epsilon,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -50,13 +50,16 @@ def Model(
 
     model.add(base)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(dropout_rate))
     model.add(Dense(num_categories, activation='softmax'))
+
+    optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
+
+    alog.info(optimizer)
 
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'],
-        optimizer=Adam(lr=learning_rate, decay=learning_rate_decay)
+        optimizer=optimizer
     )
 
     return model
@@ -76,7 +79,7 @@ class ModelTrainer(object):
             self,
             batch_size,
             clear,
-            dropout_rate,
+            directory,
             export_model,
             checkpoint_steps,
             epochs,
@@ -85,13 +88,14 @@ class ModelTrainer(object):
             frame_width,
             interval,
             learning_rate,
+            epsilon,
             max_steps,
             learning_rate_decay,
             steps_epoch,
             window_size,
             seed
         ):
-        model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+        model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
 
         if clear:
             try:
@@ -100,7 +104,7 @@ class ModelTrainer(object):
                 pass
 
         model = Model(
-            dropout_rate=dropout_rate,
+            epsilon=epsilon,
             batch_size=batch_size,
             learning_rate=learning_rate,
             frame_width=frame_width,
@@ -124,19 +128,20 @@ class ModelTrainer(object):
         train_spec = TrainSpec(
             input_fn=lambda: dataset(
                 skip=timeparse(eval_steps),
+                take=timeparse(steps_epoch),
                 batch_size=batch_size,
                 epochs=epochs,
             )
         )
 
         def eval_dataset():
-            return dataset(batch_size=batch_size)
+            return dataset(batch_size=batch_size, take=timeparse(eval_span))
 
         eval_spec = EvalSpec(
             input_fn=lambda: eval_dataset(),
-            start_delay_secs=60*3,
+            start_delay_secs=60*30,
             steps=timeparse(eval_steps)*2,
-            throttle_secs=60*3
+            throttle_secs=60*30
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
@@ -152,7 +157,9 @@ class ModelTrainer(object):
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
         if export_model:
-            resnet_estimator.export_saved_model(model_dir + '/saved', serving_input_receiver_fn)
+            export_dir = f'{Path.home()}/.exchange-data/models/resnet_export'
+            resnet_estimator.export_saved_model(export_dir,
+                                                serving_input_receiver_fn)
 
         return result
 
@@ -160,12 +167,13 @@ class ModelTrainer(object):
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
 @click.option('--checkpoint-steps', '-s', type=int, default=200)
+@click.option('--directory', type=str, default='default')
 @click.option('--epochs', '-e', type=int, default=10)
 @click.option('--eval-span', type=str, default='20m')
 @click.option('--eval-steps', type=str, default='15s')
 @click.option('--frame-width', type=int, default=224)
 @click.option('--interval', '-i', type=str, default='1m')
-@click.option('--dropout-rate', '-d', type=float, default=0.3e-4)
+@click.option('--epsilon', type=float, default=0.3e-4)
 @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
 @click.option('--learning-rate-decay', default=5e-3, type=float)
 @click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
