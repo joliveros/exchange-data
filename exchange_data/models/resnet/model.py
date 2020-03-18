@@ -21,6 +21,7 @@ Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
 Flatten = tf.keras.layers.Flatten
 GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
+GlobalAveragePooling1D = tf.keras.layers.GlobalAveragePooling1D
 Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
 Reshape = tf.keras.layers.Reshape
@@ -32,6 +33,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 
 def Model(
+    sequence_length,
     batch_size,
     epsilon,
     learning_rate=5e-5,
@@ -40,7 +42,8 @@ def Model(
     learning_rate_decay=5e-3
 ):
     model = Sequential()
-    model.add(Input(shape=(frame_width, frame_width, 3)))
+
+    input_shape = (batch_size, sequence_length, 1, frame_width, frame_width, 3)
 
     base = ResNet(
         include_top=False,
@@ -48,13 +51,20 @@ def Model(
         pooling=None
     )
 
-    model.add(base)
-    model.add(GlobalAveragePooling2D())
+    model.add(TimeDistributed(
+        base,
+        input_shape=(1, frame_width, frame_width, 3)
+    ))
+
+    model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
+    model.add(LSTM(
+        16, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+                                              frame_width, 3),
+        return_sequences=False
+    ))
     model.add(Dense(num_categories, activation='softmax'))
 
     optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
-
-    alog.info(optimizer)
 
     model.compile(
         loss='sparse_categorical_crossentropy',
@@ -78,6 +88,7 @@ class ModelTrainer(object):
     def _run(
             self,
             batch_size,
+            sequence_length,
             clear,
             directory,
             export_model,
@@ -105,6 +116,7 @@ class ModelTrainer(object):
 
         model = Model(
             epsilon=epsilon,
+            sequence_length=sequence_length,
             batch_size=batch_size,
             learning_rate=learning_rate,
             frame_width=frame_width,
@@ -150,8 +162,9 @@ class ModelTrainer(object):
 
         def serving_input_receiver_fn():
             inputs = {
-              'input_1': tf.compat.v1.placeholder(
-                  tf.float32, [None, frame_width, frame_width, 3]
+              'time_distributed_input': tf.compat.v1.placeholder(
+                  tf.float32, [sequence_length, 1, frame_width,
+                               frame_width, 3]
               ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
@@ -166,6 +179,7 @@ class ModelTrainer(object):
 
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
+@click.option('--sequence-length', type=int, default=4)
 @click.option('--checkpoint-steps', '-s', type=int, default=200)
 @click.option('--directory', type=str, default='default')
 @click.option('--epochs', '-e', type=int, default=10)

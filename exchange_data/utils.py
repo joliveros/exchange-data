@@ -1,10 +1,9 @@
-import sys
 from abc import ABC
 from datetime import datetime, timedelta
 from dateutil import parser
 from dateutil.tz import tz
 from enum import Enum
-from pyee import EventEmitter, AsyncIOEventEmitter
+from pyee import EventEmitter
 from pytimeparse import parse as dateparse
 from random import random
 
