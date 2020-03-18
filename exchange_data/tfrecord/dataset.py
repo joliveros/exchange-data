@@ -26,7 +26,7 @@ def extract_fn(data_record):
 
     data = tf.io.parse_single_example(data_record, features)
 
-    return data['frame'], data['expected_position']
+    return tf.expand_dims(data['frame'], 0), data['expected_position']
 
 
 def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
@@ -42,11 +42,16 @@ def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
     )
 
     _dataset = _dataset.map(map_func=extract_fn)\
-        .batch(batch_size) \
         .skip(skip) \
         .take(take) \
         .prefetch(10) \
+        .window(4, shift=1, stride=1, drop_remainder=True) \
+        .flat_map(lambda frames, labels:
+                 tf.data.Dataset.zip((frames.batch(4),
+                                      labels.batch(4)))) \
         .repeat(epochs)
+
+
 
     return _dataset
 
@@ -56,12 +61,13 @@ def main(**kwargs):
     count = 0
 
     for data in dataset(batch_size=1, take=60*10, **kwargs):
-        # alog.info(x)
-        # alog.info(y)
-        alog.info(data)
-        count += 1
-        alog.info(count)
-        return
+        for window in data:
+            # alog.info(x)
+            # alog.info(y)
+            alog.info(data)
+            # count += 1
+            # alog.info(count)
+            # return
 
 
 if __name__ == '__main__':
