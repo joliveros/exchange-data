@@ -26,6 +26,7 @@ Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
 Reshape = tf.keras.layers.Reshape
 ResNet = tf.keras.applications.ResNet152V2
+NasNet = tf.keras.applications.NASNetMobile
 Sequential = tf.keras.models.Sequential
 SGD = tf.keras.optimizers.SGD
 Adam = tf.keras.optimizers.Adam
@@ -45,7 +46,7 @@ def Model(
 
     input_shape = (batch_size, sequence_length, 1, frame_width, frame_width, 3)
 
-    base = ResNet(
+    base = NasNet(
         include_top=False,
         classes=num_categories,
         pooling=None
@@ -58,10 +59,21 @@ def Model(
 
     model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
     model.add(LSTM(
-        16, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+                                              frame_width, 3),
+        return_sequences=True
+    ))
+    model.add(LSTM(
+        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+                                              frame_width, 3),
+        return_sequences=True
+    ))
+    model.add(LSTM(
+        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
                                               frame_width, 3),
         return_sequences=False
     ))
+    model.add(Flatten())
     model.add(Dense(num_categories, activation='softmax'))
 
     optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
