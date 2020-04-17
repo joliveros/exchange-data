@@ -189,7 +189,7 @@ services:
     deploy:
       replicas: 1
     image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD --depth 8 -l 12"
+    command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD --depth 8 -l 16"
     environment:
       - LOG_LEVEL=INFO
     env_file:

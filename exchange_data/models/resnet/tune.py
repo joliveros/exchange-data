@@ -9,23 +9,24 @@ import click
 import logging
 import tensorflow as tf
 
-HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.000012049, 0.000029553))
+HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.00001, 0.0001))
 HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
+
 
 def run(run_name, hparams):
     run_dir = f'{Path.home()}/.exchange-data/models/resnet_params/{run_name}'
 
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
-            'epsilon': 0.090979,
             'batch_size': 1,
             'checkpoint_steps': 1000,
             'clear': True,
             'directory': 'tune',
             'epochs': 1,
+            'epsilon': 0.090979,
             'eval_span': '4m',
             'eval_steps': '2m',
             'export_model': False,
@@ -34,7 +35,8 @@ def run(run_name, hparams):
             'learning_rate_decay': 0,
             'max_steps': 21600,
             'seed': 216,
-            'steps_epoch': '2h',
+            'sequence_length': 32,
+            'steps_epoch': '15m',
             'window_size': '3s',
         }
 
