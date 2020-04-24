@@ -61,7 +61,6 @@ services:
     secrets:
         - BITMEX_API_KEY
         - BITMEX_API_SECRET
-        - BITSTAMP_PUSHER_APP_KEY
         - DB
         - ROLLBAR_API_KEY
     networks:
@@ -79,7 +78,6 @@ services:
     secrets:
       - BITMEX_API_KEY
       - BITMEX_API_SECRET
-      - BITSTAMP_PUSHER_APP_KEY
       - DB
       - ROLLBAR_API_KEY
     depends_on:
@@ -99,7 +97,6 @@ services:
     secrets:
       - BITMEX_API_KEY
       - BITMEX_API_SECRET
-      - BITSTAMP_PUSHER_APP_KEY
       - DB
       - ROLLBAR_API_KEY
     depends_on:
@@ -119,7 +116,6 @@ services:
     secrets:
       - BITMEX_API_KEY
       - BITMEX_API_SECRET
-      - BITSTAMP_PUSHER_APP_KEY
       - DB
       - ROLLBAR_API_KEY
     depends_on:
@@ -140,7 +136,6 @@ services:
     secrets:
       - BITMEX_API_KEY
       - BITMEX_API_SECRET
-      - BITSTAMP_PUSHER_APP_KEY
       - DB
       - ROLLBAR_API_KEY
     networks:
@@ -207,8 +202,6 @@ secrets:
   BITMEX_API_KEY:
       external: true
   BITMEX_API_SECRET:
-      external: true
-  BITSTAMP_PUSHER_APP_KEY:
       external: true
   DB:
       external: true

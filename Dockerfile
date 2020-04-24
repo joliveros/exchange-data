@@ -1,4 +1,4 @@
-FROM codequants.com:5000/exchange-data:base
+FROM registry.rubercubic.com:5001/exchange-data:base
 
 ENV NAME exchange-data
 ENV LD_LIBRARY_PATH /usr/local/cuda-10.1/compat/:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH

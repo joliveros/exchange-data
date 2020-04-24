@@ -1,4 +1,4 @@
-FROM codequants.com:5000/miniconda
+FROM registry.rubercubic.com:5001/miniconda
 
 WORKDIR /src
 
