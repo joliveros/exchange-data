@@ -15,7 +15,7 @@ services:
             - public
 
     influxdb:
-        image: codequants.com:5000/influxdb
+        image: registry.rubercubic.com:5001/influxdb
         env_file:
           - ./.env.prod
         secrets:
@@ -23,8 +23,7 @@ services:
         ports:
             - 0.0.0.0:28736:8086
         volumes:
-            - "/home/joliveros/exchange-data/influxdb.conf:/etc/influxdb/influxdb.conf"
-            - "/home/joliveros/influxdb:/var/lib/influxdb"
+            - "/home/$USER/influxdb:/var/lib/influxdb"
 
         command: influxd -config /etc/influxdb/influxdb.conf
         networks:
