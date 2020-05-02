@@ -10,17 +10,18 @@ services:
   emit_time:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/time_emitter.py"
     networks:
       - public
     depends_on:
       - redis
+      - influxdb
 
   emit_bitmex_btc:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py XBTUSD"
     environment:
       - LOG_LEVEL=INFO
@@ -32,7 +33,7 @@ services:
   emit_bitmex_eth:
     deploy:
       replicas: 0
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/instrument_emitter.py ETHUSD"
     networks:
       - public
@@ -42,7 +43,7 @@ services:
   emit_orderbook_l2:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_orderbook_l2_emitter.py XBTUSD"
     networks:
       - public
@@ -52,7 +53,7 @@ services:
   emit_bxbt_index:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_bxbt_index_emitter.py"
     environment:
       - LOG_LEVEL=INFO
@@ -71,7 +72,7 @@ services:
   emit_bitmex_orderbook:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
     env_file:
       - ./.env.prod
@@ -91,7 +92,7 @@ services:
   record_bitmex_eth:
     deploy:
       replicas: 0
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     env_file:
       - ./.env.prod
     secrets:
@@ -108,7 +109,7 @@ services:
   record_bitmex_xbtusd:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data
+    image: registry.rubercubic.com:5001/exchange-data
     environment:
       - LOG_LEVEL=INFO
     env_file:
@@ -126,8 +127,8 @@ services:
 
   emit_bitmex_account:
     deploy:
-      replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+      replicas: 0
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/bitmex/_account_emitter.py"
     environment:
       - LOG_LEVEL=INFO
@@ -147,10 +148,10 @@ services:
   emit_tfrecords_btc:
     deploy:
       replicas: 0
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/tfrecord/orderbook_tf_record_workers.py --frame-width 224 -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
     volumes:
-      - "${HOME}/.exchange-data/:/root/.exchange-data/"
+      - "/home/${USER}/.exchange-data/:/root/.exchange-data/"
     environment:
       - LOG_LEVEL=INFO
     env_file:
@@ -166,7 +167,7 @@ services:
   emit_orderbook_training_data_btc:
     deploy:
       replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l 1000000 -d 8"
     environment:
       - LOG_LEVEL=INFO
@@ -182,8 +183,8 @@ services:
 
   emit_prediction_btc:
     deploy:
-      replicas: 1
-    image: codequants.com:5000/exchange-data:latest
+      replicas: 0
+    image: registry.rubercubic.com:5001/exchange-data:latest
     command: bash -c "source ~/.bashrc && ./exchange_data/emitters/prediction_emitter.py XBTUSD --depth 8 -l 16"
     environment:
       - LOG_LEVEL=INFO
