@@ -26,11 +26,10 @@ def extract_fn(data_record):
 
     data = tf.io.parse_single_example(data_record, features)
 
-    return tf.expand_dims(data['frame'], 0), data['expected_position']
+    return data['frame'], data['expected_position']
 
 
-def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
-                                                       dataset_name='default',
+def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
             **kwargs):
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
@@ -41,17 +40,11 @@ def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
         lambda filename: (tf.data.TFRecordDataset(filename, compression_type='GZIP'))
     )
 
-    _dataset = _dataset.map(map_func=extract_fn)\
+    _dataset = _dataset.map(map_func=extract_fn) \
+        .batch(batch_size) \
         .skip(skip) \
-        .take(take) \
         .prefetch(10) \
-        .window(4, shift=1, stride=1, drop_remainder=True) \
-        .flat_map(lambda frames, labels:
-                 tf.data.Dataset.zip((frames.batch(4),
-                                      labels.batch(4)))) \
         .repeat(epochs)
-
-
 
     return _dataset
 
@@ -59,15 +52,11 @@ def dataset(batch_size: int, skip=0, take=0, epochs: int = 1,
 @click.command()
 def main(**kwargs):
     count = 0
-
-    for data in dataset(batch_size=1, take=60*10, **kwargs):
-        for window in data:
-            # alog.info(x)
-            # alog.info(y)
-            alog.info(data)
-            # count += 1
-            # alog.info(count)
-            # return
+    for x, y in dataset(2, **kwargs):
+        alog.info(x)
+        alog.info(y)
+        count += 1
+        alog.info(count)
 
 
 if __name__ == '__main__':
