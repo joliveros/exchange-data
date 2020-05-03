@@ -112,6 +112,7 @@ class Trade(Logging):
         self.asks = np.append(self.asks, [best_ask])
 
         pnl = self.pnl
+
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
         if pnl > self.min_profit:
@@ -187,6 +188,7 @@ class LongTrade(Trade):
     @property
     def pnl(self):
         diff = self.exit_price - self.entry_price
+
         if self.entry_price == 0.0:
             change = 0.0
         else:
@@ -217,6 +219,7 @@ class ShortTrade(Trade):
 
         pnl = (self.capital * (change * self.leverage)) + \
                    (-1 * self.capital * self.trading_fee)
+
         return pnl
 
     def close(self):

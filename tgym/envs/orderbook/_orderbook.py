@@ -454,7 +454,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.trades.append(trade)
 
         if type(trade) != FlatTrade:
-            self.capital += trade.capital
+            self.capital = trade.capital
 
         self.reward += reward
         self.current_trade = None

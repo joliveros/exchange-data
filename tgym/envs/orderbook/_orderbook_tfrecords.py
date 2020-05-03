@@ -36,12 +36,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self._expected_position = None
 
     @property
-    def position(self):
-        return self.last_position
+    def best_bid(self):
+        return self._best_bid
 
-    @position.setter
-    def position(self, action: np.float):
-        self.last_position = [p for p in Positions if p.value == action][0]
+    @property
+    def best_ask(self):
+        return self._best_ask
 
     @property
     def expected_position(self):
@@ -52,20 +52,21 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self._expected_position = [p for p in Positions if p.value == action][0]
 
     def _get_observation(self):
-        for data in self.dataset.make_one_shot_iterator():
-            timestamp = DateTimeUtils\
-                .parse_datetime_str(data.get('datetime').numpy()[-1])
+        for data in self.dataset:
+            timestamp = DateTimeUtils.parse_datetime_str(data['datetime'].numpy()[0])
 
             best_ask = data.get('best_ask').numpy()[-1][-1]
             best_bid = data.get('best_bid').numpy()[-1][-1]
             expected_position = data.get('expected_position').numpy()[-1][-1]
-            frame = data.get('frame').numpy()[-1]
+            frame = data.get('frame').numpy()[0]
 
             yield timestamp, best_ask, best_bid, expected_position, frame
 
     def get_observation(self):
         timestamp, best_ask, best_bid, expected_position, frame = next(
             self._get_observation())
+        self._best_ask = best_ask
+        self._best_bid = best_bid
 
         self.frames.append(frame)
         self.expected_position = expected_position
@@ -81,7 +82,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def step(self, action):
         assert self.action_space.contains(action)
 
-        self.position = action
+        self.step_position(action)
 
         self.step_count += 1
 
@@ -103,20 +104,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         return observation, reward, self.done, {}
 
-    def summary(self):
-        summary_keys = [
-            'step_count',
-            'total_reward'
-        ]
-
-        summary = {key: self.__dict__[key] for key in
-                   summary_keys}
-
-        summary['position_history'] = \
-            ''.join(self.position_history[-1 * self.max_summary:])
-
-        return summary
-
 
 @click.command()
 @click.option('--test-span', default='5m')
@@ -128,12 +115,10 @@ def main(test_span, **kwargs):
         **kwargs
     )
 
-    for t in range(10):
+    for t in range(1):
         env.reset()
         for i in range(timeparse(test_span)):
             env.step(random.randint(0, 2))
-
-    alog.info(alog.pformat(env.summary()))
 
 
 if __name__ == '__main__':

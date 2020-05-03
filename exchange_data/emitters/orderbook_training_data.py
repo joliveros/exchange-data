@@ -5,8 +5,9 @@ from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
-from tgym.envs import OrderBookTradingEnv
-from tgym.envs.orderbook._orderbook import OrderBookIncompleteException
+from tgym.envs.orderbook._orderbook import OrderBookIncompleteException, \
+    OrderBookTradingEnv
+
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
