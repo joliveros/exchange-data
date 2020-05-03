@@ -5,14 +5,13 @@ from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
-from ._orderbook import OrderBookTradingEnv
+from tgym.envs.orderbook import OrderBookTradingEnv
 
 import alog
 import click
 import numpy as np
 import random
 import tensorflow as tf
-
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
@@ -30,7 +29,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         super().__init__(
             start_date=start_date,
             end_date=end_date,
-            directory_name='default',
             **kwargs
         )
         self.max_steps = max_steps
