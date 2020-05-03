@@ -17,16 +17,16 @@ def extract_fn(data_record):
     alog.info(data_record)
 
     features = dict(
-        # best_ask=FixedLenFeature([1], tf.float32),
-        # best_bid=FixedLenFeature([1], tf.float32),
-        # datetime=FixedLenFeature([], tf.string),
+        best_ask=FixedLenFeature([1], tf.float32),
+        best_bid=FixedLenFeature([1], tf.float32),
+        datetime=FixedLenFeature([], tf.string),
         expected_position=tf.io.FixedLenFeature([1], tf.int64),
         frame=FixedLenFeature([224, 224, 3], tf.float32),
     )
 
     data = tf.io.parse_single_example(data_record, features)
 
-    return data['frame'], data['expected_position']
+    return data
 
 
 def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
