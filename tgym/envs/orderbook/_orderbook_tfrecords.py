@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from gym.spaces import Discrete
 
 from exchange_data.tfrecord.dataset import dataset
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
@@ -27,6 +28,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             del kwargs['end_date']
 
         super().__init__(
+            min_change=2.0,
+            action_space=Discrete(2),
             start_date=start_date,
             end_date=end_date,
             **kwargs
@@ -34,6 +37,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.max_steps = max_steps
         self.dataset = dataset(batch_size=1, **kwargs)
         self._expected_position = None
+        self.observations = None
 
     @property
     def best_bid(self):
@@ -54,7 +58,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def _get_observation(self):
         for data in self.dataset:
             timestamp = DateTimeUtils.parse_datetime_str(data['datetime'].numpy()[0])
-
             best_ask = data.get('best_ask').numpy()[-1][-1]
             best_bid = data.get('best_bid').numpy()[-1][-1]
             expected_position = data.get('expected_position').numpy()[-1][-1]
@@ -63,8 +66,11 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             yield timestamp, best_ask, best_bid, expected_position, frame
 
     def get_observation(self):
-        timestamp, best_ask, best_bid, expected_position, frame = next(
-            self._get_observation())
+        if self.observations is None:
+            self.observations = self._get_observation()
+
+        timestamp, best_ask, best_bid, expected_position, frame = next(self.observations)
+
         self._best_ask = best_ask
         self._best_bid = best_bid
 
@@ -75,7 +81,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.last_datetime = str(timestamp)
         self._last_datetime = timestamp
 
-        self.last_observation = np.copy(self.frames[-1])
+        self.last_observation = np.copy(self.frames)
 
         return self.last_observation
 
@@ -91,10 +97,10 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         observation = self.get_observation()
 
-        if self.expected_position == self.position:
-            self.reward += 1.0
-        else:
-            self.reward -= 1.0
+        # if self.expected_position == self.position:
+        #     self.reward += 1.0
+        # else:
+        #     self.reward -= 1.0
 
         reward = self.reset_reward()
 

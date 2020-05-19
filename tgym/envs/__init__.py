@@ -1,6 +1,7 @@
 from gym.envs.registration import register
 from tgym.envs.orderbook import TFOrderBookEnv
 
+
 register(
     id='orderbook-trading-v0',
     entry_point='tgym.envs:OrderBookTradingEnv',

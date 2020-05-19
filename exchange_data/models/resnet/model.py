@@ -34,13 +34,16 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 
 def Model(
+    input_shape,
     sequence_length,
     batch_size,
     epsilon,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
-    learning_rate_decay=5e-3
+    learning_rate_decay=5e-3,
+    include_last=True,
+    **kwargs
 ):
     model = Sequential()
 
@@ -54,7 +57,7 @@ def Model(
 
     model.add(TimeDistributed(
         base,
-        input_shape=(1, frame_width, frame_width, 3)
+        input_shape=(sequence_length, frame_width, frame_width, 3)
     ))
 
     model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
@@ -73,18 +76,25 @@ def Model(
                                               frame_width, 3),
         return_sequences=False
     ))
+
     model.add(Flatten())
-    model.add(Dense(num_categories, activation='softmax'))
 
-    optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
+    if include_last:
 
-    model.compile(
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'],
-        optimizer=optimizer
-    )
 
-    return model
+        model.add(Dense(num_categories, activation='softmax'))
+
+        optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
+
+        model.compile(
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'],
+            optimizer=optimizer
+        )
+
+        return model
+    else:
+        return model
 
 
 class ModelTrainer(object):
