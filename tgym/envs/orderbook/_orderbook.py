@@ -45,7 +45,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         window_size='2m',
         sample_interval='1s',
         max_summary=10,
-        max_frames=48,
+        max_frames=2,
         volatile_ranges=None,
         use_volatile_ranges=False,
         min_std_dev=2.0,
@@ -56,7 +56,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         is_training=True,
         print_ascii_chart=False,
         min_change=0.0,
-        frame_width=96,
+        frame_width=224,
         **kwargs
     ):
         kwargs['start_date'] = start_date
@@ -148,12 +148,12 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.start_date -= timedelta(seconds=self.max_frames + 1)
 
         high = np.full(
-            (max_frames, self.frame_width, self.frame_width * 2),
+            (max_frames, self.frame_width, self.frame_width, 3),
             1.0,
             dtype=np.float32
         )
         low = np.full(
-            (max_frames, self.frame_width, self.frame_width * 2),
+            (max_frames, self.frame_width, self.frame_width, 3),
             0.0,
             dtype=np.float32
         )
@@ -230,7 +230,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def step_position(self, action):
         self.position = action
         self.current_trade.step(self.best_bid, self.best_ask)
-        self.reward += self.current_trade.reward
 
     def step(self, action):
         assert self.action_space.contains(action)
@@ -450,13 +449,16 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
-        reward = trade.reward
-        self.trades.append(trade)
+        reward = trade.total_reward
+
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital
 
-        self.reward += reward
+        if type(trade) == ShortTrade:
+            self.reward += reward
+
+        self.trades.append(trade)
         self.current_trade = None
 
     def change_position(self, action):
