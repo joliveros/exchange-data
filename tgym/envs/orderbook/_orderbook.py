@@ -57,6 +57,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         print_ascii_chart=False,
         min_change=0.0,
         frame_width=224,
+        reward_ratio=1.0,
         **kwargs
     ):
         kwargs['start_date'] = start_date
@@ -79,7 +80,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         )
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
-
+        self.reward_ratio = reward_ratio
         self.leverage = leverage
         self.capital = capital
         self.frame_width = frame_width
@@ -210,6 +211,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
+
+        capital = self.capital
 
         _kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -411,7 +414,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 capital=self.capital,
                 entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
-                min_change=self.min_change
+                min_change=self.min_change,
+                reward_ratio = self.reward_ratio
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -427,7 +431,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 capital=self.capital,
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
-                min_change=self.min_change
+                min_change=self.min_change,
+                reward_ratio=self.reward_ratio
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -442,7 +447,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 capital=self.trade_size,
                 entry_price=(self.best_bid + self.best_ask) / 2,
                 trading_fee=self.trading_fee,
-                min_change=self.min_change
+                min_change=self.min_change,
+                reward_ratio = self.reward_ratio
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -450,13 +456,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         trade: Trade = self.current_trade
         trade.close()
         reward = trade.total_reward
-
+        self.reward += reward
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital
-
-        if type(trade) == ShortTrade:
-            self.reward += reward
 
         self.trades.append(trade)
         self.current_trade = None

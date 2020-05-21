@@ -50,32 +50,41 @@ def Model(
     input_shape = (batch_size, sequence_length, 1, frame_width, frame_width, 3)
 
     base = NasNet(
+        # weights=None,
         include_top=False,
         classes=num_categories,
         pooling=None
     )
+
+    # for layer in base.layers:
+    #     layer.trainable = True
 
     model.add(TimeDistributed(
         base,
         input_shape=(sequence_length, frame_width, frame_width, 3)
     ))
 
+    # alog.info(model.output)
+
     model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
+
+    # alog.info(model.output)
+
     model.add(LSTM(
-        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+        48, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
                                               frame_width, 3),
         return_sequences=True
     ))
     model.add(LSTM(
-        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
-                                              frame_width, 3),
-        return_sequences=True
-    ))
-    model.add(LSTM(
-        12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+        48, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
                                               frame_width, 3),
         return_sequences=False
     ))
+    # model.add(LSTM(
+    #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+    #                                           frame_width, 3),
+    #     return_sequences=False
+    # ))
 
     model.add(Flatten())
 

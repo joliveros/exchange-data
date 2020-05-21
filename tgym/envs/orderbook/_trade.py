@@ -27,9 +27,11 @@ class Trade(Logging):
         trading_fee: float,
         position_type: Positions,
         min_change: float,
-        leverage: float = 1.0
+        leverage: float = 1.0,
+        reward_ratio: float = 1.0
     ):
         Logging.__init__(self)
+        self.reward_ratio = reward_ratio
         self.leverage = leverage
         self.min_change = min_change
         self.max_increase_reward = 1.0
@@ -267,5 +269,9 @@ class FlatTrade(Trade):
         # self.total_reward += self.reward
 
     def close(self):
+        self.reward += self.positive_close_reward * self.reward_ratio
+        self.total_reward += self.reward
+
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.yaml(self.summary())}')
+
