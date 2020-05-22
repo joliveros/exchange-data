@@ -239,6 +239,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         self.step_position(action)
 
+        self.reward += self.current_trade.reward
+
         self.step_count += 1
 
         if self.step_count >= self.max_episode_length:
@@ -251,6 +253,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
             self.done = True
 
         reward = self.reset_reward()
+
+        alog.info(reward)
 
         self.print_summary()
 
@@ -455,8 +459,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
-        reward = trade.total_reward
-        self.reward += reward
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital

@@ -98,13 +98,6 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.pnl > self.min_profit:
-            self.reward += self.positive_close_reward * (1 - self.reward_ratio)
-        # else:
-        #     self.reward += self.positive_close_reward * -1
-
-        self.total_reward += self.reward
-
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
 
@@ -119,12 +112,14 @@ class Trade(Logging):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        # if pnl > self.min_profit:
-        #     self.reward += self.positive_close_reward
-        # else:
-        #     self.reward += self.positive_close_reward * -1
-        #
-        # self.total_reward += self.reward
+        if self.pnl_history[-1] <= self.pnl >= self.min_profit:
+            self.reward += self.positive_close_reward * (1 - self.reward_ratio)
+            alog.info(f'## positive pnl {self.reward}##')
+        else:
+            self.reward += self.positive_close_reward * self.reward_ratio * (self.pnl/self.min_profit)
+            alog.info(f'## negative pnl {self.reward} ##')
+
+        self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
@@ -260,18 +255,14 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # if self.pnl != 0.0:
-        #     self.reward += self.flat_reward * -1
+        if self.best_ask == self.asks[-1]:
+            self.reward += self.positive_close_reward * self.reward_ratio
+        else:
+            self.reward += self.positive_close_reward * self.reward_ratio * -1
 
-        # else:
-        #     self.reward += self.flat_reward / 10
-
-        # self.total_reward += self.reward
-
-    def close(self):
-        self.reward += self.positive_close_reward * self.reward_ratio
         self.total_reward += self.reward
 
+    def close(self):
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.yaml(self.summary())}')
 

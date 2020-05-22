@@ -53,7 +53,7 @@ def Model(
         # weights=None,
         include_top=False,
         classes=num_categories,
-        pooling=None
+        pooling='max'
     )
 
     # for layer in base.layers:
@@ -64,19 +64,14 @@ def Model(
         input_shape=(sequence_length, frame_width, frame_width, 3)
     ))
 
-    # alog.info(model.output)
+    alog.info(model.output)
 
-    model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
+    # model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
 
     # alog.info(model.output)
 
     model.add(LSTM(
-        48, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
-                                              frame_width, 3),
-        return_sequences=True
-    ))
-    model.add(LSTM(
-        48, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+        256, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
                                               frame_width, 3),
         return_sequences=False
     ))
@@ -85,9 +80,17 @@ def Model(
     #                                           frame_width, 3),
     #     return_sequences=False
     # ))
+    # model.add(LSTM(
+    #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
+    #                                           frame_width, 3),
+    #     return_sequences=False
+    # ))
 
-    model.add(Flatten())
+    alog.info(model.output)
 
+    # model.add(Flatten())
+
+    alog.info(model.output)
     if include_last:
 
 

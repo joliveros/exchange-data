@@ -90,6 +90,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_position(action)
 
+        self.reward += self.current_trade.reward
+
         self.step_count += 1
 
         if self.step_count >= self.max_steps:
@@ -97,12 +99,9 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         observation = self.get_observation()
 
-        # if self.expected_position == self.position:
-        #     self.reward += 1.0
-        # else:
-        #     self.reward -= 1.0
-
         reward = self.reset_reward()
+
+        alog.info(reward)
 
         self.print_summary()
 
