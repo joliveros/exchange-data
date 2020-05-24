@@ -24,6 +24,7 @@ GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
 GlobalAveragePooling1D = tf.keras.layers.GlobalAveragePooling1D
 Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
+ConvLSTM2D = tf.keras.layers.ConvLSTM2D
 Reshape = tf.keras.layers.Reshape
 ResNet = tf.keras.applications.ResNet152V2
 NasNet = tf.keras.applications.NASNetMobile
@@ -53,7 +54,7 @@ def Model(
         # weights=None,
         include_top=False,
         classes=num_categories,
-        pooling='max'
+        # pooling='max'
     )
 
     # for layer in base.layers:
@@ -70,7 +71,7 @@ def Model(
 
     # alog.info(model.output)
 
-    model.add(LSTM(
+    model.add(ConvLSTM2D(
         256, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
                                               frame_width, 3),
         return_sequences=False

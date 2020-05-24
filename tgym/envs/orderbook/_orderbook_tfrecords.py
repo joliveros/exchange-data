@@ -16,10 +16,12 @@ import tensorflow as tf
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, max_steps=30, **kwargs):
+    def __init__(self, max_steps=30, num_env=1, **kwargs):
+        alog.info(alog.pformat(kwargs))
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
+        max_loss = -1.0/100.0
 
         if 'start_date' in kwargs:
             del kwargs['start_date']
@@ -28,12 +30,14 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             del kwargs['end_date']
 
         super().__init__(
+            max_loss=max_loss,
             min_change=2.0,
             action_space=Discrete(2),
             start_date=start_date,
             end_date=end_date,
             **kwargs
         )
+        self.num_env = num_env
         self.max_steps = max_steps
         self.dataset = dataset(batch_size=1, **kwargs)
         self._expected_position = None
@@ -86,6 +90,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
+        # action = action[0]
+
         assert self.action_space.contains(action)
 
         self.step_position(action)
@@ -94,7 +100,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_count += 1
 
-        if self.step_count >= self.max_steps:
+        # alog.info(self.current_trade)
+        # alog.info(self.current_trade.pnl)
+
+        if self.step_count >= self.max_steps or self.capital < \
+            self.min_capital or self.current_trade.pnl < \
+            self.current_trade.min_profit * -1:
             self.done = True
 
         observation = self.get_observation()
