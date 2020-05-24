@@ -28,10 +28,13 @@ class Trade(Logging):
         position_type: Positions,
         min_change: float,
         leverage: float = 1.0,
-        reward_ratio: float = 1.0
+        reward_ratio: float = 1.0,
+        flat_reward: float = 1.0
     ):
         Logging.__init__(self)
+        self.flat_reward = flat_reward
         self.reward_ratio = reward_ratio
+        self.postive_pnl_reward = (1 - self.reward_ratio)
         self.leverage = leverage
         self.min_change = min_change
         self.max_increase_reward = 1.0
@@ -98,6 +101,15 @@ class Trade(Logging):
         return pnl
 
     def close(self):
+        alog.info((self.pnl, self.min_profit))
+
+        if self.pnl > self.min_profit:
+            self.reward += self.reward_ratio
+        else:
+            self.reward += self.reward_ratio * -1
+
+        alog.info(self.reward)
+
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
 
@@ -112,11 +124,18 @@ class Trade(Logging):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if self.pnl_history[-1] <= self.pnl >= self.min_profit:
-            self.reward += self.positive_close_reward * (1 - self.reward_ratio)
+        last_pnl = 0.0
+
+        if len(self.pnl_history) > 0:
+            last_pnl = self.pnl_history[-1]
+
+        alog.info((last_pnl, self.pnl))
+
+        if last_pnl < self.pnl:
+            self.reward += self.positive_close_reward * self.postive_pnl_reward
             alog.info(f'## positive pnl {self.reward}##')
         else:
-            self.reward += self.positive_close_reward * self.reward_ratio * (self.pnl/self.min_profit)
+            self.reward += self.positive_close_reward * self.postive_pnl_reward * -1
             alog.info(f'## negative pnl {self.reward} ##')
 
         self.total_reward += self.reward
@@ -238,6 +257,7 @@ class FlatTrade(Trade):
 
     @property
     def pnl(self):
+        return 0.0
         diff = self.entry_price - self.exit_price
 
         if self.entry_price == 0.0:
@@ -256,9 +276,9 @@ class FlatTrade(Trade):
         self.asks = np.append(self.asks, [best_ask])
 
         if self.best_ask == self.asks[-1]:
-            self.reward += self.positive_close_reward * self.reward_ratio
+            self.reward += self.flat_reward
         else:
-            self.reward += self.positive_close_reward * self.reward_ratio * -1
+            self.reward += self.flat_reward * -1
 
         self.total_reward += self.reward
 

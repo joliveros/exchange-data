@@ -58,6 +58,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         min_change=0.0,
         frame_width=224,
         reward_ratio=1.0,
+        flat_reward=1.0,
         **kwargs
     ):
         kwargs['start_date'] = start_date
@@ -81,6 +82,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
         self.reward_ratio = reward_ratio
+        self.flat_reward = flat_reward
         self.leverage = leverage
         self.capital = capital
         self.frame_width = frame_width
@@ -419,7 +421,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
-                reward_ratio = self.reward_ratio
+                reward_ratio=self.reward_ratio,
+                flat_reward=self.flat_reward
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -436,7 +439,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
-                reward_ratio=self.reward_ratio
+                reward_ratio=self.reward_ratio,
+                flat_reward=self.flat_reward
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -459,6 +463,9 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def close_trade(self):
         trade: Trade = self.current_trade
         trade.close()
+
+        self.reward += trade.reward
+        alog.info(f'#### close pnl/reward {trade.pnl}/{self.reward} ###')
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital
