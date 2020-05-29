@@ -9,10 +9,13 @@ services:
     redis:
         image:
             redis
+        volumes:
+            - "./redis.conf:/usr/local/etc/redis/redis.conf"
         ports:
             - 0.0.0.0:6379:6379
         networks:
             - public
+        command: redis-server /usr/local/etc/redis/redis.conf
 
     influxdb:
         image: registry.rubercubic.com:5001/influxdb

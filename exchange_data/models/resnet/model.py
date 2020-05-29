@@ -9,7 +9,7 @@ from exchange_data.utils import EventEmitterBase
 from exchange_data.emitters import Messenger
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
-from tensorflow_core.python.keras.estimator import model_to_estimator
+from tensorflow_estimator.python.estimator.keras import model_to_estimator
 from tensorflow_estimator.python.estimator.run_config import RunConfig
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
 import alog
@@ -38,7 +38,7 @@ def Model(
     input_shape,
     sequence_length,
     batch_size,
-    epsilon,
+    epsilon=0.0,
     learning_rate=5e-5,
     frame_width=224,
     num_categories=3,
@@ -48,12 +48,15 @@ def Model(
 ):
     model = Sequential()
 
-    input_shape = (batch_size, sequence_length, 1, frame_width, frame_width, 3)
+    input = Input(shape=input_shape)
+
+    model.add(input)
 
     base = NasNet(
         # weights=None,
         include_top=False,
         classes=num_categories,
+        # input_shape=(224, 224, 3)
         # pooling='max'
     )
 
@@ -62,20 +65,25 @@ def Model(
 
     model.add(TimeDistributed(
         base,
-        input_shape=(sequence_length, frame_width, frame_width, 3)
+        # input_shape=input_shape
     ))
-
+    alog.info(model.input)
     alog.info(model.output)
 
     # model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
 
-    # alog.info(model.output)
+    alog.info(model.output)
 
     model.add(ConvLSTM2D(
-        256, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
-                                              frame_width, 3),
+        filters=16,
+        strides=(8, 8),
+        kernel_size=(8, 8),
+        padding='same',
+        activation='relu',
+        stateful=False,
         return_sequences=False
     ))
+
     # model.add(LSTM(
     #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
     #                                           frame_width, 3),
@@ -89,12 +97,11 @@ def Model(
 
     alog.info(model.output)
 
-    # model.add(Flatten())
+    model.add(tf.keras.layers.Reshape((16,)))
 
     alog.info(model.output)
+
     if include_last:
-
-
         model.add(Dense(num_categories, activation='softmax'))
 
         optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
@@ -206,6 +213,7 @@ class ModelTrainer(object):
 
         if export_model:
             export_dir = f'{Path.home()}/.exchange-data/models/resnet_export'
+
             resnet_estimator.export_saved_model(export_dir,
                                                 serving_input_receiver_fn)
 
