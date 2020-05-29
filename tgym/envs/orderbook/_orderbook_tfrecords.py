@@ -39,7 +39,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         )
         self.num_env = num_env
         self.max_steps = max_steps
-        self.dataset = dataset(batch_size=1, **kwargs)
+        kwargs['batch_size'] = 1
+        self.dataset = dataset(**kwargs)
         self._expected_position = None
         self.observations = None
 
@@ -90,7 +91,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
-        # action = action[0]
+        alog.info(action)
 
         assert self.action_space.contains(action)
 
@@ -100,12 +101,17 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_count += 1
 
-        # alog.info(self.current_trade)
-        # alog.info(self.current_trade.pnl)
+        # if self.step_count > self.gain_delay:
+        #     expected_capital = 1.0 + (
+        #             (self.step_count - self.gain_delay) * self.gain_per_step)
+        #
+        #     alog.info(f'### expected capital {(self.capital, expected_capital)}###')
+        #
+        #     if self.capital < expected_capital:
+        #         self.done = True
 
         if self.step_count >= self.max_steps or self.capital < \
-            self.min_capital or self.current_trade.pnl < \
-            self.current_trade.min_profit * -1:
+            self.min_capital:
             self.done = True
 
         observation = self.get_observation()

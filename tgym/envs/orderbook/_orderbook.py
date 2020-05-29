@@ -59,6 +59,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         frame_width=224,
         reward_ratio=1.0,
         flat_reward=1.0,
+        gain_per_step=1.0,
+        gain_delay=30,
         **kwargs
     ):
         kwargs['start_date'] = start_date
@@ -81,6 +83,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         )
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+        self.gain_per_step = gain_per_step
+        self.gain_delay = gain_delay
         self.reward_ratio = reward_ratio
         self.flat_reward = flat_reward
         self.leverage = leverage
@@ -421,8 +425,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
-                reward_ratio=self.reward_ratio,
-                flat_reward=self.flat_reward
+                reward_ratio=self.reward_ratio
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -439,8 +442,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
-                reward_ratio=self.reward_ratio,
-                flat_reward=self.flat_reward
+                reward_ratio=self.reward_ratio
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -456,7 +458,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=(self.best_bid + self.best_ask) / 2,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
-                reward_ratio = self.reward_ratio
+                reward_ratio=self.reward_ratio,
+                flat_reward=self.flat_reward
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 

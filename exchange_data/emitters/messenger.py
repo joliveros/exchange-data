@@ -23,11 +23,11 @@ class MessageType(NoValue):
 
 class Messenger(EventEmitterBase):
 
-    def __init__(self, **kwargs):
+    def __init__(self, decode=True, **kwargs):
         host = settings.REDIS_HOST
 
         super().__init__(**kwargs)
-
+        self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None
 
@@ -36,7 +36,10 @@ class Messenger(EventEmitterBase):
     def handler(self, msg):
         if MessageType[msg['type']] == MessageType.message:
             channel_str = msg['channel'].decode()
-            self.emit(channel_str, json.loads(msg['data']))
+            if self.decode:
+                self.emit(channel_str, json.loads(msg['data']))
+            else:
+                self.emit(channel_str, msg['data'])
 
     def sub(self, channels: List):
         _channels = [

@@ -246,8 +246,6 @@ class ShortTrade(Trade):
 
 
 class FlatTrade(Trade):
-    flat_reward = 1.0
-
     def __init__(self, **kwargs):
         Trade.__init__(self, position_type=Positions.Flat, **kwargs)
 
@@ -274,6 +272,8 @@ class FlatTrade(Trade):
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
+
+        alog.info(f'### flat reward {self.flat_reward} ###')
 
         if self.best_ask == self.asks[-1]:
             self.reward += self.flat_reward
