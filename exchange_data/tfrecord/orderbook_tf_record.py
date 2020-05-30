@@ -4,11 +4,14 @@ from collections import deque
 from pathlib import Path
 
 import tensorflow as tf
-from tensorflow_core.core.example.feature_pb2 import Feature, Int64List, \
-    FloatList, BytesList
-from tensorflow_core.python.lib.io.tf_record import TFRecordWriter, \
+# from tensorflow_core.core.example.feature_pb2 import Feature, Int64List, \
+#     FloatList, BytesList
+# from tensorflow_core.python.lib.io.tf_record import TFRecordWriter, \
+#     TFRecordCompressionType
+from tensorflow.core.example.feature_pb2 import Feature, Int64List, FloatList, \
+    BytesList
+from tensorflow.python.lib.io.tf_record import TFRecordWriter, \
     TFRecordCompressionType
-
 from exchange_data.emitters.orderbook_training_data import TrainingDataBase
 from exchange_data.streamers._orderbook_img import OrderbookImgStreamer
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
