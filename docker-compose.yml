@@ -199,6 +199,21 @@ services:
     secrets:
       - DB
 
+  virtual_executor:
+    deploy:
+        replicas: 1
+    image: registry.rubercubic.com:5001/exchange-data:latest
+    command: bash -c "source ~/.bashrc && ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 10.0 -c 1.0"
+    environment:
+        - CUDA_VISIBLE_DEVICES=-1
+    depends_on:
+        - redis
+    networks:
+        - public
+    secrets:
+        - DB
+
+
 secrets:
   BITMEX_API_KEY:
       external: true

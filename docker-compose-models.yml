@@ -39,19 +39,6 @@ services:
     networks:
       - public
 
-  virtual_executor:
-    deploy:
-        replicas: 1
-    image: codequants.com:5000/exchange-data:latest
-    command: bash -c "source ~/.bashrc && ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 10.0 -c 1.0"
-    environment:
-        - CUDA_VISIBLE_DEVICES=0
-    depends_on:
-        - redis
-    networks:
-        - public
-    secrets:
-        - DB
 
 secrets:
   DB:

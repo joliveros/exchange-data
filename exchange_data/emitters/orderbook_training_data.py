@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from io import BytesIO
 
 from exchange_data import Measurement, NumpyEncoder, settings
 from exchange_data.channels import BitmexChannels
@@ -105,19 +106,14 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
                 alog.info((self.expected_position, self.diff, self.best_ask,
                            self.best_bid))
 
-            if settings.LOG_LEVEL == logging.DEBUG:
-                alog.info(AsciiImage(frame, new_width=21))
+            # alog.info(AsciiImage(np.copy(frame), new_width=21))
 
             frame_str = json.dumps(frame, cls=NumpyEncoder)
 
             self.emit('frame_str', frame_str)
 
     def publish_to_channels(self, frame_str):
-        frame_data = json.dumps(dict(
-            frame=frame_str
-        ))
-
-        self.publish(self.channel_name, frame_data)
+        self.publish(self.channel_name, frame_str)
 
     def write_to_db(self, frame_str):
         timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)

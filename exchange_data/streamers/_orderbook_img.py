@@ -10,8 +10,10 @@ import click
 
 
 class OrderbookImgStreamer(BitmexStreamer):
-    def __init__(self, depth, symbol = BitmexChannels.XBTUSD, **kwargs):
+    def __init__(self, depth, groupby='2s', symbol = BitmexChannels.XBTUSD,
+                 **kwargs):
         super().__init__(**kwargs)
+        self.groupby = groupby
         self.last_timestamp = self.start_date
         self.channel_name = f'orderbook_img_frame_{symbol.value}_{depth}'
         self.current_query = self.get_orderbook_frames()
@@ -23,8 +25,8 @@ class OrderbookImgStreamer(BitmexStreamer):
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT * as data FROM {self.channel_name} ' \
-            f'WHERE time > {start_date} AND time <= {end_date};' \
+        query = f'SELECT first(*) AS data FROM {self.channel_name} ' \
+            f'WHERE time > {start_date} AND time <= {end_date} GROUP BY time({self.groupby});'
 
         alog.info(query)
 
@@ -33,12 +35,17 @@ class OrderbookImgStreamer(BitmexStreamer):
     def get_orderbook_frames(self):
         orderbook = self.orderbook_frame_query()
         for data in orderbook.get_points(self.channel_name):
-            best_bid = data['best_bid']
-            best_ask = data['best_ask']
-            self.last_timestamp = timestamp = DateTimeUtils.parse_db_timestamp(
+            timestamp = DateTimeUtils.parse_db_timestamp(
                 data['time'])
-            orderbook_img = data['frame']
-            yield timestamp, best_ask, best_bid, orderbook_img
+
+            if self.last_timestamp != timestamp:
+                best_bid = data['data_best_bid']
+                best_ask = data['data_best_ask']
+                orderbook_img = data['data_frame']
+                self.last_timestamp = timestamp
+                yield timestamp, best_ask, best_bid, orderbook_img
+
+            self.last_timestamp = timestamp
 
     def send(self, *args):
         if self.last_timestamp < self.stop_date:

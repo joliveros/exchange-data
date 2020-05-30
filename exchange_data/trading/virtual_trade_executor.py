@@ -8,13 +8,13 @@ from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
 from exchange_data.trading._trade_executor import TradeExecutorUtil
 from exchange_data.utils import DateTimeUtils
-from tgym.envs import OrderBookTradingEnv
 
 import alog
 import click
 import random
 import numpy as np
 
+from tgym.envs.orderbook import OrderBookTradingEnv
 from tgym.envs.orderbook._trade import FlatTrade, Trade
 
 

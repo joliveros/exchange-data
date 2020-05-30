@@ -14,6 +14,8 @@ import numpy as np
 import random
 import tensorflow as tf
 
+from tgym.envs.orderbook.ascii_image import AsciiImage
+
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def __init__(self, max_steps=30, num_env=1, **kwargs):
@@ -78,6 +80,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self._best_ask = best_ask
         self._best_bid = best_bid
+
+        # alog.info(AsciiImage(np.copy(frame), new_width=21))
 
         self.frames.append(frame)
         self.expected_position = expected_position
