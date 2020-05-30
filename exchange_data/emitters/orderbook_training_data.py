@@ -79,12 +79,13 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
         self.symbol = symbol
         self._last_datetime = self.start_date
         self.last_data = []
+        self.last_frame_str = None
         self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}'
         self.channel_name = f'orderbook_img_frame_{self.symbol.value}_{depth}'
 
-        self.on(self.orderbook_channel, self.write_observation)
-        self.on('frame_str', self.publish_to_channels)
+        self.on('2s', self.publish_to_channels)
         self.on('frame_str', self.write_to_db)
+        self.on(self.orderbook_channel, self.write_observation)
 
     def _get_observation(self):
         time = self.last_data['time']
@@ -109,11 +110,13 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
             # alog.info(AsciiImage(np.copy(frame), new_width=21))
 
             frame_str = json.dumps(frame, cls=NumpyEncoder)
+            self.last_frame_str = frame_str
 
             self.emit('frame_str', frame_str)
 
-    def publish_to_channels(self, frame_str):
-        self.publish(self.channel_name, frame_str)
+    def publish_to_channels(self, timestamp):
+        if self.last_frame_str:
+            self.publish(self.channel_name, self.last_frame_str)
 
     def write_to_db(self, frame_str):
         timestamp = DateTimeUtils.parse_datetime_str(self.last_timestamp)
@@ -134,7 +137,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
         super().write_points([measurement.__dict__])
 
     def run(self):
-        self.sub([self.orderbook_channel, BitmexChannels.XBTUSD])
+        self.sub([self.orderbook_channel, BitmexChannels.XBTUSD, '2s'])
 
 
 @click.command()
