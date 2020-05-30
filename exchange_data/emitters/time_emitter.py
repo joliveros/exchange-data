@@ -16,6 +16,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.minute_counter = 0
+        self.two_second_counter = 0
         self.five_second_counter = 0
         self.should_stop = False
         self.last_dt = self.now().replace(microsecond=0)
@@ -36,8 +37,15 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 t = self.timestamp_str()
                 self.publish(TimeChannels.Tick.value, t)
 
+                self.two_second_counter += 1
                 self.minute_counter += 1
                 self.five_second_counter += 1
+
+                if self.two_second_counter % 2 == 0:
+                    self.two_second_counter = 0
+                    alog.info('### publish 2s ##')
+                    self.publish('2s', t)
+
 
                 if self.minute_counter % 60 == 0:
                     self.publish('1m', t)
