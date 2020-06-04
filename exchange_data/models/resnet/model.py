@@ -38,6 +38,8 @@ def Model(
     input_shape,
     sequence_length,
     batch_size,
+    kernel_dim,
+    filters,
     epsilon=0.0,
     learning_rate=5e-5,
     frame_width=224,
@@ -75,14 +77,16 @@ def Model(
     alog.info(model.output)
 
     model.add(ConvLSTM2D(
-        filters=16,
-        strides=(8, 8),
-        kernel_size=(8, 8),
+        filters=filters,
+        strides=(kernel_dim, kernel_dim),
+        kernel_size=(kernel_dim, kernel_dim),
         padding='same',
         activation='relu',
         stateful=False,
         return_sequences=False
     ))
+
+    alog.info(model.output)
 
     # model.add(LSTM(
     #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
@@ -97,7 +101,7 @@ def Model(
 
     alog.info(model.output)
 
-    model.add(tf.keras.layers.Reshape((16,)))
+    model.add(tf.keras.layers.Reshape((filters,)))
 
     alog.info(model.output)
 
