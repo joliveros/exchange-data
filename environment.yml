@@ -41,6 +41,5 @@ dependencies:
     - sortedcontainers
     - statsd
     - stringcase
-    - tensorflow-gpu==2.2.0
+    - tf-nightly-gpu
     - timestamp
-#    - git+https://github.com/py-bson/bson.git#egg=bson
