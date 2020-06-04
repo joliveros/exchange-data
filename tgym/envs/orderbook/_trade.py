@@ -277,7 +277,8 @@ class FlatTrade(Trade):
 
         if self.best_ask == self.asks[-1]:
             self.reward += self.flat_reward
-        else:
+
+        if self.best_ask < self.asks[-1]:
             self.reward += self.flat_reward * -1
 
         self.total_reward += self.reward

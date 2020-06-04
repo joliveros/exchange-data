@@ -137,7 +137,7 @@ class OrderBookTrainingData(Messenger, OrderBookTradingEnv, TrainingDataBase):
         super().write_points([measurement.__dict__])
 
     def run(self):
-        self.sub([self.orderbook_channel, BitmexChannels.XBTUSD, '2s'])
+        self.sub([self.orderbook_channel, '2s'])
 
 
 @click.command()
