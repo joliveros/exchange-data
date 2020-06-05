@@ -38,11 +38,15 @@ def run(trial: Trial):
     # gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
     args = Namespace(
+        # gain_delay=gain_delay,
+        # gain_per_step=gain_per_step,
         alg='a2c',
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
+        flat_reward=0.54006,
         gamestate=None,
+        leverage=10.0,
         log_path=None,
         max_frames=hparams.get('max_frames'),
         max_steps=steps,
@@ -50,16 +54,13 @@ def run(trial: Trial):
         num_env=1,
         num_timesteps=steps,
         play=False,
+        reward_ratio=0.99445,
         reward_scale=1.0,
+        run_name=run_name,
+        save_model=True,
         save_path=None,
         save_video_interval=0,
-        save_model=True,
         save_video_length=200,
-        flat_reward=0.54006,
-        reward_ratio=0.99445,
-        # gain_per_step=gain_per_step,
-        # gain_delay=gain_delay,
-        run_name=run_name,
         seed=None
     )
     extra_args = {

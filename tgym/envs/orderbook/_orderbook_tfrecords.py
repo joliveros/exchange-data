@@ -19,7 +19,6 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def __init__(self, max_steps=30, num_env=1, **kwargs):
-        alog.info(alog.pformat(kwargs))
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
