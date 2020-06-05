@@ -46,6 +46,6 @@ dependencies:
     - sortedcontainers
     - statsd
     - stringcase
-    - tensorflow-gpu==2.2.0
+    - tf-nightly-gpu
     - timestamp
     - tqdm
