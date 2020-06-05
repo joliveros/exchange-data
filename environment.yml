@@ -20,13 +20,18 @@ dependencies:
     - cached-property
     - click
     - coveralls
+    - dill
     - flake8
     - git+https://github.com/joliveros/gdax-python.git#egg=gdax
     - git+https://github.com/joliveros/sec.git#egg=sec
     - git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
     - gym
     - influxdb
+    - joblib
     - mock
+    - opencv-python
+    - optuna
+    - progressbar2
     - prometheus_client
     - pusherclient
     - pytest
@@ -41,5 +46,6 @@ dependencies:
     - sortedcontainers
     - statsd
     - stringcase
-    - tf-nightly-gpu
+    - tensorflow-gpu==2.2.0
     - timestamp
+    - tqdm
