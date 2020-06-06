@@ -133,7 +133,7 @@ class Trade(Logging):
         last_pnl = 0.0
 
         if len(self.pnl_history) > 0:
-            last_pnl = self.pnl_history[-1]
+            last_pnl = self.pnl_history[-2]
 
         alog.info((last_pnl, self.pnl))
 
