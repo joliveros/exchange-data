@@ -138,6 +138,10 @@ class Trade(Logging):
         alog.info((last_pnl, self.pnl))
 
         pnl_delta = self.pnl - last_pnl
+
+        alog.info((self.positive_close_reward, self.postive_pnl_reward,
+                   pnl_delta))
+
         reward = self.positive_close_reward * self.postive_pnl_reward *\
                        pnl_delta
         self.reward += reward
