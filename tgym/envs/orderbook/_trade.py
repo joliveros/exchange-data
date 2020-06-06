@@ -127,13 +127,12 @@ class Trade(Logging):
         self.asks = np.append(self.asks, [best_ask])
 
         pnl = self.pnl
-
-        self.pnl_history = np.append(self.pnl_history, [pnl])
-
         last_pnl = 0.0
 
         if len(self.pnl_history) > 0:
-            last_pnl = self.pnl_history[-2]
+            last_pnl = self.pnl_history[-1]
+
+        self.pnl_history = np.append(self.pnl_history, [pnl])
 
         alog.info((last_pnl, self.pnl))
 
