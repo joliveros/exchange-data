@@ -30,7 +30,7 @@ def run(trial: Trial):
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
         #max_frames=trial.suggest_int('max_frames', 1, 13)
-        flat_reward=trial.suggest_float('flat_reward', 0.00001, 1.0),
+        flat_reward=trial.suggest_float('flat_reward', 0.00001, 0.2),
         min_change=trial.suggest_float('min_change', 2.0, 20.0)
     )
 
