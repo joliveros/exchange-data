@@ -273,9 +273,8 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        alog.info(f'### flat reward {self.flat_reward} ###')
-
         if self.best_ask == self.asks[-1]:
+            alog.info(f'### flat reward {self.flat_reward} ###')
             self.reward += self.flat_reward
 
         self.total_reward += self.reward
