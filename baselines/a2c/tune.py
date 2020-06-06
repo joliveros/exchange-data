@@ -29,11 +29,12 @@ def run(trial: Trial):
     hparams = dict(
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
-        max_frames=trial.suggest_int('max_frames', 1, 13)
+        #max_frames=trial.suggest_int('max_frames', 1, 13)
+        flat_reward=trial.suggest_float('flat_reward', 0.00001, 1.0)
     )
 
     # gain_delay = hparams.get('gain_delay')
-    steps = 12000
+    steps = 1000
     # expected_gain = 150
     # gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
@@ -44,11 +45,11 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=0.54006,
+        flat_reward=hparams.get('flat_reward'),
         gamestate=None,
         leverage=10.0,
         log_path=None,
-        max_frames=hparams.get('max_frames'),
+        max_frames=5,
         max_steps=steps,
         network='nasnet',
         num_env=1,
@@ -71,7 +72,7 @@ def run(trial: Trial):
         'filters': 13,
         'kernel_dim': 12,
         'log_interval': 100,
-        'nsteps': 1,
+        'nsteps': 20,
         'hparams': hparams
     }
 
@@ -86,7 +87,7 @@ def run(trial: Trial):
 @click.command()
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
-    session_limit = 16
+    session_limit = 1000
 
     study = optuna.create_study(direction='maximize')
 
