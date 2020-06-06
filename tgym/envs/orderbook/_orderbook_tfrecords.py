@@ -18,7 +18,7 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, max_steps=30, num_env=1, **kwargs):
+    def __init__(self, max_steps=30, num_env=1, min_change=2.0, **kwargs):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
@@ -32,7 +32,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         super().__init__(
             max_loss=max_loss,
-            min_change=2.0,
+            min_change=min_change,
             action_space=Discrete(2),
             start_date=start_date,
             end_date=end_date,

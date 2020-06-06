@@ -157,6 +157,8 @@ def common_arg_parser():
     parser.add_argument('--max_steps', help='max steps.', default=None, type=int)
     parser.add_argument('--leverage', help='', default=1.0,
                         type=float)
+    parser.add_argument('--min_change', help='', default=2.0,
+                        type=float)
     parser.add_argument('--network', help='network type (mlp, cnn, lstm, cnn_lstm, conv_only)', default=None)
     parser.add_argument('--num_env', help='Number of environment copies being run in parallel. When not specified, set to number of cpus for Atari, and to 1 for Mujoco', default=None, type=int)
     parser.add_argument('--num_timesteps', type=float, default=1e6),
