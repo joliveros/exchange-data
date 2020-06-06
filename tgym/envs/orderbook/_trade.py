@@ -103,7 +103,7 @@ class Trade(Logging):
     def close(self):
         alog.info((self.pnl, self.min_profit))
 
-        if self.pnl > self.min_profit:
+        if self.pnl >= self.min_profit:
             self.reward += self.reward_ratio * self.pnl
         else:
             reward = self.reward_ratio * self.pnl
@@ -136,12 +136,9 @@ class Trade(Logging):
 
         alog.info((last_pnl, self.pnl))
 
-        if last_pnl < self.pnl:
-            self.reward += self.positive_close_reward * self.postive_pnl_reward
-            alog.info(f'## positive pnl {self.reward}##')
-        else:
-            self.reward += self.positive_close_reward * self.postive_pnl_reward * -1
-            alog.info(f'## negative pnl {self.reward} ##')
+        pnl_delta = self.pnl - last_pnl
+        self.reward += self.positive_close_reward * self.postive_pnl_reward *\
+                       pnl_delta
 
         self.total_reward += self.reward
 
