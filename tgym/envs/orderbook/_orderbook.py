@@ -126,6 +126,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.max_episode_length_str = '10m'
         self.max_episode_length = timeparse(self.max_episode_length_str)
         self.max_summary = max_summary
+        self.max_loss = max_loss
         self.min_capital = capital * (1 + max_loss)
         self.min_std_dev = min_std_dev
         self.position_history = []
