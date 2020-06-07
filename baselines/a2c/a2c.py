@@ -118,6 +118,9 @@ def learn(
             if update >= train_updates:
                 if not reset_for_eval:
                     reset_for_eval = True
+                    model.capital = runner.env.envs[0].env.capital
+                    tf.summary.scalar('eval_capital', model.capital,
+                                      step=update)
                     runner.env.envs[0].env.reset()
 
                 model.capital = runner.env.envs[0].env.capital
