@@ -64,6 +64,7 @@ def run(trial: Trial):
         save_path=None,
         save_video_interval=0,
         save_video_length=200,
+        trial=trial,
         seed=None
     )
     extra_args = {
