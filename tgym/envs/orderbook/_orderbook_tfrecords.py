@@ -113,8 +113,11 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         #     if self.capital < expected_capital:
         #         self.done = True
 
-        if self.step_count >= self.max_steps or self.capital < \
-            self.min_capital:
+        # if self.step_count >= self.max_steps or self.capital < \
+        #     self.min_capital:
+        #     self.done = True
+
+        if self.step_count >= self.max_steps:
             self.done = True
 
         observation = self.get_observation()
