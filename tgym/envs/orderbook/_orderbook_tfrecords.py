@@ -19,12 +19,13 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, trial, max_steps=30, num_env=1, min_change=2.0,
+    def __init__(self, trial, min_steps, max_steps=30, num_env=1,
+                 min_change=2.0,
                  **kwargs):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
-        max_loss = -2.0/100.0
+        max_loss = 101/100.0
 
         if 'start_date' in kwargs:
             del kwargs['start_date']
@@ -47,6 +48,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.dataset = dataset(**kwargs)
         self._expected_position = None
         self.observations = None
+        self.min_capital = 1.01
+        self.min_steps = min_steps
 
     @property
     def best_bid(self):
@@ -118,10 +121,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.trial.report(self.capital, self.step_count)
 
-        if self.step_count >= self.max_steps or self.capital < \
-            self.min_capital:
+        if self.step_count >= self.min_steps and self.capital < self.min_capital:
             self.done = True
             raise optuna.TrialPruned()
+
+        if self.step_count >= self.min_steps:
+            self.done = True
 
         if self.step_count >= self.max_steps:
             self.done = True
