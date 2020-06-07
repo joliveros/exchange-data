@@ -29,10 +29,12 @@ class Trade(Logging):
         min_change: float,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
-        flat_reward: float = 1.0
+        flat_reward: float = 1.0,
+        step_reward: float = 1.0
     ):
         Logging.__init__(self)
         self.flat_reward = flat_reward
+        self.step_reward = step_reward
         self.reward_ratio = reward_ratio
         self.postive_pnl_reward = (1 - self.reward_ratio)
         self.leverage = leverage
@@ -104,7 +106,7 @@ class Trade(Logging):
         alog.info((self.pnl, self.min_profit))
 
         if self.pnl >= self.min_profit:
-            self.reward += self.reward_ratio * self.pnl
+            self.reward += self.postive_pnl_reward * self.pnl
         else:
             reward = self.reward_ratio * self.pnl
             alog.info(f'close reward ### {reward}###')
@@ -138,11 +140,10 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        alog.info((self.positive_close_reward, self.postive_pnl_reward,
-                   pnl_delta))
+        alog.info((self.step_reward, pnl_delta))
 
-        reward = self.positive_close_reward * self.postive_pnl_reward *\
-                       pnl_delta
+        reward = self.step_reward * pnl_delta
+
         self.reward += reward
         alog.info(f'### step reward {reward} ####')
 

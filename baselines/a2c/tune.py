@@ -30,6 +30,7 @@ def run(trial: Trial):
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
         reward_ratio=trial.suggest_float('reward_ratio', 0.0000001, 1.0),
+        step_reward=trial.suggest_float('step_reward', 0.0000001, 0.00001)
     )
 
     # gain_delay = hparams.get('gain_delay')
@@ -45,6 +46,7 @@ def run(trial: Trial):
         env='tf-orderbook-v0',
         env_type=None,
         flat_reward=0.0000062982,
+        step_reward=hparams.get('step_reward'),
         gamestate=None,
         leverage=10.0,
         log_path=None,
