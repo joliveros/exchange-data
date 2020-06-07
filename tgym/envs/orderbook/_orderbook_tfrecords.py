@@ -121,7 +121,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.trial.report(self.capital, self.step_count)
 
-        min_capital = -1.0 * (1 + self.max_loss)
+        min_capital = 1 + self.max_loss
         alog.info((self.capital, min_capital, self.max_loss))
 
         if self.capital < min_capital:
