@@ -31,7 +31,8 @@ def run(trial: Trial):
         # filters=trial.suggest_int('filters', 8, 128)
         flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
         reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
-        step_reward=trial.suggest_float('step_reward', 0.66, 1.0)
+        step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
+        max_loss=trial.suggest_float('max_loss', 0.95, 1.0)
     )
 
     # gain_delay = hparams.get('gain_delay')
@@ -49,6 +50,7 @@ def run(trial: Trial):
         env_type=None,
         flat_reward=hparams.get('flat_reward'),
         step_reward=hparams.get('step_reward'),
+        max_loss=hparams.get('max_loss'),
         gamestate=None,
         leverage=10.0,
         log_path=None,

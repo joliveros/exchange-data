@@ -161,6 +161,8 @@ def common_arg_parser():
                         type=int)
     parser.add_argument('--leverage', help='', default=1.0,
                         type=float)
+    parser.add_argument('--max_loss', help='', default=0.99,
+                        type=float)
     parser.add_argument('--trial', help='', default={},
                         type=object)
     parser.add_argument('--min_change', help='', default=2.0,
