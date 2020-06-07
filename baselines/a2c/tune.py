@@ -52,7 +52,7 @@ def run(trial: Trial):
         log_path=None,
         max_frames=5,
         max_steps=steps,
-        min_steps=200,
+        min_steps=30,
         min_change=7.4588,
         network='nasnet',
         num_env=1,
