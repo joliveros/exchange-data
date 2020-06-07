@@ -106,9 +106,9 @@ class Trade(Logging):
         alog.info((self.pnl, self.min_profit))
 
         if self.pnl >= self.min_profit:
-            self.reward += self.postive_pnl_reward * self.pnl
+            self.reward += self.postive_pnl_reward * self.pnl/self.capital
         else:
-            reward = self.reward_ratio * self.pnl
+            reward = self.reward_ratio * self.pnl / self.capital
             alog.info(f'close reward ### {reward}###')
 
             if reward > 0.0:
@@ -142,7 +142,7 @@ class Trade(Logging):
 
         alog.info((self.step_reward, pnl_delta))
 
-        reward = self.step_reward * pnl_delta
+        reward = self.step_reward * pnl_delta / self.capital
 
         self.reward += reward
         alog.info(f'### step reward {reward} ####')
