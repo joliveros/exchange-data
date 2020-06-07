@@ -34,13 +34,14 @@ def run(trial: Trial):
     )
 
     # gain_delay = hparams.get('gain_delay')
+    gain_delay = 200
     steps = 1200
-    # expected_gain = 150
-    # gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
+    expected_gain = 150
+    gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
     args = Namespace(
-        # gain_delay=gain_delay,
-        # gain_per_step=gain_per_step,
+        gain_delay=gain_delay,
+        gain_per_step=gain_per_step,
         alg='a2c',
         directory_name='default',
         env='tf-orderbook-v0',
