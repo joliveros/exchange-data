@@ -80,8 +80,10 @@ def run(trial: Trial):
 
     try:
         model, env = train(args, extra_args)
-    except:
-        return 0.0
+    except Exception as e:
+        alog.info(e)
+        alog.info(vars(e))
+        return model.capital
 
     return model.capital
 
