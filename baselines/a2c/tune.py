@@ -36,7 +36,7 @@ def run(trial: Trial):
     # gain_delay = hparams.get('gain_delay')
     gain_delay = 220
     steps = 1200
-    expected_gain = 110
+    expected_gain = 100
     gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
     args = Namespace(
