@@ -122,7 +122,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
             if self.capital < expected_capital:
                 self.done = True
-            raise optuna.TrialPruned()
+                raise optuna.TrialPruned()
 
         min_capital = 1 + self.max_loss
         alog.info((self.capital, min_capital, self.max_loss))
