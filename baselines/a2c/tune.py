@@ -32,7 +32,7 @@ def run(trial: Trial):
         flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
         reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
         step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
-        max_loss=trial.suggest_float('max_loss', -0.0001, -0.05)
+        max_loss=trial.suggest_float('max_loss', -0.05, -0.0001)
     )
 
     # gain_delay = hparams.get('gain_delay')
