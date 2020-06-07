@@ -130,6 +130,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
                    self.prune_capital))
         if self.step_count >= self.min_steps and self.capital < self.prune_capital:
             self.done = True
+            alog.info('#### PRUNE ####')
             raise optuna.TrialPruned()
 
         if self.step_count >= self.max_steps:
