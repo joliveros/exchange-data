@@ -29,14 +29,14 @@ def run(trial: Trial):
     hparams = dict(
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
-        reward_ratio=trial.suggest_float('reward_ratio', 0.0000001, 1.0),
-        step_reward=trial.suggest_float('step_reward', 0.0001, 1.0)
+        reward_ratio=trial.suggest_float('reward_ratio', 0.45325, 1.0),
+        step_reward=trial.suggest_float('step_reward', 0.57351, 1.0)
     )
 
     # gain_delay = hparams.get('gain_delay')
     gain_delay = 220
     steps = 1200
-    expected_gain = 150
+    expected_gain = 110
     gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
     args = Namespace(
