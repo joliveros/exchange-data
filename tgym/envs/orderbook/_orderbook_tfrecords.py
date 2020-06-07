@@ -19,7 +19,8 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, max_steps=30, num_env=1, min_change=2.0, **kwargs):
+    def __init__(self, trial, max_steps=30, num_env=1, min_change=2.0,
+                 **kwargs):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
@@ -39,6 +40,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             end_date=end_date,
             **kwargs
         )
+        self.trial = trial
         self.num_env = num_env
         self.max_steps = max_steps
         kwargs['batch_size'] = 1
@@ -114,7 +116,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         #     if self.capital < expected_capital:
         #         self.done = True
 
-        optuna.report(self.capital, self.step_count)
+        self.trial.report(self.capital, self.step_count)
 
         if self.step_count >= self.max_steps or self.capital < \
             self.min_capital:
