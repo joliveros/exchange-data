@@ -126,7 +126,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         if self.capital < min_capital:
             self.done = True
-
+        alog.info((self.step_count, self.min_steps, self.capital,
+                   self.min_capital))
         if self.step_count >= self.min_steps and self.capital < self.min_capital:
             self.done = True
             raise optuna.TrialPruned()
