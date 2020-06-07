@@ -121,12 +121,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.trial.report(self.capital, self.step_count)
 
+        if self.capital < self.min_capital:
+            self.done = True
+
         if self.step_count >= self.min_steps and self.capital < self.min_capital:
             self.done = True
             raise optuna.TrialPruned()
-
-        if self.step_count >= self.min_steps:
-            self.done = True
 
         if self.step_count >= self.max_steps:
             self.done = True
