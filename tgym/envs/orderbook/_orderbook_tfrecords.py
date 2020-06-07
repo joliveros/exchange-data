@@ -110,28 +110,30 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_count += 1
 
-        # if self.step_count > self.gain_delay:
-        #     expected_capital = 1.0 + (
-        #             (self.step_count - self.gain_delay) * self.gain_per_step)
-        #
-        #     alog.info(f'### expected capital {(self.capital, expected_capital)}###')
-        #
-        #     if self.capital < expected_capital:
-        #         self.done = True
-
         self.trial.report(self.capital, self.step_count)
+
+        if self.step_count > self.gain_delay:
+            expected_capital = 1.0 + (
+                    (self.step_count - self.gain_delay) * self.gain_per_step)
+
+            alog.info(f'### expected capital {(self.capital, expected_capital)}###')
+
+            if self.capital < expected_capital:
+                self.done = True
+            raise optuna.TrialPruned()
 
         min_capital = 1 + self.max_loss
         alog.info((self.capital, min_capital, self.max_loss))
 
         if self.capital < min_capital:
             self.done = True
-        alog.info((self.step_count, self.min_steps, self.capital,
-                   self.prune_capital))
-        if self.step_count >= self.min_steps and self.capital < self.prune_capital:
-            self.done = True
-            alog.info('#### PRUNE ####')
-            raise optuna.TrialPruned()
+
+        # alog.info((self.step_count, self.min_steps, self.capital,
+        #            self.prune_capital))
+        # if self.step_count >= self.min_steps and self.capital < self.prune_capital:
+        #     self.done = True
+        #     alog.info('#### PRUNE ####')
+        #     raise optuna.TrialPruned()
 
         if self.step_count >= self.max_steps:
             self.done = True
