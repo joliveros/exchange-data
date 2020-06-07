@@ -12,6 +12,7 @@ import alog
 import click
 import numpy as np
 import random
+import optuna
 import tensorflow as tf
 
 from tgym.envs.orderbook.ascii_image import AsciiImage
@@ -113,10 +114,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         #     if self.capital < expected_capital:
         #         self.done = True
 
+        optuna.report(self.capital, self.step_count)
+
         if self.step_count >= self.max_steps or self.capital < \
             self.min_capital:
             self.done = True
-            raise Exception(self.capital)
+            raise optuna.TrialPruned()
 
         if self.step_count >= self.max_steps:
             self.done = True

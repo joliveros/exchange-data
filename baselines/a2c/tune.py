@@ -78,12 +78,12 @@ def run(trial: Trial):
         'hparams': hparams
     }
 
-    try:
-        model, env = train(args, extra_args)
-    except Exception as e:
-        alog.info(e)
-        alog.info(vars(e))
-        return model.capital
+    model, env = train(args, extra_args)
+
+    # try:
+    #     model, env = train(args, extra_args)
+    # except:
+    #     return
 
     return model.capital
 
