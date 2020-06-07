@@ -30,7 +30,7 @@ def run(trial: Trial):
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
         reward_ratio=trial.suggest_float('reward_ratio', 0.0000001, 1.0),
-        step_reward=trial.suggest_float('step_reward', 0.0000001, 0.00001)
+        step_reward=trial.suggest_float('step_reward', 0.0001, 1.0)
     )
 
     # gain_delay = hparams.get('gain_delay')
