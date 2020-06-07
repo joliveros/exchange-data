@@ -29,9 +29,9 @@ def run(trial: Trial):
     hparams = dict(
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
         # filters=trial.suggest_int('filters', 8, 128)
-        flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
-        reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
-        step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
+        # flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
+        # reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
+        # step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
         max_loss=trial.suggest_float('max_loss', -0.05, -0.0001)
     )
 
@@ -48,8 +48,8 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=hparams.get('flat_reward'),
-        step_reward=hparams.get('step_reward'),
+        flat_reward=0.000077185,
+        step_reward=0.82084,
         max_loss=hparams.get('max_loss'),
         gamestate=None,
         leverage=10.0,
@@ -62,7 +62,7 @@ def run(trial: Trial):
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=hparams.get('reward_ratio'),
+        reward_ratio=0.85195,
         reward_scale=1.0,
         run_name=run_name,
         save_model=True,
