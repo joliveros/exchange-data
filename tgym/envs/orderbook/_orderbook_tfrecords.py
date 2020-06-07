@@ -50,6 +50,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.observations = None
         self.prune_capital = 1.01
         self.min_steps = min_steps
+        self.total_steps = 0
 
     @property
     def best_bid(self):
@@ -112,11 +113,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.trial.report(self.capital, self.step_count)
 
-        if self.step_count > self.gain_delay:
+        if self.total_steps > self.gain_delay:
             expected_capital = 1.0 + (
                     (self.step_count - self.gain_delay) * self.gain_per_step)
 
-            alog.info(f'### expected capital {(self.capital, expected_capital)}###')
+            alog.info(f'### expected capital '
+                      f'{(self.capital, expected_capital)} ###')
 
             if self.capital < expected_capital:
                 self.done = True

@@ -111,6 +111,8 @@ def learn(
 
             capital = runner.env.envs[0].env.capital
 
+            model.capital = runner.env.envs[0].env.total_steps = update * nsteps
+
             if capital != 1.0 and update < train_updates:
                 model.capital = capital
                 tf.summary.scalar('capital', capital, step=update)
