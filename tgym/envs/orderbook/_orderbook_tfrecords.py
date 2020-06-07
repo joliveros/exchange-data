@@ -116,7 +116,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         if self.step_count >= self.max_steps or self.capital < \
             self.min_capital:
             self.done = True
-            raise Exception()
+            raise Exception(self.capital)
 
         if self.step_count >= self.max_steps:
             self.done = True
