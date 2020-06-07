@@ -157,6 +157,8 @@ def common_arg_parser():
     parser.add_argument('--save_model', help='Save model as Tf save_model', action='store_true')
     parser.add_argument('--max_frames', help='max frames.', default=2, type=int)
     parser.add_argument('--max_steps', help='max steps.', default=None, type=int)
+    parser.add_argument('--min_steps', help='min steps.', default=None,
+                        type=int)
     parser.add_argument('--leverage', help='', default=1.0,
                         type=float)
     parser.add_argument('--trial', help='', default={},
