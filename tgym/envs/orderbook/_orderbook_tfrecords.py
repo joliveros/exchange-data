@@ -48,7 +48,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.dataset = dataset(**kwargs)
         self._expected_position = None
         self.observations = None
-        self.min_capital = 1.01
+        self.prune_capital = 1.01
         self.min_steps = min_steps
 
     @property
@@ -127,8 +127,8 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         if self.capital < min_capital:
             self.done = True
         alog.info((self.step_count, self.min_steps, self.capital,
-                   self.min_capital))
-        if self.step_count >= self.min_steps and self.capital < self.min_capital:
+                   self.prune_capital))
+        if self.step_count >= self.min_steps and self.capital < self.prune_capital:
             self.done = True
             raise optuna.TrialPruned()
 
