@@ -22,7 +22,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
-        max_loss = -10.0/100.0
+        max_loss = -2.0/100.0
 
         if 'start_date' in kwargs:
             del kwargs['start_date']
@@ -113,9 +113,10 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         #     if self.capital < expected_capital:
         #         self.done = True
 
-        # if self.step_count >= self.max_steps or self.capital < \
-        #     self.min_capital:
-        #     self.done = True
+        if self.step_count >= self.max_steps or self.capital < \
+            self.min_capital:
+            self.done = True
+            raise Exception()
 
         if self.step_count >= self.max_steps:
             self.done = True
