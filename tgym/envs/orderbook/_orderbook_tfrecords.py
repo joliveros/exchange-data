@@ -12,8 +12,8 @@ import alog
 import click
 import numpy as np
 import random
-import optuna
 import tensorflow as tf
+from optuna import TrialPruned
 
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
@@ -101,43 +101,27 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
     def step(self, action):
         alog.info(action)
-
         assert self.action_space.contains(action)
 
         self.step_position(action)
 
         self.reward += self.current_trade.reward
 
+        alog.info((self.current_trade.pnl, self.max_negative_pnl))
+
         self.step_count += 1
 
         self.trial.report(self.capital, self.step_count)
 
-        if self.total_steps > self.gain_delay:
-            expected_capital = 1.0 + (
-                    (self.step_count - self.gain_delay) * self.gain_per_step)
-
-            alog.info(f'### expected capital '
-                      f'{(self.capital, expected_capital)} ###')
-
-            if self.capital < expected_capital:
-                self.done = True
-                raise optuna.TrialPruned()
-
-        min_capital = 1 + self.max_loss
-        alog.info((self.capital, min_capital, self.max_loss))
-
-        if self.capital < min_capital:
+        if self.capital < self.min_capital:
             self.done = True
-
-        # alog.info((self.step_count, self.min_steps, self.capital,
-        #            self.prune_capital))
-        # if self.step_count >= self.min_steps and self.capital < self.prune_capital:
-        #     self.done = True
-        #     alog.info('#### PRUNE ####')
-        #     raise optuna.TrialPruned()
 
         if self.step_count >= self.max_steps:
             self.done = True
+
+        if self.current_trade.pnl <= self.max_negative_pnl:
+            self.done = True
+            raise TrialPruned()
 
         observation = self.get_observation()
 

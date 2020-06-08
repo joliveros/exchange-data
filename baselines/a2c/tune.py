@@ -36,24 +36,27 @@ def run(trial: Trial):
         # flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
-        # max_loss=trial.suggest_float('max_loss', -0.003, -0.0001)
-        gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
+        max_loss=trial.suggest_float('max_loss', -0.003, -0.0001),
+        # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
+        max_negative_pnl=trial.suggest_float('max_negative_pnl', -0.002,
+                                             -0.0001)
     )
 
-    gain_delay = hparams.get('gain_delay')
-    expected_gain = 101
-    gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
+    # gain_delay = hparams.get('gain_delay')
+    # expected_gain = 101
+    # gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
     args = Namespace(
-        gain_delay=gain_delay,
-        gain_per_step=gain_per_step,
+        # gain_delay=gain_delay,
+        # gain_per_step=gain_per_step,
         alg='a2c',
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
         flat_reward=0.000077185,
         step_reward=0.82084,
-        max_loss=-0.0028742,
+        max_loss=hparams.get('max_loss'),
+        max_negative_pnl=hparams.get('max_negative_pnl'),
         gamestate=None,
         leverage=10.0,
         log_path=None,

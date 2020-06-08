@@ -152,6 +152,9 @@ def common_arg_parser():
                         type=float)
     parser.add_argument('--gain_delay', help='', default=30, type=int)
     parser.add_argument('--gain_per_step', help='gain per step', default=1.0, type=float)
+    parser.add_argument('--max_negative_pnl', help='',
+                        default=-0.05,
+                        type=float)
     parser.add_argument('--gamestate', help='game state to load (so far only used in retro games)', default=None)
     parser.add_argument('--log_path', help='Directory to save learning curve data.', default=None, type=str)
     parser.add_argument('--save_model', help='Save model as Tf save_model', action='store_true')
