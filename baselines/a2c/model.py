@@ -13,7 +13,6 @@ def network(*args, **net_kwargs):
     net_kwargs['sequence_length'] = net_kwargs.get('max_frames')
 
     def network_fn(input_shape):
-        alog.info(input_shape)
         return ED_Model(input_shape=input_shape, num_categories=2, include_last=False, **net_kwargs)
 
     return network_fn
@@ -57,6 +56,8 @@ class Model(tf.keras.Model):
         # Get state_space and action_space
         ob_space = env.observation_space
         ac_space = env.action_space
+
+        kwargs['batch_size'] = nsteps
 
         if type(network) == str:
             policy_network_fn = get_network_builder(network)(**kwargs)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import time
 from argparse import Namespace
 
 from optuna import Trial
@@ -13,6 +13,8 @@ import logging
 import tensorflow as tf
 import optuna
 
+from exchange_data.utils import DateTimeUtils
+
 HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.00001, 0.0003))
 HP_REWARD_RATIO = hp.HParam('Reward Ratio', hp.RealInterval(0.99445, 1.0))
 HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
@@ -24,7 +26,9 @@ METRIC_ACCURACY = 'accuracy'
 
 
 def run(trial: Trial):
-    run_name = f'run_{trial.number}'
+    run_name = str(int(time.time() * 1000))
+
+    steps = 1200
 
     hparams = dict(
         # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
@@ -32,12 +36,11 @@ def run(trial: Trial):
         # flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
-        max_loss=trial.suggest_float('max_loss', -0.05, -0.0001)
+        # max_loss=trial.suggest_float('max_loss', -0.003, -0.0001)
+        gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
     )
 
-    # gain_delay = hparams.get('gain_delay')
-    gain_delay = 300
-    steps = 1200
+    gain_delay = hparams.get('gain_delay')
     expected_gain = 101
     gain_per_step = ((expected_gain/100) - 1) / (steps - gain_delay)
 
@@ -50,11 +53,11 @@ def run(trial: Trial):
         env_type=None,
         flat_reward=0.000077185,
         step_reward=0.82084,
-        max_loss=hparams.get('max_loss'),
+        max_loss=-0.0028742,
         gamestate=None,
         leverage=10.0,
         log_path=None,
-        max_frames=5,
+        max_frames=2,
         max_steps=steps,
         min_steps=50,
         min_change=7.4588,
@@ -77,19 +80,19 @@ def run(trial: Trial):
         'lr': 0.00015753,
         'batch_size': 1,
         'epsilon': 1e-7,
-        'filters': 13,
+        'filters': 4,
         'kernel_dim': 12,
         'log_interval': 100,
-        'nsteps': 20,
+        'nsteps': 10,
         'hparams': hparams
     }
 
-    model, env = train(args, extra_args)
+    # model, env = train(args, extra_args)
 
-    # try:
-    #     model, env = train(args, extra_args)
-    # except:
-    #     return
+    try:
+        model, env = train(args, extra_args)
+    except:
+        return
 
     return model.capital
 
