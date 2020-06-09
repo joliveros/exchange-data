@@ -35,7 +35,7 @@ def run(trial: Trial):
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
         reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
         step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
-        step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
+        # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
         # max_negative_pnl_delay=trial.suggest_int('max_negative_pnl_delay',
@@ -79,7 +79,7 @@ def run(trial: Trial):
         save_video_length=200,
         seed=None,
         step_reward_ratio=hparams.get('step_reward_ratio'),
-        step_reward=hparams.get('step_reward'),
+        step_reward=1.0,
         trial=trial
     )
     extra_args = {
