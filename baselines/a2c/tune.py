@@ -31,8 +31,8 @@ def run(trial: Trial):
     steps = 2000
 
     hparams = dict(
-        min_change=trial.suggest_float('min_change', 2.0, 6.0),
-        # min_change=0.5,
+        min_change=trial.suggest_float('min_change', 4.0, 14.0),
+        # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
         # step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
