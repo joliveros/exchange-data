@@ -144,7 +144,7 @@ class Trade(Logging):
 
         alog.info((self.pnl, self.min_profit))
 
-        if self.pnl > self.min_profit:
+        if pnl_delta >= self.min_profit:
             self.reward += self.step_reward * self.step_reward_ratio
 
         # if pnl_delta < 0.0:
