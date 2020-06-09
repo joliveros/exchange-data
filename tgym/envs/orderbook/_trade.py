@@ -97,6 +97,7 @@ class Trade(Logging):
 
     @property
     def min_profit(self):
+
         change = self.min_change / self.exit_price
 
         pnl = (self.capital * change) + \
@@ -142,9 +143,9 @@ class Trade(Logging):
         # if pnl_delta > 0.0:
         #     self.reward += self.step_reward * self.step_reward_ratio
 
-        alog.info((self.pnl, pnl_delta, self.min_profit))
+        alog.info((self.pnl, self.min_profit))
 
-        if pnl_delta >= self.min_profit:
+        if self.pnl > self.min_profit and self.pnl != 0.0:
             self.reward += self.step_reward * self.step_reward_ratio
 
         # if pnl_delta < 0.0:
