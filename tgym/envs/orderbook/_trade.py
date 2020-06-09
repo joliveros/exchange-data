@@ -133,18 +133,22 @@ class Trade(Logging):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        # alog.info((last_pnl, self.pnl))
-        #
-        # pnl_delta = self.pnl - last_pnl
-        #
-        # alog.info((self.step_reward, pnl_delta))
-        #
-        # reward = self.step_reward
-        #
-        # self.reward += reward
-        # alog.info(f'### step reward {reward} ####')
-        #
-        # self.total_reward += self.reward
+        alog.info((last_pnl, self.pnl))
+
+        pnl_delta = self.pnl - last_pnl
+
+        alog.info((self.step_reward, pnl_delta))
+
+        if pnl_delta > 0.0:
+            self.reward += self.step_reward
+
+        if pnl_delta < 0.0:
+            self.reward -= self.step_reward
+
+
+        alog.info(f'### step reward {self.reward} ####')
+
+        self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
