@@ -116,6 +116,8 @@ def learn(
 
             env.total_steps = update * nsteps
 
+            tf.summary.scalar('price', env.best_bid, step=update)
+
             if capital != 1.0 and update < train_updates:
                 model.capital = capital
                 tf.summary.scalar('capital', capital, step=update)
