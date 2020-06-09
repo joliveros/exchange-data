@@ -31,11 +31,11 @@ def run(trial: Trial):
     steps = 720
 
     hparams = dict(
-        kernel_dim=trial.suggest_int('kernel_dim', 2, 12),
-        filters=trial.suggest_int('filters', 2, 12),
-        flat_reward=trial.suggest_float('flat_reward', 0.00001, 0.001),
-        # reward_ratio=trial.suggest_float('reward_ratio', 0.0001, 1.0),
-        # step_reward=trial.suggest_float('step_reward', 0.0001, 1.0),
+        kernel_dim=trial.suggest_int('kernel_dim', 2, 4),
+        filters=trial.suggest_int('filters', 10, 24),
+        flat_reward=trial.suggest_float('flat_reward', 0.66, .68),
+        reward_ratio=trial.suggest_float('reward_ratio', 0.09, 0.1),
+        step_reward=trial.suggest_float('step_reward', 0.51, 0.53),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
         # max_negative_pnl_delay=trial.suggest_int('max_negative_pnl_delay',
@@ -70,7 +70,7 @@ def run(trial: Trial):
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=0.99875,
+        reward_ratio=hparams.get('reward_ratio'),
         reward_scale=1.0,
         run_name=run_name,
         save_model=True,
@@ -78,7 +78,7 @@ def run(trial: Trial):
         save_video_interval=0,
         save_video_length=200,
         seed=None,
-        step_reward=0.20481,
+        step_reward=hparams.get('step_reward'),
         trial=trial
     )
     extra_args = {
@@ -86,8 +86,10 @@ def run(trial: Trial):
         'lr': 0.00015753,
         'batch_size': 1,
         'epsilon': 1e-7,
-        'filters': 4,
-        'kernel_dim': 12,
+        # 'filters': hparams.get('filters'),
+        # 'kernel_dim': hparams.get('kernel_dim'),
+        'filters': 8,
+        'kernel_dim': 8,
         'log_interval': 100,
         'nsteps': 8,
         'hparams': hparams

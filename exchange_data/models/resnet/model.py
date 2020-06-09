@@ -88,7 +88,7 @@ def Model(
 
     alog.info(model.output)
 
-    model.add(Dense(filters, activation='relu'))
+    # model.add(Dense(filters, activation='softmax'))
 
     # model.add(LSTM(
     #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,

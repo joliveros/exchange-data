@@ -95,6 +95,7 @@ def learn(
 
         # Instantiate the runner object
         runner = Runner(env, model, nsteps=nsteps, gamma=gamma)
+        env = runner.env.envs[0].env
         epinfobuf = deque(maxlen=100)
 
         # Start total timer
@@ -109,9 +110,9 @@ def learn(
             # Get mini batch of experiences
             obs, states, rewards, masks, actions, values, epinfos = runner.run()
 
-            capital = runner.env.envs[0].env.capital
+            capital = env.capital
 
-            model.capital = runner.env.envs[0].env.total_steps = update * nsteps
+            model.capital = env.total_steps = update * nsteps
 
             if capital != 1.0 and update < train_updates:
                 model.capital = capital
@@ -120,12 +121,13 @@ def learn(
             if update >= train_updates:
                 if not reset_for_eval:
                     reset_for_eval = True
-                    model.capital = runner.env.envs[0].env.capital
+                    model.capital = env.capital
                     tf.summary.scalar('eval_capital', model.capital,
                                       step=update)
-                    runner.env.envs[0].env.reset()
+                    env.reset()
+                    env.eval_mode = True
 
-                model.capital = runner.env.envs[0].env.capital
+                model.capital = env.capital
 
                 tf.summary.scalar('eval_capital', model.capital, step=update)
 
