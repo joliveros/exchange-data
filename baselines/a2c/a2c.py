@@ -103,7 +103,7 @@ def learn(
 
         total_updates = model.nupdates + 1
 
-        train_updates = total_updates * 0.8
+        train_updates = total_updates * 0.65
         reset_for_eval = False
 
         for update in range(1, total_updates):
