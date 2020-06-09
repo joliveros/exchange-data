@@ -56,6 +56,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         is_training=True,
         print_ascii_chart=False,
         min_change=0.0,
+        max_negative_pnl_delay=20,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
@@ -84,6 +85,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         )
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+        self.max_negative_pnl_delay = max_negative_pnl_delay
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay

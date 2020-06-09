@@ -152,6 +152,7 @@ def common_arg_parser():
                         type=float)
     parser.add_argument('--gain_delay', help='', default=30, type=int)
     parser.add_argument('--gain_per_step', help='gain per step', default=1.0, type=float)
+    parser.add_argument('--max_negative_pnl_delay', help='', default=30, type=int)
     parser.add_argument('--max_negative_pnl', help='',
                         default=-0.05,
                         type=float)
