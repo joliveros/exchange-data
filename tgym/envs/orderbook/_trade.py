@@ -30,10 +30,12 @@ class Trade(Logging):
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
         flat_reward: float = 1.0,
+        step_reward_ratio: float = 1.0,
         step_reward: float = 1.0
     ):
         Logging.__init__(self)
         self.flat_reward = flat_reward
+        self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.reward_ratio = reward_ratio
         self.postive_pnl_reward = (1 - self.reward_ratio)
@@ -140,10 +142,10 @@ class Trade(Logging):
         alog.info((self.step_reward, pnl_delta))
 
         if pnl_delta > 0.0:
-            self.reward += self.step_reward
+            self.reward += self.step_reward * self.step_reward_ratio
 
         if pnl_delta < 0.0:
-            self.reward -= self.step_reward
+            self.reward -= self.step_reward * (1 - self.step_reward_ratio)
 
 
         alog.info(f'### step reward {self.reward} ####')

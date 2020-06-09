@@ -148,6 +148,8 @@ def common_arg_parser():
     parser.add_argument('--env', help='environment ID', type=str, default='Reacher-v2')
     parser.add_argument('--env_type', help='type of environment, used when the environment type cannot be automatically determined', type=str)
     parser.add_argument('--flat_reward', help='flat reward', default=1.0, type=float)
+    parser.add_argument('--step_reward_ratio', help='step reward', default=1.0,
+                        type=float)
     parser.add_argument('--step_reward', help='step reward', default=1.0,
                         type=float)
     parser.add_argument('--gain_delay', help='', default=30, type=int)

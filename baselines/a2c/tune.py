@@ -34,6 +34,7 @@ def run(trial: Trial):
         min_change=trial.suggest_float('min_change', 4.0, 20.0),
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
         reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
+        step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
         step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
@@ -77,6 +78,7 @@ def run(trial: Trial):
         save_video_interval=0,
         save_video_length=200,
         seed=None,
+        step_reward_ratio=hparams.get('step_reward_ratio'),
         step_reward=hparams.get('step_reward'),
         trial=trial
     )

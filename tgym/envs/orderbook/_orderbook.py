@@ -51,6 +51,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         use_volatile_ranges=False,
         min_std_dev=2.0,
         should_penalize_even_trade=True,
+        step_reward_ratio=1.0,
         step_reward=0.000005,
         capital=1.0,
         action_space=None,
@@ -93,6 +94,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.gain_delay = gain_delay
         self.reward_ratio = reward_ratio
         self.flat_reward = flat_reward
+        self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.leverage = leverage
         self.capital = capital
@@ -434,6 +436,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
+                step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
             )
             self.current_trade.step(self.best_bid, self.best_ask)
@@ -451,6 +454,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
+                step_reward_ratio=self.step_reward_ratio,
                 reward_ratio=self.reward_ratio,
                 step_reward=self.step_reward
             )
@@ -470,6 +474,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
                 flat_reward=self.flat_reward,
+                step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward
             )
             self.current_trade.step(self.best_bid, self.best_ask)
