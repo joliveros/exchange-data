@@ -119,35 +119,32 @@ class Trade(Logging):
             alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
 
     def step(self, best_bid: float, best_ask: float):
-        pass
+        self.clear_pnl()
+        self.reward = 0.0
+        self.position_length += 1
+        self.bids = np.append(self.bids, [best_bid])
+        self.asks = np.append(self.asks, [best_ask])
 
-    # def step(self, best_bid: float, best_ask: float):
-    #     self.clear_pnl()
-    #     self.reward = 0.0
-    #     self.position_length += 1
-    #     self.bids = np.append(self.bids, [best_bid])
-    #     self.asks = np.append(self.asks, [best_ask])
-    #
-    #     pnl = self.pnl
-    #     last_pnl = 0.0
-    #
-    #     if len(self.pnl_history) > 0:
-    #         last_pnl = self.pnl_history[-1]
-    #
-    #     self.pnl_history = np.append(self.pnl_history, [pnl])
-    #
-    #     alog.info((last_pnl, self.pnl))
-    #
-    #     pnl_delta = self.pnl - last_pnl
-    #
-    #     alog.info((self.step_reward, pnl_delta))
-    #
-    #     reward = self.step_reward
-    #
-    #     self.reward += reward
-    #     alog.info(f'### step reward {reward} ####')
-    #
-    #     self.total_reward += self.reward
+        pnl = self.pnl
+        last_pnl = 0.0
+
+        if len(self.pnl_history) > 0:
+            last_pnl = self.pnl_history[-1]
+
+        self.pnl_history = np.append(self.pnl_history, [pnl])
+
+        # alog.info((last_pnl, self.pnl))
+        #
+        # pnl_delta = self.pnl - last_pnl
+        #
+        # alog.info((self.step_reward, pnl_delta))
+        #
+        # reward = self.step_reward
+        #
+        # self.reward += reward
+        # alog.info(f'### step reward {reward} ####')
+        #
+        # self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
@@ -276,17 +273,17 @@ class FlatTrade(Trade):
                    (-1 * self.capital * self.trading_fee)
         return pnl
 
-    # def step(self, best_bid: float, best_ask: float):
-    #     self.reward = 0.0
-    #     self.position_length += 1
-    #     self.bids = np.append(self.bids, [best_bid])
-    #     self.asks = np.append(self.asks, [best_ask])
-    #
-    #     if self.best_ask == self.asks[-1]:
-    #         alog.info(f'### flat reward {self.flat_reward} ###')
-    #         self.reward += self.flat_reward
-    #
-    #     self.total_reward += self.reward
+    def step(self, best_bid: float, best_ask: float):
+        self.reward = 0.0
+        self.position_length += 1
+        self.bids = np.append(self.bids, [best_bid])
+        self.asks = np.append(self.asks, [best_ask])
+
+        # if self.best_ask == self.asks[-1]:
+        #     alog.info(f'### flat reward {self.flat_reward} ###')
+        #     self.reward += self.flat_reward
+        #
+        # self.total_reward += self.reward
 
     def close(self):
         if settings.LOG_LEVEL == logging.DEBUG:
