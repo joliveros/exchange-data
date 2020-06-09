@@ -31,9 +31,9 @@ def run(trial: Trial):
     steps = 1500
 
     hparams = dict(
-        min_change=trial.suggest_float('min_change', 4.0, 20.0),
+        min_change=trial.suggest_float('min_change', 2.0, 20.0),
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
-        reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
+        # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
         step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
@@ -70,7 +70,7 @@ def run(trial: Trial):
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=hparams.get('reward_ratio'),
+        reward_ratio=1.0,
         reward_scale=1.0,
         run_name=run_name,
         save_model=True,
