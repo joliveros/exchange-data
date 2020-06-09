@@ -113,10 +113,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.trial.report(self.capital, self.step_count)
 
-        if self.capital < self.min_capital:
+        alog.info(f'#### eval_mode {not self.eval_mode} ####')
+
+        if self.capital < self.min_capital and not self.eval_mode:
             self.done = True
 
-        if self.step_count >= self.max_steps:
+        if self.step_count >= self.max_steps and not self.eval_mode:
             self.done = True
 
         # if self.current_trade.pnl <= self.max_negative_pnl:

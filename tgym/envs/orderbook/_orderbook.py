@@ -37,6 +37,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         end_date,
         summary_interval=120,
         database_name = 'bitmex',
+        eval_mode=False,
         logger=None,
         leverage=1.0,
         trading_fee=0.125/100.0,
@@ -85,6 +86,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         )
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+        self.eval_mode = eval_mode
         self.max_negative_pnl_delay = max_negative_pnl_delay
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
