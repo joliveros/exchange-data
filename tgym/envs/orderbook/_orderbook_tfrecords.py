@@ -119,9 +119,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         if self.step_count >= self.max_steps:
             self.done = True
 
-        if self.current_trade.pnl <= self.max_negative_pnl:
-            self.done = True
-            raise TrialPruned()
+        # if self.current_trade.pnl <= self.max_negative_pnl:
+        #     self.done = True
+        #
+        #     if self.total_steps >= self.max_negative_pnl_delay and \
+        #         self.max_negative_pnl_delay > 0:
+        #         raise TrialPruned()
 
         observation = self.get_observation()
 

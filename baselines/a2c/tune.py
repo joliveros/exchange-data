@@ -28,18 +28,20 @@ METRIC_ACCURACY = 'accuracy'
 def run(trial: Trial):
     run_name = str(int(time.time() * 1000))
 
-    steps = 1200
+    steps = 720
 
     hparams = dict(
-        # kernel_dim=trial.suggest_int('kernel_dim', 2, 128),
-        # filters=trial.suggest_int('filters', 8, 128)
-        # flat_reward=trial.suggest_float('flat_reward', 0.0000001, 0.0001),
-        # reward_ratio=trial.suggest_float('reward_ratio', 0.80, 1.0),
-        # step_reward=trial.suggest_float('step_reward', 0.66, 1.0),
-        max_loss=trial.suggest_float('max_loss', -0.003, -0.0001),
+        kernel_dim=trial.suggest_int('kernel_dim', 2, 12),
+        filters=trial.suggest_int('filters', 2, 12),
+        flat_reward=trial.suggest_float('flat_reward', 0.00001, 0.001),
+        # reward_ratio=trial.suggest_float('reward_ratio', 0.0001, 1.0),
+        # step_reward=trial.suggest_float('step_reward', 0.0001, 1.0),
+        # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
-        max_negative_pnl=trial.suggest_float('max_negative_pnl', -0.002,
-                                             -0.0001)
+        # max_negative_pnl_delay=trial.suggest_int('max_negative_pnl_delay',
+        #                                          190, 240),
+        # max_negative_pnl=trial.suggest_float('max_negative_pnl', -0.006,
+        #                                      -0.002)
     )
 
     # gain_delay = hparams.get('gain_delay')
@@ -53,30 +55,31 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=0.000077185,
-        step_reward=0.82084,
-        max_loss=hparams.get('max_loss'),
-        max_negative_pnl=hparams.get('max_negative_pnl'),
+        flat_reward=hparams.get('flat_reward'),
         gamestate=None,
         leverage=10.0,
         log_path=None,
         max_frames=2,
+        max_loss=-0.02,
+        max_negative_pnl_delay=0,
+        max_negative_pnl=-0.0040571,
         max_steps=steps,
-        min_steps=50,
         min_change=7.4588,
+        min_steps=50,
         network='nasnet',
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=0.85195,
+        reward_ratio=0.99875,
         reward_scale=1.0,
         run_name=run_name,
         save_model=True,
         save_path=None,
         save_video_interval=0,
         save_video_length=200,
-        trial=trial,
-        seed=None
+        seed=None,
+        step_reward=0.20481,
+        trial=trial
     )
     extra_args = {
         # 'epsilon': 0.090979,
@@ -86,7 +89,7 @@ def run(trial: Trial):
         'filters': 4,
         'kernel_dim': 12,
         'log_interval': 100,
-        'nsteps': 10,
+        'nsteps': 8,
         'hparams': hparams
     }
 
@@ -95,7 +98,7 @@ def run(trial: Trial):
     try:
         model, env = train(args, extra_args)
     except:
-        return
+        return 0.0
 
     return model.capital
 
