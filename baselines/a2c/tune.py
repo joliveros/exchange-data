@@ -28,14 +28,12 @@ METRIC_ACCURACY = 'accuracy'
 def run(trial: Trial):
     run_name = str(int(time.time() * 1000))
 
-    steps = 720
+    steps = 4000
 
     hparams = dict(
-        # kernel_dim=trial.suggest_int('kernel_dim', 2, 8),
-        # filters=trial.suggest_int('filters', 24, 96),
-        flat_reward=trial.suggest_float('flat_reward', 0.66, .68),
-        reward_ratio=trial.suggest_float('reward_ratio', 0.09, 0.1),
-        step_reward=trial.suggest_float('step_reward', 0.51, 0.53),
+        #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
+        #reward_ratio=trial.suggest_float('reward_ratio', 0.68, 1.0),
+        #step_reward=trial.suggest_float('step_reward', 0.7, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
         # max_negative_pnl_delay=trial.suggest_int('max_negative_pnl_delay',
@@ -55,7 +53,7 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=hparams.get('flat_reward'),
+        flat_reward=0.94035,
         gamestate=None,
         leverage=10.0,
         log_path=None,
@@ -70,7 +68,7 @@ def run(trial: Trial):
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=hparams.get('reward_ratio'),
+        reward_ratio=0.78305,
         reward_scale=1.0,
         run_name=run_name,
         save_model=True,
@@ -78,7 +76,7 @@ def run(trial: Trial):
         save_video_interval=0,
         save_video_length=200,
         seed=None,
-        step_reward=hparams.get('step_reward'),
+        step_reward=0.89468,
         trial=trial
     )
     extra_args = {
@@ -86,12 +84,10 @@ def run(trial: Trial):
         'lr': 0.00015753,
         'batch_size': 1,
         'epsilon': 1e-7,
-        # 'filters': hparams.get('filters'),
-        # 'kernel_dim': hparams.get('kernel_dim'),
         'filters': 150,
         'kernel_dim': 7,
         'log_interval': 100,
-        'nsteps': 5,
+        'nsteps': 40,
         'hparams': hparams
     }
 
