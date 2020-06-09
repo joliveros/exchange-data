@@ -28,7 +28,7 @@ METRIC_ACCURACY = 'accuracy'
 def run(trial: Trial):
     run_name = str(int(time.time() * 1000))
 
-    steps = 1500
+    steps = 2000
 
     hparams = dict(
         min_change=trial.suggest_float('min_change', 2.0, 20.0),
