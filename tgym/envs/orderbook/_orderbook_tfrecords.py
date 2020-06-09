@@ -118,7 +118,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         if self.capital < self.min_capital and not self.eval_mode:
             self.done = True
 
-        if self.step_count >= self.max_steps and not self.eval_mode:
+        if self.step_count >= self.max_steps:
             self.done = True
 
         # if self.current_trade.pnl <= self.max_negative_pnl:

@@ -87,7 +87,8 @@ def Model(
     ))
 
     alog.info(model.output)
-
+    model.add(Flatten())
+    alog.info(model.output)
     # model.add(Dense(filters, activation='softmax'))
 
     # model.add(LSTM(

@@ -31,8 +31,8 @@ def run(trial: Trial):
     steps = 720
 
     hparams = dict(
-        kernel_dim=trial.suggest_int('kernel_dim', 2, 4),
-        filters=trial.suggest_int('filters', 10, 24),
+        # kernel_dim=trial.suggest_int('kernel_dim', 2, 8),
+        # filters=trial.suggest_int('filters', 24, 96),
         flat_reward=trial.suggest_float('flat_reward', 0.66, .68),
         reward_ratio=trial.suggest_float('reward_ratio', 0.09, 0.1),
         step_reward=trial.suggest_float('step_reward', 0.51, 0.53),
@@ -88,10 +88,10 @@ def run(trial: Trial):
         'epsilon': 1e-7,
         # 'filters': hparams.get('filters'),
         # 'kernel_dim': hparams.get('kernel_dim'),
-        'filters': 8,
-        'kernel_dim': 8,
+        'filters': 150,
+        'kernel_dim': 7,
         'log_interval': 100,
-        'nsteps': 8,
+        'nsteps': 5,
         'hparams': hparams
     }
 

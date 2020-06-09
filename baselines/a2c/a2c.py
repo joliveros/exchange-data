@@ -112,7 +112,9 @@ def learn(
 
             capital = env.capital
 
-            model.capital = env.total_steps = update * nsteps
+            model.capital = capital
+
+            env.total_steps = update * nsteps
 
             if capital != 1.0 and update < train_updates:
                 model.capital = capital
