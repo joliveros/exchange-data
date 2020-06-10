@@ -28,10 +28,11 @@ METRIC_ACCURACY = 'accuracy'
 def run(trial: Trial):
     run_name = str(int(time.time() * 1000))
 
-    steps = 2000
+    steps = 1400
 
     hparams = dict(
-        #min_change=trial.suggest_float('min_change', 2.0, 6.0),
+        lr=trial.suggest_float('lr', 0.000001, 0.0002),
+        # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
@@ -65,7 +66,11 @@ def run(trial: Trial):
         max_negative_pnl_delay=0,
         max_negative_pnl=-0.0040571,
         max_steps=steps,
+<<<<<<< Updated upstream
         min_change=4.8582,
+=======
+        min_change=4.2117,
+>>>>>>> Stashed changes
         min_steps=50,
         network='nasnet',
         num_env=1,
