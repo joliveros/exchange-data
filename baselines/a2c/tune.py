@@ -26,6 +26,8 @@ METRIC_ACCURACY = 'accuracy'
 
 
 def run(trial: Trial):
+    tf.keras.backend.clear_session()
+
     run_name = str(int(time.time() * 1000))
 
     steps = 1400
