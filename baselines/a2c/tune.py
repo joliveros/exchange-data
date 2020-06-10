@@ -90,7 +90,7 @@ def run(trial: Trial):
     )
     extra_args = {
         # 'epsilon': 0.090979,
-        'lr': 0.00015753,
+        'lr': hparams.get('lr'),
         'batch_size': 1,
         'epsilon': 1e-7,
         'filters': 150,
