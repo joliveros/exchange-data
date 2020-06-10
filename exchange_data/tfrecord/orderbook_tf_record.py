@@ -1,5 +1,6 @@
 import json
 import shutil
+import time
 from collections import deque
 from pathlib import Path
 
@@ -39,7 +40,8 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
     ):
         super().__init__(**kwargs)
 
-        filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
+        # filename = re.sub('[:+\s\-]', '_', str(start_date).split('.')[0])
+        filename = str(int(time.time() * 1000))
 
         if end_date is None:
             self.stop_date = self.now()
