@@ -66,11 +66,7 @@ def run(trial: Trial):
         max_negative_pnl_delay=0,
         max_negative_pnl=-0.0040571,
         max_steps=steps,
-<<<<<<< Updated upstream
-        min_change=4.8582,
-=======
         min_change=4.2117,
->>>>>>> Stashed changes
         min_steps=50,
         network='nasnet',
         num_env=1,
