@@ -37,12 +37,12 @@ def run(trial: Trial):
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
         #     2, 4, 8, 16, 32, 64, 128, 256
         # ])
-        # lr=trial.suggest_float('lr', 0.0002, 0.01),
-        min_change=trial.suggest_float('min_change', 3.0, 14.0),
+        lr=trial.suggest_float('lr', 0.00001, 1.0),
+        # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
-        step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
+        # step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
@@ -72,7 +72,7 @@ def run(trial: Trial):
         max_negative_pnl=-0.0040571,
         max_negative_pnl_delay=0,
         max_steps=steps,
-        min_change=hparams.get('min_change'),
+        min_change=4.0,
         min_steps=50,
         network='nasnet',
         num_env=1,
@@ -87,7 +87,7 @@ def run(trial: Trial):
         save_video_length=200,
         seed=31583,
         step_reward=1.0,
-        step_reward_ratio=hparams.get('step_reward_ratio'),
+        step_reward_ratio=1.0,
         trial=trial,
     )
     extra_args = {
