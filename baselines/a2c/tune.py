@@ -31,13 +31,13 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 3200
+    steps = 80000 
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
         #     2, 4, 8, 16, 32, 64, 128, 256
         # ])
-        lr=trial.suggest_float('lr', 0.00001, 1.0),
+        #lr=trial.suggest_float('lr', 0.01, 0.072),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
@@ -96,8 +96,8 @@ def run(trial: Trial):
         'hparams': hparams,
         'kernel_dim': 4,
         'log_interval': 100,
-        # 'lr': 0.00016827,
-        'lr': hparams.get('lr'),
+        'lr': 0.019656,
+        #'lr': hparams.get('lr'),
         'nsteps': 20,
     }
 
