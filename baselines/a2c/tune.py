@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import time
 from argparse import Namespace
 
@@ -30,10 +31,13 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 1400
+    steps = 1000000
 
     hparams = dict(
-        lr=trial.suggest_float('lr', 0.000001, 0.0002),
+        # kernel_dim=trial.suggest_categorical('kernel_dim', [
+        #     2, 4, 8, 16, 32, 64, 128, 256
+        # ])
+        # lr=trial.suggest_float('lr', 0.0002, 0.01),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
@@ -61,14 +65,14 @@ def run(trial: Trial):
         env_type=None,
         flat_reward=0.94035,
         gamestate=None,
-        leverage=10.0,
+        leverage=1.0,
         log_path=None,
         max_frames=4,
-        max_loss=-0.02,
-        max_negative_pnl_delay=0,
+        max_loss=-99.9,
         max_negative_pnl=-0.0040571,
+        max_negative_pnl_delay=0,
         max_steps=steps,
-        min_change=4.2117,
+        min_change=3.0,
         min_steps=50,
         network='nasnet',
         num_env=1,
@@ -81,29 +85,28 @@ def run(trial: Trial):
         save_path=None,
         save_video_interval=0,
         save_video_length=200,
-        seed=None,
-        step_reward_ratio=1.0,
+        seed=31583,
         step_reward=1.0,
-        trial=trial
+        step_reward_ratio=1.0,
+        trial=trial,
     )
     extra_args = {
-        # 'epsilon': 0.090979,
-        'lr': hparams.get('lr'),
         'batch_size': 1,
         'epsilon': 1e-7,
-        'filters': 150,
-        'kernel_dim': 7,
+        'hparams': hparams,
+        'kernel_dim': 4,
         'log_interval': 100,
-        'nsteps': 20,
-        'hparams': hparams
+        # 'lr': 0.00016827,
+        # 'lr': hparams.get('lr'),
+        'nsteps': 2,
     }
 
-    # model, env = train(args, extra_args)
+    model, env = train(args, extra_args)
 
-    try:
-        model, env = train(args, extra_args)
-    except:
-        return 0.0
+    # try:
+    #     model, env = train(args, extra_args)
+    # except:
+    #     return 0.0
 
     return model.capital
 

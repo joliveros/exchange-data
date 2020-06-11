@@ -17,6 +17,7 @@ class Runner(AbstractEnvRunner):
     def __init__(self, env, model, nsteps=5, gamma=0.99):
         super().__init__(env=env, model=model, nsteps=nsteps)
         self.gamma = gamma
+        self.gamma = 0.0
 
     def run(self):
         # We initialize the lists that will contain the mb of experiences
