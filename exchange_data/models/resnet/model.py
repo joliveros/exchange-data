@@ -39,7 +39,8 @@ def Model(
     sequence_length,
     batch_size,
     kernel_dim,
-    filters,
+    filters=None,
+    lstm_units=2,
     epsilon=0.0,
     learning_rate=5e-5,
     frame_width=224,
@@ -52,18 +53,19 @@ def Model(
 
     input = Input(shape=input_shape)
 
+    # input = Input(batch_input_shape=(batch_size,) + input_shape)
+
     model.add(input)
 
-    base = NasNet(
-        # weights=None,
+    base = tf.keras.applications.EfficientNetB0(
         include_top=False,
         classes=num_categories,
         # input_shape=(224, 224, 3)
-        # pooling='max'
+        pooling='max'
     )
 
     # for layer in base.layers:
-    #     layer.trainable = True
+    #     layer.trainable = False
 
     model.add(TimeDistributed(
         base,
@@ -76,20 +78,76 @@ def Model(
 
     alog.info(model.output)
 
-    model.add(ConvLSTM2D(
-        filters=filters,
-        strides=(kernel_dim, kernel_dim),
-        kernel_size=(kernel_dim, kernel_dim),
+    # model.add(ConvLSTM2D(
+    #     filters=filters,
+    #     strides=(kernel_dim, kernel_dim),
+    #     kernel_size=(kernel_dim, kernel_dim),
+    #     padding='same',
+    #     activation='relu',
+    #     stateful=False,
+    #     return_sequences=False
+    # ))
+    last_dim = model.output.shape[-1]
+
+    model.add(tf.keras.layers.Conv1D(
+        filters=last_dim / kernel_dim,
+        kernel_size=kernel_dim,
         padding='same',
-        activation='relu',
-        stateful=False,
-        return_sequences=False
+        activation='relu'
     ))
 
     alog.info(model.output)
+
+    while len(model.output.shape) > 2 and model.output.shape[-1] > 20:
+        last_dim = model.output.shape[-1]
+
+        if last_dim < kernel_dim:
+            kernel_dim = 2
+
+        filters = int(last_dim/kernel_dim)
+
+        model.add(tf.keras.layers.Conv1D(
+            filters=filters,
+            kernel_size=kernel_dim,
+            padding='same',
+            activation='relu'
+        ))
+
+        alog.info(model.output)
+
+        # if model.output.shape[-2] > 1:
+        #     model.add(tf.keras.layers.MaxPooling1D(pool_size=(2,)))
+
+        alog.info(model.output)
+        # model.add(tf.keras.layers.Dropout(0.5))
+
+
+    # model.add(LSTM(
+    #     lstm_units,
+    #     # input_shape=(None, 4, 2),
+    #     stateful=False,
+    #     return_sequences=True
+    # ))
+    #
+    # model.add(LSTM(
+    #     lstm_units,
+    #     # input_shape=(None, 4, 2),
+    #     stateful=False,
+    #     return_sequences=True
+    # ))
+    # model.add(LSTM(
+    #     lstm_units,
+    #     # input_shape=(None, 4, 2),
+    #     stateful=False,
+    #     return_sequences=False
+    # ))
+    # alog.info(model.output)
+
     model.add(Flatten())
+
     alog.info(model.output)
-    # model.add(Dense(filters, activation='softmax'))
+
+    model.add(Dense(model.output.shape[-1], activation='relu'))
 
     # model.add(LSTM(
     #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
@@ -101,10 +159,6 @@ def Model(
     #                                           frame_width, 3),
     #     return_sequences=False
     # ))
-
-    alog.info(model.output)
-
-    model.add(tf.keras.layers.Reshape((filters,)))
 
     alog.info(model.output)
 

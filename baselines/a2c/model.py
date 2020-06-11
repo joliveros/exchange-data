@@ -80,7 +80,8 @@ class Model(tf.keras.Model):
         self.step = self.train_model.step
         self.value = self.train_model.value
         self.initial_state = self.train_model.initial_state
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
+        # self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
+        self.optimizer = tf.keras.optimizers.Adadelta()
 
     @tf.function
     def train(self, obs, states, rewards, masks, actions, values):

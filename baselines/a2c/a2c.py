@@ -130,6 +130,7 @@ def learn(
                                       step=update)
                     env.reset()
                     env.eval_mode = True
+                    raise Exception()
 
                 model.capital = env.capital
 
