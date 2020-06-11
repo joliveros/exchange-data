@@ -97,7 +97,7 @@ def run(trial: Trial):
         'kernel_dim': 4,
         'log_interval': 100,
         # 'lr': 0.00016827,
-        # 'lr': hparams.get('lr'),
+        'lr': hparams.get('lr'),
         'nsteps': 20,
     }
 
