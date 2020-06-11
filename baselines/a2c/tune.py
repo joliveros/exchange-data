@@ -31,7 +31,7 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 1600
+    steps = 3200
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
