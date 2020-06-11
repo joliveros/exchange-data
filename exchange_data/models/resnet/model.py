@@ -38,8 +38,8 @@ def Model(
     input_shape,
     sequence_length,
     batch_size,
-    kernel_dim,
     filters=None,
+    kernel_dim=4,
     lstm_units=2,
     epsilon=0.0,
     learning_rate=5e-5,
@@ -49,6 +49,8 @@ def Model(
     include_last=True,
     **kwargs
 ):
+    alog.info(kernel_dim)
+    raise Exception()
     model = Sequential()
 
     input = Input(shape=input_shape)

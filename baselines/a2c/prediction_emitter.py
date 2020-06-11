@@ -52,11 +52,12 @@ class PredictionEmitter(Messenger, TradeJob):
             log_interval=100,
             log_path=None,
             lr=0.00021397,
-            max_frames=4,
+            max_frames=2,
             max_loss=-0.02,
             max_steps=40,
+            kernel_dim=4,
             min_steps=50,
-            nsteps=1,
+            nsteps=7,
             num_env=1,
             num_timesteps=40.0,
             play=False,
@@ -66,8 +67,8 @@ class PredictionEmitter(Messenger, TradeJob):
             save_path=None,
             save_video_interval=0,
             save_video_length=200,
-            trial={},
             seed=None,
+            trial={},
         )
 
         self.max_frames = env_args.max_frames
