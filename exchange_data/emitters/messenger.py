@@ -30,6 +30,7 @@ class Messenger(EventEmitterBase):
         self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None
+        self.channels = []
 
         self.on(Events.Message.value, self.handler)
 
