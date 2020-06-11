@@ -98,7 +98,7 @@ def run(trial: Trial):
         'log_interval': 100,
         # 'lr': 0.00016827,
         # 'lr': hparams.get('lr'),
-        'nsteps': 2,
+        'nsteps': 20,
     }
 
     model, env = train(args, extra_args)
