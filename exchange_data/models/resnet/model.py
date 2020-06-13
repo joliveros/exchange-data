@@ -49,8 +49,6 @@ def Model(
     include_last=True,
     **kwargs
 ):
-    alog.info(kernel_dim)
-    raise Exception()
     model = Sequential()
 
     input = Input(shape=input_shape)
