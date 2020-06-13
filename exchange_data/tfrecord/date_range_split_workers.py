@@ -7,6 +7,7 @@ import alog
 from pytimeparse.timeparse import timeparse
 
 from exchange_data import Database
+from exchange_data.emitters.trading_window_emitter import TradingWindowEmitter
 from exchange_data.tfrecord.dataset_query import PriceChangeRanges
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
@@ -21,7 +22,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         max_workers,
         channel_name,
         interval,
-        contiguous_interval,
+        interval_type='contiguous',
         record_window='15s',
         limit: int = 0,
         **kwargs
@@ -42,7 +43,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         self.end_date = now
         self.intervals = []
 
-        if contiguous_interval:
+        if interval_type == 'contiguous':
             start_date = self.start_date.replace(second=0, microsecond=0)
             intervals = int(interval_delta.total_seconds()/60)
 
@@ -51,13 +52,19 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
                 self.intervals.append((start_date, end_date))
                 start_date = start_date + timedelta(minutes=1)
 
-        else:
+        if interval_type == 'price_change':
             self.intervals = self.price_change_ranges(
                 position_ratio=position_ratio,
                 record_window=record_window,
                 start_date=self.start_date,
                 end_date=self.end_date
             )
+
+        if interval_type == 'volatility_window':
+            twindow = TradingWindowEmitter(interval=interval)
+            twindow.next_intervals()
+            alog.info(twindow.intervals)
+            self.intervals = twindow.intervals
 
         if limit > 0:
             self.intervals = self.intervals[(limit * -1):]

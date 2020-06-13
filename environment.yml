@@ -31,6 +31,7 @@ dependencies:
     - mock
     - opencv-python
     - optuna
+    - pandas==0.25.3
     - progressbar2
     - prometheus_client
     - pusherclient
@@ -47,5 +48,6 @@ dependencies:
     - statsd
     - stringcase
     - tf-nightly-gpu
+    - mplfinance
     - timestamp
     - tqdm

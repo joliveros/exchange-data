@@ -34,7 +34,7 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
 @click.option('--directory-name', '-d', default='default', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--groupby', default='1s', type=str)
-@click.option('--contiguous-interval', '-m', is_flag=True)
+@click.option('--interval_type', '-m', type=str, default='contiguous')
 @click.option('--limit', '-l', default=0, type=int)
 @click.option('--depth', default=21, type=int)
 @click.option('--padding', default=2, type=int)

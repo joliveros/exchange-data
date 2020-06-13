@@ -117,6 +117,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         if self.capital < self.min_capital and not self.eval_mode:
             self.done = True
+            raise TrialPruned()
 
         if self.step_count >= self.max_steps:
             self.done = True
