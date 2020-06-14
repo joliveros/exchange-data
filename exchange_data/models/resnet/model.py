@@ -98,7 +98,7 @@ def Model(
 
     alog.info(model.output)
 
-    while len(model.output.shape) > 2 and model.output.shape[-1] > 20:
+    while len(model.output.shape) > 2 and model.output.shape[-1] > 2:
         last_dim = model.output.shape[-1]
 
         if last_dim < kernel_dim:

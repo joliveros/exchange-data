@@ -37,7 +37,7 @@ def run(trial: Trial):
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
         #     2, 4, 8, 16, 32, 64, 128, 256
         # ])
-        lr=trial.suggest_float('lr', 0.001, 0.02),
+        lr=trial.suggest_float('lr', 0.0001, 0.005),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
@@ -68,11 +68,11 @@ def run(trial: Trial):
         leverage=1.0,
         log_path=None,
         max_frames=4,
-        max_loss=-0.99,
+        max_loss=-0.1,
         max_negative_pnl=-0.0040571,
         max_negative_pnl_delay=0,
         max_steps=steps,
-        min_change=4.0,
+        min_change=1.0,
         min_steps=50,
         network='nasnet',
         num_env=1,
@@ -100,12 +100,12 @@ def run(trial: Trial):
         'nsteps': 3,
     }
 
-    model, env = train(args, extra_args)
+    # model, env = train(args, extra_args)
 
-    # try:
-    #     model, env = train(args, extra_args)
-    # except:
-    #     return 0.0
+    try:
+        model, env = train(args, extra_args)
+    except:
+        return 0.0
 
     return model.capital
 

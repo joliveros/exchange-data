@@ -116,7 +116,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.long_pnl_history = []
         self._best_ask = 0.0
         self._best_bid = 0.0
-        self.action_space = Discrete(3) if action_space is None \
+        self.action_space = Discrete(2) if action_space is None \
             else action_space
         self.ask_diff = 0.0
         self.bid_diff = 0.0

@@ -19,7 +19,7 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, max_loss, trial, min_steps, max_steps=30, num_env=1,
+    def __init__(self, trial=None, min_steps=20, max_steps=30, num_env=1,
                  min_change=2.0,
                  **kwargs):
         now = DateTimeUtils.now()
@@ -33,7 +33,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             del kwargs['end_date']
 
         super().__init__(
-            max_loss=max_loss,
             min_change=min_change,
             action_space=Discrete(2),
             start_date=start_date,
@@ -86,7 +85,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self._best_ask = best_ask
         self._best_bid = best_bid
 
-        # alog.info(AsciiImage(np.copy(frame), new_width=21))
+        alog.info(AsciiImage(np.copy(frame), new_width=21))
 
         self.frames.append(frame)
         self.expected_position = expected_position
@@ -111,13 +110,15 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self.step_count += 1
 
-        self.trial.report(self.capital, self.step_count)
+        if self.trial:
+            self.trial.report(self.capital, self.step_count)
 
         alog.info(f'#### eval_mode {not self.eval_mode} ####')
 
         if self.capital < self.min_capital and not self.eval_mode:
             self.done = True
-            raise TrialPruned()
+            if self.trial:
+                raise TrialPruned()
 
         if self.step_count >= self.max_steps:
             self.done = True
@@ -155,7 +156,7 @@ def main(test_span, **kwargs):
     for t in range(1):
         env.reset()
         for i in range(timeparse(test_span)):
-            env.step(random.randint(0, 2))
+            env.step(random.randint(0, 1))
 
 
 if __name__ == '__main__':
