@@ -44,7 +44,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.max_steps = max_steps
         kwargs['batch_size'] = 1
         self.dataset = dataset(epochs=1000, **kwargs)
-        self._expected_position = None
         self.observations = None
         self.prune_capital = 1.01
         self.min_steps = min_steps
@@ -58,35 +57,25 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def best_ask(self):
         return self._best_ask
 
-    @property
-    def expected_position(self):
-        return self._expected_position
-
-    @expected_position.setter
-    def expected_position(self, action: np.float):
-        self._expected_position = [p for p in Positions if p.value == action][0]
-
     def _get_observation(self):
         for data in self.dataset:
             timestamp = DateTimeUtils.parse_datetime_str(data['datetime'].numpy()[0])
             best_ask = data.get('best_ask').numpy()[-1][-1]
             best_bid = data.get('best_bid').numpy()[-1][-1]
-            expected_position = data.get('expected_position').numpy()[-1][-1]
             frame = data.get('frame').numpy()[0]
 
-            yield timestamp, best_ask, best_bid, expected_position, frame
+            yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
         if self.observations is None:
             self.observations = self._get_observation()
 
-        timestamp, best_ask, best_bid, expected_position, frame = next(self.observations)
+        timestamp, best_ask, best_bid, frame = next(self.observations)
 
         self._best_ask = best_ask
         self._best_bid = best_bid
 
         self.frames.append(frame)
-        self.expected_position = expected_position
         self.position_history.append(self.position.name[0])
 
         self.last_datetime = str(timestamp)
@@ -97,21 +86,16 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
-        alog.info(action)
         assert self.action_space.contains(action)
 
         self.step_position(action)
 
         self.reward += self.current_trade.reward
 
-        alog.info((self.current_trade.pnl, self.max_negative_pnl))
-
         self.step_count += 1
 
         if self.trial:
             self.trial.report(self.capital, self.step_count)
-
-        alog.info(f'#### eval_mode {not self.eval_mode} ####')
 
         if self.capital < self.min_capital and not self.eval_mode:
             self.done = True
@@ -132,11 +116,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         reward = self.reset_reward()
 
-        alog.info(reward)
-
         self.print_summary()
-
-        alog.info(alog.pformat(self.summary()))
 
         return observation, reward, self.done, {}
 

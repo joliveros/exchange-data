@@ -115,9 +115,7 @@ class Trade(Logging):
         #     self.reward += reward
         #
         # alog.info(self.reward)
-
-        if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(f'{self.plot()}\n{self.yaml(self.summary())}')
+        pass
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
@@ -134,16 +132,10 @@ class Trade(Logging):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        alog.info((last_pnl, self.pnl))
-
         pnl_delta = self.pnl - last_pnl
-
-        alog.info((self.step_reward, pnl_delta))
 
         # if pnl_delta > 0.0:
         #     self.reward += self.step_reward * self.step_reward_ratio
-
-        alog.info((self.pnl, self.min_profit))
 
         if self.pnl > self.min_profit and self.pnl != 0.0:
             self.reward += self.step_reward * self.step_reward_ratio
@@ -152,9 +144,6 @@ class Trade(Logging):
 
         # if pnl_delta < 0.0:
         #     self.reward -= self.step_reward * (1 - self.step_reward_ratio)
-
-
-        alog.info(f'### step reward {self.reward} ####')
 
         self.total_reward += self.reward
 

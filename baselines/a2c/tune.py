@@ -31,13 +31,13 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 100000
+    steps = 28800 * 3
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
         #     2, 4, 8, 16, 32, 64, 128, 256
         # ])
-        lr=trial.suggest_float('lr', 0.0001, 0.005),
+        lr=trial.suggest_float('lr', 0.00001, 0.005),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
         #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
@@ -67,13 +67,13 @@ def run(trial: Trial):
         gamestate=None,
         leverage=1.0,
         log_path=None,
-        max_frames=120,
+        max_frames=48,
         max_loss=-0.99,
         max_negative_pnl=-0.0040571,
         max_negative_pnl_delay=0,
         max_steps=steps,
         levels=40,
-        min_change=1.0,
+        min_change=4.0,
         min_steps=50,
         network='nasnet',
         num_env=1,
@@ -98,7 +98,7 @@ def run(trial: Trial):
         'kernel_dim': 4,
         'log_interval': 100,
         'lr': hparams.get('lr'),
-        'nsteps': 80,
+        'nsteps': 320,
     }
 
     model, env = train(args, extra_args)

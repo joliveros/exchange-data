@@ -64,37 +64,6 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         self.features = []
         self.done = False
 
-    def window_position_change(self):
-        change_indexes = []
-
-        for i in range(len(self.features)):
-            feature = self.features[i]
-            current_position = feature[0]
-
-            if current_position != 0:
-                position = feature[-1]['expected_position']
-                change_indexes.append((i, position))
-
-        max_index = len(self.features) - 1
-
-        self.features = [feature[-1] for feature in self.features]
-
-        for position_change in change_indexes:
-            i, position = position_change
-            left_padding_index = i - self.padding
-            right_padding_index = i + self.padding_after
-
-            if left_padding_index < 0:
-                left_padding_index = 0
-
-            if right_padding_index > max_index:
-                right_padding_index = max_index
-
-            for ix in range(left_padding_index, right_padding_index + 1):
-                feature = self.features[ix]
-                feature['expected_position'] = position
-                self.features[ix] = feature
-
     def queue_obs(self):
         timestamp, best_ask, best_bid, orderbook_levels = next(self)
         orderbook_levels = np.asarray(json.loads(orderbook_levels))
@@ -105,29 +74,21 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         orderbook_levels = np.reshape(orderbook_levels, (80, 1)) / max
         orderbook_levels = np.clip(orderbook_levels, a_min=0.0, a_max=max)
 
-        self.last_best_ask = self.best_ask
-        self.last_best_bid = self.best_bid
         self.best_ask = best_ask
         self.best_bid = best_bid
+
         self._last_datetime = timestamp
 
-        self.frames.append((timestamp, best_ask, best_bid, orderbook_levels))
+        self.frames.appendleft((timestamp, best_ask, best_bid,
+                                orderbook_levels))
 
-        if len(self.frames) > 1:
-            position = self.expected_position.value
-
-            if position != Positions[self.side].value and \
-                position != Positions.Flat.value:
-                position = Positions.Flat.value
-
-            data = dict(
-                datetime=self.BytesFeature(str(timestamp)),
-                frame=self.floatFeature(self.frames[-2][-1].flatten()),
-                best_bid=self.floatFeature([self.last_best_bid]),
-                best_ask=self.floatFeature([self.last_best_ask]),
-                expected_position=self.int64Feature([position]),
-            )
-            self.features.append((position, data))
+        data = dict(
+            datetime=self.BytesFeature(str(timestamp)),
+            frame=self.floatFeature(self.frames[-1][-1].flatten()),
+            best_bid=self.floatFeature([self.best_bid]),
+            best_ask=self.floatFeature([self.best_ask]),
+        )
+        self.features.append(data)
 
     def write_observation(self, writer, features):
         example: Example = Example(
@@ -162,9 +123,6 @@ class OrderBookTFRecord(OrderBookLevelStreamer, OrderBookTFRecordBase):
         as writer:
             while self._last_datetime < self.stop_date:
                 self.queue_obs()
-
-            # some data transformations here
-            self.window_position_change()
 
             for d in self.features:
                 self.write_observation(writer, d)

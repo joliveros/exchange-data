@@ -486,7 +486,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         trade.close()
 
         self.reward += trade.reward
-        alog.info(f'#### close pnl/reward {trade.pnl}/{self.reward} ###')
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital
