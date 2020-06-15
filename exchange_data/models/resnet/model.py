@@ -48,15 +48,18 @@ def Model(
     **kwargs
 ):
     alog.info(input_shape)
-    filters = 32
+    filters = 42
     inputs = Input(shape=input_shape)
+
     # build the convolutional block
-    conv_first1 = Conv2D(32, (1, 2), strides=(1, 2))(inputs)
+    conv_first1 = Conv2D(filters, (1, 2), strides=(1, 2))(inputs)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+
+    alog.info(conv_first1.shape)
 
     conv_first1 = Conv2D(filters, (1, 2), strides=(1, 2))(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
@@ -65,20 +68,34 @@ def Model(
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    conv_first1 = Conv2D(filters, (1, 10))(conv_first1)
+    alog.info(conv_first1.shape)
+
+    conv_first1 = Conv2D(filters, (1, 7))(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    conv_first1 = Conv2D(filters, (1, 11))(conv_first1)
+    alog.info(conv_first1.shape)
+
+    conv_first1 = Conv2D(filters, (1, 8))(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
+    alog.info(conv_first1.shape)
+
+    conv_first1 = Conv2D(filters, (1, 7))(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+
+    alog.info(conv_first1)
     # build the inception module
     convsecond_1 = Conv2D(64, (1, 1), padding='same')(conv_first1)
     convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
@@ -98,6 +115,8 @@ def Model(
     convsecond_output = tf.keras.layers.concatenate(
         [convsecond_1, convsecond_2, convsecond_3], axis=3)
 
+    alog.info(convsecond_output.shape)
+
     # use the MC dropout here
     conv_reshape = Reshape(
         (int(convsecond_output.shape[1]), int(convsecond_output.shape[3])))(
@@ -105,6 +124,8 @@ def Model(
 
     # build the last LSTM layer
     out = LSTM(64, return_sequences=False, stateful=False)(conv_reshape)
+
+    alog.info(out.shape)
 
     return tf.keras.Model(inputs=inputs, outputs=out)
 
