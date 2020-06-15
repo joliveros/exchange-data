@@ -75,7 +75,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         while True:
             if len(self.workers) < self.max_workers and len(self.intervals) > 0:
                 interval_dates = self.intervals.pop()
-                alog.debug(f'#### ranges left {len(self.intervals)} ####')
+                # alog.info(f'#### ranges left {len(self.intervals)} ####')
                 self.kwargs['start_date'] = interval_dates[0]
                 self.kwargs['end_date'] = interval_dates[1]
                 self.kwargs['directory_name'] = self.directory_name

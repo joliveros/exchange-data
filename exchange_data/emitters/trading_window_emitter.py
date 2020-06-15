@@ -43,7 +43,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
         self.start_date = now - interval_delta
         self.end_date = now
-        self.channel_name = 'XBTUSD_OrderBookFrame_depth_8'
+        self.channel_name = f'{symbol.value}_OrderBookFrame_depth_40'
 
         self.on('2s', self.next_intervals)
 
