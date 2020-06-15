@@ -18,7 +18,7 @@ class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
     worker_class = OrderBookTFRecord
 
     def __init__(self, depth, clear, **kwargs):
-        channel_name=f'orderbook_img_frame_XBTUSD_{depth}'
+        channel_name= f'XBTUSD_OrderBookFrame_depth_{depth}'
         super().__init__(depth=depth, channel_name=channel_name, **kwargs)
 
         if clear:

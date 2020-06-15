@@ -14,7 +14,7 @@ from tensorflow.core.example.feature_pb2 import Feature, Int64List, FloatList, \
 from tensorflow.python.lib.io.tf_record import TFRecordWriter, \
     TFRecordCompressionType
 from exchange_data.emitters.orderbook_training_data import TrainingDataBase
-from exchange_data.streamers._orderbook_img import OrderbookImgStreamer
+from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
 
 import alog
@@ -96,8 +96,14 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
                 self.features[ix] = feature
 
     def queue_obs(self):
-        timestamp, best_ask, best_bid, orderbook_img = next(self)
-        orderbook_img = np.asarray(json.loads(orderbook_img))
+        timestamp, best_ask, best_bid, orderbook_levels = next(self)
+        orderbook_levels = np.asarray(json.loads(orderbook_levels))
+        orderbook_levels = np.delete(orderbook_levels, 0, 1)
+        orderbook_levels[0][0] = np.flip(orderbook_levels[0][0])
+        orderbook_levels[1] =  orderbook_levels[1] * -1
+        max = 3.0e6
+        orderbook_levels = np.reshape(orderbook_levels, (80, 1)) / max
+        orderbook_levels = np.clip(orderbook_levels, a_min=0.0, a_max=max)
 
         self.last_best_ask = self.best_ask
         self.last_best_bid = self.best_bid
@@ -105,7 +111,7 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         self.best_bid = best_bid
         self._last_datetime = timestamp
 
-        self.frames.append((timestamp, best_ask, best_bid, orderbook_img))
+        self.frames.append((timestamp, best_ask, best_bid, orderbook_levels))
 
         if len(self.frames) > 1:
             position = self.expected_position.value
@@ -124,9 +130,6 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
             self.features.append((position, data))
 
     def write_observation(self, writer, features):
-        # alog.info(features['datetime'])
-        # alog.info(features['expected_position'])
-
         example: Example = Example(
             features=Features(feature=features)
         )
@@ -143,7 +146,7 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
 
 
-class OrderBookTFRecord(OrderbookImgStreamer, OrderBookTFRecordBase):
+class OrderBookTFRecord(OrderBookLevelStreamer, OrderBookTFRecordBase):
     def __init__(
         self,
         **kwargs

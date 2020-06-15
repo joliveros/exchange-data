@@ -213,6 +213,7 @@ class BitmexOrderBookEmitter(
         for depth in self.depths:
             channel = self.channel_for_depth(depth)
             frame_slice = self.slices.get(channel)
+            alog.info(channel)
 
             if frame_slice is not None:
                 msg = f'{self.channel_for_depth(depth)}_5s', str(frame_slice)
@@ -239,7 +240,7 @@ class BitmexOrderBookEmitter(
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(symbol: str, **kwargs):
     recorder = BitmexOrderBookEmitter(
-        depths=[8, 21],
+        depths=[0, 21, 40],
         symbol=BitmexChannels[symbol],
         subscriptions_enabled=True,
         **kwargs

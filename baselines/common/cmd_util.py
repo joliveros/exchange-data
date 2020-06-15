@@ -3,6 +3,9 @@ Helpers for scripts like run_atari.py.
 """
 
 import os
+
+import alog
+
 try:
     from mpi4py import MPI
 except ImportError:
@@ -87,6 +90,9 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
 
     if reward_scale != 1:
         env = retro_wrappers.RewardScaler(env, reward_scale)
+
+    alog.info(env)
+    alog.info(vars(env))
 
     return env
 
@@ -182,6 +188,8 @@ def common_arg_parser():
     parser.add_argument('--reward_scale', help='Reward scale factor. Default: 1.0', default=1.0, type=float)
     parser.add_argument('--save_path', help='Path to save trained model to', default=None, type=str)
     parser.add_argument('--run_name', help='', default='default', type=str)
+    parser.add_argument('--levels', help='orderbook levels', default=40,
+                        type=int)
     parser.add_argument('--save_video_interval', help='Save video every x steps (0 = disabled)', default=0, type=int)
     parser.add_argument('--save_video_length', help='Length of recorded video. Default: 200', default=200, type=int)
     parser.add_argument('--seed', help='RNG seed', type=int, default=None)

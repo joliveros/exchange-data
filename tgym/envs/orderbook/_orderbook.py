@@ -35,6 +35,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self,
         start_date,
         end_date,
+        levels=30,
         summary_interval=120,
         database_name = 'bitmex',
         eval_mode=False,
@@ -161,16 +162,17 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.reset_count = 0
         self.start_date = start_date
         self.end_date = end_date
+        self.levels = levels
 
         self.start_date -= timedelta(seconds=self.max_frames + 1)
 
         high = np.full(
-            (max_frames, self.frame_width, self.frame_width, 3),
+            (max_frames, levels * 2, 1),
             1.0,
             dtype=np.float32
         )
         low = np.full(
-            (max_frames, self.frame_width, self.frame_width, 3),
+            (max_frames, levels * 2, 1),
             0.0,
             dtype=np.float32
         )

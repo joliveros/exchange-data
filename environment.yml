@@ -51,3 +51,4 @@ dependencies:
     - mplfinance
     - timestamp
     - tqdm
+    - tensorflow-datasets

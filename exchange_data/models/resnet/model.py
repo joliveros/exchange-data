@@ -26,13 +26,11 @@ Input = tf.keras.Input
 LSTM = tf.keras.layers.LSTM
 ConvLSTM2D = tf.keras.layers.ConvLSTM2D
 Reshape = tf.keras.layers.Reshape
-ResNet = tf.keras.applications.ResNet152V2
-NasNet = tf.keras.applications.NASNetMobile
 Sequential = tf.keras.models.Sequential
-SGD = tf.keras.optimizers.SGD
-Adam = tf.keras.optimizers.Adam
 TimeDistributed = tf.keras.layers.TimeDistributed
-
+Conv2D = tf.keras.layers.Conv2D
+LeakyReLU = tf.keras.layers.LeakyReLU
+MaxPooling2D = tf.keras.layers.MaxPooling2D
 
 def Model(
     input_shape,
@@ -49,133 +47,66 @@ def Model(
     include_last=True,
     **kwargs
 ):
-    model = Sequential()
+    alog.info(input_shape)
+    filters = 32
+    inputs = Input(shape=input_shape)
+    # build the convolutional block
+    conv_first1 = Conv2D(32, (1, 2), strides=(1, 2))(inputs)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    input = Input(shape=input_shape)
+    conv_first1 = Conv2D(filters, (1, 2), strides=(1, 2))(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    # input = Input(batch_input_shape=(batch_size,) + input_shape)
+    conv_first1 = Conv2D(filters, (1, 10))(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    model.add(input)
+    conv_first1 = Conv2D(filters, (1, 11))(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
+    conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
+    conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    base = tf.keras.applications.EfficientNetB0(
-        include_top=False,
-        classes=num_categories,
-        # input_shape=(224, 224, 3)
-        pooling='max'
-    )
+    # build the inception module
+    convsecond_1 = Conv2D(64, (1, 1), padding='same')(conv_first1)
+    convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
+    convsecond_1 = Conv2D(64, (3, 1), padding='same')(convsecond_1)
+    convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
 
-    # for layer in base.layers:
-    #     layer.trainable = False
+    convsecond_2 = Conv2D(64, (1, 1), padding='same')(conv_first1)
+    convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
+    convsecond_2 = Conv2D(64, (5, 1), padding='same')(convsecond_2)
+    convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
 
-    model.add(TimeDistributed(
-        base,
-        input_shape=input_shape
-    ))
-    alog.info(model.input)
-    alog.info(model.output)
+    convsecond_3 = MaxPooling2D((3, 1), strides=(1, 1), padding='same')(
+        conv_first1)
+    convsecond_3 = Conv2D(64, (1, 1), padding='same')(convsecond_3)
+    convsecond_3 = LeakyReLU(alpha=0.01)(convsecond_3)
 
-    # model.add(TimeDistributed(tf.keras.layers.GlobalAveragePooling2D()))
+    convsecond_output = tf.keras.layers.concatenate(
+        [convsecond_1, convsecond_2, convsecond_3], axis=3)
 
-    alog.info(model.output)
+    # use the MC dropout here
+    conv_reshape = Reshape(
+        (int(convsecond_output.shape[1]), int(convsecond_output.shape[3])))(
+        convsecond_output)
 
-    # model.add(ConvLSTM2D(
-    #     filters=filters,
-    #     strides=(kernel_dim, kernel_dim),
-    #     kernel_size=(kernel_dim, kernel_dim),
-    #     padding='same',
-    #     activation='relu',
-    #     stateful=False,
-    #     return_sequences=False
-    # ))
-    last_dim = model.output.shape[-1]
+    # build the last LSTM layer
+    out = LSTM(64, return_sequences=False, stateful=False)(conv_reshape)
 
-    model.add(tf.keras.layers.Conv1D(
-        filters=last_dim / kernel_dim,
-        kernel_size=kernel_dim,
-        padding='same',
-        activation='relu'
-    ))
-
-    alog.info(model.output)
-
-    while len(model.output.shape) > 2 and model.output.shape[-1] > 2:
-        last_dim = model.output.shape[-1]
-
-        if last_dim < kernel_dim:
-            kernel_dim = 2
-
-        filters = int(last_dim/kernel_dim)
-
-        model.add(tf.keras.layers.Conv1D(
-            filters=filters,
-            kernel_size=kernel_dim,
-            padding='same',
-            activation='relu'
-        ))
-
-        alog.info(model.output)
-
-        # if model.output.shape[-2] > 1:
-        #     model.add(tf.keras.layers.MaxPooling1D(pool_size=(2,)))
-
-        alog.info(model.output)
-        # model.add(tf.keras.layers.Dropout(0.5))
-
-
-    # model.add(LSTM(
-    #     lstm_units,
-    #     # input_shape=(None, 4, 2),
-    #     stateful=False,
-    #     return_sequences=True
-    # ))
-    #
-    # model.add(LSTM(
-    #     lstm_units,
-    #     # input_shape=(None, 4, 2),
-    #     stateful=False,
-    #     return_sequences=True
-    # ))
-    # model.add(LSTM(
-    #     lstm_units,
-    #     # input_shape=(None, 4, 2),
-    #     stateful=False,
-    #     return_sequences=False
-    # ))
-    # alog.info(model.output)
-
-    model.add(Flatten())
-
-    alog.info(model.output)
-
-    model.add(Dense(model.output.shape[-1], activation='relu'))
-
-    # model.add(LSTM(
-    #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
-    #                                           frame_width, 3),
-    #     return_sequences=False
-    # ))
-    # model.add(LSTM(
-    #     12, stateful=False, batch_input_shape=(sequence_length, 1, frame_width,
-    #                                           frame_width, 3),
-    #     return_sequences=False
-    # ))
-
-    alog.info(model.output)
-
-    if include_last:
-        model.add(Dense(num_categories, activation='softmax'))
-
-        optimizer = Adam(learning_rate=learning_rate, epsilon=epsilon)
-
-        model.compile(
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy'],
-            optimizer=optimizer
-        )
-
-        return model
-    else:
-        return model
+    return tf.keras.Model(inputs=inputs, outputs=out)
 
 
 class ModelTrainer(object):

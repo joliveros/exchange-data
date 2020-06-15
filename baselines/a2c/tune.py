@@ -31,7 +31,7 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 8000
+    steps = 100000
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
@@ -67,11 +67,12 @@ def run(trial: Trial):
         gamestate=None,
         leverage=1.0,
         log_path=None,
-        max_frames=4,
-        max_loss=-0.1,
+        max_frames=120,
+        max_loss=-0.99,
         max_negative_pnl=-0.0040571,
         max_negative_pnl_delay=0,
         max_steps=steps,
+        levels=40,
         min_change=1.0,
         min_steps=50,
         network='nasnet',
@@ -97,15 +98,15 @@ def run(trial: Trial):
         'kernel_dim': 4,
         'log_interval': 100,
         'lr': hparams.get('lr'),
-        'nsteps': 3,
+        'nsteps': 80,
     }
 
-    # model, env = train(args, extra_args)
+    model, env = train(args, extra_args)
 
-    try:
-        model, env = train(args, extra_args)
-    except:
-        return 0.0
+    # try:
+    #     model, env = train(args, extra_args)
+    # except:
+    #     return 0.0
 
     return model.capital
 

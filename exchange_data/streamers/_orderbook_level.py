@@ -9,13 +9,13 @@ import alog
 import click
 
 
-class OrderbookImgStreamer(BitmexStreamer):
-    def __init__(self, depth, groupby='2s', symbol = BitmexChannels.XBTUSD,
+class OrderBookLevelStreamer(BitmexStreamer):
+    def __init__(self, depth=40, groupby='2s', symbol = BitmexChannels.XBTUSD,
                  **kwargs):
         super().__init__(**kwargs)
         self.groupby = groupby
         self.last_timestamp = self.start_date
-        self.channel_name = f'orderbook_img_frame_{symbol.value}_{depth}'
+        self.channel_name = f'{symbol.value}_OrderBookFrame_depth_{depth}'
         self.current_query = self.get_orderbook_frames()
 
     def orderbook_frame_query(self):
@@ -41,9 +41,9 @@ class OrderbookImgStreamer(BitmexStreamer):
             if self.last_timestamp != timestamp:
                 best_bid = data['data_best_bid']
                 best_ask = data['data_best_ask']
-                orderbook_img = data['data_frame']
+                levels = data['data_data']
                 self.last_timestamp = timestamp
-                yield timestamp, best_ask, best_bid, orderbook_img
+                yield timestamp, best_ask, best_bid, levels
 
             self.last_timestamp = timestamp
 
@@ -74,7 +74,7 @@ def main(**kwargs):
     end_date = DateTimeUtils.now()
     start_date = end_date - timedelta(seconds=60)
 
-    streamer = OrderbookImgStreamer(
+    streamer = OrderBookLevelStreamer(
         database_name='bitmex',
         end_date=end_date,
         start_date=start_date,

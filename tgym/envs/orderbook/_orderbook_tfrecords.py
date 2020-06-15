@@ -43,7 +43,7 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.num_env = num_env
         self.max_steps = max_steps
         kwargs['batch_size'] = 1
-        self.dataset = dataset(**kwargs)
+        self.dataset = dataset(epochs=1000, **kwargs)
         self._expected_position = None
         self.observations = None
         self.prune_capital = 1.01
@@ -84,8 +84,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
         self._best_ask = best_ask
         self._best_bid = best_bid
-
-        alog.info(AsciiImage(np.copy(frame), new_width=21))
 
         self.frames.append(frame)
         self.expected_position = expected_position
