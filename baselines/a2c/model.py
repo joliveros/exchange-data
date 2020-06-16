@@ -64,7 +64,9 @@ class Model(tf.keras.Model):
             policy_network = policy_network_fn(ob_space.shape)
 
             policy_network.summary()
+            value_network = policy_network_fn(ob_space.shape)
         else:
+            value_network = network
             policy_network = network
 
         self.run_name = run_name
@@ -76,7 +78,9 @@ class Model(tf.keras.Model):
         self.vf_coef = vf_coef
         self.max_grad_norm = max_grad_norm
 
-        self.train_model = PolicyWithValue(ac_space, policy_network, value_network=None, estimate_q=False)
+        self.train_model = PolicyWithValue(ac_space, policy_network,
+                                           value_network=value_network,
+                                           estimate_q=False)
         self.step = self.train_model.step
         self.value = self.train_model.value
         self.initial_state = self.train_model.initial_state

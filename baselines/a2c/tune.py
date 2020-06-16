@@ -31,16 +31,16 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 28800 * 3
+    steps = 200000
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
         #     2, 4, 8, 16, 32, 64, 128, 256
         # ])
-        lr=trial.suggest_float('lr', 0.00001, 0.005),
+        # lr=trial.suggest_float('lr', 0.001, 0.01),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
-        #flat_reward=trial.suggest_float('flat_reward', 0.79, 1.0),
+        # flat_reward=trial.suggest_float('flat_reward', 0.005, 0.06),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
         # step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
@@ -63,7 +63,7 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=0.94035,
+        flat_reward=1.0,
         gamestate=None,
         leverage=1.0,
         log_path=None,
@@ -97,8 +97,8 @@ def run(trial: Trial):
         'hparams': hparams,
         'kernel_dim': 4,
         'log_interval': 100,
-        'lr': hparams.get('lr'),
-        'nsteps': 320,
+        'lr': 0.01,
+        'nsteps': 12,
     }
 
     model, env = train(args, extra_args)
@@ -113,6 +113,16 @@ def run(trial: Trial):
 
 @click.command()
 def main(**kwargs):
+    physical_devices = tf.config.list_physical_devices('GPU')
+
+    tf.config.set_logical_device_configuration(
+        physical_devices[0],
+        [tf.config.LogicalDeviceConfiguration(memory_limit=100),
+         tf.config.LogicalDeviceConfiguration(memory_limit=100)])
+
+    logical_devices = tf.config.list_logical_devices('GPU')
+
+    assert len(logical_devices) == len(physical_devices) + 1
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     session_limit = 1000
 

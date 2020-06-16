@@ -36,6 +36,7 @@ def Model(
     input_shape,
     sequence_length,
     batch_size,
+    gpu_fraction=0.5,
     filters=None,
     kernel_dim=4,
     lstm_units=2,
@@ -48,7 +49,7 @@ def Model(
     **kwargs
 ):
     alog.info(input_shape)
-    filters = 42
+    filters = 32
     inputs = Input(shape=input_shape)
 
     # build the convolutional block

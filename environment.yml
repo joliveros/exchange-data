@@ -48,7 +48,7 @@ dependencies:
     - statsd
     - stringcase
     - tf-nightly-gpu
-    - mplfinance
+    - plotly
     - timestamp
     - tqdm
     - tensorflow-datasets
