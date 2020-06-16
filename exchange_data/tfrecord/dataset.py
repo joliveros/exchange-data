@@ -46,6 +46,8 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
 
     files = [fd[-1] for fd in file_dates]
 
+    # alog.info(alog.pformat(files))
+
     files = tf.compat.v2.data.Dataset.from_tensor_slices(files)
 
     def read_file(filename):

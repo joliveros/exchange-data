@@ -77,6 +77,7 @@ class BitmexOrderBookEmitter(
             self.on(TimeChannels.Tick.value, self.save_frame)
             self.on(TimeChannels.Tick.value, self.emit_frames)
             self.on('5s', self.emit_frames_5s)
+            self.on('2s', self.emit_frames_2s)
             self.on(self.symbol.value, self.message)
 
         if self.should_reset_orderbook:
@@ -112,6 +113,7 @@ class BitmexOrderBookEmitter(
 
     def start(self, channels=[]):
         self.sub([
+            '2s',
             '5s',
             self.orderbook_l2_channel,
             self.symbol,
@@ -213,10 +215,18 @@ class BitmexOrderBookEmitter(
         for depth in self.depths:
             channel = self.channel_for_depth(depth)
             frame_slice = self.slices.get(channel)
-            alog.info(channel)
 
             if frame_slice is not None:
                 msg = f'{self.channel_for_depth(depth)}_5s', str(frame_slice)
+                self.publish(*msg)
+
+    def emit_frames_2s(self, timestamp):
+        for depth in self.depths:
+            channel = self.channel_for_depth(depth)
+            frame_slice = self.slices.get(channel)
+
+            if frame_slice is not None:
+                msg = f'{self.channel_for_depth(depth)}_2s', str(frame_slice)
                 self.publish(*msg)
 
     def save_frame(self, timestamp):

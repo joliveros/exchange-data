@@ -4,13 +4,16 @@ import gzip
 import logging
 from argparse import Namespace
 from collections import deque
+from datetime import timedelta
 
 from baselines.a2c.model import Model
 from baselines.run import build_env
 from exchange_data import settings
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
+from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from exchange_data.trading import Positions
+from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from pathlib import Path
 from exchange_data import Measurement, NumpyEncoder, settings
@@ -33,7 +36,7 @@ class PredictionEmitter(Messenger, TradeJob):
         self.symbol = symbol
 
         super().__init__(symbol=symbol, decode=False, **kwargs)
-        self.orderbook_channel = f'orderbook_img_frame_{symbol.value}_{depth}'
+        self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}_2s'
         self.saved_model = f'{Path.home()}/.exchange-data/models/a2c/model_export/{run_name}.h5'
 
         self.on(self.orderbook_channel, self.emit_prediction)
@@ -52,7 +55,7 @@ class PredictionEmitter(Messenger, TradeJob):
             log_interval=100,
             log_path=None,
             lr=0.00021397,
-            max_frames=2,
+            max_frames=48,
             max_loss=-0.02,
             max_steps=40,
             kernel_dim=4,
@@ -75,6 +78,8 @@ class PredictionEmitter(Messenger, TradeJob):
         self.frames = deque(maxlen=env_args.max_frames)
         self.env = build_env(env_args)
 
+        self.load_previous_frames(depth)
+
         env_args.env = self.env
 
         load_model = tf.keras.models.load_model(self.saved_model)
@@ -85,16 +90,36 @@ class PredictionEmitter(Messenger, TradeJob):
             **env_args.__dict__
         )
 
+    def load_previous_frames(self, depth):
+        now = DateTimeUtils.now()
+        start_date = now - timedelta(seconds=48)
+        levels = OrderBookLevelStreamer(
+            start_date=start_date,
+            end_date=DateTimeUtils.now(),
+            database_name='bitmex',
+            depth=depth,
+            groupby='2s',
+            window_size='48s',
+            sample_interval='48s'
+        )
+
+        for timestamp, best_ask, best_bid, orderbook_img in levels:
+            if orderbook_img:
+                orderbook_img = json.loads(orderbook_img)
+                self.frames.append(orderbook_img)
+
     def emit_prediction(self, data):
-        frame = np.asarray(json.loads(data))
-        # alog.info(AsciiImage(np.copy(frame), new_width=21))
+        frame = json.loads(data)['fields']['data']
+        frame = json.loads(frame)
 
         self.frames.append(frame)
 
         if len(self.frames) < self.frames.maxlen:
             return
 
-        obs = tf.constant(np.asarray([self.frames]))
+        frames = np.asarray([self.frames])
+
+        obs = tf.constant(frames)
         actions, values, states, _ = self.model.step(obs)
         actions = actions._numpy()
 
@@ -103,7 +128,7 @@ class PredictionEmitter(Messenger, TradeJob):
             if position.value == actions[0]
         ][0]
 
-        # alog.info((position, actions[0]))
+        alog.info((position, actions[0]))
 
         self.publish(self.job_name, json.dumps({'data': position.value}))
 

@@ -1,3 +1,5 @@
+from optuna import TrialPruned
+
 from exchange_data import settings
 from exchange_data.trading import Positions
 from skimage import color
@@ -106,16 +108,13 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        # if self.pnl >= self.min_profit:
-        #     self.reward += self.postive_pnl_reward
-        # else:
-        #     reward = self.reward_ratio * -1.0
-        #     alog.info(f'close reward ### {reward}###')
-        #
-        #     self.reward += reward
-        #
-        # alog.info(self.reward)
-        pass
+        if self.pnl >= self.min_profit:
+            if self.position_length <= 30:
+                self.reward += self.reward_ratio
+        else:
+            self.reward += self.reward_ratio * -1.0
+
+        self.total_reward += self.total_reward
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
@@ -138,7 +137,8 @@ class Trade(Logging):
         #     self.reward += self.step_reward * self.step_reward_ratio
 
         if self.pnl > self.min_profit and self.pnl != 0.0:
-            self.reward += self.step_reward * self.step_reward_ratio
+            # self.reward += self.step_reward * self.step_reward_ratio
+            self.reward += 0.0
         else:
             self.reward += self.step_reward * self.step_reward_ratio * -1.0
 
@@ -280,8 +280,12 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # if self.best_ask == self.asks[-1]:
-        #     alog.info(f'### flat reward {self.flat_reward} ###')
+        # if self.position_length > 1000:
+        #     raise TrialPruned()
+
+        # if self.best_ask != self.asks[-1]:
+        #     self.reward -= self.reward_ratio
+        # else:
         #     self.reward += self.flat_reward
         #
         # self.total_reward += self.reward

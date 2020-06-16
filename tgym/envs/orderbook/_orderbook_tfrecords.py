@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from gym.spaces import Discrete
+from pandas import DataFrame
 
 from exchange_data.tfrecord.dataset import dataset
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
@@ -8,11 +9,13 @@ from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 
+import tensorflow_datasets as tfds
 import alog
 import click
 import numpy as np
 import random
 import tensorflow as tf
+import pandas as pd
 from optuna import TrialPruned
 
 from tgym.envs.orderbook.ascii_image import AsciiImage
@@ -43,7 +46,35 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self.num_env = num_env
         self.max_steps = max_steps
         kwargs['batch_size'] = 1
-        self.dataset = dataset(epochs=1000, **kwargs)
+        self.dataset = dataset(epochs=1, **kwargs)
+
+        frames = []
+
+        for data in tfds.as_numpy(dataset(**kwargs)):
+            data['datetime'] = DateTimeUtils\
+                .parse_datetime_str(data['datetime'][0].decode('utf8'))
+
+            frames.append(data)
+
+        frames_df = DataFrame.from_dict(frames)
+        alog.info(frames_df)
+        alog.info(frames_df.shape)
+
+        frames_df.drop_duplicates(subset=['datetime'], inplace=True)
+
+        alog.info(frames_df)
+        alog.info(frames_df.shape)
+
+        frames_df = frames_df.set_index('datetime')
+
+        frames_df = frames_df.sort_index()
+
+        frames_df.reset_index(drop=False, inplace=True)
+
+        alog.info(frames_df)
+        alog.info(frames_df.shape)
+
+        self.frames_df = frames_df
         self.observations = None
         self.prune_capital = 1.01
         self.min_steps = min_steps
@@ -58,13 +89,15 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         return self._best_ask
 
     def _get_observation(self):
-        for data in self.dataset:
-            timestamp = DateTimeUtils.parse_datetime_str(data['datetime'].numpy()[0])
-            best_ask = data.get('best_ask').numpy()[-1][-1]
-            best_bid = data.get('best_bid').numpy()[-1][-1]
-            frame = data.get('frame').numpy()[0]
+        while True:
+            for i in range(len(self.frames_df)):
+                row = self.frames_df.loc[i]
+                best_ask = row['best_ask'][0][0]
+                best_bid = row['best_bid'][0][0]
+                frame = row['frame'][0]
+                timestamp = row['datetime'].to_pydatetime()
 
-            yield timestamp, best_ask, best_bid, frame
+                yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
         if self.observations is None:

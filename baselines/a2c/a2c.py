@@ -79,6 +79,7 @@ def learn(
                         For instance, 'mlp' network architecture has arguments num_hidden and num_layers.
 
     '''
+
     run_dir = f'{Path.home()}/.exchange-data/models/a2c/{run_name}'
     with tf.summary.create_file_writer(run_dir).as_default():
         hp.hparams(hparams, trial_id=run_name)
@@ -103,7 +104,7 @@ def learn(
 
         total_updates = model.nupdates + 1
 
-        train_updates = total_updates * 0.80
+        train_updates = total_updates * 0.95
         reset_for_eval = False
 
         for update in range(1, total_updates):
