@@ -25,6 +25,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
     def __init__(
         self,
         interval='2h',
+        plot=False,
         symbol=BitmexChannels.XBTUSD,
         **kwargs
     ):
@@ -34,6 +35,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
             **kwargs
         )
 
+        self.should_plot = plot
         self.symbol = symbol
         self.channels += ['2s']
 
@@ -55,7 +57,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         df.dropna(how='any', inplace=True)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
         df = df.set_index('time')
-        df = df.resample('5T').ohlc()
+        df = df.resample('1T').ohlc()
         df = df.reset_index(drop=False, col_level=1)
         df.columns = df.columns.droplevel()
         df = df[df.low != 0.0]
@@ -70,7 +72,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         dfv = df.copy()
         dfv = dfv.drop(columns=['open', 'high', 'low', 'close', 'log_ret'])
 
-        dfv = dfv[dfv.volatility > 0.00563]
+        dfv = dfv[dfv.volatility > 0.0015]
 
         required_volatility_ts = tuple(dfv.time)
 
@@ -136,6 +138,9 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
         self.intervals = intervals
 
+        if self.should_plot:
+            self.plot()
+
     def plot(self):
         df = self.df
         alog.info(df)
@@ -200,7 +205,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
         query = f'SELECT first(best_ask) AS data FROM {self.frame_channel} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY time(' \
-                f'2m);'
+                f'15s);'
 
         return self.query(query)
 
@@ -210,9 +215,14 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
 @click.command()
 @click.option('--interval', '-i', default='1h', type=str)
-def main(**kwargs):
+@click.option('--once', '-o', is_flag=True)
+@click.option('--plot', '-p', is_flag=True)
+def main(once, **kwargs):
     record = TradingWindowEmitter(**kwargs)
-    record.run()
+    if once:
+        record.next_intervals()
+    else:
+        record.run()
 
 
 if __name__ == '__main__':
