@@ -35,6 +35,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self,
         start_date,
         end_date,
+        min_steps=10,
         levels=30,
         summary_interval=120,
         database_name = 'bitmex',
@@ -88,6 +89,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         )
 
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
+        self.min_steps = min_steps
         self.eval_mode = eval_mode
         self.max_negative_pnl_delay = max_negative_pnl_delay
         self.max_negative_pnl = max_negative_pnl
@@ -440,6 +442,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 reward_ratio=self.reward_ratio,
                 step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
+                min_steps=self.min_steps
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -458,7 +461,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 min_change=self.min_change,
                 step_reward_ratio=self.step_reward_ratio,
                 reward_ratio=self.reward_ratio,
-                step_reward=self.step_reward
+                step_reward=self.step_reward,
+                min_steps=self.min_steps
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -477,7 +481,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 reward_ratio=self.reward_ratio,
                 flat_reward=self.flat_reward,
                 step_reward_ratio=self.step_reward_ratio,
-                step_reward=self.step_reward
+                step_reward=self.step_reward,
+                min_steps=self.min_steps
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 

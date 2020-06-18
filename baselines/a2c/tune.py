@@ -31,7 +31,7 @@ def run(trial: Trial):
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 200000
+    steps = 2000000
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
@@ -40,7 +40,7 @@ def run(trial: Trial):
         # lr=trial.suggest_float('lr', 0.001, 0.01),
         # min_change=trial.suggest_float('min_change', 3.0, 14.0),
         # min_change=12.0,
-        # flat_reward=trial.suggest_float('flat_reward', 0.005, 0.06),
+        flat_reward=trial.suggest_float('flat_reward', 0.001, 0.06),
         # reward_ratio=trial.suggest_float('reward_ratio', 0.001, 1.0),
         # step_reward_ratio=trial.suggest_float('step_reward_ratio', 0.001, 1.0),
         # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
@@ -63,18 +63,17 @@ def run(trial: Trial):
         directory_name='default',
         env='tf-orderbook-v0',
         env_type=None,
-        flat_reward=1.0,
+        flat_reward=hparams.get('flat_reward'),
         gamestate=None,
         leverage=1.0,
         log_path=None,
         max_frames=48,
-        max_loss=-0.99,
-        max_negative_pnl=-0.0040571,
+        max_loss=-0.01,
+        max_negative_pnl=-0.0002648181835761804 * 4,
         max_negative_pnl_delay=0,
         max_steps=steps,
         levels=40,
-        min_change=4.0,
-        min_steps=50,
+        min_change=2.0,
         network='nasnet',
         num_env=1,
         num_timesteps=steps,

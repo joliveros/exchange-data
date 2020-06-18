@@ -33,9 +33,11 @@ class Trade(Logging):
         reward_ratio: float = 1.0,
         flat_reward: float = 1.0,
         step_reward_ratio: float = 1.0,
-        step_reward: float = 1.0
+        step_reward: float = 1.0,
+        min_steps: int = 10,
     ):
         Logging.__init__(self)
+        self.min_steps = min_steps
         self.flat_reward = flat_reward
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
@@ -65,6 +67,7 @@ class Trade(Logging):
         self.max_pnl = 0.0
         self._reward = 0.0
         self.total_reward = 0.0
+        self.done = False
 
     @property
     def is_long(self):
@@ -109,8 +112,7 @@ class Trade(Logging):
 
     def close(self):
         if self.pnl >= self.min_profit:
-            if self.position_length <= 30:
-                self.reward += self.reward_ratio
+            self.reward += self.reward_ratio
         else:
             self.reward += self.reward_ratio * -1.0
 
@@ -136,14 +138,14 @@ class Trade(Logging):
         # if pnl_delta > 0.0:
         #     self.reward += self.step_reward * self.step_reward_ratio
 
-        if self.pnl > self.min_profit and self.pnl != 0.0:
-            # self.reward += self.step_reward * self.step_reward_ratio
-            self.reward += 0.0
-        else:
-            self.reward += self.step_reward * self.step_reward_ratio * -1.0
+        if self.pnl > self.min_profit:
+            self.reward += self.step_reward * self.step_reward_ratio
+        # else:
+        #     self.reward += self.step_reward * self.step_reward_ratio * -1.0
 
         # if pnl_delta < 0.0:
-        #     self.reward -= self.step_reward * (1 - self.step_reward_ratio)
+            # self.reward -= self.step_reward * (1 - self.step_reward_ratio)
+            # self.done = True
 
         self.total_reward += self.reward
 
@@ -280,15 +282,18 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # if self.position_length > 1000:
-        #     raise TrialPruned()
+        if self.position_length > 30:
+            # raise TrialPruned()
+            self.done = True
 
-        # if self.best_ask != self.asks[-1]:
-        #     self.reward -= self.reward_ratio
-        # else:
-        #     self.reward += self.flat_reward
-        #
-        # self.total_reward += self.reward
+        # if len(self.asks) > 2:
+        #     if self.best_ask != self.asks[-2]:
+        #         self.reward -= self.reward_ratio
+        #         # self.done = True
+            # else:
+            #     self.reward += self.flat_reward
+
+        self.total_reward += self.reward
 
     def close(self):
         if settings.LOG_LEVEL == logging.DEBUG:

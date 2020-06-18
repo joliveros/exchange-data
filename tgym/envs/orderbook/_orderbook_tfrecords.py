@@ -22,8 +22,9 @@ from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, trial=None, min_steps=20, max_steps=30, num_env=1,
+    def __init__(self, trial=None, max_steps=30, num_env=1,
                  min_change=2.0,
+                 should_load_dataset=True,
                  **kwargs):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
@@ -42,43 +43,43 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             end_date=end_date,
             **kwargs
         )
+        self.should_load_dataset = should_load_dataset
         self.trial = trial
         self.num_env = num_env
         self.max_steps = max_steps
         kwargs['batch_size'] = 1
+
+        if self.should_load_dataset:
+            self.load_dataset(kwargs)
+
+        self.observations = None
+        self.prune_capital = 1.01
+        self.total_steps = 0
+        self.was_reset = False
+
+    def reset_dataset(self):
+        self.was_reset = True
+
+    def load_dataset(self, kwargs):
         self.dataset = dataset(epochs=1, **kwargs)
-
         frames = []
-
         for data in tfds.as_numpy(dataset(**kwargs)):
-            data['datetime'] = DateTimeUtils\
+            data['datetime'] = DateTimeUtils \
                 .parse_datetime_str(data['datetime'][0].decode('utf8'))
 
             frames.append(data)
-
         frames_df = DataFrame.from_dict(frames)
         alog.info(frames_df)
         alog.info(frames_df.shape)
-
         frames_df.drop_duplicates(subset=['datetime'], inplace=True)
-
         alog.info(frames_df)
         alog.info(frames_df.shape)
-
         frames_df = frames_df.set_index('datetime')
-
         frames_df = frames_df.sort_index()
-
         frames_df.reset_index(drop=False, inplace=True)
-
         alog.info(frames_df)
         alog.info(frames_df.shape)
-
         self.frames_df = frames_df
-        self.observations = None
-        self.prune_capital = 1.01
-        self.min_steps = min_steps
-        self.total_steps = 0
 
     @property
     def best_bid(self):
@@ -91,6 +92,9 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def _get_observation(self):
         while True:
             for i in range(len(self.frames_df)):
+                if self.was_reset:
+                    self.was_reset = False
+                    break
                 row = self.frames_df.loc[i]
                 best_ask = row['best_ask'][0][0]
                 best_bid = row['best_bid'][0][0]
@@ -130,20 +134,18 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         if self.trial:
             self.trial.report(self.capital, self.step_count)
 
-        if self.capital < self.min_capital and not self.eval_mode:
-            self.done = True
-            if self.trial:
-                raise TrialPruned()
+        if not self.eval_mode:
+            if self.capital < self.min_capital and not self.eval_mode:
+                self.done = True
 
-        if self.step_count >= self.max_steps:
-            self.done = True
+            if self.current_trade.pnl < self.max_negative_pnl:
+                self.done = True
 
-        # if self.current_trade.pnl <= self.max_negative_pnl:
-        #     self.done = True
-        #
-        #     if self.total_steps >= self.max_negative_pnl_delay and \
-        #         self.max_negative_pnl_delay > 0:
-        #         raise TrialPruned()
+            if self.current_trade.done:
+                self.done = True
+
+        if self.done:
+            self.reset_dataset()
 
         observation = self.get_observation()
 
