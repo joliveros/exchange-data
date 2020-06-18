@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from collections import deque
+
+from dateutil import tz
+
 from exchange_data import settings, Database, Measurement
 from exchange_data.bitmex_orderbook import BitmexOrderBook
 from exchange_data.channels import BitmexChannels
@@ -65,6 +68,7 @@ class BitmexOrderBookEmitter(
         self.save_data = save_data
         self.slices = {}
         self.frame_slice = None
+        self.queued_frames = []
 
         self.orderbook_l2_channel = OrderBookL2Emitter\
             .generate_channel_name('1m', self.symbol)
@@ -75,9 +79,9 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on(TimeChannels.Tick.value, self.save_frame)
-            self.on(TimeChannels.Tick.value, self.emit_frames)
-            self.on('5s', self.emit_frames_5s)
-            self.on('2s', self.emit_frames_2s)
+            self.on(TimeChannels.Tick.value, self.queue_frame('tick'))
+            self.on('5s', self.queue_frame('5s'))
+            self.on('2s', self.queue_frame('2s'))
             self.on(self.symbol.value, self.message)
 
         if self.should_reset_orderbook:
@@ -204,34 +208,35 @@ class BitmexOrderBookEmitter(
                            tags={'symbol': self.symbol.value},
                            time=timestamp, fields=fields)
 
-    def emit_frames(self, timestamp):
+    def queue_frame(self, frame_key):
+        this = self
+
+        def _queue_frame(*args):
+            this.queued_frames.append(frame_key)
+
+        return _queue_frame
+
+    def emit_frames(self, timestamp, frame_key):
         for depth in self.depths:
             frame_slice = self.slices.get(self.channel_for_depth(depth))
             if frame_slice is not None:
-                msg = self.channel_for_depth(depth), str(frame_slice)
-                self.publish(*msg)
+                if frame_key == 'tick':
+                    channel = self.channel_for_depth(depth)
+                else:
+                    channel = f'{self.channel_for_depth(depth)}_{frame_key}'
+                msg = channel, str(frame_slice)
 
-    def emit_frames_5s(self, timestamp):
-        for depth in self.depths:
-            channel = self.channel_for_depth(depth)
-            frame_slice = self.slices.get(channel)
-
-            if frame_slice is not None:
-                msg = f'{self.channel_for_depth(depth)}_5s', str(frame_slice)
-                self.publish(*msg)
-
-    def emit_frames_2s(self, timestamp):
-        for depth in self.depths:
-            channel = self.channel_for_depth(depth)
-            frame_slice = self.slices.get(channel)
-
-            if frame_slice is not None:
-                msg = f'{self.channel_for_depth(depth)}_2s', str(frame_slice)
                 self.publish(*msg)
 
     def save_frame(self, timestamp):
-        self.last_timestamp = timestamp
+        self.last_timestamp = DateTimeUtils.parse_timestamp(timestamp,
+                                                            tz.tzutc())
+
         measurements = self.measurements(timestamp)
+
+        while len(self.queued_frames) > 0:
+            frame_key = self.queued_frames.pop()
+            self.emit_frames(timestamp, frame_key)
 
         if self.save_data:
             self.write_points(measurements, time_precision='ms')
