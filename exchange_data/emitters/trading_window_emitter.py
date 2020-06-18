@@ -43,15 +43,14 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
         self.start_date = now - interval_delta
         self.end_date = now
-        self.channel_name = f'{symbol.value}_OrderBookFrame_depth_40'
+        self.channel_name = 'should_trade'
+        self.frame_channel = f'{symbol.value}_OrderBookFrame_depth_40'
 
         self.on('2s', self.next_intervals)
 
-        self.next_intervals(None)
-
     def next_intervals(self, timestamp=None):
         rows = [(tick['time'], tick['data']) for tick in self.query_price()[
-            self.channel_name]]
+            self.frame_channel]]
         df = DataFrame(rows, columns=['time', 'openbid'])
         df.dropna(how='any', inplace=True)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
@@ -117,9 +116,11 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
             if i == last_index:
                 if t[-1] == 'max' and t[0] in required_volatility_ts:
-                    alog.info('#### should trade ####')
+                    alog.info('## should trade ##')
+                    self.publish(self.channel_name, str(True))
                 else:
-                    alog.info('#### should not trade ####')
+                    alog.info('## should not trade ##')
+                    self.publish(self.channel_name, str(False))
 
         self.df = df
         self.exp3 = exp3
@@ -128,7 +129,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         self.minDf = minDf
 
         intervals = [i for i in intervals if i[0] in required_volatility_ts]
-        alog.info(intervals)
+
         intervals = [(pytz.utc.localize(i[0].to_pydatetime()),
                       pytz.utc.localize(i[1].to_pydatetime())) for i in
                      intervals]
@@ -197,7 +198,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         start_date = self.format_date_query(self.start_date)
         end_date = self.format_date_query(self.end_date)
 
-        query = f'SELECT first(best_ask) AS data FROM {self.channel_name} ' \
+        query = f'SELECT first(best_ask) AS data FROM {self.frame_channel} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY time(' \
                 f'2m);'
 
@@ -211,7 +212,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 @click.option('--interval', '-i', default='1h', type=str)
 def main(**kwargs):
     record = TradingWindowEmitter(**kwargs)
-    # record.run()
+    record.run()
 
 
 if __name__ == '__main__':
