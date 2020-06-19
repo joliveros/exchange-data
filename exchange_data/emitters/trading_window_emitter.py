@@ -130,7 +130,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         self.maxDf = maxDf
         self.minDf = minDf
 
-        intervals = [i for i in intervals if i[0] in required_volatility_ts]
+        # intervals = [i for i in intervals if i[0] in required_volatility_ts]
 
         intervals = [(pytz.utc.localize(i[0].to_pydatetime()),
                       pytz.utc.localize(i[1].to_pydatetime())) for i in
