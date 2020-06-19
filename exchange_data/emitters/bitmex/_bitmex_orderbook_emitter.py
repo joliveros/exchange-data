@@ -14,7 +14,6 @@ from exchange_data.orderbook._ordertree import OrderTree
 from exchange_data.utils import NoValue, DateTimeUtils, EventEmitterBase
 from functools import lru_cache
 from numpy.core.multiarray import ndarray
-from pyee import EventEmitter
 
 import alog
 import click
@@ -174,6 +173,7 @@ class BitmexOrderBookEmitter(
 
     def measurements(self, timestamp):
         frame = self.generate_frame()
+
         measurements = []
 
         if isinstance(timestamp, str):

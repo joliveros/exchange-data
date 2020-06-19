@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import alog
 from bitmex_websocket import Instrument
 from bitmex_websocket.constants import InstrumentChannels
 from exchange_data import settings
@@ -19,16 +20,23 @@ class BitmexEmitterBase(Messenger):
         super().__init__(symbol=symbol, **kwargs)
 
 
-class BitmexInstrumentEmitter(BitmexEmitterBase, Instrument):
+class BitmexInstrumentEmitter(Instrument, BitmexEmitterBase):
     measurements = []
-    channels = [
-        # InstrumentChannels.quote,
-        InstrumentChannels.trade,
-        InstrumentChannels.orderBookL2
-    ]
 
     def __init__(self, symbol: BitmexChannels, **kwargs):
-        super().__init__(symbol=symbol.value, channels=self.channels, **kwargs)
+        channels = [
+            # InstrumentChannels.quote,
+            InstrumentChannels.trade,
+            InstrumentChannels.orderBookL2
+        ]
+
+        super().__init__(
+            symbol=symbol.value,
+            channels=channels,
+            **kwargs
+        )
+
+        BitmexEmitterBase.__init__(self, symbol=symbol.value, **kwargs)
 
         self.symbol = symbol.value
 
@@ -41,6 +49,7 @@ class BitmexInstrumentEmitter(BitmexEmitterBase, Instrument):
             data = json.dumps(data)
 
         msg = self.symbol, data
+
         self.publish(*msg)
 
     def start(self):

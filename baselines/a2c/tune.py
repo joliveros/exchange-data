@@ -69,7 +69,7 @@ def run(trial: Trial):
         log_path=None,
         max_frames=48,
         max_loss=-0.01,
-        max_negative_pnl=-0.0002648181835761804 * 1,
+        max_negative_pnl=-0.0002648181835761804 * 2,
         max_negative_pnl_delay=0,
         max_steps=steps,
         levels=40,

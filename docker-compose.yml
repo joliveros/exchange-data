@@ -196,7 +196,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/trading_window_emitter.py -i 1d"
+            ./exchange_data/emitters/trading_window_emitter.py -i 6h"
         environment:
             - LOG_LEVEL=INFO
         env_file:

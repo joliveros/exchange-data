@@ -30,7 +30,11 @@ class Messenger(EventEmitterBase):
         self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None
-        self.channels = []
+
+        if 'channels' in vars(self):
+            self.channels += []
+        else:
+            self.channels = []
 
         self.on(Events.Message.value, self.handler)
 
@@ -48,9 +52,9 @@ class Messenger(EventEmitterBase):
             for channel in channels
         ]
 
-        self._pubsub = self.redis_client.pubsub()
-
         alog.info(_channels)
+
+        self._pubsub = self.redis_client.pubsub()
 
         self._pubsub.subscribe(_channels)
 

@@ -117,14 +117,18 @@ class Base(object):
 
 
 class EventEmitterBase(ABC):
+    event_emitter_class = EventEmitter
 
     def __init__(self, **kwargs):
         if 'event_emitter' not in self.__dict__:
-            self.event_emitter = EventEmitter()
-
-        super().__init__(**kwargs)
+            self.event_emitter = self.event_emitter_class()
 
         self.on('error', self.raise_error)
+
+        try:
+            super().__init__(**kwargs)
+        except:
+            pass
 
     def raise_error(self, error):
         alog.info(error)
