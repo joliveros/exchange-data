@@ -143,9 +143,9 @@ class Trade(Logging):
         # else:
         #     self.reward += self.step_reward * self.step_reward_ratio * -1.0
 
-        # if pnl_delta < 0.0:
-            # self.reward -= self.step_reward * (1 - self.step_reward_ratio)
-            # self.done = True
+        if pnl_delta < 0.0 and self.position_length > 6:
+            self.reward -= self.step_reward * self.step_reward_ratio
+            self.done = True
 
         self.total_reward += self.reward
 
@@ -282,9 +282,9 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        if self.position_length > 30:
-            # raise TrialPruned()
-            self.done = True
+        # if self.position_length > 30:
+        #     # raise TrialPruned()
+        #     self.done = True
 
         # if len(self.asks) > 2:
         #     if self.best_ask != self.asks[-2]:

@@ -117,7 +117,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
                     intervals += [interval]
 
             if i == last_index:
-                if t[-1] == 'max' and t[0] in required_volatility_ts:
+                if t[-1] == 'max':
                     alog.info('## should trade ##')
                     self.publish(self.channel_name, str(True))
                 else:

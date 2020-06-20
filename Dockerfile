@@ -1,15 +1,13 @@
 FROM registry.rubercubic.com:5001/exchange-data:base
 
 ENV NAME exchange-data
-ENV LD_LIBRARY_PATH /usr/local/cuda-10.1/compat/:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+
 USER root
 
 WORKDIR /src
 
 COPY . .
 
-#RUN bash -c "conda env update -f environment.yml"
-
-RUN bash -c "source ~/.bashrc && pip install -e ."
+RUN pip install -e .
 
 CMD ["./exchange-data"]
