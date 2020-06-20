@@ -1,17 +1,24 @@
-FROM registry.rubercubic.com:5001/miniconda
+FROM python:3.6-stretch
 
 WORKDIR /src
 
-COPY environment.yml .
 COPY .bashrc /root
 
 RUN apt-get update --fix-missing && \
     apt-get install -y \
-    libsm6 libxext6 libxrender-dev \
-     && \
+    bzip2 \
+    ca-certificates \
+    curl \
+    git\
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-#RUN bash -c "conda update -n base -c defaults conda"
+WORKDIR /src
 
-RUN bash -c "conda env create -f environment.yml"
+COPY . .
+
+RUN pip install -r requirements.txt

@@ -16,6 +16,3 @@
 # alias rm='rm -i'
 # alias cp='cp -i'
 # alias mv='mv -i'
-
-. /opt/conda/etc/profile.d/conda.sh
-conda activate $NAME
