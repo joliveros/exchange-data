@@ -1,21 +1,24 @@
 #!/usr/bin/env python
-import shutil
 
-import tensorflow as tf
-
-from exchange_data import settings
-from exchange_data.tfrecord.dataset import dataset
-from exchange_data.utils import EventEmitterBase
-from exchange_data.emitters import Messenger
+from pandas import DataFrame
 from pathlib import Path
+
 from pytimeparse.timeparse import timeparse
+from tensorflow_estimator.python.estimator.inputs.pandas_io import \
+    pandas_input_fn
 from tensorflow_estimator.python.estimator.keras import model_to_estimator
 from tensorflow_estimator.python.estimator.run_config import RunConfig
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
+
 import alog
 import click
 import logging
+import shutil
+import tensorflow as tf
+import pandas as pd
+import numpy as np
 
+from exchange_data.tfrecord.processed_dataset import dataset
 
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
@@ -33,24 +36,23 @@ LeakyReLU = tf.keras.layers.LeakyReLU
 MaxPooling2D = tf.keras.layers.MaxPooling2D
 
 def Model(
-    input_shape,
+    levels,
     sequence_length,
-    batch_size,
-    gpu_fraction=0.5,
-    filters=None,
-    kernel_dim=4,
-    lstm_units=2,
-    epsilon=0.0,
+    batch_size=12,
     learning_rate=5e-5,
-    frame_width=224,
-    num_categories=3,
-    learning_rate_decay=5e-3,
+    num_categories=2,
     include_last=True,
     **kwargs
 ):
+    input_shape = (sequence_length, levels * 2, 1)
+
     alog.info(input_shape)
+
     filters = 32
+
     inputs = Input(shape=input_shape)
+
+    alog.info(inputs.shape)
 
     # build the convolutional block
     conv_first1 = Conv2D(filters, (1, 2), strides=(1, 2))(inputs)
@@ -124,11 +126,22 @@ def Model(
         convsecond_output)
 
     # build the last LSTM layer
-    out = LSTM(64, return_sequences=False, stateful=False)(conv_reshape)
+    lstm_out = LSTM(64, return_sequences=False, stateful=False)(conv_reshape)
+
+    alog.info(lstm_out.shape)
+    alog.info(num_categories)
+    out = Dense(num_categories, activation='softmax')(lstm_out)
 
     alog.info(out.shape)
 
-    return tf.keras.Model(inputs=inputs, outputs=out)
+    model = tf.keras.Model(inputs=inputs, outputs=out)
+
+    model.compile(
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'],
+        optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate)
+    )
+    return model
 
 
 class ModelTrainer(object):
@@ -144,22 +157,14 @@ class ModelTrainer(object):
     def _run(
             self,
             batch_size,
-            sequence_length,
             clear,
             directory,
-            export_model,
-            checkpoint_steps,
             epochs,
-            eval_span,
-            eval_steps,
-            frame_width,
-            interval,
+            export_model,
+            labeled_ratio,
             learning_rate,
-            epsilon,
-            max_steps,
-            learning_rate_decay,
-            steps_epoch,
-            window_size,
+            levels,
+            sequence_length,
             seed
         ):
         model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
@@ -171,12 +176,10 @@ class ModelTrainer(object):
                 pass
 
         model = Model(
-            epsilon=epsilon,
+            levels=levels,
             sequence_length=sequence_length,
             batch_size=batch_size,
             learning_rate=learning_rate,
-            frame_width=frame_width,
-            learning_rate_decay=learning_rate_decay
         )
 
         model.summary()
@@ -194,21 +197,13 @@ class ModelTrainer(object):
         )
 
         train_spec = TrainSpec(
-            input_fn=lambda: dataset(
-                skip=timeparse(eval_steps),
-                take=timeparse(steps_epoch),
-                batch_size=batch_size,
-                epochs=epochs,
-            )
+            input_fn=lambda: dataset(batch_size=batch_size, epochs=epochs),
         )
 
-        def eval_dataset():
-            return dataset(batch_size=batch_size, take=timeparse(eval_span))
-
         eval_spec = EvalSpec(
-            input_fn=lambda: eval_dataset(),
+            input_fn=lambda: dataset(dataset_name='eval', batch_size=batch_size, epochs=1),
             start_delay_secs=60*30,
-            steps=timeparse(eval_steps)*2,
+            steps=timeparse('1h'),
             throttle_secs=60*30
         )
 
@@ -218,9 +213,8 @@ class ModelTrainer(object):
 
         def serving_input_receiver_fn():
             inputs = {
-              'time_distributed_input': tf.compat.v1.placeholder(
-                  tf.float32, [sequence_length, 1, frame_width,
-                               frame_width, 3]
+              'input_1': tf.compat.v1.placeholder(
+                  tf.float32, [None, sequence_length, levels * 2, 1]
               ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
@@ -236,21 +230,13 @@ class ModelTrainer(object):
 
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
-@click.option('--sequence-length', type=int, default=4)
-@click.option('--checkpoint-steps', '-s', type=int, default=200)
+@click.option('--levels', type=int, default=40)
+@click.option('--sequence-length', type=int, default=48)
+@click.option('--epochs', type=int, default=500)
 @click.option('--directory', type=str, default='default')
-@click.option('--epochs', '-e', type=int, default=10)
-@click.option('--eval-span', type=str, default='20m')
-@click.option('--eval-steps', type=str, default='15s')
-@click.option('--frame-width', type=int, default=224)
-@click.option('--interval', '-i', type=str, default='1m')
-@click.option('--epsilon', type=float, default=0.3e-4)
-@click.option('--learning-rate', '-l', type=float, default=0.3e-4)
-@click.option('--learning-rate-decay', default=5e-3, type=float)
-@click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
+@click.option('--labeled-ratio', '-r', type=float, default=0.5)
+@click.option('--learning-rate', '-l', type=float, default=0.1)
 @click.option('--seed', type=int, default=6*6*6)
-@click.option('--steps-epoch', default='1m', type=str)
-@click.option('--window-size', '-w', default='3s', type=str)
 @click.option('--clear', '-c', is_flag=True)
 @click.option('--export-model', is_flag=True)
 def main(**kwargs):
