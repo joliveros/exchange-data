@@ -1,15 +1,12 @@
 #!/usr/bin/env python
-import re
-
-import tensorflow as tf
-
-from pathlib import Path
-import tensorflow_datasets as tfds
-import alog
-import click
-import numpy as np
 
 from exchange_data.utils import DateTimeUtils
+from pathlib import Path
+import alog
+import click
+import re
+import tensorflow as tf
+import tensorflow_datasets as tfds
 
 FixedLenFeature = tf.io.FixedLenFeature
 
@@ -37,6 +34,7 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
 
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
+    alog.info(files)
 
     file_dates = sorted([
         (DateTimeUtils.parse_db_timestamp(int(re.findall(f'\d+', file)[0])), file)
@@ -70,12 +68,8 @@ def main(**kwargs):
     count = 0
     max = 0
 
-    for data in tfds.as_numpy(dataset(1, **kwargs)):
-        alog.info(data['datetime'])
-        frame_max = np.amax(data['frame'])
-        if frame_max > max:
-            max = frame_max
-
+    for data in tfds.as_numpy(dataset(batch_size=1, epochs=1)):
+        alog.info(data)
         count += 1
 
     alog.info(max)
