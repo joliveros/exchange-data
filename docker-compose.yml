@@ -211,11 +211,11 @@ services:
 
     emit_prediction_btc:
         deploy:
-            replicas: 0
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/prediction_emitter.py XBTUSD --depth 8 -l 16"
+            ./exchange_data/emitters/prediction_emitter.py XBTUSD --model-name resnet"
         environment:
             - LOG_LEVEL=INFO
         env_file:
@@ -228,6 +228,7 @@ services:
             - influxdb
         secrets:
             - DB
+
     virtual_executor:
         deploy:
             replicas: 1
@@ -243,6 +244,22 @@ services:
             - public
         secrets:
             - DB
+
+    resnet_server:
+        deploy:
+            replicas: 1
+        image: tensorflow/serving:2.1.0
+        ports:
+            - 0.0.0.0:8500:8500
+            - 0.0.0.0:8501:8501
+        volumes:
+            - /home/joliveros/.exchange-data/models/resnet_export:/models/resnet
+        environment:
+            - CUDA_VISIBLE_DEVICES=-1
+            - MODEL_NAME=resnet
+        networks:
+            - public
+
 secrets:
     BITMEX_API_KEY:
         external: true

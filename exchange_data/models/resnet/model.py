@@ -202,9 +202,9 @@ class ModelTrainer(object):
 
         eval_spec = EvalSpec(
             input_fn=lambda: dataset(dataset_name='eval', batch_size=batch_size, epochs=1),
-            start_delay_secs=60*30,
-            steps=timeparse('1h'),
-            throttle_secs=60*30
+            start_delay_secs=60*5,
+            steps=timeparse('8m'),
+            throttle_secs=60*4
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
@@ -214,7 +214,7 @@ class ModelTrainer(object):
         def serving_input_receiver_fn():
             inputs = {
               'input_1': tf.compat.v1.placeholder(
-                  tf.float32, [None, sequence_length, levels * 2, 1]
+                  tf.float32, [1, sequence_length, levels * 2, 1]
               ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
@@ -235,7 +235,7 @@ class ModelTrainer(object):
 @click.option('--epochs', type=int, default=500)
 @click.option('--directory', type=str, default='default')
 @click.option('--labeled-ratio', '-r', type=float, default=0.5)
-@click.option('--learning-rate', '-l', type=float, default=0.1)
+@click.option('--learning-rate', '-l', type=float, default=1e-5)
 @click.option('--seed', type=int, default=6*6*6)
 @click.option('--clear', '-c', is_flag=True)
 @click.option('--export-model', is_flag=True)

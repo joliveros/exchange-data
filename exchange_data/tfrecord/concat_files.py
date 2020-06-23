@@ -59,8 +59,10 @@ def convert(
 
     df['frame'] = df['frame'].apply(lambda f: f[0])
 
-    df['expected_position'] = np.where(df['avg_price'] != df['avg_price'].shift(
-        1), 1, 0)
+    min_change = 2.0
+
+    df['expected_position'] = np.where(
+        (df['avg_price'].shift(1) - df['avg_price']) > min_change, 1, 0)
 
     for i in range(0, len(df)):
         expected_position = df.loc[i, 'expected_position'] == 1
@@ -107,11 +109,15 @@ def convert(
     labeled_count = labeled_df.shape[0]
     unlabeled_df = df[df['expected_position'] == 0]
 
-    unlabeled_count = labeled_count / labeled_ratio
+    unlabeled_count = labeled_count * (1 / labeled_ratio) * (1 - labeled_ratio)
+
+    alog.info((labeled_ratio, labeled_count, unlabeled_count))
 
     unlabeled_df = unlabeled_df.sample(frac=unlabeled_count / unlabeled_df.shape[0])
 
     df = pd.concat([labeled_df, unlabeled_df]).reset_index(drop=True)
+
+    alog.info(df)
 
     temp_file = f'{file}.temp'
 
