@@ -57,7 +57,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         df.dropna(how='any', inplace=True)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
         df = df.set_index('time')
-        df = df.resample('1T').ohlc()
+        df = df.resample('2T').ohlc()
         df = df.reset_index(drop=False, col_level=1)
         df.columns = df.columns.droplevel()
         df = df[df.low != 0.0]
@@ -205,7 +205,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
         query = f'SELECT first(best_ask) AS data FROM {self.frame_channel} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY time(' \
-                f'15s);'
+                f'1m);'
 
         return self.query(query)
 
