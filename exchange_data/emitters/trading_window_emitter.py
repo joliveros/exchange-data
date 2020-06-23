@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import json
 from collections import OrderedDict
 from datetime import timedelta
 
@@ -25,6 +25,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
     def __init__(
         self,
         interval='2h',
+        group_by='1m',
         plot=False,
         symbol=BitmexChannels.XBTUSD,
         **kwargs
@@ -38,13 +39,11 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         self.should_plot = plot
         self.symbol = symbol
         self.channels += ['2s']
+        self.group_by_min = int(timeparse(group_by)/60)
+        self.group_by = f'{int(timeparse(group_by)/3)}s'
 
-        interval_delta = timedelta(seconds=timeparse(interval))
+        self.interval_delta = timedelta(seconds=timeparse(interval))
 
-        now = DateTimeUtils.now()
-
-        self.start_date = now - interval_delta
-        self.end_date = now
         self.channel_name = 'should_trade'
         self.frame_channel = f'{symbol.value}_OrderBookFrame_depth_40'
 
@@ -57,7 +56,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         df.dropna(how='any', inplace=True)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
         df = df.set_index('time')
-        df = df.resample('2T').ohlc()
+        df = df.resample(f'{self.group_by_min}T').ohlc()
         df = df.reset_index(drop=False, col_level=1)
         df.columns = df.columns.droplevel()
         df = df[df.low != 0.0]
@@ -119,10 +118,11 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
             if i == last_index:
                 if t[-1] == 'max':
                     alog.info('## should trade ##')
-                    self.publish(self.channel_name, str(True))
+                    self.publish(self.channel_name, json.dumps({'should_trade': str(True)}))
                 else:
                     alog.info('## should not trade ##')
-                    self.publish(self.channel_name, str(False))
+                    self.publish(self.channel_name, json.dumps({'should_trade': str(
+                        False)}))
 
         self.df = df
         self.exp3 = exp3
@@ -200,12 +200,18 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         fig.show()
 
     def query_price(self):
-        start_date = self.format_date_query(self.start_date)
-        end_date = self.format_date_query(self.end_date)
+        now = DateTimeUtils.now()
+        start_date = now - self.interval_delta
+        end_date = now
+
+        start_date = self.format_date_query(start_date)
+        end_date = self.format_date_query(end_date)
 
         query = f'SELECT first(best_ask) AS data FROM {self.frame_channel} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY time(' \
-                f'1m);'
+                f'{self.group_by});'
+
+        alog.info(query)
 
         return self.query(query)
 
@@ -215,6 +221,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
 @click.command()
 @click.option('--interval', '-i', default='1h', type=str)
+@click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--once', '-o', is_flag=True)
 @click.option('--plot', '-p', is_flag=True)
 def main(once, **kwargs):

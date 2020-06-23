@@ -43,8 +43,10 @@ class PredictionEmitter(Messenger, TradeJob):
         self.on(self.orderbook_channel, self.emit_prediction)
         self.on('should_trade', self.should_trade)
 
-    def should_trade(self, should_trade):
-        self.trading_enabled = strtobool(should_trade.decode())
+    def should_trade(self, data):
+        alog.info(data)
+        alog.info(bool(strtobool(data['should_trade'])))
+        self.trading_enabled = strtobool(data['should_trade'])
 
     def load_previous_frames(self, depth):
         now = DateTimeUtils.now()
@@ -122,10 +124,6 @@ class PredictionEmitter(Messenger, TradeJob):
         self.publish(self.job_name, json.dumps({'data': position.value}))
 
     def emit_prediction(self, data):
-        self._emit_prediction(data)
-
-        return
-
         if self.trading_enabled:
             try:
                 self._emit_prediction(data)
@@ -136,7 +134,7 @@ class PredictionEmitter(Messenger, TradeJob):
             self.publish(self.job_name, json.dumps({'data': Positions.Flat.value}))
 
     def run(self):
-        self.sub([self.orderbook_channel])
+        self.sub([self.orderbook_channel, 'should_trade'])
 
 
 @click.command()
