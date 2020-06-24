@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+import time
+
+import optuna
+from optuna import Trial
 
 from exchange_data.models.resnet.model import ModelTrainer
 from pathlib import Path
@@ -16,32 +20,32 @@ METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
 
 
-def run(run_name, hparams):
-    run_dir = f'{Path.home()}/.exchange-data/models/resnet_params/{run_name}'
+def run(trial: Trial):
+    tf.keras.backend.clear_session()
+
+    run_dir = f'{Path.home()}/.exchange-data/models/resnet_params/' \
+              f'{trial.number}'
+
+    hparams = dict(
+        learning_rate=trial.suggest_float('learning_rate', 0.000001, 0.0001),
+    )
 
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
-            'batch_size': 1,
-            'checkpoint_steps': 1000,
-            'clear': True,
-            'directory': 'tune',
-            'epochs': 1,
-            'epsilon': 0.090979,
-            'eval_span': '4m',
-            'eval_steps': '2m',
-            'export_model': False,
-            'frame_width': 224,
-            'interval': '1m',
-            'learning_rate_decay': 0,
-            'max_steps': 21600,
-            'seed': 216,
-            'sequence_length': 32,
-            'steps_epoch': '15m',
-            'window_size': '3s',
+         'batch_size': 20,
+         'clear': True,
+         'directory': trial.number,
+         'epochs': 500,
+         'export_model': False,
+         'learning_rate': hparams.get('learning_rate'),
+         'levels': 40,
+         'seed': 216,
+         'sequence_length': 48
         }
 
+        hp.hparams(hparams, trial_id=str(trial.number))  # record the values used in
+        # this trial
 
-        hp.hparams(hparams)  # record the values used in this trial
         alog.info(hparams)
 
         hparams = {**params, **hparams}
@@ -49,45 +53,25 @@ def run(run_name, hparams):
         alog.info(alog.pformat(hparams))
 
         model = ModelTrainer(**hparams)
-        accuracy = model.run().get('accuracy')
-        tf.summary.scalar(METRIC_ACCURACY, accuracy, step=1)
+        result = model.run()
+        accuracy = result.get('accuracy')
+        global_step = result.get('global_step')
+
+        tf.summary.scalar(METRIC_ACCURACY, accuracy, step=global_step)
+
+        return accuracy
 
 
 @click.command()
-# @click.option('--batch-size', '-b', type=int, default=1)
-# @click.option('--checkpoint-steps', '-s', type=int, default=200)
-# @click.option('--epochs', '-e', type=int, default=10)
-# @click.option('--eval-span', type=str, default='20m')
-# @click.option('--eval-steps', type=str, default='15s')
-# @click.option('--frame-width', type=int, default=224)
-# @click.option('--interval', '-i', type=str, default='1m')
-# @click.option('--learning-rate', '-l', type=float, default=0.3e-4)
-# @click.option('--learning-rate-decay', default=5e-3, type=float)
-# @click.option('--max_steps', '-m', type=int, default=6 * 60 * 60)
-# @click.option('--seed', type=int, default=6*6*6)
-# @click.option('--steps-epoch', default='1m', type=str)
-# @click.option('--window-size', '-w', default='3s', type=str)
-# @click.option('--clear', '-c', is_flag=True)
 def main(**kwargs):
     logging.getLogger('tensorflow').setLevel(logging.INFO)
-    session_num = 0
-    session_limit = 100
+    session_limit = 1000
 
-    while session_num <= session_limit:
-        learning_rate = HP_LRATE.domain.sample_uniform()
+    study = optuna.create_study(direction='maximize')
 
-        hparams = dict(
-            learning_rate=learning_rate,
-        )
+    study.optimize(run, n_trials=session_limit)
 
-        run_name = "run-%d" % session_num
-        print('--- Starting trial: %s' % run_name)
 
-        alog.info(alog.pformat(hparams))
-
-        run(run_name, hparams)
-
-        session_num += 1
 
 
 

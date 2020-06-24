@@ -161,7 +161,6 @@ class ModelTrainer(object):
             directory,
             epochs,
             export_model,
-            labeled_ratio,
             learning_rate,
             levels,
             sequence_length,
@@ -185,7 +184,7 @@ class ModelTrainer(object):
         model.summary()
 
         run_config = RunConfig(
-            save_checkpoints_secs=540,
+            save_checkpoints_secs=60*3,
             tf_random_seed=seed
         )
 
@@ -201,10 +200,11 @@ class ModelTrainer(object):
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(dataset_name='eval', batch_size=batch_size, epochs=1),
-            start_delay_secs=60*5,
+            input_fn=lambda: dataset(dataset_name='eval', batch_size=1,
+                                     epochs=1),
+            start_delay_secs=60,
             steps=timeparse('8m'),
-            throttle_secs=60*4
+            throttle_secs=60
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
@@ -234,7 +234,6 @@ class ModelTrainer(object):
 @click.option('--sequence-length', type=int, default=48)
 @click.option('--epochs', type=int, default=500)
 @click.option('--directory', type=str, default='default')
-@click.option('--labeled-ratio', '-r', type=float, default=0.5)
 @click.option('--learning-rate', '-l', type=float, default=1e-5)
 @click.option('--seed', type=int, default=6*6*6)
 @click.option('--clear', '-c', is_flag=True)
