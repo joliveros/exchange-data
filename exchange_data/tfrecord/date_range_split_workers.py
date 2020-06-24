@@ -61,7 +61,7 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
             )
 
         if interval_type == 'volatility_window':
-            twindow = TradingWindowEmitter(interval=interval, group_by='5m')
+            twindow = TradingWindowEmitter(interval=interval, group_by='2m')
             twindow.next_intervals()
             alog.info(twindow.intervals)
             self.intervals = twindow.intervals

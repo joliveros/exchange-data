@@ -8,7 +8,7 @@ from exchange_data.emitters import SignalInterceptor
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
-from exchange_data.utils import DateTimeUtils, EventEmitterBase
+from exchange_data.utils import DateTimeUtils
 from time import sleep
 
 import alog
