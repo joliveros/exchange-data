@@ -35,7 +35,7 @@ class PredictionEmitter(Messenger, TradeJob):
 
         self.model_name = model_name
         self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}_2s'
-        self.trading_enabled = False
+        self.trading_enabled = True
         self.frames = deque(maxlen=sequence_length)
 
         self.load_previous_frames(depth)

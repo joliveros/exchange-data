@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 from abc import ABC
 from bitmex_websocket import Instrument
 from bitmex_websocket._bitmex_websocket import BitMEXWebsocketConnectionError
@@ -24,12 +24,11 @@ balance_guage = Gauge('account_balance', 'Account Balance', unit='BTC')
 class BitmexAccountEmitter(
     Database,
     Messenger,
-    SignalInterceptor,
     Instrument,
-    DateTimeUtils
+    DateTimeUtils,
+    # SignalInterceptor,
 ):
     measurements = []
-
     channels = [
         SecureChannels.margin,
         SecureChannels.transact,
@@ -47,19 +46,24 @@ class BitmexAccountEmitter(
 
     def __init__(self, **kwargs):
         websocket.enableTrace(settings.RUN_ENV == 'development')
+        BITMEX_API_KEY = os.environ.get('BITMEX_API_KEY')
+        BITMEX_API_SECRET = os.environ.get('BITMEX_API_SECRET')
+
+        alog.info((BITMEX_API_KEY, BITMEX_API_SECRET))
 
         super().__init__(
-            self,
             channels=self.channels,
             should_auth=True,
             database_name='bitmex',
-            exit_func=self.stop,
+            # exit_func=self.stop,
             **kwargs
         )
 
         self.on('action', self.on_action)
 
     def on_action(self, data):
+        # alog.info(alog.pformat(data))
+
         if isinstance(data, str):
             data = json.loads(data)
 
@@ -67,6 +71,8 @@ class BitmexAccountEmitter(
         channel_name = f'bitmex_{table}'
 
         m = self.measurement(table, data)
+
+        alog.info(m)
 
         self.write_points([m.__dict__], time_precision='ms')
 
@@ -78,11 +84,11 @@ class BitmexAccountEmitter(
 
         alog.info(table)
 
-        if table == 'wallet':
-            amount = data['data'][0]['amount']
-            amount = fields['amount'] = amount/(10**8)
-            balance_guage.set(amount)
-            self._push_metrics()
+        # if table == 'wallet':
+        #     amount = data['data'][0]['amount']
+        #     amount = fields['amount'] = amount/(10**8)
+        #     balance_guage.set(amount)
+        #     self._push_metrics()
 
         return Measurement(
             measurement=table,
@@ -117,28 +123,6 @@ class BitmexAccountEmitter(
             else:
                 channel_key = f'{channel.name}:{self.symbol}'
             self.subscribe(channel_key)
-
-    def header(self):
-        """Return auth headers. Will use API Keys if present in settings."""
-        auth_header = []
-
-        if self.should_auth:
-            alog.info("Authenticating with API Key.")
-            # To auth to the WS using an API key, we generate a signature
-            # of a nonce and the WS API endpoint.
-            alog.debug(settings.BITMEX_API_KEY)
-            alog.debug(settings.BITMEX_API_SECRET)
-            nonce = generate_nonce()
-            api_signature = generate_signature(
-                settings.BITMEX_API_SECRET, 'GET', '/realtime', nonce, '')
-
-            auth_header = [
-                "api-nonce: " + str(nonce),
-                "api-signature: " + api_signature,
-                "api-key:" + settings.BITMEX_API_KEY
-            ]
-
-        return auth_header
 
     def stop(self):
         sys.exit(0)

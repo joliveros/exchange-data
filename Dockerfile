@@ -8,6 +8,8 @@ WORKDIR /src
 
 COPY . .
 
+RUN pip install -r requirements.txt
+
 RUN pip install -e .
 
 CMD ["./exchange-data"]
