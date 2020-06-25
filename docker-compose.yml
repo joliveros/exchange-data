@@ -130,8 +130,8 @@ services:
             - public
     emit_bitmex_account:
         deploy:
-            replicas: 0
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/bitmex/_account_emitter.py"
@@ -149,6 +149,7 @@ services:
         depends_on:
             - redis
             - influxdb
+
     emit_tfrecords_btc:
         deploy:
             replicas: 0

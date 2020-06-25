@@ -79,6 +79,7 @@ class BitmexOrderBookEmitter(
         if self.subscriptions_enabled:
             self.on(TimeChannels.Tick.value, self.save_frame)
             self.on(TimeChannels.Tick.value, self.queue_frame('tick'))
+            self.on(TimeChannels.Tick.value, self.emit_ticker)
             self.on('5s', self.queue_frame('5s'))
             self.on('2s', self.queue_frame('2s'))
             self.on(self.symbol.value, self.message)
@@ -89,6 +90,12 @@ class BitmexOrderBookEmitter(
     def print_stats(self):
         alog.info(self.print(depth=4))
         alog.info(self.dataset.dims)
+
+    def emit_ticker(self, timestamp):
+        self.publish('ticker', json.dumps({
+            'best_bid': self.bids.max_price(),
+            'best_ask': self.asks.min_price()
+        }))
 
     def process_orderbook_l2(self, data):
 
