@@ -5,8 +5,8 @@ from pytimeparse.timeparse import timeparse
 
 
 class CompoundPnl(object):
-    def __init__(self, capital, interval, trade_interval='1h',
-                 pnl_rate=97/9650):
+    def __init__(self, capital, interval, trade_interval='10m',
+                 rate=5/9650):
         self.capital = capital
         self.interval = timeparse(interval)
         trade_interval = timeparse(trade_interval)
@@ -16,7 +16,7 @@ class CompoundPnl(object):
             # alog.info((1 + pnl_rate))
             # alog.info(self.capital * (1 + pnl_rate))
             # raise Exception()
-            self.capital = self.capital * (1 + pnl_rate)
+            self.capital = self.capital * (1 + rate)
 
         alog.info(f'### {int(self.steps)} steps, capital: {self.capital}')
 
@@ -24,7 +24,9 @@ class CompoundPnl(object):
 
 @click.command()
 @click.option('--capital', '-c', type=float, default=1)
+@click.option('--rate', '-r', type=float, default=5/9650)
 @click.option('--interval', '-i', type=str, default='1d')
+@click.option('--trade-interval', '-t', type=str, default='30m')
 def main(**kwargs):
     alog.info(alog.pformat(kwargs))
 
