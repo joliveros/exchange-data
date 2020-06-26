@@ -32,6 +32,17 @@ services:
         networks:
             - public
 
+    emit_time:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: bash -c "source ~/.bashrc && ./exchange_data/emitters/time_emitter.py"
+        networks:
+            - public
+        depends_on:
+            - redis
+            - influxdb
+
 secrets:
     INFLUXDB_ADMIN_PASSWORD:
         external: true
