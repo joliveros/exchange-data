@@ -1,15 +1,16 @@
 #! /usr/bin/env python
 
-from bitmex import bitmex
 from datetime import timedelta
+from time import sleep
+
+from bitmex import bitmex
+
 from exchange_data import settings, Database
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import SignalInterceptor
 from exchange_data.emitters.messenger import Messenger
-from exchange_data.emitters.prediction_emitter import TradeJob
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
-from time import sleep
 
 import alog
 import click
@@ -49,7 +50,7 @@ class TradeExecutor(
         )
         self.leverage = leverage
         self.symbol = symbol
-        self.amount = 0.0
+        self.balance = 0.0
         self.best_bid = 0.0
         self.job_name = f'trade_{symbol}'
         self.position = Positions.Flat
@@ -63,9 +64,15 @@ class TradeExecutor(
         self.set_leverage()
 
         self.on(self.job_name, self.execute)
-        self.on('tick', self.get_last_position)
-        self.on('tick', self.get_wallet)
+        self.on('2s', self.get_wallet_amount)
+        self.on('2s', self.get_position)
         self.on('ticker', self.capture_ticker)
+        # self.balance = 1000000
+        # alog.info((self.balance, self.leverage))
+        # alog.info(alog.pformat(self.bitmex_client.swagger_spec.resources[
+        #                            'Position'].__dict__))
+        # raise Exception()
+        # self.position = Positions.Short
 
     @property
     def position_size(self):
@@ -76,23 +83,40 @@ class TradeExecutor(
 
     @property
     def xbt_balance(self):
-        if self.best_bid == 0.0:
-            raise Exception()
-        return self.amount / (1 / self.best_bid)
+        if self.leverage > 1.0:
+            return int((self.balance * self.leverage * 0.9066) / 10000)
+        else:
+            return int(self.balance / 10000 * 0.9)
 
     def capture_ticker(self, ticker):
         self.best_bid = ticker['best_bid']
 
+    def get_position(self, timestamp):
+        result = self.bitmex_client.Position.Position_get().result()[0][0]
+        currentQty = result['currentQty']
+
+        if currentQty < 0:
+            self.position = Positions.Short
+        else:
+            self.position = Positions.Flat
+
     def set_leverage(self):
         # alog.info(alog.pformat(self.bitmex_client.swagger_spec.resources[
         #                            'Position'].__dict__))
-        if self.amount > 0.0:
+
+        if self.balance > 0.0:
             result = self.bitmex_client.Position.Position_updateLeverage(
                 symbol=self.symbol,
                 leverage=self.leverage
             ).result()[0]
 
+
             alog.info(alog.pformat(result))
+
+    def get_wallet_amount(self, timestamp):
+        result = self.bitmex_client.User.User_getWalletSummary().result()[0]
+        last_wallet = result.pop()
+        self.balance = last_wallet['walletBalance']
 
     def get_wallet(self, timestamp):
         end_date = self.now()
@@ -111,47 +135,50 @@ class TradeExecutor(
 
         try:
             data = json.loads(wallet['data'])['data'][0]
-            self.amount = data['amount']
+            self.balance = data['amount']
 
         except:
             pass
 
-    def get_last_position(self, timestamp):
-        end_date = self.now()
-        start_date = end_date - timedelta(hours=24)
-        start_date = self.format_date_query(start_date)
-        end_date = self.format_date_query(end_date)
-
-        query = f'SELECT LAST(data) as data ' \
-            f'FROM position '\
-            f'WHERE time > {start_date} AND ' \
-            f'time < {end_date} LIMIT 1 tz(\'UTC\');'
-
-        result = self.query(query)
-        position = next(result.get_points('position'))
-
-        current_qty = 0.0
-        data = json.loads(position['data'])['data']
-
-        if len(data) > 0:
-            current_qty = [0]['currentQty']
-
-        position = None
-
-        if current_qty > 0:
-            position = Positions.Long
-        else:
-            position = Positions.Flat
-
-        self.position = position
+    # def get_last_position(self, timestamp):
+    #     end_date = self.now()
+    #     start_date = end_date - timedelta(hours=24)
+    #     start_date = self.format_date_query(start_date)
+    #     end_date = self.format_date_query(end_date)
+    #
+    #     query = f'SELECT LAST(data) as data ' \
+    #         f'FROM position '\
+    #         f'WHERE time > {start_date} AND ' \
+    #         f'time < {end_date} LIMIT 1 tz(\'UTC\');'
+    #
+    #     result = self.query(query)
+    #     position = next(result.get_points('position'))
+    #
+    #     current_qty = 0.0
+    #     data = json.loads(position['data'])['data']
+    #
+    #     if len(data) > 0:
+    #         current_qty = data[0]['currentQty']
+    #
+    #     position = None
+    #
+    #     if current_qty > 0:
+    #         position = Positions.Long
+    #     else:
+    #         position = Positions.Flat
+    #
+    #     self.position = position
 
     def start(self, channels=[]):
-        self.sub([self.job_name, 'tick', 'ticker'] + channels)
+        self.sub([self.job_name, '2s', 'ticker'] + channels)
 
     def execute(self, action):
         position = self.parse_position_value(int(action['data']))
 
-        if position.value != self.position.value and self.amount > 0.0:
+        if self.xbt_balance == 0:
+            return
+
+        if position != self.position and self.balance > 0.0:
             if position == Positions.Flat:
                 self.close()
             elif position == Positions.Long:
@@ -160,7 +187,8 @@ class TradeExecutor(
                 self.short()
 
         alog.info({
-            'amount': self.amount,
+            'amount': self.balance,
+            'xbt_balance': self.xbt_balance,
             'position': self.position,
             'leverage': self.leverage,
         })
@@ -170,43 +198,67 @@ class TradeExecutor(
             self._close()
         except:
             sleep(0.1)
-            self.close()
+            self._close()
 
     def _close(self):
-        side = None
-        if self.position == Positions.Long:
-            side = 'Sell'
-        elif self.position == Positions.Short:
-            side = 'Buy'
-        elif self.position == Positions.Flat:
-            return
+        alog.info(self.position)
+        alog.info(self.position == Positions.Flat)
 
-        result = self.bitmex_client.Order.Order_new(
+        if self.position == Positions.Flat:
+           return
+
+        side = None
+
+        alog.info(f'#### close trade ####')
+
+        if self.position == Positions.Long:
+            side = 'Buy'
+        elif self.position == Positions.Short:
+            side = 'Sell'
+
+        result = self.bitmex_client.Order.Order_closePosition(
             symbol=self.symbol,
-            orderQty=self.position_size,
-            side=side,
-            ordType='Market'
         ).result()[0]
+        # result = self.bitmex_client.Order.Order_new(
+        #     execInst='Close',
+        #     symbol=self.symbol,
+        #     # side=side,
+        #     # ordType='Market'
+        # ).result()[0]
 
         alog.info(alog.pformat(result))
+
+        self.position = Positions.Flat
 
     def long(self):
-        result = self.bitmex_client.Order.Order_new(
-            symbol=self.symbol,
-            ordType='Market',
-            orderQty=self.position_size,
-            side='Buy'
-        ).result()[0]
-        alog.info(alog.pformat(result))
+        # result = self.bitmex_client.Order.Order_new(
+        #     symbol=self.symbol,
+        #     ordType='Market',
+        #     orderQty=self.position_size,
+        #     side='Buy'
+        # ).result()[0]
+        # alog.info(alog.pformat(result))
+        self.position = Positions.Long
 
     def short(self):
-        result = self.bitmex_client.Order.Order_new(
-            symbol=self.symbol,
-            ordType='Market',
-            orderQty=self.position_size,
-            side='Sell'
-        ).result()[0]
-        alog.info(alog.pformat(result))
+        alog.info(self.position)
+
+        if self.position != Positions.Short:
+            self.close()
+
+            alog.info('### initiate short ####')
+            alog.info(self.position_size)
+
+            result = self.bitmex_client.Order.Order_new(
+                symbol=self.symbol,
+                ordType='Market',
+                orderQty=self.position_size,
+                side='Sell'
+            ).result()[0]
+
+            alog.info(alog.pformat(result))
+
+        self.position = Positions.Short
 
 
 @click.command()

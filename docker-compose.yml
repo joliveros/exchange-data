@@ -236,7 +236,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 10.0 -c 1.0"
+            ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 1.0 -c 1.0"
         environment:
             - CUDA_VISIBLE_DEVICES=-1
         depends_on:
@@ -244,6 +244,25 @@ services:
         networks:
             - public
         secrets:
+            - DB
+
+    trade_executor:
+        deploy:
+            replicas: 0
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/trading/_trade_executor.py XBTUSD -p 0 -l 1"
+        environment:
+            - CUDA_VISIBLE_DEVICES=-1
+        depends_on:
+            - redis
+            - influxdb
+        networks:
+            - public
+        secrets:
+            - BITMEX_API_KEY
+            - BITMEX_API_SECRET
             - DB
 
     resnet_server:
