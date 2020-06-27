@@ -1,0 +1,241 @@
+version: '3.7'
+networks:
+    public:
+        name: public
+        external: true
+services:
+    emit_ethbtc:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/data.py $SYMBOL"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+
+#    emit_bitmex_orderbook:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
+#        env_file:
+#            - ./.env.prod
+#        secrets:
+#            - BITMEX_API_KEY
+#            - BITMEX_API_SECRET
+#            - DB
+#            - ROLLBAR_API_KEY
+#        depends_on:
+#            - emit_bitmex_btc
+#            - emit_time
+#            - redis
+#            - influxdb
+#        networks:
+#            - public
+#    record_bitmex_eth:
+#        deploy:
+#            replicas: 0
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        env_file:
+#            - ./.env.prod
+#        secrets:
+#            - BITMEX_API_KEY
+#            - BITMEX_API_SECRET
+#            - DB
+#            - ROLLBAR_API_KEY
+#        depends_on:
+#            - influxdb
+#        command: >-
+#            bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py ETHUSD
+#            --measurement-name ETHUSD_ws"
+#        networks:
+#            - public
+#    record_bitmex_xbtusd:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data'
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        secrets:
+#            - BITMEX_API_KEY
+#            - BITMEX_API_SECRET
+#            - DB
+#            - ROLLBAR_API_KEY
+#        depends_on:
+#            - influxdb
+#        command: >-
+#            bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py XBTUSD
+#            --measurement-name data"
+#        networks:
+#            - public
+#    emit_bitmex_account:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/emitters/bitmex/_account_emitter.py"
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        secrets:
+#            - BITMEX_API_KEY
+#            - BITMEX_API_SECRET
+#            - DB
+#            - ROLLBAR_API_KEY
+#        networks:
+#            - public
+#        depends_on:
+#            - redis
+#            - influxdb
+#
+#    emit_tfrecords_btc:
+#        deploy:
+#            replicas: 0
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/tfrecord/orderbook_tf_record_workers.py --frame-width 224
+#            -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
+#        volumes:
+#            - '/home/${USER}/.exchange-data/:/root/.exchange-data/'
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        networks:
+#            - public
+#        depends_on:
+#            - redis
+#            - influxdb
+#        secrets:
+#            - DB
+#    emit_orderbook_training_data_btc:
+#        deploy:
+#            replicas: 0
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l
+#            1000000 -d 8"
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        networks:
+#            - public
+#        depends_on:
+#            - redis
+#            - influxdb
+#        secrets:
+#            - DB
+#
+#    emit_trading_window:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/emitters/trading_window_emitter.py -i 3h"
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        networks:
+#            - public
+#        depends_on:
+#            - redis
+#            - influxdb
+#        secrets:
+#            - DB
+#
+#    emit_prediction_btc:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/emitters/prediction_emitter.py XBTUSD --model-name resnet"
+#        environment:
+#            - LOG_LEVEL=INFO
+#        env_file:
+#            - ./.env.prod
+#        networks:
+#            - public
+#        depends_on:
+#            - resnet_server
+#            - redis
+#            - influxdb
+#        secrets:
+#            - DB
+#
+#    virtual_executor:
+#        deploy:
+#            replicas: 1
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 1.0 -c 1.0"
+#        environment:
+#            - CUDA_VISIBLE_DEVICES=-1
+#        depends_on:
+#            - redis
+#        networks:
+#            - public
+#        secrets:
+#            - DB
+#
+#    trade_executor:
+#        deploy:
+#            replicas: 0
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/trading/_trade_executor.py XBTUSD -p 0 -l 1"
+#        environment:
+#            - CUDA_VISIBLE_DEVICES=-1
+#        depends_on:
+#            - redis
+#            - influxdb
+#        networks:
+#            - public
+#        secrets:
+#            - BITMEX_API_KEY
+#            - BITMEX_API_SECRET
+#            - DB
+#
+#    resnet_server:
+#        deploy:
+#            replicas: 1
+#        image: tensorflow/serving:2.1.0
+#        ports:
+#            - 0.0.0.0:8500:8500
+#            - 0.0.0.0:8501:8501
+#        volumes:
+#            - /home/joliveros/.exchange-data/models/resnet_export:/models/resnet
+#        environment:
+#            - CUDA_VISIBLE_DEVICES=-1
+#            - MODEL_NAME=resnet
+#        networks:
+#            - public
+
+secrets:
+    BITMEX_API_KEY:
+        external: true
+    BITMEX_API_SECRET:
+        external: true
+    DB:
+        external: true
+    ROLLBAR_API_KEY:
+        external: true
+
