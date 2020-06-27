@@ -18,27 +18,24 @@ services:
         depends_on:
             - redis
 
-#    emit_bitmex_orderbook:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/emitters/bitmex/_bitmex_orderbook_emitter.py XBTUSD"
-#        env_file:
-#            - ./.env.prod
-#        secrets:
-#            - BITMEX_API_KEY
-#            - BITMEX_API_SECRET
-#            - DB
-#            - ROLLBAR_API_KEY
-#        depends_on:
-#            - emit_bitmex_btc
-#            - emit_time
-#            - redis
-#            - influxdb
-#        networks:
-#            - public
+    emit_full_orderbook:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py $SYMBOL"
+        env_file:
+            - ./.env.prod
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+        networks:
+            - public
+
 #    record_bitmex_eth:
 #        deploy:
 #            replicas: 0

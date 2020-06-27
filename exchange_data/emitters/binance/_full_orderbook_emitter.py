@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+import alog
+from binance.client import Client
 from bitmex import bitmex
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
@@ -17,20 +18,17 @@ class FullOrderBookEmitter(Messenger):
         self.bitmex = bitmex(test=False)
         self.interval = interval
         self.channel = self.generate_channel_name(interval, self.symbol)
+        self.client = Client()
 
         self.on(self.interval, self.publish_orderbook)
 
     @staticmethod
-    def generate_channel_name(interval: str, symbol: BitmexChannels):
-        return f'{symbol.value}_OrderBookL2_{interval}'
+    def generate_channel_name(interval: str, symbol: str):
+        return f'{symbol}_OrderBookL2_{interval}'
 
     def publish_orderbook(self, timestamp):
-        data = self.bitmex.OrderBook.OrderBook_getL2(
-            symbol=self.symbol.value,
-            depth=0
-        ).result()
-
-        msg = self.channel, json.dumps(data[0])
+        depth = self.client.get_order_book(symbol=self.symbol)
+        msg = self.channel, json.dumps(depth)
         self.publish(*msg)
 
     def start(self):
