@@ -28,7 +28,15 @@ class FullOrderBookEmitter(Messenger):
 
     def publish_orderbook(self, timestamp):
         depth = self.client.get_order_book(symbol=self.symbol)
-        msg = self.channel, json.dumps(depth)
+
+        data = dict(
+            a=depth['asks'],
+            b=depth['bids'],
+            E=timestamp
+        )
+
+        msg = self.channel, json.dumps(data)
+
         self.publish(*msg)
 
     def start(self):

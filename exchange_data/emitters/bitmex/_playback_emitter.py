@@ -3,7 +3,7 @@ from copy import copy
 from datetime import datetime, timedelta
 from dateutil.tz import tz
 from exchange_data.channels import BitmexChannels
-from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
+from exchange_data.emitters.bitmex import BinanceOrderBookEmitter
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from exchange_data.streamers._bitmex import BitmexOrderBookChannels
 from exchange_data.utils import DateTimeUtils
@@ -17,7 +17,7 @@ import json
 import sys
 
 
-class OrderBookPlayBack(BitmexOrderBookEmitter, DateTimeUtils):
+class OrderBookPlayBack(BinanceOrderBookEmitter, DateTimeUtils):
     def __init__(
         self,
         start_date=None,

@@ -4,7 +4,7 @@ networks:
         name: public
         external: true
 services:
-    emit_ethbtc:
+    emit_depth:
         deploy:
             replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -24,7 +24,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_full_orderbook_emitter.py $SYMBOL"
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py $SYMBOL -i 30s"
         env_file:
             - ./.env.prod
         secrets:
@@ -36,44 +36,24 @@ services:
         networks:
             - public
 
-#    record_bitmex_eth:
-#        deploy:
-#            replicas: 0
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        env_file:
-#            - ./.env.prod
-#        secrets:
-#            - BITMEX_API_KEY
-#            - BITMEX_API_SECRET
-#            - DB
-#            - ROLLBAR_API_KEY
-#        depends_on:
-#            - influxdb
-#        command: >-
-#            bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py ETHUSD
-#            --measurement-name ETHUSD_ws"
-#        networks:
-#            - public
-#    record_bitmex_xbtusd:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data'
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        secrets:
-#            - BITMEX_API_KEY
-#            - BITMEX_API_SECRET
-#            - DB
-#            - ROLLBAR_API_KEY
-#        depends_on:
-#            - influxdb
-#        command: >-
-#            bash -c "source ~/.bashrc && ./exchange_data/recorders/_bitmex.py XBTUSD
-#            --measurement-name data"
-#        networks:
-#            - public
+    emit_orderbook:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_binance_orderbook_emitter.py $SYMBOL"
+        env_file:
+            - ./.env.prod
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+        networks:
+            - public
+
 #    emit_bitmex_account:
 #        deploy:
 #            replicas: 1
@@ -96,47 +76,7 @@ services:
 #            - redis
 #            - influxdb
 #
-#    emit_tfrecords_btc:
-#        deploy:
-#            replicas: 0
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/tfrecord/orderbook_tf_record_workers.py --frame-width 224
-#            -s 2 -i 30s -r 30s -m 20 -v -std 1.0"
-#        volumes:
-#            - '/home/${USER}/.exchange-data/:/root/.exchange-data/'
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        networks:
-#            - public
-#        depends_on:
-#            - redis
-#            - influxdb
-#        secrets:
-#            - DB
-#    emit_orderbook_training_data_btc:
-#        deploy:
-#            replicas: 0
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/emitters/orderbook_training_data.py --frame-width 224 -l
-#            1000000 -d 8"
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        networks:
-#            - public
-#        depends_on:
-#            - redis
-#            - influxdb
-#        secrets:
-#            - DB
-#
+
 #    emit_trading_window:
 #        deploy:
 #            replicas: 1

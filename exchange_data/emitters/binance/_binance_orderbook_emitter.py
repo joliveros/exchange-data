@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
 from collections import deque
-
 from dateutil import tz
-
 from exchange_data import settings, Database, Measurement
-from exchange_data.bitmex_orderbook import BitmexOrderBook
-from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
-from exchange_data.emitters.bitmex import BitmexEmitterBase
-from exchange_data.emitters.bitmex._orderbook_l2_emitter import OrderBookL2Emitter
-from exchange_data.orderbook import OrderBook
+from exchange_data.emitters.binance._full_orderbook_emitter import FullOrderBookEmitter
+from exchange_data.emitters.binance._orderbook import BinanceOrderBook
 from exchange_data.orderbook._ordertree import OrderTree
-from exchange_data.utils import NoValue, DateTimeUtils, EventEmitterBase
+from exchange_data.utils import NoValue, DateTimeUtils
 from functools import lru_cache
 from numpy.core.multiarray import ndarray
 
@@ -25,28 +20,23 @@ import sys
 import traceback
 
 
-class BitmexOrderBookChannels(NoValue):
-    OrderBookFrame = 'OrderBookFrame'
 
-
-class BinanceOrderBookChannels(
+class BinanceOrderBookEmitter(
     Messenger,
-    OrderBook,
+    BinanceOrderBook,
     Database,
     SignalInterceptor,
     DateTimeUtils,
 ):
     def __init__(
-        self, symbol: BitmexChannels,
+        self, symbol: str,
         depths=None,
-        emit_interval=None,
-        database_name='bitmex',
+        database_name='binance',
         reset_orderbook: bool = True,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
     ):
-        self.symbol = symbol
         self.subscriptions_enabled = subscriptions_enabled
         self.should_reset_orderbook = reset_orderbook
 
@@ -57,11 +47,6 @@ class BinanceOrderBookChannels(
             **kwargs
         )
 
-        if emit_interval is None:
-            self.emit_interval = '5s'
-        else:
-            self.emit_interval = emit_interval
-
         if depths is None:
             depths = [21]
 
@@ -71,20 +56,18 @@ class BinanceOrderBookChannels(
         self.frame_slice = None
         self.queued_frames = []
 
-        self.orderbook_l2_channel = OrderBookL2Emitter\
-            .generate_channel_name('1m', self.symbol)
+        self.orderbook_l2_channel = FullOrderBookEmitter\
+            .generate_channel_name('30s', self.symbol)
 
         self.freq = settings.TICK_INTERVAL
-        self.frame_channel = f'{self.symbol.value}_' \
-            f'{BitmexOrderBookChannels.OrderBookFrame.value}'
+        self.frame_channel = f'{self.symbol}_OrderBookFrame'
 
         if self.subscriptions_enabled:
-            self.on(TimeChannels.Tick.value, self.save_frame)
-            self.on(TimeChannels.Tick.value, self.queue_frame('tick'))
-            self.on(TimeChannels.Tick.value, self.emit_ticker)
-            self.on('5s', self.queue_frame('5s'))
             self.on('2s', self.queue_frame('2s'))
-            self.on(self.symbol.value, self.message)
+            self.on(self.symbol, self.message)
+            self.on(TimeChannels.Tick.value, self.emit_ticker)
+            self.on(TimeChannels.Tick.value, self.queue_frame('tick'))
+            self.on(TimeChannels.Tick.value, self.save_frame)
 
         if self.should_reset_orderbook:
             self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
@@ -100,15 +83,9 @@ class BinanceOrderBookChannels(
         }))
 
     def process_orderbook_l2(self, data):
+        # self.reset_orderbook()
 
-        self.reset_orderbook()
-
-        self.message({
-            'table': 'orderBookL2',
-            'data': data,
-            'action': 'partial',
-            'symbol': self.symbol.value
-        })
+        self.message(data)
 
     def reset_orderbook(self):
         alog.info('### reset orderbook ###')
@@ -126,7 +103,6 @@ class BinanceOrderBookChannels(
     def start(self, channels=[]):
         self.sub([
             '2s',
-            '5s',
             self.orderbook_l2_channel,
             self.symbol,
             TimeChannels.Tick,
@@ -214,7 +190,7 @@ class BinanceOrderBookChannels(
         )
 
         return Measurement(measurement=self.channel_for_depth(depth),
-                           tags={'symbol': self.symbol.value},
+                           tags={'symbol': self.symbol},
                            time=timestamp, fields=fields)
 
     def queue_frame(self, frame_key):
@@ -233,6 +209,7 @@ class BinanceOrderBookChannels(
                     channel = self.channel_for_depth(depth)
                 else:
                     channel = f'{self.channel_for_depth(depth)}_{frame_key}'
+
                 msg = channel, str(frame_slice)
 
                 self.publish(*msg)
@@ -263,8 +240,8 @@ class BinanceOrderBookChannels(
 @click.option('--save-data/--no-save-data', default=True)
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(**kwargs):
-    recorder = BinanceOrderBookChannels(
-        depths=[0, 21, 40],
+    recorder = BinanceOrderBookEmitter(
+        depths=[0, 40],
         subscriptions_enabled=True,
         **kwargs
     )

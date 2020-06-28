@@ -24,6 +24,8 @@ BITSTAMP_PUSHER_APP_KEY = sec.load('BITSTAMP_PUSHER_APP_KEY', lowercase=False)
 BITMEX_API_KEY = sec.load('BITMEX_API_KEY', lowercase=False)
 BITMEX_API_SECRET = sec.load('BITMEX_API_SECRET', lowercase=False)
 
+BINANCE_API_KEY = sec.load('BINANCE_API_KEY', lowercase=False)
+BINANCE_API_SECRET = sec.load('BINANCE_API_SECRET', lowercase=False)
 if RUN_ENV != 'development':
     ROLLBAR_API_KEY = sec.load('ROLLBAR_API_KEY', lowercase=False)
 

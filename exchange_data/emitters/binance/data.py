@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import json
+
 
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
@@ -7,6 +7,7 @@ from exchange_data.emitters import Messenger
 
 import alog
 import click
+import json
 import signal
 
 
@@ -16,11 +17,12 @@ class DataEmitter(Messenger):
         self.symbol = symbol
         symbol_low = symbol.lower()
 
-        self.socketManager = BinanceSocketManager(Client(), user_timeout=60)
+        self.socketManager = BinanceSocketManager(Client(), user_timeout=5)
         depth_channel = f'{symbol_low}@depth@100ms'
         self.socketManager.start_multiplex_socket([depth_channel], self.message)
 
-    def message(self, data): # alog.info(alog.pformat(data['data']))
+    def message(self, data):
+        # alog.info(alog.pformat(data['data']))
         self.publish(self.symbol, json.dumps(data['data']))
 
     def start(self):
