@@ -59,25 +59,25 @@ services:
 #            - influxdb
 #
 
-#    emit_trading_window:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/emitters/trading_window_emitter.py -i 3h"
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        networks:
-#            - public
-#        depends_on:
-#            - redis
-#            - influxdb
-#        secrets:
-#            - DB
-#
+    emit_trading_window:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/trading_window_emitter.py -i 3h -s $SYMBOL"
+        environment:
+            - LOG_LEVEL=INFO
+        env_file:
+            - ./.env.prod
+        networks:
+            - public
+        depends_on:
+            - redis
+            - influxdb
+        secrets:
+            - DB
+
 #    emit_prediction_btc:
 #        deploy:
 #            replicas: 1
