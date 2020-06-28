@@ -5,11 +5,8 @@ from dateutil import tz
 from exchange_data import settings, Database, Measurement
 from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
 from exchange_data.emitters.binance._full_orderbook_emitter import FullOrderBookEmitter
-from exchange_data.emitters.binance._orderbook import BinanceOrderBook
-from exchange_data.orderbook._ordertree import OrderTree
-from exchange_data.utils import NoValue, DateTimeUtils
+from exchange_data.utils import DateTimeUtils
 from functools import lru_cache
-from numpy.core.multiarray import ndarray
 
 import alog
 import click
@@ -23,7 +20,6 @@ import traceback
 
 class BinanceOrderBookEmitter(
     Messenger,
-    BinanceOrderBook,
     Database,
     SignalInterceptor,
     DateTimeUtils,
@@ -39,9 +35,9 @@ class BinanceOrderBookEmitter(
     ):
         self.subscriptions_enabled = subscriptions_enabled
         self.should_reset_orderbook = reset_orderbook
+        self.symbol = symbol
 
         super().__init__(
-            symbol=symbol,
             database_name=database_name,
             database_batch_size=10,
             **kwargs
@@ -51,9 +47,9 @@ class BinanceOrderBookEmitter(
             depths = [21]
 
         self.depths = depths
+        self.last_frame = None
         self.save_data = save_data
         self.slices = {}
-        self.frame_slice = None
         self.queued_frames = []
 
         self.orderbook_l2_channel = FullOrderBookEmitter\
@@ -69,41 +65,19 @@ class BinanceOrderBookEmitter(
             self.on(TimeChannels.Tick.value, self.queue_frame('tick'))
             self.on(TimeChannels.Tick.value, self.save_frame)
 
-        if self.should_reset_orderbook:
-            self.on(self.orderbook_l2_channel, self.process_orderbook_l2)
-
-    def print_stats(self):
-        alog.info(self.print(depth=4))
-        alog.info(self.dataset.dims)
+    def message(self, frame):
+        self.last_frame = np.asarray(frame)
 
     def emit_ticker(self, timestamp):
-        self.publish('ticker', json.dumps({
-            'best_bid': self.bids.max_price(),
-            'best_ask': self.asks.min_price()
-        }))
-
-    def process_orderbook_l2(self, data):
-        # self.reset_orderbook()
-
-        self.message(data)
-
-    def reset_orderbook(self):
-        alog.info('### reset orderbook ###')
-        del self.__dict__['tape']
-        del self.__dict__['bids']
-        del self.__dict__['asks']
-
-        self.tape = deque(maxlen=10)
-        self.bids = OrderTree()
-        self.asks = OrderTree()
-
-    def garbage_collect(self):
-        gc.collect()
+        if self.last_frame is not None:
+            self.publish('ticker', json.dumps({
+                'best_bid': self.last_frame[1][0][0],
+                'best_ask': self.last_frame[0][0][0]
+            }))
 
     def start(self, channels=[]):
         self.sub([
             '2s',
-            self.orderbook_l2_channel,
             self.symbol,
             TimeChannels.Tick,
         ] + channels)
@@ -112,52 +86,10 @@ class BinanceOrderBookEmitter(
         self.stop()
         sys.exit(0)
 
-    def gen_bid_side(self):
-        bid_levels = list(self.bids.price_tree.items())
-        price = np.array(
-            [level[0] for level in bid_levels]
-        )
-
-        volume = np.array(
-            [level[1].volume for level in bid_levels]
-        ) * -1
-
-        return np.vstack((price, volume))
-
-    def gen_ask_side(self):
-        bid_levels = list(self.asks.price_tree.items())
-        price = np.array(
-            [level[0] for level in bid_levels]
-        )
-
-        volume = np.array(
-            [level[1].volume for level in bid_levels]
-        )
-
-        return np.vstack((price, volume))
-
-    def generate_frame(self) -> ndarray:
-        bid_side = np.flip(self.gen_bid_side(), axis=1)
-        ask_side = self.gen_ask_side()
-
-        bid_side_shape = bid_side.shape
-        ask_side_shape = ask_side.shape
-
-        if bid_side_shape[-1] > ask_side_shape[-1]:
-            new_ask_side = np.zeros(bid_side_shape)
-            new_ask_side[:ask_side_shape[0], :ask_side_shape[1]] = ask_side
-            ask_side = new_ask_side
-        elif ask_side_shape[-1] > bid_side_shape[-1]:
-            new_bid_side = np.zeros(ask_side_shape)
-            new_bid_side[:bid_side_shape[0], :bid_side_shape[1]] = bid_side
-            bid_side = new_bid_side
-
-        frame = np.array((ask_side, bid_side))
-
-        return frame
-
     def measurements(self, timestamp):
-        frame = self.generate_frame()
+        frame = self.last_frame
+        if frame is None:
+            return
 
         measurements = []
 
@@ -168,11 +100,9 @@ class BinanceOrderBookEmitter(
 
         for depth in self.depths:
             if depth > 0:
-                frame_slice = frame[:, :, :depth]
+                frame_slice = frame[:, :depth, :]
             else:
                 frame_slice = frame
-
-            self.frame_slice = frame_slice
 
             measurement = self.slice(depth, frame_slice, timestamp)
 
@@ -184,9 +114,9 @@ class BinanceOrderBookEmitter(
 
     def slice(self, depth, frame_slice, timestamp):
         fields = dict(
-            data=json.dumps(frame_slice.tolist()),
-            best_bid=self.get_best_bid(),
-            best_ask=self.get_best_ask()
+            best_ask=frame_slice[0][0][0],
+            best_bid=frame_slice[1][0][0],
+            data=json.dumps(frame_slice.tolist())
         )
 
         return Measurement(measurement=self.channel_for_depth(depth),
@@ -224,7 +154,7 @@ class BinanceOrderBookEmitter(
             frame_key = self.queued_frames.pop()
             self.emit_frames(timestamp, frame_key)
 
-        if self.save_data:
+        if self.save_data and measurements:
             self.write_points(measurements, time_precision='ms')
 
     @lru_cache()
@@ -241,7 +171,7 @@ class BinanceOrderBookEmitter(
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(**kwargs):
     recorder = BinanceOrderBookEmitter(
-        depths=[0, 40],
+        depths=[0, 40, 80],
         subscriptions_enabled=True,
         **kwargs
     )
