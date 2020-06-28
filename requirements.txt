@@ -12,6 +12,7 @@ gym
 influxdb
 matplotlib
 mock
+numpy<1.19.0,>=1.16.0
 opencv-python
 optuna
 pandas==0.25.3
@@ -30,6 +31,8 @@ pytz
 redis
 rollbar>=0.13.12
 scikit-image
+scipy==1.4.1
+setuptools>=41.0.0
 sortedcontainers
 statsd
 stringcase
