@@ -350,7 +350,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         plot = self.plot_orderbook()
 
-        if orderbook.shape[2] != self.orderbook_depth:
+        if orderbook.shape[1] != self.orderbook_depth:
             raise OrderBookIncompleteException()
 
         if self.last_orderbook_levels is not None:

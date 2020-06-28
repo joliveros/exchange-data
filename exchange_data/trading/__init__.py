@@ -9,5 +9,5 @@ class Actions(NoValue):
 
 class Positions(NoValue):
     Flat = 0
-    Short = 1
-    Long = 2
+    Long = 1
+    Short = 2
