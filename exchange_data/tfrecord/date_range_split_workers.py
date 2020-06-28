@@ -17,6 +17,9 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
 
     def __init__(
         self,
+        database_name,
+        volume_max,
+        symbol,
         position_ratio,
         window_size,
         max_workers,
@@ -30,8 +33,11 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
         DateTimeUtils.__init__(self)
         PriceChangeRanges.__init__(self)
 
-        super().__init__(**kwargs)
+        super().__init__(symbol=symbol, database_name=database_name, **kwargs)
 
+        self.volume_max = volume_max
+        self.database_name = database_name
+        self.symbol = symbol
         self.window_size = window_size
         kwargs['window_size'] = window_size
         self.kwargs = kwargs
@@ -61,7 +67,9 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
             )
 
         if interval_type == 'volatility_window':
-            twindow = TradingWindowEmitter(interval=interval, group_by='2m')
+            twindow = TradingWindowEmitter(interval=interval, group_by='2m',
+                                           database_name=database_name,
+                                           symbol=symbol)
             twindow.next_intervals()
             alog.info(twindow.intervals)
             self.intervals = twindow.intervals
@@ -79,6 +87,9 @@ class DateRangeSplitWorkers(Database, DateTimeUtils, PriceChangeRanges):
                 self.kwargs['start_date'] = interval_dates[0]
                 self.kwargs['end_date'] = interval_dates[1]
                 self.kwargs['directory_name'] = self.directory_name
+                self.kwargs['database_name'] = self.database_name
+                self.kwargs['symbol'] = self.symbol
+                self.kwargs['volume_max'] = self.volume_max
 
                 window_interval = \
                     timedelta(seconds=timeparse(self.window_size))

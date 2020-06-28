@@ -31,6 +31,7 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
     def __init__(
         self,
         side,
+        volume_max,
         overwrite: bool,
         start_date=None,
         end_date=None,
@@ -47,7 +48,7 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
             self.stop_date = self.now()
         else:
             self.stop_date = end_date
-
+        self.volume_max = volume_max
         self.side = side
         self.file_path = str(self.directory) + f'/{filename}.tfrecord'
         self.temp_file_path = str(self.directory) + f'/{filename}.temp'
@@ -65,14 +66,17 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         self.done = False
 
     def queue_obs(self):
+
         timestamp, best_ask, best_bid, orderbook_levels = next(self)
         orderbook_levels = np.asarray(json.loads(orderbook_levels))
+        orderbook_levels = np.concatenate((orderbook_levels[0],
+                                          orderbook_levels[1]))
+        orderbook_levels = np.sort(orderbook_levels, axis=0)
         orderbook_levels = np.delete(orderbook_levels, 0, 1)
-        orderbook_levels[0][0] = np.flip(orderbook_levels[0][0])
-        orderbook_levels[1] =  orderbook_levels[1] * -1
-        max = 3.0e6
-        orderbook_levels = np.reshape(orderbook_levels, (80, 1)) / max
-        orderbook_levels = np.clip(orderbook_levels, a_min=0.0, a_max=max)
+
+        orderbook_levels = np.reshape(orderbook_levels,
+                                      (orderbook_levels.shape[0], 1)) / self.volume_max
+        orderbook_levels = np.clip(orderbook_levels, a_min=0.0, a_max=self.volume_max)
 
         self.best_ask = best_ask
         self.best_bid = best_bid
