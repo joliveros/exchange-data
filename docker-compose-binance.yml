@@ -78,26 +78,26 @@ services:
         secrets:
             - DB
 
-#    emit_prediction_btc:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/emitters/prediction_emitter.py XBTUSD --model-name resnet"
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        networks:
-#            - public
-#        depends_on:
-#            - resnet_server
-#            - redis
-#            - influxdb
-#        secrets:
-#            - DB
-#
+    emit_prediction_btc:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/prediction_emitter.py $SYMBOL -v 1e4"
+        environment:
+            - LOG_LEVEL=INFO
+        env_file:
+            - ./.env.prod
+        networks:
+            - public
+        depends_on:
+            - resnet_server
+            - redis
+            - influxdb
+        secrets:
+            - DB
+
 #    virtual_executor:
 #        deploy:
 #            replicas: 1
@@ -137,14 +137,14 @@ services:
         deploy:
             replicas: 1
         image: tensorflow/serving:2.1.0
-#        ports:
-#            - 0.0.0.0:8500:8500
-#            - 0.0.0.0:8501:8501
+        ports:
+            - 0.0.0.0:8500:8500
+            - 0.0.0.0:8501:8501
         volumes:
-            - /home/joliveros/.exchange-data/models:/models
+            - /home/joliveros/.exchange-data/models/${SYMBOL}_export:/models/resnet
         environment:
             - CUDA_VISIBLE_DEVICES=-1
-            - MODEL_NAME=${SYMBOL}_export
+            - MODEL_NAME=resnet
         networks:
             - public
 
