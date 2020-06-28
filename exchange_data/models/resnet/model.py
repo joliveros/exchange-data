@@ -166,6 +166,7 @@ class ModelTrainer(object):
             sequence_length,
             seed
         ):
+
         model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
 
         if clear:
@@ -196,11 +197,13 @@ class ModelTrainer(object):
         )
 
         train_spec = TrainSpec(
-            input_fn=lambda: dataset(batch_size=batch_size, epochs=epochs),
+            input_fn=lambda: dataset(batch_size=batch_size, epochs=epochs,
+                                     dataset_name=f'{directory}_default'),
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(dataset_name='eval', batch_size=1,
+            input_fn=lambda: dataset(dataset_name=f'{directory}_eval',
+                                     batch_size=1,
                                      epochs=1),
             start_delay_secs=60,
             steps=timeparse('8m'),
@@ -220,7 +223,8 @@ class ModelTrainer(object):
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
         if export_model:
-            export_dir = f'{Path.home()}/.exchange-data/models/resnet_export'
+            export_dir = f'{Path.home()}/.exchange-data/models/' \
+                         f'{directory}_export'
 
             resnet_estimator.export_saved_model(export_dir,
                                                 serving_input_receiver_fn)
