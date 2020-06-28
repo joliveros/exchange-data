@@ -22,7 +22,7 @@ def convert(
     sequence_length=48,
     labeled_ratio=0.5,
     dataset_name='default',
-    epochs=1
+    min_change=2.0
 ):
     file = f'{Path.home()}/.exchange-data/tfrecords/' \
                   f'{dataset_name}/data.tfrecord'
@@ -59,12 +59,11 @@ def convert(
 
     df['frame'] = df['frame'].apply(lambda f: f[0])
 
-    min_change = 2.0
-
     df['expected_position'] = np.where(
-        (df['avg_price'].shift(1) - df['avg_price']) > min_change, 1, 0)
+        (df['avg_price']) - df['avg_price'].shift(1) > min_change, 1, 0)
 
     for i in range(0, len(df)):
+
         expected_position = df.loc[i, 'expected_position'] == 1
 
         if expected_position:
@@ -165,11 +164,11 @@ def convert(
 
 
 @click.command()
-@click.option('--expected-position-length', '-e', default=4, type=int)
-@click.option('--sequence-length', '-s', default=48, type=int)
-@click.option('--labeled-ratio', '-l', default=0.5, type=float)
 @click.option('--dataset-name', '-d', default='default', type=str)
-@click.option('--epochs', '-e', default=1, type=int)
+@click.option('--expected-position-length', '-e', default=4, type=int)
+@click.option('--labeled-ratio', '-l', default=0.5, type=float)
+@click.option('--min-change', '-m', default=2.0, type=float)
+@click.option('--sequence-length', '-s', default=48, type=int)
 def main(**kwargs):
     convert(**kwargs)
 
