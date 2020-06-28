@@ -284,6 +284,14 @@ class OrderBook(object):
         else:
             return False
 
+    def get_price(self, price: float):
+        if self.bids.price_exists(price):
+            return self.bids.get_price_list(price)
+        elif self.asks.price_exists(price):
+            return self.asks.get_price_list(price)
+        else:
+            raise PriceDoesNotExistException()
+
     def get_volume(self, price: float):
         if self.bids.price_exists(price):
             return self.bids.get_price_list(price).volume

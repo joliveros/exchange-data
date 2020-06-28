@@ -2,7 +2,7 @@ from dateutil import parser
 from exchange_data.bitmex_orderbook import InstrumentInfo
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import TimeEmitter
-from exchange_data.emitters.bitmex import BitmexOrderBookEmitter
+from exchange_data.emitters.bitmex import BinanceOrderBookEmitter
 from exchange_data.orderbook.tests.fixtures import orders
 
 import alog
@@ -32,8 +32,8 @@ def orderbook_emitter(mocker, orders, tmpdir):
         'exchange_data.emitters.bitmex._bitmex_orderbook_emitter'
         '.SignalInterceptor'
     )
-    orderbook_emitter = BitmexOrderBookEmitter(BitmexChannels.XBTUSD,
-                                               cache_dir=tmpdir)
+    orderbook_emitter = BinanceOrderBookEmitter(BitmexChannels.XBTUSD,
+                                                cache_dir=tmpdir)
 
     for order in orders:
         orderbook_emitter.process_order(order)
