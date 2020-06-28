@@ -59,6 +59,10 @@ def convert(
 
     df['frame'] = df['frame'].apply(lambda f: f[0])
 
+    min_price = df['avg_price'].min()
+
+    min_change = min_price * (min_change / 100)
+
     df['expected_position'] = np.where(
         (df['avg_price']) - df['avg_price'].shift(1) > min_change, 1, 0)
 
@@ -108,7 +112,7 @@ def convert(
     labeled_count = labeled_df.shape[0]
     unlabeled_df = df[df['expected_position'] == 0]
 
-    unlabeled_count = labeled_count * (1 / labeled_ratio) * (1 - labeled_ratio)
+    unlabeled_count = int(labeled_count * (1 / labeled_ratio) * (1 - labeled_ratio))
 
     alog.info((labeled_ratio, labeled_count, unlabeled_count))
 
