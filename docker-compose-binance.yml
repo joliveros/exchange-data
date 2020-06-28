@@ -133,20 +133,20 @@ services:
 #            - BITMEX_API_SECRET
 #            - DB
 #
-#    resnet_server:
-#        deploy:
-#            replicas: 1
-#        image: tensorflow/serving:2.1.0
+    resnet_server:
+        deploy:
+            replicas: 1
+        image: tensorflow/serving:2.1.0
 #        ports:
 #            - 0.0.0.0:8500:8500
 #            - 0.0.0.0:8501:8501
-#        volumes:
-#            - /home/joliveros/.exchange-data/models/resnet_export:/models/resnet
-#        environment:
-#            - CUDA_VISIBLE_DEVICES=-1
-#            - MODEL_NAME=resnet
-#        networks:
-#            - public
+        volumes:
+            - /home/joliveros/.exchange-data/models:/models
+        environment:
+            - CUDA_VISIBLE_DEVICES=-1
+            - MODEL_NAME=${SYMBOL}_export
+        networks:
+            - public
 
 secrets:
     BITMEX_API_KEY:
