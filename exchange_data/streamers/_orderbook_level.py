@@ -10,12 +10,12 @@ import click
 
 
 class OrderBookLevelStreamer(BitmexStreamer):
-    def __init__(self, depth=40, groupby='2s', symbol = BitmexChannels.XBTUSD,
+    def __init__(self, symbol, depth=40, groupby='2s',
                  **kwargs):
         super().__init__(**kwargs)
         self.groupby = groupby
         self.last_timestamp = self.start_date
-        self.channel_name = f'{symbol.value}_OrderBookFrame_depth_{depth}'
+        self.channel_name = f'{symbol}_OrderBookFrame_depth_{depth}'
         self.current_query = self.get_orderbook_frames()
 
     def orderbook_frame_query(self):

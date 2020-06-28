@@ -24,15 +24,14 @@ from plotly.subplots import make_subplots
 class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
     def __init__(
         self,
+        symbol,
         interval='2h',
         group_by='1m',
         plot=False,
-        symbol=BitmexChannels.XBTUSD,
         **kwargs
     ):
         super().__init__(
             database_batch_size=1,
-            database_name='bitmex',
             **kwargs
         )
 
@@ -45,7 +44,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         self.interval_delta = timedelta(seconds=timeparse(interval))
 
         self.channel_name = 'should_trade'
-        self.frame_channel = f'{symbol.value}_OrderBookFrame_depth_40'
+        self.frame_channel = f'{symbol}_OrderBookFrame_depth_40'
 
         self.on('2s', self.next_intervals)
 
@@ -116,7 +115,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
                     intervals += [interval]
 
             if i == last_index:
-                if t[-1] == 'max':
+                if t[-1] == 'min':
                     alog.info('## should trade ##')
                     self.publish(self.channel_name, json.dumps({'should_trade': str(True)}))
                 else:
@@ -221,6 +220,8 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
 
 @click.command()
 @click.option('--interval', '-i', default='1h', type=str)
+@click.option('--database-name', '-d', default='binance', type=str)
+@click.option('--symbol', '-s', default='', type=str)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--once', '-o', is_flag=True)
 @click.option('--plot', '-p', is_flag=True)
