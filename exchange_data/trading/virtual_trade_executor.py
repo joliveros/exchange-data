@@ -32,17 +32,18 @@ class VirtualTradeExecutor(
         TradeJob.__init__(self, symbol=symbol)
 
         super().__init__(
-            start_date=DateTimeUtils.now(),
-            end_date=DateTimeUtils.now(),
-            symbol=symbol,
             database_name='bitmex',
+            end_date=DateTimeUtils.now(),
+            orderbook_depth=40,
             random_start_date=True,
+            start_date=DateTimeUtils.now(),
+            symbol=symbol,
             # exit_func=self.stop,
             **kwargs
         )
 
         self._last_position = Positions.Flat
-        self.orderbook_frame_channel = 'XBTUSD_OrderBookFrame_depth_21'
+        self.orderbook_frame_channel = f'{self.symbol}_OrderBookFrame_depth_40'
         self.last_frame = None
         self.on(self.orderbook_frame_channel, self.handle_frame)
         self.on(self.job_name, self.execute)
@@ -93,6 +94,8 @@ class VirtualTradeExecutor(
         return self.last_frame
 
     def execute(self, action):
+        alog.info(action)
+
         if self.last_frame:
             self._execute(action)
 
@@ -109,18 +112,19 @@ class VirtualTradeExecutor(
 
         alog.info(alog.pformat(self.summary()))
 
+
 @click.command()
 @click.option('--position-size', '-p', type=int, default=1)
 @click.option('--leverage', '-l', type=float, default=1.0)
 @click.option('--capital', '-c', type=float, default=1.0)
-@click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-def main(symbol, **kwargs):
+@click.argument('symbol', type=str)
+def main(**kwargs):
     executor = VirtualTradeExecutor(
-        symbol=BitmexChannels[symbol],
         max_summary=10,
         **kwargs)
 
     executor.start()
+
 
 if __name__ == '__main__':
     main()

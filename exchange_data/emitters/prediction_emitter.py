@@ -21,20 +21,23 @@ import requests
 
 
 class TradeJob(object):
-    def __init__(self, symbol: BitmexChannels, **kwargs):
+    def __init__(self, symbol, **kwargs):
         self.symbol = symbol
-        self.job_name = f'trade_{self.symbol.value}'
+        self.job_name = f'trade_{self.symbol}'
 
 
 class PredictionEmitter(Messenger, TradeJob):
-    def __init__(self, sequence_length, depth, symbol, model_name, **kwargs):
+    def __init__(self, volume_max, database_name, sequence_length, depth,
+                 symbol, **kwargs):
+        self.volume_max = volume_max
         self.symbol = symbol
         self.sequence_length = sequence_length
+        self.database_name = database_name
 
         super().__init__(symbol=symbol, **kwargs)
 
-        self.model_name = model_name
-        self.orderbook_channel = f'XBTUSD_OrderBookFrame_depth_{depth}_2s'
+        self.orderbook_channel = \
+            f'{symbol}_OrderBookFrame_depth_{depth}_2s'
         self.trading_enabled = True
         self.frames = deque(maxlen=sequence_length)
 
@@ -53,13 +56,14 @@ class PredictionEmitter(Messenger, TradeJob):
         start_date = now - timedelta(seconds=49*2)
 
         levels = OrderBookLevelStreamer(
-            start_date=start_date,
-            end_date=DateTimeUtils.now(),
-            database_name='bitmex',
+            database_name=self.database_name,
             depth=depth,
+            end_date=DateTimeUtils.now(),
             groupby='2s',
-            window_size='48s',
-            sample_interval='48s'
+            sample_interval='48s',
+            start_date=start_date,
+            symbol=self.symbol,
+            window_size='48s'
         )
 
         for timestamp, best_ask, best_bid, orderbook_img in levels:
@@ -72,12 +76,14 @@ class PredictionEmitter(Messenger, TradeJob):
                     pass
 
     def normalize_frame(self, orderbook_levels):
+        orderbook_levels = np.concatenate((orderbook_levels[0],
+                                          orderbook_levels[1]))
+        orderbook_levels = np.sort(orderbook_levels, axis=0)
         orderbook_levels = np.delete(orderbook_levels, 0, 1)
-        orderbook_levels[0][0] = np.flip(orderbook_levels[0][0])
-        orderbook_levels[1] =  orderbook_levels[1] * -1
-        max = 3.0e6
-        orderbook_levels = np.reshape(orderbook_levels, (80, 1)) / max
-        return np.clip(orderbook_levels, a_min=0.0, a_max=max)
+
+        orderbook_levels = np.reshape(orderbook_levels,
+                                      (orderbook_levels.shape[0], 1)) / self.volume_max
+        return np.clip(orderbook_levels, a_min=0.0, a_max=self.volume_max)
 
     def get_prediction(self):
         frames = np.expand_dims(np.asarray(self.frames), axis=0)
@@ -94,11 +100,15 @@ class PredictionEmitter(Messenger, TradeJob):
 
         data = gzip.compress(bytes(data, encoding='utf8'))
 
+        url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict'
+
         json_response = requests.post(
-            f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict',
+            url,
             data=data,
             headers=headers
         )
+
+        alog.info(alog.pformat(json_response))
 
         predictions = json.loads(json_response.text)['predictions']
 
@@ -124,6 +134,9 @@ class PredictionEmitter(Messenger, TradeJob):
         self.publish(self.job_name, json.dumps({'data': position.value}))
 
     def emit_prediction(self, data):
+        self._emit_prediction(data)
+        return
+
         if self.trading_enabled:
             try:
                 self._emit_prediction(data)
@@ -138,15 +151,14 @@ class PredictionEmitter(Messenger, TradeJob):
 
 
 @click.command()
-@click.option('--model-name', '-m', default=None, type=str)
 @click.option('--depth', '-d', default=40, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
-@click.argument('symbol', type=click.Choice(BitmexChannels.__members__))
-def main(symbol, **kwargs):
+@click.option('--database-name', '-d', default='binance', type=str)
+@click.option('--volume-max', '-v', default=1.0e4, type=float)
+@click.argument('symbol', type=str)
+def main(**kwargs):
 
-    emitter = PredictionEmitter(
-        symbol=BitmexChannels[symbol],
-        **kwargs)
+    emitter = PredictionEmitter(**kwargs)
     emitter.run()
 
 
