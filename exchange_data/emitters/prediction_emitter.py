@@ -134,9 +134,6 @@ class PredictionEmitter(Messenger, TradeJob):
         self.publish(self.job_name, json.dumps({'data': position.value}))
 
     def emit_prediction(self, data):
-        self._emit_prediction(data)
-        return
-
         if self.trading_enabled:
             try:
                 self._emit_prediction(data)
