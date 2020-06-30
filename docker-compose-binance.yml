@@ -61,7 +61,7 @@ services:
 
     emit_trading_window:
         deploy:
-            replicas: 1
+            replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
@@ -80,7 +80,7 @@ services:
 
     emit_prediction_btc:
         deploy:
-            replicas: 1
+            replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
@@ -135,11 +135,11 @@ services:
 #
     resnet_server:
         deploy:
-            replicas: 1
+            replicas: 0
         image: tensorflow/serving:2.1.0
-        ports:
-            - 0.0.0.0:8500:8500
-            - 0.0.0.0:8501:8501
+#        ports:
+#            - 0.0.0.0:8500:8500
+#            - 0.0.0.0:8501:8501
         volumes:
             - /home/joliveros/.exchange-data/models/${SYMBOL}_export:/models/resnet
         environment:
