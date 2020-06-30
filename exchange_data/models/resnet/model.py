@@ -164,7 +164,9 @@ class ModelTrainer(object):
             learning_rate,
             levels,
             sequence_length,
-            seed
+            seed,
+            symbol=None,
+            **kwargs
         ):
 
         model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
@@ -196,13 +198,16 @@ class ModelTrainer(object):
             config=run_config,
         )
 
+        if symbol is None:
+            symbol = directory
+
         train_spec = TrainSpec(
             input_fn=lambda: dataset(batch_size=batch_size, epochs=epochs,
-                                     dataset_name=f'{directory}_default'),
+                                     dataset_name=f'{symbol}_default'),
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(dataset_name=f'{directory}_eval',
+            input_fn=lambda: dataset(dataset_name=f'{symbol}_eval',
                                      batch_size=1,
                                      epochs=1),
             start_delay_secs=60,

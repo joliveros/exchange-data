@@ -53,8 +53,10 @@ class OrderBookLevelStreamer(BitmexStreamer):
                 return next(self.current_query)
             except StopIteration as e:
                 self._set_next_window()
+                if self.end_date > self.stop_date:
+                    raise StopIteration()
                 self.current_query = self.get_orderbook_frames()
-                return next(self.current_query)
+                return None, None, None, None
 
         raise StopIteration()
 
