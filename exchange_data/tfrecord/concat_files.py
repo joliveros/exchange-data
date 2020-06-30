@@ -63,6 +63,7 @@ def write(dataset_name, suffix, df):
 
     shutil.move(temp_file, file)
 
+
 def convert(
     expected_position_length=4,
     sequence_length=48,
@@ -74,12 +75,12 @@ def convert(
 
     for data in tfds.as_numpy(dataset(batch_size=1, epochs=1,
                                   dataset_name=dataset_name)):
-        # frames += [data]
+        frames += [data]
 
-        if len(frames) <= 500:
-            frames += [data]
-        else:
-            break
+        # if len(frames) <= 500:
+        #     frames += [data]
+        # else:
+        #     break
 
     df = pd.DataFrame(frames)
     df['best_ask'] = df['best_ask'].apply(lambda x: x[0][0])
@@ -129,7 +130,6 @@ def convert(
                 frames = [frame] + frames
 
             i += 1
-
 
         frames = np.asarray(frames)
 
