@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import alog
 from binance.client import Client
 from binance.depthcache import DepthCacheManager
 from datetime import timedelta, datetime
@@ -56,6 +56,7 @@ class DepthEmitter(Messenger):
         self.publish(self.symbol, json.dumps(depth.tolist()))
 
     def clear_timeout(self):
+        alog.info('### clear timeout ###')
         self.timeout = datetime.now() + timedelta(seconds=5)
 
 
