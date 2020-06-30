@@ -35,6 +35,15 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
 
+    file_dates = [(re.findall(f'\d+', file), file)
+        for file in files]
+
+    file_dates = [fd for fd in file_dates if len(fd[0]) > 0]
+
+    file_dates = reversed(file_dates)
+
+    files = [fd[-1] for fd in file_dates]
+
     files = tf.compat.v2.data.Dataset.from_tensor_slices(files)
 
     def read_file(filename):
@@ -53,11 +62,13 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
 
 
 @click.command()
-def main(**kwargs):
+@click.argument('dataset_name', nargs=1, required=True)
+def main(dataset_name, **kwargs):
     count = 0
     max = 0
 
-    for data in tfds.as_numpy(dataset(batch_size=1, epochs=1)):
+    for data in tfds.as_numpy(dataset(batch_size=1, epochs=1,
+                                      dataset_name=dataset_name)):
         alog.info(data)
         count += 1
 
