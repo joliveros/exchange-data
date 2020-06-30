@@ -4,6 +4,7 @@ import time
 import optuna
 from optuna import Trial
 
+from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model import ModelTrainer
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
@@ -13,31 +14,43 @@ import click
 import logging
 import tensorflow as tf
 
+from exchange_data.tfrecord.concat_files import convert
+
 HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.00001, 0.0001))
 HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
+SYMBOL = 'SOLBNB'
 
 
 def run(trial: Trial):
     tf.keras.backend.clear_session()
 
-    run_dir = f'{Path.home()}/.exchange-data/models/resnet_params/' \
+    run_dir = f'{Path.home()}/.exchange-data/models/{SYMBOL}_params/' \
               f'{trial.number}'
 
     hparams = dict(
-        learning_rate=trial.suggest_float('learning_rate', 0.000001, 0.0001),
+        labeled_ratio=trial.suggest_float('labeled_ratio', 0.49, 0.55),
     )
 
     with tf.summary.create_file_writer(run_dir).as_default():
+        convert(**{
+            'dataset_name': f'{SYMBOL}_default',
+            'expected_position_length': 1,
+            'labeled_ratio': hparams.get('labeled_ratio'),
+            'min_change': 0.01,
+            'sequence_length': 48
+        })
+
         params = {
          'batch_size': 20,
          'clear': True,
          'directory': trial.number,
-         'epochs': 500,
-         'export_model': False,
-         'learning_rate': hparams.get('learning_rate'),
+         'symbol': SYMBOL,
+         'epochs': 50,
+         'export_model': True,
+         'learning_rate': 1.0e-6,
          'levels': 40,
          'seed': 216,
          'sequence_length': 48
@@ -59,7 +72,18 @@ def run(trial: Trial):
 
         tf.summary.scalar(METRIC_ACCURACY, accuracy, step=global_step)
 
-        return accuracy
+
+        result = BackTest(**{
+            'database_name': 'binance',
+            'depth': 40,
+            'interval': '3h',
+            'sequence_length': 48,
+            'symbol': SYMBOL,
+            'volume_max': 10000.0,
+            'trial': trial
+        })
+
+        return result.capital
 
 
 @click.command()

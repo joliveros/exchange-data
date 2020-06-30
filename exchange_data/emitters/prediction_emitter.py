@@ -29,6 +29,7 @@ class TradeJob(object):
 class PredictionEmitter(Messenger, TradeJob):
     def __init__(self, volume_max, database_name, sequence_length, depth,
                  symbol, **kwargs):
+        self.depth = depth
         self.volume_max = volume_max
         self.symbol = symbol
         self.sequence_length = sequence_length
@@ -108,8 +109,6 @@ class PredictionEmitter(Messenger, TradeJob):
             headers=headers
         )
 
-        alog.info(alog.pformat(json_response))
-
         predictions = json.loads(json_response.text)['predictions']
 
         max_index = np.argmax(predictions[0])
@@ -119,7 +118,7 @@ class PredictionEmitter(Messenger, TradeJob):
             if position.value == max_index
         ][0]
 
-        alog.info((position, max_index, predictions[0][max_index]))
+        # alog.info((position, max_index, predictions[0][max_index]))
 
         return position
 

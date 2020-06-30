@@ -17,6 +17,25 @@ import tensorflow_datasets as tfds
 from pathlib import Path
 
 
+def write_observation(writer, features):
+    example: Example = Example(
+        features=Features(feature=features)
+    )
+    writer.write(example.SerializeToString())
+
+
+def int64Feature(value):
+    return Feature(int64_list=Int64List(value=value))
+
+
+def floatFeature(value):
+    return Feature(float_list=FloatList(value=value))
+
+
+def BytesFeature(value):
+    return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
+
+
 def convert(
     expected_position_length=4,
     sequence_length=48,
@@ -24,15 +43,9 @@ def convert(
     dataset_name='default',
     min_change=2.0
 ):
-    file = f'{Path.home()}/.exchange-data/tfrecords/' \
-                  f'{dataset_name}/data.tfrecord'
-    try:
-        os.remove(file)
-    except:
-        pass
-
     frames = []
 
+    raise Exception()
 
     for data in tfds.as_numpy(dataset(batch_size=1, epochs=1,
                                   dataset_name=dataset_name)):
@@ -118,26 +131,15 @@ def convert(
 
     unlabeled_df = unlabeled_df.sample(frac=unlabeled_count / unlabeled_df.shape[0])
 
-    df = pd.concat([labeled_df, unlabeled_df]).reset_index(drop=True)
-
-    alog.info(df)
+    file = f'{Path.home()}/.exchange-data/tfrecords/' \
+                  f'{dataset_name}/data.tfrecord'
+    try:
+        os.remove(file)
+    except:
+        pass
 
     temp_file = f'{file}.temp'
 
-    def write_observation(writer, features):
-        example: Example = Example(
-            features=Features(feature=features)
-        )
-        writer.write(example.SerializeToString())
-
-    def int64Feature(value):
-        return Feature(int64_list=Int64List(value=value))
-
-    def floatFeature(value):
-        return Feature(float_list=FloatList(value=value))
-
-    def BytesFeature(value):
-        return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
 
     with TFRecordWriter(temp_file, TFRecordCompressionType.GZIP) \
         as writer:
@@ -152,20 +154,6 @@ def convert(
 
     shutil.move(temp_file, file)
 
-    # epoch_count = 0
-
-    # while epoch_count <= epochs:
-    #
-    #     shuffled_df = pd.concat([labeled_df, unlabeled_df]).sample(
-    #         frac=1.0).reset_index(drop=True)
-    #
-    #     for i in range(0, len(shuffled_df)):
-    #         row = shuffled_df.loc[i]
-    #         yield row['frame'], row['expected_position']
-    #
-    #     epoch_count += 1
-
-
 
 @click.command()
 @click.option('--dataset-name', '-d', default='default', type=str)
@@ -174,6 +162,8 @@ def convert(
 @click.option('--min-change', '-m', default=2.0, type=float)
 @click.option('--sequence-length', '-s', default=48, type=int)
 def main(**kwargs):
+    # alog.info(alog.pformat(kwargs))
+    # raise Exception()
     convert(**kwargs)
 
 

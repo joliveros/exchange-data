@@ -43,7 +43,7 @@ def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
         .batch(batch_size) \
         .skip(skip) \
         .prefetch(10) \
-        .cache() \
+        .shuffle(10) \
         .repeat(epochs)
 
     return _dataset
