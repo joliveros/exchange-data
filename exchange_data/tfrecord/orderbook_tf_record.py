@@ -27,6 +27,10 @@ Features = tf.train.Features
 Example = tf.train.Example
 
 
+class NoOrderLevelsException(Exception):
+    pass
+
+
 class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
     def __init__(
         self,
@@ -66,8 +70,13 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
         self.done = False
 
     def queue_obs(self):
-
         timestamp, best_ask, best_bid, orderbook_levels = next(self)
+        if timestamp:
+            self._last_datetime = timestamp
+
+        if orderbook_levels is None:
+            return
+
         orderbook_levels = np.asarray(json.loads(orderbook_levels))
         orderbook_levels = np.concatenate((orderbook_levels[0],
                                           orderbook_levels[1]))
@@ -80,8 +89,6 @@ class OrderBookTFRecordBase(TFRecordDirectoryInfo, TrainingDataBase):
 
         self.best_ask = best_ask
         self.best_bid = best_bid
-
-        self._last_datetime = timestamp
 
         self.frames.appendleft((timestamp, best_ask, best_bid,
                                 orderbook_levels))
