@@ -34,17 +34,6 @@ def dataset(batch_size: int, skip=0, epochs: int = 1, dataset_name='default',
 
     records_dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
     files = [str(file) for file in Path(records_dir).glob('*.tfrecord')]
-    alog.info(files)
-
-    file_dates = sorted([
-        (DateTimeUtils.parse_db_timestamp(int(re.findall(f'\d+', file)[0])), file)
-        for file in files])
-
-    file_dates = reversed(file_dates)
-
-    files = [fd[-1] for fd in file_dates]
-
-    # alog.info(alog.pformat(files))
 
     files = tf.compat.v2.data.Dataset.from_tensor_slices(files)
 

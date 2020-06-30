@@ -35,6 +35,33 @@ def floatFeature(value):
 def BytesFeature(value):
     return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
 
+def filename(dataset_name, suffix):
+    file = f'{Path.home()}/.exchange-data/tfrecords/' \
+           f'{dataset_name}/data_{suffix}.tfrecord'
+    try:
+        os.remove(file)
+    except:
+        pass
+    temp_file = f'{file}.temp'
+
+    return file,  temp_file
+
+
+def write(dataset_name, suffix, df):
+    file, temp_file = filename(dataset_name, suffix)
+
+    with TFRecordWriter(temp_file, TFRecordCompressionType.GZIP) \
+        as writer:
+
+        for name, row in df.iterrows():
+            data = dict(
+                expected_position=int64Feature([int(row['expected_position'])]),
+                frame=floatFeature(row['frame_sequence'].flatten()),
+            )
+
+            write_observation(writer, data)
+
+    shutil.move(temp_file, file)
 
 def convert(
     expected_position_length=4,
@@ -45,16 +72,14 @@ def convert(
 ):
     frames = []
 
-    raise Exception()
-
     for data in tfds.as_numpy(dataset(batch_size=1, epochs=1,
                                   dataset_name=dataset_name)):
-        frames += [data]
+        # frames += [data]
 
-        # if len(frames) <= 500:
-        #     frames += [data]
-        # else:
-        #     break
+        if len(frames) <= 500:
+            frames += [data]
+        else:
+            break
 
     df = pd.DataFrame(frames)
     df['best_ask'] = df['best_ask'].apply(lambda x: x[0][0])
@@ -131,28 +156,8 @@ def convert(
 
     unlabeled_df = unlabeled_df.sample(frac=unlabeled_count / unlabeled_df.shape[0])
 
-    file = f'{Path.home()}/.exchange-data/tfrecords/' \
-                  f'{dataset_name}/data.tfrecord'
-    try:
-        os.remove(file)
-    except:
-        pass
-
-    temp_file = f'{file}.temp'
-
-
-    with TFRecordWriter(temp_file, TFRecordCompressionType.GZIP) \
-        as writer:
-
-        for name, row in df.iterrows():
-            data = dict(
-                expected_position=int64Feature([int(row['expected_position'])]),
-                frame=floatFeature(row['frame_sequence'].flatten()),
-            )
-
-            write_observation(writer, data)
-
-    shutil.move(temp_file, file)
+    write(dataset_name, 'labeled', labeled_df)
+    write(dataset_name, 'unlabeled', unlabeled_df)
 
 
 @click.command()
