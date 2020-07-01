@@ -16,7 +16,7 @@ NUM_CLASSES = len(CLASSES)
 
 
 def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
-            dataset_name='default',
+            dataset_name='default', filename='data',
             **kwargs):
     def extract_fn(data_record):
         # alog.info(data_record)
@@ -31,7 +31,7 @@ def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
         return data['frame'], data['expected_position']
 
     data_file = f'{Path.home()}/.exchange-data/tfrecords/' \
-                  f'{dataset_name}/data.tfrecord'
+                  f'{dataset_name}/{filename}.tfrecord'
 
     def read_file(filename):
         return tf.data.TFRecordDataset(
@@ -42,8 +42,6 @@ def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
     _dataset = _dataset.map(map_func=extract_fn) \
         .batch(batch_size) \
         .skip(skip) \
-        .prefetch(10) \
-        .shuffle(10) \
         .repeat(epochs)
 
     return _dataset

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 
 from pandas import DataFrame
 from pathlib import Path
@@ -17,8 +18,10 @@ import shutil
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import tensorflow_datasets as tfds
 
 from exchange_data.tfrecord.processed_dataset import dataset
+
 
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
@@ -156,6 +159,8 @@ class ModelTrainer(object):
 
     def _run(
             self,
+            take,
+            take_ratio,
             batch_size,
             clear,
             directory,
@@ -201,17 +206,39 @@ class ModelTrainer(object):
         if symbol is None:
             symbol = directory
 
+        def ds(dataset_name):
+            labeled_ds = dataset(
+                batch_size=1,
+                epochs=epochs,
+                dataset_name=dataset_name,
+                filename='data_labeled'
+            ).unbatch().take(take)
+
+            unlabeled_take = int((take * 2) * (1 - take_ratio))
+
+            unlabeled_ds = dataset(
+                batch_size=1,
+                epochs=1,
+                dataset_name=dataset_name,
+                filename='data_unlabeled'
+            ).unbatch().take(unlabeled_take)
+
+            return labeled_ds.concatenate(unlabeled_ds) \
+                .shuffle(take + unlabeled_take) \
+                .batch(batch_size) \
+                .repeat(epochs)
+
+        # for frame, expected_position in tfds.as_numpy(ds(f'{symbol}_default')):
+        #     alog.info(expected_position)
+
         train_spec = TrainSpec(
-            input_fn=lambda: dataset(batch_size=batch_size, epochs=epochs,
-                                     dataset_name=f'{symbol}_default'),
+            input_fn=lambda: ds(f'{symbol}_default'),
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: dataset(dataset_name=f'{symbol}_eval',
-                                     batch_size=1,
-                                     epochs=1),
+            input_fn=lambda: ds(f'{symbol}_default'),
             start_delay_secs=60,
-            steps=timeparse('8m'),
+            steps=timeparse('16m'),
             throttle_secs=60
         )
 
@@ -229,7 +256,12 @@ class ModelTrainer(object):
 
         if export_model:
             export_dir = f'{Path.home()}/.exchange-data/models/' \
-                         f'{directory}_export'
+                         f'{symbol}_export'
+
+            try:
+                os.mkdir(export_dir)
+            except:
+                pass
 
             resnet_estimator.export_saved_model(export_dir,
                                                 serving_input_receiver_fn)
@@ -241,6 +273,8 @@ class ModelTrainer(object):
 @click.option('--batch-size', '-b', type=int, default=1)
 @click.option('--levels', type=int, default=40)
 @click.option('--sequence-length', type=int, default=48)
+@click.option('--take', type=int, default=1000)
+@click.option('--take-ratio', type=float, default=0.5)
 @click.option('--epochs', type=int, default=500)
 @click.option('--directory', type=str, default='default')
 @click.option('--learning-rate', '-l', type=float, default=1e-5)

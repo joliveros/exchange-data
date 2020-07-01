@@ -137,7 +137,7 @@ services:
         deploy:
             replicas: 0
         image: tensorflow/serving:2.1.0
-#        ports:
+        ports:
 #            - 0.0.0.0:8500:8500
 #            - 0.0.0.0:8501:8501
         volumes:
