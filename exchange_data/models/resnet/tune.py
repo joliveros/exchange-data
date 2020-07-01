@@ -15,42 +15,63 @@ import logging
 import tensorflow as tf
 
 from exchange_data.tfrecord.concat_files import convert
+from exchange_data.utils import DateTimeUtils
 
 HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.00001, 0.0001))
 HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
-SYMBOL = 'SOLBNB'
+SYMBOL = 'KAVABNB'
+
+backtest = BackTest(**{
+    'start_date': DateTimeUtils.parse_datetime_str('2020-06-30 '
+                                                   '23:31:00'),
+    'end_date': DateTimeUtils.parse_datetime_str('2020-07-01 00:53:00'),
+    'database_name': 'binance',
+    'depth': 40,
+    'interval': '3h',
+    'plot': True,
+    'sequence_length': 48,
+    'symbol': SYMBOL,
+    'volume_max': 10000.0,
+})
 
 
 def run(trial: Trial):
+    backtest.trial = trial
+
     tf.keras.backend.clear_session()
 
     run_dir = f'{Path.home()}/.exchange-data/models/{SYMBOL}_params/' \
               f'{trial.number}'
 
     hparams = dict(
-        labeled_ratio=trial.suggest_float('labeled_ratio', 0.49, 0.55),
+        # take_ratio=trial.suggest_float('take_ratio', 0.5005, 0.502),
+        expected_position_length=trial.suggest_int(
+            'expected_position_length', 1, 48),
+        # epochs=trial.suggest_int('take_ratio', 1, 10),
     )
 
-    with tf.summary.create_file_writer(run_dir).as_default():
-        convert(**{
-            'dataset_name': f'{SYMBOL}_default',
-            'expected_position_length': 1,
-            'labeled_ratio': hparams.get('labeled_ratio'),
-            'min_change': 0.01,
-            'sequence_length': 48
-        })
+    labeled_count = convert(**{
+        'dataset_name': f'{SYMBOL}_default',
+        'expected_position_length': hparams.get('expected_position_length'),
+        'labeled_ratio': 0.5,
+        'min_change': 0.05,
+        'sequence_length': 48
+    })
 
+    with tf.summary.create_file_writer(run_dir).as_default():
         params = {
+         'take': labeled_count,
+         'take_ratio': 0.5,
          'batch_size': 20,
          'clear': True,
          'directory': trial.number,
          'symbol': SYMBOL,
-         'epochs': 50,
+         'epochs': 10,
          'export_model': True,
-         'learning_rate': 1.0e-6,
+         'learning_rate': 1.0e-5,
          'levels': 40,
          'seed': 216,
          'sequence_length': 48
@@ -72,22 +93,19 @@ def run(trial: Trial):
 
         tf.summary.scalar(METRIC_ACCURACY, accuracy, step=global_step)
 
+        time.sleep(5)
 
-        result = BackTest(**{
-            'database_name': 'binance',
-            'depth': 40,
-            'interval': '3h',
-            'sequence_length': 48,
-            'symbol': SYMBOL,
-            'volume_max': 10000.0,
-            'trial': trial
-        })
+        backtest.test()
 
-        return result.capital
+        if backtest.capital == 1.0:
+            return 0.0
+
+        return backtest.capital
 
 
 @click.command()
 def main(**kwargs):
+
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     session_limit = 1000
 

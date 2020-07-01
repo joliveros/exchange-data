@@ -88,7 +88,7 @@ class DateTimeUtils(ABC):
 
     @staticmethod
     def parse_datetime_str(value):
-        return parser.parse(value)
+        return parser.parse(value).replace(tzinfo=tz.tzutc())
 
     @staticmethod
     def split_range_into_datetimes(

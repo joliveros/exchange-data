@@ -154,10 +154,12 @@ def convert(
 
     alog.info((labeled_ratio, labeled_count, unlabeled_count))
 
-    unlabeled_df = unlabeled_df.sample(frac=unlabeled_count / unlabeled_df.shape[0])
+    unlabeled_df = unlabeled_df.sample(frac=unlabeled_count /
+                                            unlabeled_df.shape[0])
 
     write(dataset_name, 'labeled', labeled_df)
     write(dataset_name, 'unlabeled', unlabeled_df)
+    return labeled_count
 
 
 @click.command()
@@ -167,8 +169,6 @@ def convert(
 @click.option('--min-change', '-m', default=2.0, type=float)
 @click.option('--sequence-length', '-s', default=48, type=int)
 def main(**kwargs):
-    # alog.info(alog.pformat(kwargs))
-    # raise Exception()
     convert(**kwargs)
 
 

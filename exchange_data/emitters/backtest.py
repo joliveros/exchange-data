@@ -2,6 +2,7 @@
 from collections import deque
 from datetime import timedelta
 
+from dateutil import tz
 from optuna import Trial
 
 from exchange_data.emitters.prediction_emitter import PredictionEmitter
@@ -25,13 +26,27 @@ class BackTest(PredictionEmitter):
         self,
         interval,
         symbol,
+        plot=False,
+        start_date=None,
+        end_date=None,
         trial=None,
         group_by='1m',
         **kwargs
     ):
+        self.should_plot = plot
         self.symbol = symbol
         self.trading_enabled = True
-        self.start_date = DateTimeUtils.now() - timedelta(seconds=timeparse(interval))
+
+        if start_date:
+            self.start_date = start_date
+        else:
+            self.start_date = DateTimeUtils.now() - timedelta(seconds=timeparse(interval))
+
+        if end_date:
+            self.end_date = end_date
+        else:
+            self.end_date = DateTimeUtils.now()
+
         self.capital = 1.0
         self.entry_price = 0.0
         self.trading_fee = (0.075 / 100)
@@ -46,13 +61,18 @@ class BackTest(PredictionEmitter):
         df = self.load_frames(self.depth)
         df.dropna(how='any', inplace=True)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
-
-        self.df = df.copy()
-
         df = df.set_index('time')
         df = df.sort_index()
         df.reset_index(drop=False, inplace=True)
 
+        self.df = df.copy()
+
+        if self.should_plot:
+            self.plot()
+
+    def test(self):
+        self.capital = 1.0
+        df = self.df.copy()
         df = df.apply(self.prediction, axis=1)
         df['capital'] = self.capital
         df = df.apply(self.pnl, axis=1)
@@ -75,10 +95,10 @@ class BackTest(PredictionEmitter):
         if position != self.last_position and self.entry_price > 0.0 and \
             self.last_position >= 0.0:
             exit_price = row['best_bid']
-
-            capital = ((exit_price - self.entry_price) + 1 - self.trading_fee)\
-                     * \
-                  capital
+            change = (exit_price - self.entry_price) / self.entry_price
+            fee = (1 - self.trading_fee)
+            capital = capital * fee
+            capital = (change + 1) * capital
 
         self.capital = capital
 
@@ -108,18 +128,16 @@ class BackTest(PredictionEmitter):
 
         if len(self.frames) == self.sequence_length:
             position = self.get_prediction()
-            # alog.info(position)
+            alog.info(position)
             row['position'] = int(position.value)
 
         return row
 
     def plot(self):
-        df = self.df
+        df = self.ohlc
+        df.reset_index(drop=False, inplace=True)
+
         alog.info(df)
-        exp3 = self.exp3
-        macd = self.macd
-        maxDf = self.maxDf
-        minDf = self.minDf
 
         fig = go.Figure()
 
@@ -148,27 +166,27 @@ class BackTest(PredictionEmitter):
                                      high=df['high'],
                                      low=df['low'],
                                      close=df['close'], yaxis='y4'))
-        fig.add_trace(go.Scatter(x=df['time'], y=macd, yaxis='y3'))
-        fig.add_trace(go.Scatter(x=df['time'], y=exp3, yaxis='y3'))
-        fig.add_trace(go.Scatter(x=df['time'], y=df['volatility'], yaxis='y2'))
-        fig.add_trace(go.Scatter(
-            x=minDf['time'],
-            y=minDf['avg'],
-            mode='markers',
-            marker=dict(color="crimson", size=12)
-        ))
-        fig.add_trace(go.Scatter(
-            x=maxDf['time'],
-            y=maxDf['avg'],
-            mode='markers',
-            marker=dict(color="blue", size=12)
-        ))
-        fig.add_trace(go.Scatter(
-            x=maxDf['time'],
-            y=maxDf['avg'],
-            mode='markers',
-            marker=dict(color="blue", size=12)
-        ))
+        # fig.add_trace(go.Scatter(x=df['time'], y=macd, yaxis='y3'))
+        # fig.add_trace(go.Scatter(x=df['time'], y=exp3, yaxis='y3'))
+        # fig.add_trace(go.Scatter(x=df['time'], y=df['volatility'], yaxis='y2'))
+        # fig.add_trace(go.Scatter(
+        #     x=minDf['time'],
+        #     y=minDf['avg'],
+        #     mode='markers',
+        #     marker=dict(color="crimson", size=12)
+        # ))
+        # fig.add_trace(go.Scatter(
+        #     x=maxDf['time'],
+        #     y=maxDf['avg'],
+        #     mode='markers',
+        #     marker=dict(color="blue", size=12)
+        # ))
+        # fig.add_trace(go.Scatter(
+        #     x=maxDf['time'],
+        #     y=maxDf['avg'],
+        #     mode='markers',
+        #     marker=dict(color="blue", size=12)
+        # ))
         fig.show()
 
     @property
@@ -186,14 +204,11 @@ class BackTest(PredictionEmitter):
 
     def load_frames(self, depth):
         frames = []
-        now = DateTimeUtils.now()
-
-        alog.info((str(self.start_date), str(now)))
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
             depth=depth,
-            end_date=DateTimeUtils.now(),
+            end_date=self.end_date,
             groupby='2s',
             sample_interval='48s',
             start_date=self.start_date,
@@ -231,10 +246,15 @@ class BackTest(PredictionEmitter):
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--interval', '-i', default='2h', type=str)
 @click.option('--volume-max', '-v', default=1.0e4, type=float)
+@click.option('--plot', '-p', is_flag=True)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-    BackTest(**kwargs)
+    # start_date = DateTimeUtils.parse_datetime_str('2020-06-30 23:31:00')
+    # end_date = DateTimeUtils.parse_datetime_str('2020-07-01 00:53:00')
+    #
+    # test = BackTest(start_date=start_date, end_date=end_date, **kwargs)
 
+    BackTest(**kwargs)
 
 if __name__ == '__main__':
     main()
