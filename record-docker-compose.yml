@@ -4,16 +4,6 @@ networks:
   public:
     name: public
     external: true
-  public_1:
-    name: public_1
-    external: true
-  public_2:
-    name: public_2
-    external: true
-  public_3:
-    name: public_3
-    external: true
-
 
 services:
     redis:
@@ -21,19 +11,20 @@ services:
             redis
         volumes:
             - "./redis.conf:/usr/local/etc/redis/redis.conf"
+        environment:
+            - "constraint:node==ip-172-31-38-16"
         ports:
             - 0.0.0.0:6379:6379
         networks:
             - public
-            - public_1
-            - public_2
-            - public_3
         command: redis-server /usr/local/etc/redis/redis.conf
 
     influxdb:
         image: registry.rubercubic.com:5001/influxdb
         env_file:
           - ./.env.prod
+        environment:
+          - "constraint:node==ip-172-31-38-16"
         secrets:
             - INFLUXDB_ADMIN_PASSWORD
         ports:
