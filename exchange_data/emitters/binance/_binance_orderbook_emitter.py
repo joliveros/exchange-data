@@ -179,7 +179,7 @@ class BinanceOrderBookEmitter(
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 def main(**kwargs):
     recorder = BinanceOrderBookEmitter(
-        depths=[0],
+        depths=[0, 40],
         subscriptions_enabled=True,
         **kwargs
     )
