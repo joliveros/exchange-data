@@ -14,6 +14,9 @@ CLASSES = [0, 1, 2]
 NUM_CLASSES = len(CLASSES)
 
 
+def read_file(filename):
+    return tf.data.TFRecordDataset(
+        filename, compression_type='GZIP')
 
 def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
             dataset_name='default', filename='data',
@@ -33,9 +36,7 @@ def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
     data_file = f'{Path.home()}/.exchange-data/tfrecords/' \
                   f'{dataset_name}/{filename}.tfrecord'
 
-    def read_file(filename):
-        return tf.data.TFRecordDataset(
-            filename, compression_type='GZIP')
+    alog.info(data_file)
 
     _dataset = read_file(data_file)
 
@@ -49,6 +50,7 @@ def dataset(batch_size: int, sequence_length=48, skip=0, epochs: int = 1,
 
 @click.command()
 @click.option('--dataset-name', '-d', type=str, default='default')
+@click.option('--filename', '-f', type=str, default='default')
 def main(**kwargs):
     count = 0
     max = 0
@@ -56,7 +58,7 @@ def main(**kwargs):
     for frame, expected_position in tfds.as_numpy(dataset(batch_size=2,
                                                          epochs=1, **kwargs)):
         alog.info(frame)
-        # alog.info(frame.shape)
+        alog.info(frame.shape)
         # alog.info(expected_position)
         # raise Exception()
         count += 1

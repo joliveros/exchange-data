@@ -24,7 +24,9 @@ class DepthEmitter(Messenger):
 
         self.depthCache = DepthCacheManager(Client(), symbol=symbol,
                                             callback=self.message, limit=5000,
-                                            refresh_interval=timeparse('10m'))
+                                            refresh_interval=timeparse('1h'))
+
+        alog.info('### initialized ###')
 
         while self.timeout > datetime.now():
             time.sleep(0.1)
@@ -53,11 +55,19 @@ class DepthEmitter(Messenger):
 
         self.emit('clear_timeout')
 
-        self.publish(self.symbol, json.dumps(depth.tolist()))
+        alog.info(depth)
+
+        msg = dict(
+            symbol=self.symbol,
+            depth=depth.tolist()
+        )
+
+        self.publish('symbol_timeout', json.dumps(dict(symbol=self.symbol)))
+        self.publish('depth', json.dumps(msg))
 
     def clear_timeout(self):
-        alog.info('### clear timeout ###')
-        self.timeout = datetime.now() + timedelta(seconds=5)
+        # alog.info('### clear timeout ###')
+        self.timeout = datetime.now() + timedelta(seconds=10)
 
 
 

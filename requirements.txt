@@ -4,8 +4,10 @@ bitmex-websocket==0.2.78
 cached-property
 click
 coveralls
+docker
 flake8
 git+https://github.com/joliveros/gdax-python.git#egg=gdax
+git+https://github.com/joliveros/python-binance.git#egg=python-binance
 git+https://github.com/joliveros/sec.git#egg=sec
 git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
 gym
@@ -25,7 +27,6 @@ pytest-cov
 pytest-mock
 pytest-mypy
 pytest-vcr
-python-binance
 pytimeparse
 pytz
 redis
@@ -40,3 +41,4 @@ tensorflow-datasets
 tf-nightly-gpu
 timestamp
 tqdm
+redis-collections

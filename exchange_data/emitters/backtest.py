@@ -25,6 +25,7 @@ class BackTest(PredictionEmitter):
     def __init__(
         self,
         interval,
+        window_size,
         symbol,
         plot=False,
         start_date=None,
@@ -33,6 +34,8 @@ class BackTest(PredictionEmitter):
         group_by='1m',
         **kwargs
     ):
+        self.window_size = window_size
+        self.group_by = group_by
         self.should_plot = plot
         self.symbol = symbol
         self.trading_enabled = True
@@ -54,7 +57,7 @@ class BackTest(PredictionEmitter):
         super().__init__(symbol=symbol, **kwargs)
 
         self.frames = deque(maxlen=self.sequence_length)
-        self.group_by_min = int(timeparse(group_by)/60)
+        self.group_by_min = int(timeparse(group_by) * 3 / 60)
         self.last_position = None
         self.trial: Trial = trial
 
@@ -196,6 +199,7 @@ class BackTest(PredictionEmitter):
         ohlc_df = df.drop(df.columns.difference(['time', 'openbid']), 1,
                           inplace=False)
         ohlc_df = ohlc_df.set_index('time')
+        alog.info(ohlc_df)
         ohlc_df = ohlc_df.resample(f'{self.group_by_min}T').ohlc()
         ohlc_df.columns = ohlc_df.columns.droplevel()
         ohlc_df = ohlc_df[ohlc_df.low != 0.0]
@@ -209,11 +213,10 @@ class BackTest(PredictionEmitter):
             database_name=self.database_name,
             depth=depth,
             end_date=self.end_date,
-            groupby='2s',
-            sample_interval='48s',
+            groupby=self.group_by,
             start_date=self.start_date,
             symbol=self.symbol,
-            window_size='48s'
+            window_size=self.window_size
         )
 
         for timestamp, best_ask, best_bid, orderbook_img in levels:
@@ -244,7 +247,9 @@ class BackTest(PredictionEmitter):
 @click.option('--depth', '-d', default=40, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--database-name', '-d', default='binance', type=str)
-@click.option('--interval', '-i', default='2h', type=str)
+@click.option('--interval', '-i', default='1d', type=str)
+@click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--volume-max', '-v', default=1.0e4, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.argument('symbol', type=str)

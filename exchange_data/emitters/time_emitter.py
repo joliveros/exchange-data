@@ -43,7 +43,6 @@ class TimeEmitter(Messenger, DateTimeUtils):
 
                 if self.two_second_counter % 2 == 0:
                     self.two_second_counter = 0
-                    alog.info('### publish 2s ##')
                     self.publish('2s', t)
 
 
