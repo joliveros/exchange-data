@@ -8,6 +8,7 @@ from tensorflow.core.example.feature_pb2 import Features, Feature, FloatList, \
 from tensorflow.python.lib.io.tf_record import TFRecordWriter, \
     TFRecordCompressionType
 
+from exchange_data.emitters.backtest import BackTest
 from exchange_data.tfrecord.dataset import dataset
 import alog
 import click
@@ -36,13 +37,21 @@ def BytesFeature(value):
     return Feature(bytes_list=BytesList(value=[bytes(value, encoding='utf8')]))
 
 def filename(dataset_name, suffix):
-    file = f'{Path.home()}/.exchange-data/tfrecords/' \
-           f'{dataset_name}/data_{suffix}.tfrecord'
+    dir = f'{Path.home()}/.exchange-data/tfrecords/{dataset_name}'
+    Path(dir).mkdir(exist_ok=True)
+    file = f'{dir}/data_{suffix}.tfrecord'
+    temp_file = f'{file}.temp'
+
     try:
         os.remove(file)
+
     except:
         pass
-    temp_file = f'{file}.temp'
+    try:
+        os.remove(temp_file)
+
+    except:
+        pass
 
     return file,  temp_file
 
@@ -65,38 +74,38 @@ def write(dataset_name, suffix, df):
 
 
 def convert(
+    window_size,
+    group_by,
+    symbol=None,
     expected_position_length=4,
     sequence_length=48,
     labeled_ratio=0.5,
     dataset_name='default',
-    min_change=2.0
+    min_change=2.0,
+    **kwargs
 ):
-    frames = []
+    backtest = BackTest(**{
+        'database_name': 'binance',
+        'depth': 40,
+        'sequence_length': 48,
+        'symbol': symbol,
+        'volume_max': 10000.0,
+        'group_by': group_by,
+        'window_size': window_size
+    }, **kwargs)
 
-    for data in tfds.as_numpy(dataset(batch_size=1, epochs=1,
-                                  dataset_name=dataset_name)):
-        frames += [data]
+    df = backtest.df
+    df.rename(columns={'orderbook_img': 'frame'}, inplace=True)
 
-        # if len(frames) <= 500:
-        #     frames += [data]
-        # else:
-        #     break
-
-    df = pd.DataFrame(frames)
-    df['best_ask'] = df['best_ask'].apply(lambda x: x[0][0])
-    df['best_bid'] = df['best_bid'].apply(lambda x: x[0][0])
-    df['datetime'] = df['datetime'].apply(lambda x: x[0].decode())
-    df['datetime'] = pd.to_datetime(df['datetime'])
+    alog.info(df)
 
     df['avg_price'] = (df['best_ask'] + df['best_bid']) / 2
 
     df = df.drop(columns=['best_bid', 'best_ask'])
     df.dropna(how='any', inplace=True)
-    df = df.set_index('datetime')
+    df = df.set_index('time')
     df = df.sort_index()
     df = df.reset_index(drop=False)
-
-    df['frame'] = df['frame'].apply(lambda f: f[0])
 
     min_price = df['avg_price'].min()
 
@@ -124,7 +133,7 @@ def convert(
 
             current_row = df.iloc[row.name - i]
             frame = current_row['frame']
-            datetime = current_row['datetime'].to_datetime64()
+            datetime = current_row['time'].to_datetime64()
 
             if type(frame) is np.ndarray:
                 frames = [frame] + frames
@@ -142,9 +151,6 @@ def convert(
     df.dropna(how='any', inplace=True)
     df.drop(columns=['frame'])
 
-    # alog.info(df)
-    # alog.info(df.shape)
-
     labeled_df = df[df['expected_position'] == 1]
 
     labeled_count = labeled_df.shape[0]
@@ -152,22 +158,29 @@ def convert(
 
     unlabeled_count = int(labeled_count * (1 / labeled_ratio) * (1 - labeled_ratio))
 
-    alog.info((labeled_ratio, labeled_count, unlabeled_count))
+    fraction = unlabeled_count / unlabeled_df.shape[0]
 
-    unlabeled_df = unlabeled_df.sample(frac=unlabeled_count /
-                                            unlabeled_df.shape[0])
+    if fraction > 1.0:
+        fraction = 1.0
+    unlabeled_df = unlabeled_df.sample(frac=fraction)
 
     write(dataset_name, 'labeled', labeled_df)
     write(dataset_name, 'unlabeled', unlabeled_df)
+
     return labeled_count
 
 
 @click.command()
+@click.argument('symbol', nargs=1, required=True)
 @click.option('--dataset-name', '-d', default='default', type=str)
+@click.option('--interval', '-i', default='1d', type=str)
+@click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--expected-position-length', '-e', default=4, type=int)
 @click.option('--labeled-ratio', '-l', default=0.5, type=float)
 @click.option('--min-change', '-m', default=2.0, type=float)
 @click.option('--sequence-length', '-s', default=48, type=int)
+@click.option('--plot', '-p', is_flag=True)
 def main(**kwargs):
     convert(**kwargs)
 

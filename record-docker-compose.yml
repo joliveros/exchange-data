@@ -4,6 +4,16 @@ networks:
   public:
     name: public
     external: true
+  public_1:
+    name: public_1
+    external: true
+  public_2:
+    name: public_2
+    external: true
+  public_3:
+    name: public_3
+    external: true
+
 
 services:
     redis:
@@ -15,6 +25,9 @@ services:
             - 0.0.0.0:6379:6379
         networks:
             - public
+            - public_1
+            - public_2
+            - public_3
         command: redis-server /usr/local/etc/redis/redis.conf
 
     influxdb:
