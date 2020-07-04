@@ -119,6 +119,7 @@ class DepthEmitter(Messenger):
     def message(self, depthCache):
         if depthCache is None:
             self.exit()
+            raise Exception()
 
         symbol = depthCache.symbol
         asks = np.expand_dims(np.asarray(depthCache.get_asks()), axis=0)
