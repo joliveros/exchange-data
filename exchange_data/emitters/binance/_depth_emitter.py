@@ -93,21 +93,20 @@ class DepthEmitter(Messenger):
             self.add_cache(symbol)
 
     def _add_cache(self, symbol):
-        with self.add_cache_lock():
-            alog.info(f'### add cache {symbol}###')
+        alog.info(f'### add cache {symbol}###')
 
-            if symbol in self.caches.keys():
-                self.caches[symbol].close(close_socket=True)
+        if symbol in self.caches.keys():
+            self.caches[symbol].close(close_socket=True)
 
-            self.caches[symbol] = DepthCacheManager(
-                self.client,
-                callback=self.message,
-                limit=5000,
-                refresh_interval=timeparse('1h'),
-                symbol=symbol,
-            )
+        self.caches[symbol] = DepthCacheManager(
+            self.client,
+            callback=self.message,
+            limit=5000,
+            refresh_interval=timeparse('1h'),
+            symbol=symbol,
+        )
 
-            alog.info(f'### end add cache {symbol}###')
+        alog.info(f'### end add cache {symbol}###')
 
     def get_symbols(self):
         exchange_info = self.client.get_exchange_info()
