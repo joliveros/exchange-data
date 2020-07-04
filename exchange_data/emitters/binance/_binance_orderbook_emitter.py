@@ -59,7 +59,7 @@ class BinanceOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('depth', self.message)
-            self.on(TimeChannels.Tick.value, self.emit_ticker)
+            # self.on(TimeChannels.Tick.value, self.emit_ticker)
             self.on('30s', self.queue_frame('30s'))
             self.on('30s', self.save_frame)
 
@@ -177,9 +177,10 @@ class BinanceOrderBookEmitter(
 @click.command()
 @click.option('--save-data/--no-save-data', default=True)
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
-def main(**kwargs):
+@click.option('--depth', '-d', type=int, default=0)
+def main(depth, **kwargs):
     recorder = BinanceOrderBookEmitter(
-        depths=[0, 40],
+        depths=[depth],
         subscriptions_enabled=True,
         **kwargs
     )
