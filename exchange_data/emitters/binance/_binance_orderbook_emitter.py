@@ -54,6 +54,7 @@ class BinanceOrderBookEmitter(
         self.save_data = save_data
         self.slices = {}
         self.queued_frames = []
+        self.last_timestamp = DateTimeUtils.now()
 
         self.freq = settings.TICK_INTERVAL
 
@@ -79,26 +80,20 @@ class BinanceOrderBookEmitter(
 
     def start(self, channels=[]):
         self.sub([
-            'depth',
-            '2s',
             '30s',
+            'depth',
         ] + channels)
 
     def exit(self, *args):
         self.stop()
         sys.exit(0)
 
-    def measurements(self, timestamp, symbol):
+    def measurements(self, symbol):
         frame = self.last_frames[symbol]
         if frame is None:
             return
 
         measurements = []
-
-        if isinstance(timestamp, str):
-            timestamp = self.parse_timestamp(timestamp)
-        elif isinstance(timestamp, float):
-            timestamp = self.parse_timestamp(timestamp)
 
         for depth in self.depths:
             if depth > 0:
@@ -106,7 +101,7 @@ class BinanceOrderBookEmitter(
             else:
                 frame_slice = frame
 
-            measurement = self.slice(symbol, depth, frame_slice, timestamp)
+            measurement = self.slice(symbol, depth, frame_slice)
 
             self.slices[self.channel_for_depth(symbol, depth)] = measurement
 
@@ -114,7 +109,7 @@ class BinanceOrderBookEmitter(
 
         return [m.__dict__ for m in measurements]
 
-    def slice(self, symbol, depth, frame_slice, timestamp):
+    def slice(self, symbol, depth, frame_slice):
         fields = dict(
             best_ask=frame_slice[0][0][0],
             best_bid=frame_slice[1][0][0],
@@ -123,9 +118,10 @@ class BinanceOrderBookEmitter(
 
         return Measurement(measurement=self.channel_for_depth(symbol, depth),
                            tags={'symbol': symbol},
-                           time=timestamp, fields=fields)
+                           time=self.last_timestamp, fields=fields)
 
     def queue_frame(self, frame_key):
+        alog.info('## queue frames ##')
         this = self
 
         def _queue_frame(*args):
@@ -148,6 +144,8 @@ class BinanceOrderBookEmitter(
                 self.publish(*msg)
 
     def save_frame(self, timestamp):
+        self.last_timestamp = DateTimeUtils.parse_timestamp(timestamp,
+                                                            tz.tzutc())
         while len(self.queued_frames) > 0:
             frame_key = self.queued_frames.pop()
 
@@ -156,15 +154,13 @@ class BinanceOrderBookEmitter(
 
         measurements = []
         for symbol in self.last_frames.keys():
-            measurements += self.save_frame_for_symbol(symbol, timestamp)
+            measurements += self.save_frame_for_symbol(symbol)
 
         if self.save_data and len(measurements) > 0:
             self.write_points(measurements, time_precision='ms')
 
-    def save_frame_for_symbol(self, symbol, timestamp):
-        self.last_timestamp = DateTimeUtils.parse_timestamp(timestamp,
-                                                            tz.tzutc())
-        return self.measurements(timestamp, symbol)
+    def save_frame_for_symbol(self, symbol):
+        return self.measurements(symbol)
 
     @lru_cache()
     def channel_for_depth(self, symbol, depth):
