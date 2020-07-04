@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from binance.client import Client
-from binance.depthcache import DepthCacheManager
+from binance.depthcache import DepthCacheManager, DepthCache
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property
 from datetime import timedelta, datetime
@@ -27,7 +27,7 @@ class DepthEmitter(Messenger):
     def __init__(self, delay, num_locks=2, **kwargs):
         super().__init__(**kwargs)
 
-        delay = int(timeparse(delay))
+        self.delay = timedelta(seconds=timeparse(delay))
         self.num_locks = num_locks
         self.last_lock_id = 0
         self.lock = None
@@ -116,7 +116,7 @@ class DepthEmitter(Messenger):
     def exit(self):
         os.kill(os.getpid(), signal.SIGKILL)
 
-    def message(self, depthCache):
+    def message(self, depthCache: DepthCache):
         if depthCache is None:
             self.exit()
             raise Exception()
@@ -140,12 +140,18 @@ class DepthEmitter(Messenger):
             depth=depth.tolist()
         )
 
-        self.publish('depth', json.dumps(msg))
+        alog.info(type(depthCache))
+
+        if depthCache.last_publish_time is None or \
+            depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
+            depthCache.last_publish_time = depthCache.update_time
+            self.publish('depth', json.dumps(msg))
+
         self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
 
 
 @click.command()
-@click.option('--delay', '-d', type=str, default='4s')
+@click.option('--delay', '-d', type=str, default='15s')
 @click.option('--num-locks', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitter(**kwargs)
