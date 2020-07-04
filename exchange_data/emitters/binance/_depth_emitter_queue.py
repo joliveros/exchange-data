@@ -25,33 +25,38 @@ import time
 
 class DepthEmitterQueue(Messenger):
     def __init__(self, timeout_interval, **kwargs):
-        timeout_seconds = timeparse(timeout_interval)
-        self.timeout_interval = timedelta(seconds=timeout_seconds)
+        self.timeout_seconds = timeparse(timeout_interval)
+        self.timeout_interval = timedelta(seconds=self.timeout_seconds)
 
         super().__init__(**kwargs)
 
-        self.symbols = Dict(key='symbols', redis=self.redis_client)
+        self.symbols = dict()
         self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
 
         for symbol in self.get_symbols():
             self.symbols[symbol] = None
 
-        while True:
-            for symbol, timestamp in self.symbols.items():
-                if timestamp is not None:
-                    timestamp = DateTimeUtils.parse_datetime_str(str(timestamp))
+        self.on('30s', self.check_symbol_timeout)
+        self.on('symbol_timeout', self.symbol_timeout)
 
-                last_update = DateTimeUtils.now() - self.timeout_interval
+        self.check_symbol_timeout(None)
 
-                alog.info(timestamp is None or timestamp < last_update)
+    def symbol_timeout(self, data):
+        symbol = data['symbol']
+        self.symbols[symbol] = DateTimeUtils.now()
 
-                if timestamp is None or timestamp < last_update:
-                    self.symbols[symbol] = DateTimeUtils.now()
-                    self.symbols_queue.add(symbol)
+    def check_symbol_timeout(self, timestamp):
+        for symbol, timestamp in self.symbols.items():
+            if timestamp is not None:
+                timestamp = DateTimeUtils.parse_datetime_str(str(timestamp))
 
-            alog.info(f'### queue length {len(self.symbols_queue)}')
+            last_update = DateTimeUtils.now() - self.timeout_interval
 
-            time.sleep(timeout_seconds)
+            if timestamp is None or timestamp < last_update:
+                self.symbols[symbol] = DateTimeUtils.now()
+                self.symbols_queue.add(symbol)
+
+        alog.info(f'### queue length {len(self.symbols_queue)}')
 
     @cached_property
     def client(self):
@@ -61,8 +66,7 @@ class DepthEmitterQueue(Messenger):
         try:
             return self._get_symbols()
         except BinanceAPIException as e:
-            time.sleep(30)
-            return self.get_symbols()
+            alog.info(e)
 
     def _get_symbols(self):
         exchange_info = self.client.get_exchange_info()
@@ -75,6 +79,9 @@ class DepthEmitterQueue(Messenger):
 
         return symbol_names
 
+    def start(self):
+        self.sub(['30s', 'symbol_timeout'])
+
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='4s')
@@ -82,6 +89,7 @@ class DepthEmitterQueue(Messenger):
 @click.option('--num-locks', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitterQueue(**kwargs)
+    emitter.start()
 
 
 if __name__ == '__main__':
