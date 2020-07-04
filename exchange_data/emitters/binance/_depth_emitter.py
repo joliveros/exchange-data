@@ -31,7 +31,6 @@ class DepthEmitter(Messenger):
         self.num_locks = num_locks
         self.last_lock_id = 0
         self.lock = None
-        self.symbols = Dict(key='symbols', redis=self.redis_client)
         self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
         self.caches = {}
         self.cache_queue = []
@@ -40,11 +39,10 @@ class DepthEmitter(Messenger):
 
         while True:
             alog.info('### check queues ###')
-            self.update_symbol_timestamps()
 
             if len(self.symbols_queue) > 0:
                 symbol = self.symbols_queue.pop()
-                self.symbols[symbol] = DateTimeUtils.now()
+                alog.info(f'## take next {symbol} ##')
                 self.add_cache(symbol)
 
                 cache_symbols = list(self.caches.keys())
@@ -55,11 +53,7 @@ class DepthEmitter(Messenger):
                         self.caches[sym].close(close_socket=True)
                         del self.caches[sym]
 
-            time.sleep(1)
-
-    def update_symbol_timestamps(self):
-        for symbol, cache in self.caches.items():
-            self.symbols[symbol] = cache.last_update_timestamp
+            # time.sleep(1)
 
     @cached_property
     def client(self):
@@ -85,9 +79,9 @@ class DepthEmitter(Messenger):
 
         except BinanceAPIException as e:
             alog.info(alog.pformat(vars(e)))
+
             if e.status_code == 418:
                 time.sleep(30)
-            self.symbols[symbol] = None
 
         except RedLockError as e:
             self.add_cache(symbol)
@@ -140,15 +134,13 @@ class DepthEmitter(Messenger):
 
         depth = np.concatenate((asks, bids))
 
-        # alog.info(depth)
-        # alog.info(symbol)
-
         msg = dict(
             symbol=symbol,
             depth=depth.tolist()
         )
 
         self.publish('depth', json.dumps(msg))
+        self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
 
 
 @click.command()
