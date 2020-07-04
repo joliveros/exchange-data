@@ -12,6 +12,7 @@ import click
 import json
 import sys
 import traceback
+import numpy as np
 
 
 
@@ -82,7 +83,8 @@ class BinanceOrderBookEmitter(
 
         for depth in self.depths:
             if depth > 0:
-                frame_slice = frame[:, :depth, :]
+                frame = np.asarray(frame)
+                frame_slice = frame[:, :depth, :].tolist()
             else:
                 frame_slice = frame
 
