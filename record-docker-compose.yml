@@ -12,7 +12,7 @@ services:
         volumes:
             - "./redis.conf:/usr/local/etc/redis/redis.conf"
         environment:
-            - "constraint:node==ip-172-31-38-16"
+            - "constraint:node==ip-172-31-19-30"
         ports:
             - 0.0.0.0:6379:6379
         networks:
