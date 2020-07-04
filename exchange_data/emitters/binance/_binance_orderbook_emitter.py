@@ -154,17 +154,17 @@ class BinanceOrderBookEmitter(
             for symbol in self.last_frames.keys():
                 self.emit_frames(timestamp, symbol, frame_key)
 
+        measurements = []
         for symbol in self.last_frames.keys():
-            self.save_frame_for_symbol(symbol, timestamp)
+            measurements += self.save_frame_for_symbol(symbol, timestamp)
+
+        if self.save_data and len(measurements) > 0:
+            self.write_points(measurements, time_precision='ms')
 
     def save_frame_for_symbol(self, symbol, timestamp):
         self.last_timestamp = DateTimeUtils.parse_timestamp(timestamp,
                                                             tz.tzutc())
-        measurements = self.measurements(timestamp, symbol)
-
-
-        if self.save_data and measurements:
-            self.write_points(measurements, time_precision='ms')
+        return self.measurements(timestamp, symbol)
 
     @lru_cache()
     def channel_for_depth(self, symbol, depth):
