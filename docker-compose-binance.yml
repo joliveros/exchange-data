@@ -4,15 +4,46 @@ networks:
         name: public
         external: true
 services:
-    emit_depth:
+    emit_depth_0:
         deploy:
-            replicas: 2
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py -n 2"
+            ./exchange_data/emitters/binance/_depth_emitter.py"
         environment:
             - LOG_LEVEL=INFO
+            - "constraint:node==ip-172-31-19-30"
+        networks:
+            - public
+        depends_on:
+            - redis
+
+    emit_depth_1:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_depth_emitter.py"
+        environment:
+            - LOG_LEVEL=INFO
+            - "constraint:node==ip-172-31-41-238"
+        networks:
+            - public
+        depends_on:
+            - redis
+
+    emit_depth_2:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_depth_emitter.py"
+        environment:
+            - LOG_LEVEL=INFO
+            - "constraint:node==ip-172-31-38-162"
         networks:
             - public
         depends_on:
