@@ -1,22 +1,15 @@
 #!/usr/bin/env python
 
-from collections import deque
-from datetime import timedelta
 
 from dateutil import tz
-from pytimeparse.timeparse import timeparse
-
 from exchange_data import settings, Database, Measurement
-from exchange_data.emitters import Messenger, TimeChannels, SignalInterceptor
-from exchange_data.emitters.binance._full_orderbook_emitter import FullOrderBookEmitter
+from exchange_data.emitters import Messenger, SignalInterceptor
 from exchange_data.utils import DateTimeUtils
 from functools import lru_cache
 
 import alog
 import click
-import gc
 import json
-import numpy as np
 import sys
 import traceback
 
@@ -42,7 +35,7 @@ class BinanceOrderBookEmitter(
 
         super().__init__(
             database_name=database_name,
-            database_batch_size=10,
+            database_batch_size=40,
             **kwargs
         )
 
@@ -60,7 +53,6 @@ class BinanceOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('depth', self.message)
-            # self.on(TimeChannels.Tick.value, self.emit_ticker)
             self.on('30s', self.queue_frame('30s'))
             self.on('30s', self.save_frame)
 
@@ -69,14 +61,7 @@ class BinanceOrderBookEmitter(
 
     def message(self, frame):
         symbol = frame['symbol']
-        self.last_frames[symbol] = np.asarray(frame['depth'])
-
-    def emit_ticker(self, timestamp):
-        for symbol in self.last_frames.keys():
-            self.publish(f'{symbol}_ticker', json.dumps({
-                'best_bid': self.last_frames[symbol][1][0][0],
-                'best_ask': self.last_frames[symbol][0][0][0]
-            }))
+        self.last_frames[symbol] = frame['depth']
 
     def start(self, channels=[]):
         self.sub([
@@ -113,7 +98,7 @@ class BinanceOrderBookEmitter(
         fields = dict(
             best_ask=frame_slice[0][0][0],
             best_bid=frame_slice[1][0][0],
-            data=json.dumps(frame_slice.tolist())
+            data=json.dumps(frame_slice)
         )
 
         return Measurement(measurement=self.channel_for_depth(symbol, depth),
