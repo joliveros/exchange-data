@@ -140,7 +140,7 @@ class DepthEmitter(Messenger):
             depth=depth.tolist()
         )
 
-        alog.info(type(depthCache))
+        # alog.info(type(depthCache))
 
         if depthCache.last_publish_time is None or \
             depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
