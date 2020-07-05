@@ -23,6 +23,29 @@ import signal
 import time
 
 
+class NotifyingDepthCacheManager(DepthCacheManager):
+    def __init__(self, symbol, redis_client, **kwargs):
+        super().__init__(symbol=symbol, **kwargs)
+        self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
+        self.symbol_hosts.add((symbol, self.symbol_hostname))
+
+    @property
+    def symbol_hostname(self):
+        return self._symbol_hostname(self._symbol)
+
+    @staticmethod
+    def _symbol_hostname(symbol):
+        return f'{symbol}_{settings.HOSTNAME}'
+
+    def close(self, **kwargs):
+        try:
+            self.symbol_hosts.remove((self._symbol, self.symbol_hostname))
+        except KeyError:
+            pass
+
+        super().close(**kwargs)
+
+
 class DepthEmitter(Messenger):
     def __init__(self, delay, num_locks=2, **kwargs):
         super().__init__(**kwargs)
@@ -32,29 +55,62 @@ class DepthEmitter(Messenger):
         self.last_lock_id = 0
         self.lock = None
         self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
+        self.remove_symbols_queue = Set(key='remove_symbols_queue',
+                                    redis=self.redis_client)
         self.caches = {}
         self.cache_queue = []
 
         alog.info('### initialized ###')
 
         self.on('30s', self.check_queues)
-        self.on('remove_symbol', self.remove_cache)
+        self.check_queues()
 
-    def remove_cache(self, data):
-        symbol = data['symbol']
+    def check_queues(self, timestamp=None):
+        self.purge()
 
-        if symbol in self.caches.keys():
-            alog.info(f'### remove {symbol} ###')
-            self.caches[symbol].close(close_socket=True)
-            del self.caches[symbol]
-
-    def check_queues(self, timestamp):
         alog.info('### check queues ###')
+        caches = list(self.caches.keys())
+
+        for symbol in self.remove_symbols_queue:
+            self.remove_cache(symbol)
 
         if len(self.symbols_queue) > 0:
             symbol = self.symbols_queue.pop()
             alog.info(f'## take next {symbol} ##')
             self.add_cache(symbol)
+
+    def purge(self):
+        caches: [NotifyingDepthCacheManager] = list(self.caches.values())
+
+        for cache in caches:
+            _cache: DepthCache = cache._depth_cache
+
+            if _cache.last_publish_time:
+                if _cache.last_publish_time < DateTimeUtils.now() - timedelta(
+                    seconds=60):
+                    self.remove_cache(cache.symbol_hostname)
+
+    @property
+    def symbol_hostnames(self):
+        return [s.symbol_hostname for s in self.caches.values()]
+
+    def remove_cache(self, symbol_host):
+        if '_' not in symbol_host:
+            raise Exception('Not as symbol-hostname')
+
+        for cache in self.symbol_hostnames:
+            if cache == symbol_host:
+                alog.info(f'### remove {symbol_host} ###')
+
+                if cache in self.remove_symbols_queue:
+                    self.remove_symbols_queue.remove(cache)
+
+                caches = [cache for cache in self.caches.values() if
+                          cache.symbol_hostname == symbol_host]
+                if len(caches) > 0:
+                    _cache = caches[0]
+                    self.caches[_cache._symbol].close(close_socket=True)
+                    del self.caches[_cache._symbol]
 
     @cached_property
     def client(self):
@@ -88,20 +144,20 @@ class DepthEmitter(Messenger):
             self.add_cache(symbol)
 
     def _add_cache(self, symbol):
-        alog.info(f'### add cache {symbol}###')
-
         if symbol in self.caches.keys():
-            self.caches[symbol].close(close_socket=True)
+            self.remove_cache(NotifyingDepthCacheManager._symbol_hostname(
+                symbol))
 
-        self.caches[symbol] = DepthCacheManager(
-            self.client,
+        self.caches[symbol] = NotifyingDepthCacheManager(
             callback=self.message,
-            limit=5000,
-            refresh_interval=None,
+            client=self.client,
+            limit=100,
+            redis_client=self.redis_client,
+            refresh_interval=0,
             symbol=symbol,
         )
 
-        alog.info(f'### end add cache {symbol}###')
+        alog.info(f'### cache added {symbol}###')
 
     def get_symbols(self):
         exchange_info = self.client.get_exchange_info()
@@ -146,7 +202,10 @@ class DepthEmitter(Messenger):
             depthCache.last_publish_time = depthCache.update_time
 
             self.publish('depth', json.dumps(msg))
-            self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
+            self.publish('symbol_timeout', json.dumps(dict(
+                symbol=symbol,
+                symbol_host=NotifyingDepthCacheManager._symbol_hostname(symbol)
+            )))
 
     def start(self):
         self.sub(['2s', '30s', 'remove_symbol'])

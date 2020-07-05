@@ -6,74 +6,7 @@ networks:
 services:
     emit_depth_0:
         deploy:
-            replicas: 1
-            placement:
-              constraints: [node.hostname == ip-172-31-38-162]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-
-    emit_depth_1:
-        deploy:
-            replicas: 1
-            placement:
-              constraints: [node.hostname == ip-172-31-41-238]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-
-    emit_depth_2:
-        deploy:
-            replicas: 1
-            placement:
-              constraints: [node.hostname == ip-172-31-19-30]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-
-
-    emit_depth_3:
-        deploy:
-            replicas: 1
-            placement:
-              constraints: [node.hostname == ip-172-31-34-195]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-
-    emit_depth_4:
-        deploy:
-            replicas: 1
-            placement:
-              constraints: [node.hostname == ip-172-31-40-247]
+            replicas: 5
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
