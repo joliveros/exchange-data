@@ -94,10 +94,9 @@ def convert(
         'window_size': window_size
     }, **kwargs)
 
+    dataset_name = f'{symbol}_{dataset_name}'
     df = backtest.df
     df.rename(columns={'orderbook_img': 'frame'}, inplace=True)
-
-    alog.info(df)
 
     df['avg_price'] = (df['best_ask'] + df['best_bid']) / 2
 
