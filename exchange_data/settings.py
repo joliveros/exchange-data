@@ -19,6 +19,8 @@ alog.info(f'## db conn {DB} ##')
 
 HOME = environ.get('HOME')
 
+HOSTNAME = environ.get('HOSTNAME')
+
 BITSTAMP_PUSHER_APP_KEY = sec.load('BITSTAMP_PUSHER_APP_KEY', lowercase=False)
 
 BITMEX_API_KEY = sec.load('BITMEX_API_KEY', lowercase=False)
