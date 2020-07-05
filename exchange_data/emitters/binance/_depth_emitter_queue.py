@@ -95,22 +95,33 @@ class DepthEmitterQueue(Messenger):
                     del self.symbol_hosts_timeout[symbol_host]
                 self.remove_symbol(symbol_host)
                 self.symbols_queue.add(symbol)
-            else:
-                # check for duplicates
-                symbol_hosts = [(key.split('_')[0], key) for key in
-                                self.symbol_hosts_timeout.keys()]
 
-                symbols = [s[0] for s in symbol_hosts]
-
-                duplicates = [symbol for symbol, count in Counter(
-                    symbols).items()
-                              if count > 1]
-
-                if len(duplicates) > 0:
-                    alog.info(alog.pformat(duplicates))
+        self.remove_duplicates()
 
         alog.info(f'### running hosts {len(self.symbol_hosts)}')
         alog.info(f'### queue length {len(self.symbols_queue)}')
+
+    def remove_duplicates(self):
+        # check for duplicates
+        symbol_hosts = [(key.split('_')[0], key) for key in
+                        self.symbol_hosts_timeout.keys()]
+        symbols = [s[0] for s in symbol_hosts]
+        duplicates = [symbol for symbol, count in Counter(
+            symbols).items()
+                      if count > 1]
+        host_duplicates = []
+        for symbol in duplicates:
+            hosts = [symbol_host for symbol_host in symbol_hosts if
+                     symbol == symbol_host[0]]
+
+            try:
+                hosts.pop()
+                hosts.pop()
+            except:
+                pass
+
+            for host in hosts:
+                self.remove_symbol(host)
 
     def add_symbols_to_queue(self):
         symbol_hosts = [s[0] for s in self.symbol_hosts]

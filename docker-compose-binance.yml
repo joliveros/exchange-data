@@ -21,6 +21,8 @@ services:
     emit_depth_queue:
         deploy:
             replicas: 1
+            placement:
+                constraints: [node.hostname == ip-172-31-19-30]
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
