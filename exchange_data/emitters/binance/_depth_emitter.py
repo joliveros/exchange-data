@@ -37,23 +37,24 @@ class DepthEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        while True:
-            alog.info('### check queues ###')
+        self.on('30s', self.check_queues)
+        self.on('remove_symbol', self.remove_cache)
 
-            if len(self.symbols_queue) > 0:
-                symbol = self.symbols_queue.pop()
-                alog.info(f'## take next {symbol} ##')
-                self.add_cache(symbol)
+    def remove_cache(self, data):
+        symbol = data['symbol']
 
-                cache_symbols = list(self.caches.keys())
+        if symbol in self.caches.keys():
+            alog.info(f'### remove {symbol} ###')
+            self.caches[symbol].close(close_socket=True)
+            del self.caches[symbol]
 
-                for sym in cache_symbols:
-                    if sym in self.symbols_queue and sym != symbol:
-                        alog.info(f'### removing {sym} ###')
-                        self.caches[sym].close(close_socket=True)
-                        del self.caches[sym]
+    def check_queues(self, timestamp):
+        alog.info('### check queues ###')
 
-            # time.sleep(1)
+        if len(self.symbols_queue) > 0:
+            symbol = self.symbols_queue.pop()
+            alog.info(f'## take next {symbol} ##')
+            self.add_cache(symbol)
 
     @cached_property
     def client(self):
@@ -147,12 +148,16 @@ class DepthEmitter(Messenger):
             self.publish('depth', json.dumps(msg))
             self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
 
+    def start(self):
+        self.sub(['2s', '30s', 'remove_symbol'])
+
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
 @click.option('--num-locks', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitter(**kwargs)
+    emitter.start()
 
 
 if __name__ == '__main__':
