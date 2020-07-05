@@ -140,14 +140,12 @@ class DepthEmitter(Messenger):
             depth=depth.tolist()
         )
 
-        # alog.info(type(depthCache))
-
         if depthCache.last_publish_time is None or \
             depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
             depthCache.last_publish_time = depthCache.update_time
-            self.publish('depth', json.dumps(msg))
 
-        self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
+            self.publish('depth', json.dumps(msg))
+            self.publish('symbol_timeout', json.dumps(dict(symbol=symbol)))
 
 
 @click.command()
