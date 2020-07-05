@@ -96,7 +96,7 @@ class DepthEmitter(Messenger):
             self.client,
             callback=self.message,
             limit=5000,
-            refresh_interval=timeparse('1h'),
+            refresh_interval=None,
             symbol=symbol,
         )
 
