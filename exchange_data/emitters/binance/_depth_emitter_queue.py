@@ -55,6 +55,7 @@ class DepthEmitterQueue(Messenger):
             if timestamp is None or timestamp < last_update:
                 self.symbols[symbol] = DateTimeUtils.now()
                 self.symbols_queue.add(symbol)
+                self.publish('remove_symbol', json.dumps(dict(symbol=symbol)))
 
         alog.info(f'### queue length {len(self.symbols_queue)}')
 
