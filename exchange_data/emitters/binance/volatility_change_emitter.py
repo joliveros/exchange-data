@@ -71,7 +71,6 @@ class MeasurementFrame(MeasurementMeta):
 
             if 'pair' in data:
                 data = json.loads(data)
-                alog.info(data)
                 pair = data['pair']
                 pair = dict(map(reversed, pair.items()))
 
