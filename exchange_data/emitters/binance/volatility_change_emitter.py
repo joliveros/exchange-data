@@ -118,6 +118,16 @@ class VolatilityChange(MeasurementFrame):
     def tick(self):
         self.append(self.volatility_change())
 
+    def last_frame(self):
+        last_row = self.frame().iloc[-1]
+        df = last_row.to_frame()
+        df.reset_index(inplace=True, drop=False)
+        df.columns = ['pair', self.name]
+        df.set_index(self.name, inplace=True)
+        df.sort_index(inplace=True, ascending=False)
+        alog.info(df)
+        return df
+
     def volatility_change(self):
         self.frames = self.get_frames()
         # alog.info(alog.pformat(self.frames))
@@ -216,18 +226,6 @@ class VolatilityChangeEmitter(VolatilityChange, Messenger):
 
         plot = True
 
-        last_row = self.frame().iloc[-1]
-
-        df = last_row.to_frame()
-        df.reset_index(inplace=True, drop=False)
-        df.columns = ['pair', self.name]
-        df.set_index(self.name, inplace=True)
-        df.sort_index(inplace=True, ascending=False)
-
-        alog.info(df)
-
-
-
     def plot(self):
         self.df.plot().show()
 
@@ -241,7 +239,7 @@ class VolatilityChangeEmitter(VolatilityChange, Messenger):
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--tick', is_flag=True)
 def main(**kwargs):
-    VolatilityChangeEmitter(**kwargs)
+    emitter = VolatilityChangeEmitter(**kwargs)
 
 
 if __name__ == '__main__':
