@@ -4,7 +4,7 @@ networks:
         name: public
         external: true
 services:
-    emit_depth_0:
+    volatility_change_emitter:
         deploy:
             labels:
                 - "swarm.cronjob.enable=true"
