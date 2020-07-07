@@ -22,19 +22,22 @@ HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
 
 METRIC_ACCURACY = 'accuracy'
 # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
-SYMBOL = 'KAVABNB'
+SYMBOL = 'ERDBNB'
+group_by = '1m'
+volume_max = 1e4
 
 backtest = BackTest(**{
-    'start_date': DateTimeUtils.parse_datetime_str('2020-07-01 17:34:00'),
-    'end_date': DateTimeUtils.parse_datetime_str('2020-07-01 21:34:00'),
+    # 'start_date': DateTimeUtils.parse_datetime_str('2020-07-01 17:34:00'),
+    # 'end_date': DateTimeUtils.parse_datetime_str('2020-07-01 21:34:00'),
+    'group_by': group_by,
     'database_name': 'binance',
     'depth': 40,
-    'interval': '3h',
+    'interval': '6h',
     'window_size': '2h',
     'plot': False,
     'sequence_length': 48,
     'symbol': SYMBOL,
-    'volume_max': 10000.0,
+    'volume_max': volume_max,
 })
 
 
@@ -47,22 +50,26 @@ def run(trial: Trial):
               f'{trial.number}'
 
     hparams = dict(
-        take_ratio=trial.suggest_float('take_ratio', 0.1, 0.46),
+        # take_ratio=trial.suggest_float('take_ratio', 0.1, 0.9),
+        min_change=trial.suggest_float('min_change', 0.0, 0.1),
+        expected_position_length=trial.suggest_int('expected_position_length', 1, 12),
         # expected_position_length=
         # trial.suggest_int('expected_position_length', 1, 12),
-        # epochs=trial.suggest_int('take_ratio', 1, 10),
+        epochs=trial.suggest_int('epochs', 1, 100),
     )
 
     labeled_count = convert(**{
+        'volume_max': volume_max,
         'dataset_name': f'{SYMBOL}_default',
-        'expected_position_length': 1,
+        # 'expected_position_length': 4,
         'symbol': SYMBOL,
         'labeled_ratio': 0.5,
-        'min_change': 0.0,
+        # 'min_change': 0.05,
+        'min_change': hparams.get('min_change'),
         'sequence_length': 48,
         'window_size': '2h',
-        'group_by': '1m',
-        'interval': '4h'
+        'group_by': group_by,
+        'interval': '3d'
     })
 
     time.sleep(3)
@@ -70,12 +77,12 @@ def run(trial: Trial):
     with tf.summary.create_file_writer(run_dir).as_default():
         params = {
          'take': labeled_count,
-         # 'take_ratio': 0.49,
+         'take_ratio': 0.5,
          'batch_size': 20,
          'clear': True,
          'directory': trial.number,
          'symbol': SYMBOL,
-         'epochs': 10,
+         # 'epochs': 10,
          'export_model': True,
          'learning_rate': 1.0e-5,
          'levels': 40,
