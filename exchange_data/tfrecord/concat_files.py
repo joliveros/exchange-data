@@ -89,12 +89,10 @@ def convert(
         'depth': 40,
         'sequence_length': 48,
         'symbol': symbol,
-        'volume_max': 10000.0,
         'group_by': group_by,
         'window_size': window_size
     }, **kwargs)
 
-    dataset_name = f'{symbol}_{dataset_name}'
     df = backtest.df
     df.rename(columns={'orderbook_img': 'frame'}, inplace=True)
 
@@ -177,6 +175,7 @@ def convert(
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--expected-position-length', '-e', default=4, type=int)
 @click.option('--labeled-ratio', '-l', default=0.5, type=float)
+@click.option('--volume-max', '-v', default=1e4, type=float)
 @click.option('--min-change', '-m', default=2.0, type=float)
 @click.option('--sequence-length', '-s', default=48, type=int)
 @click.option('--plot', '-p', is_flag=True)

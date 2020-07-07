@@ -63,6 +63,7 @@ class BackTest(PredictionEmitter):
 
         df = self.load_frames(self.depth)
         df.dropna(how='any', inplace=True)
+        alog.info(df)
         df['time'] = pandas.to_datetime(df['time'], unit='ms')
         df = df.set_index('time')
         df = df.sort_index()
