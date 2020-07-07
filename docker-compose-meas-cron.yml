@@ -19,6 +19,8 @@ services:
             ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
         environment:
             - LOG_LEVEL=INFO
+        secrets:
+            - DB
         networks:
             - public
         depends_on:
