@@ -17,7 +17,7 @@ class Measurement(DateTimeUtils):
         tags: dict = []
     ):
         if type(fields) == DataFrame:
-            fields = fields.to_json()
+            fields = dict(data=fields.to_json())
 
         self.fields = fields
 

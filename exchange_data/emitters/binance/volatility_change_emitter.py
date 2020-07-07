@@ -11,6 +11,7 @@ import click
 import numpy as np
 import re
 import pandas as pd
+import json
 
 from exchange_data.emitters import Messenger
 from exchange_data.utils import DateTimeUtils
@@ -29,12 +30,68 @@ class MeasurementMeta(Database, DateTimeUtils):
 
 class MeasurementFrame(MeasurementMeta):
 
-    def __init__(self, **kwargs):
+    def __init__(self, interval, group_by, **kwargs):
         super().__init__(**kwargs)
+        self.group_by = group_by
+        self.interval = timedelta(seconds=timeparse(interval))
 
     @property
     def name(self):
         return re.sub(r'(?<!^)(?=[A-Z])', '_', type(self).__name__).lower()
+
+    @property
+    def start_date(self):
+        return DateTimeUtils.now() - self.interval
+
+    @property
+    def formatted_start_date(self):
+        return self.format_date_query(self.start_date)
+
+    @property
+    def formatted_end_date(self):
+        return self.format_date_query(self.end_date)
+
+    @property
+    def end_date(self):
+        return DateTimeUtils.now()
+
+    def frame(self):
+        query = f'SELECT first(*) AS data FROM {self.name} WHERE time >=' \
+                f' {self.formatted_start_date} AND ' \
+                f'time <= {self.formatted_end_date} GROUP BY time(' \
+                f'{self.group_by})'
+
+        alog.info(query)
+
+        frames = []
+
+        for data in self.query(query).get_points(self.name):
+            timestamp = self.parse_db_timestamp(data['time'])
+            data = data['data_data'] or {}
+
+            if 'pair' in data:
+                data = json.loads(data)
+                alog.info(data)
+                pair = data['pair']
+                pair = dict(map(reversed, pair.items()))
+
+                data = dict(
+                    time=timestamp,
+                    **pair
+                )
+
+                frames.append(data)
+
+
+        df = DataFrame.from_dict(frames)
+
+        df['time'] = pd.to_datetime(df['time'])
+
+        df.set_index('time', inplace=True)
+        df.sort_index(inplace=True)
+
+        return df
+
 
     def append(self, data: dict, timestamp: datetime = None):
         if timestamp is None:
@@ -48,16 +105,16 @@ class MeasurementFrame(MeasurementMeta):
 
         alog.info(alog.pformat(m))
 
+        self.write_points([m.__dict__])
+
 
 class VolatilityChange(MeasurementFrame):
-    def __init__(self, interval, group_by, filter, **kwargs):
+    def __init__(self, filter, **kwargs):
         super().__init__(
             batch_size=1,
             **kwargs)
 
-        self.group_by = group_by
         self.filter = filter
-        self.interval_delta = timedelta(seconds=timeparse(interval))
 
     def tick(self):
         self.append(self.volatility_change())
@@ -99,6 +156,7 @@ class VolatilityChange(MeasurementFrame):
         # df = df[df.index > 0.001]
 
         alog.info(df)
+        self.df = df
         return df
 
     @property
@@ -129,7 +187,7 @@ class VolatilityChange(MeasurementFrame):
 
     def query_pairs(self):
         now = self.now()
-        start_date = now - self.interval_delta
+        start_date = now - self.interval
         end_date = now
 
         start_date = self.format_date_query(start_date)
@@ -145,27 +203,44 @@ class VolatilityChange(MeasurementFrame):
 
         return self.query(query)
 
-    # def convert(
-    #     window_size,
-    #     group_by,
-    #     **kwargs
-    # ):
-    # frame_for_symbol(group_by, kwargs, window_size)
-
 
 class VolatilityChangeEmitter(VolatilityChange, Messenger):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, plot, interval, group_by, tick=False, **kwargs):
+        alog.info(alog.pformat(kwargs))
+        super().__init__(plot=plot, group_by='30m', interval='1d', **kwargs)
 
+        if tick:
+            self.tick()
+
+        self.group_by = group_by
+        self.interval = timedelta(seconds=timeparse(interval))
+
+        plot = True
+
+        last_row = self.frame().iloc[-1]
+
+        df = last_row.to_frame()
+        df.reset_index(inplace=True, drop=False)
+        df.columns = ['pair', self.name]
+        df.set_index(self.name, inplace=True)
+        df.sort_index(inplace=True, ascending=False)
+
+        alog.info(df)
+
+
+
+    def plot(self):
+        self.df.plot().show()
 
 
 @click.command()
-@click.option('--interval', '-i', default='1d', type=str)
+@click.option('--interval', '-i', default='14m', type=str)
 @click.option('--filter', '-f', default='BNB', type=str)
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--window-size', '-w', default='15m', type=str)
-@click.option('--group-by', '-g', default='30m', type=str)
+@click.option('--group-by', '-g', default='15m', type=str)
 @click.option('--plot', '-p', is_flag=True)
+@click.option('--tick', is_flag=True)
 def main(**kwargs):
     VolatilityChangeEmitter(**kwargs)
 
