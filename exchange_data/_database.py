@@ -67,7 +67,7 @@ class Database(EventEmitterBase):
             query=query,
             epoch='ms',
             params={'precision': 'ms'},
-            chunked=True,
+            chunked=False,
             *args, **kwargs)
 
     def write_points(self, points, *args, **kwargs):

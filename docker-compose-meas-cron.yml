@@ -1,0 +1,27 @@
+version: '3.7'
+networks:
+    public:
+        name: public
+        external: true
+services:
+    emit_depth_0:
+        deploy:
+            labels:
+                - "swarm.cronjob.enable=true"
+                - "swarm.cronjob.schedule=*/5 * * * *"
+                - "swarm.cronjob.skip-running=false"
+            replicas: 0
+            restart_policy:
+                condition: none
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/volatility_change_emitter.py"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+            - influxdb
+
