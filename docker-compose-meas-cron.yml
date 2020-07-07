@@ -17,10 +17,8 @@ services:
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
-        environment:
-            - LOG_LEVEL=INFO
-        secrets:
-            - DB
+        env_file:
+            - ./.env.prod
         networks:
             - public
         depends_on:
