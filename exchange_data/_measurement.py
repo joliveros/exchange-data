@@ -1,5 +1,7 @@
 from datetime import datetime
 from dateutil import parser
+from pandas import DataFrame
+
 from exchange_data.utils import DateTimeUtils
 
 import alog
@@ -9,11 +11,14 @@ import json
 class Measurement(DateTimeUtils):
     def __init__(
         self,
-        fields: dict = None,
-        measurement: str = None,
-        tags: dict = None,
-        time: datetime = None
+        fields: dict or DataFrame,
+        measurement: str,
+        time: datetime,
+        tags: dict = []
     ):
+        if type(fields) == DataFrame:
+            fields = fields.to_json()
+
         self.fields = fields
 
         if isinstance(time, float):
