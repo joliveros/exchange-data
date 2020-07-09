@@ -1,12 +1,7 @@
 #!/usr/bin/env python
-import os
 
-from pandas import DataFrame
 from pathlib import Path
-
 from pytimeparse.timeparse import timeparse
-from tensorflow_estimator.python.estimator.inputs.pandas_io import \
-    pandas_input_fn
 from tensorflow_estimator.python.estimator.keras import model_to_estimator
 from tensorflow_estimator.python.estimator.run_config import RunConfig
 from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, train_and_evaluate
@@ -14,14 +9,9 @@ from tensorflow_estimator.python.estimator.training import TrainSpec, EvalSpec, 
 import alog
 import click
 import logging
+import os
 import shutil
 import tensorflow as tf
-import pandas as pd
-import numpy as np
-import tensorflow_datasets as tfds
-
-from exchange_data.tfrecord.processed_dataset import dataset
-
 
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
@@ -101,22 +91,28 @@ def Model(
     conv_first1 = Conv2D(filters, (4, 1), padding='same')(conv_first1)
     conv_first1 = LeakyReLU(alpha=0.01)(conv_first1)
 
-    alog.info(conv_first1)
+    alog.info(conv_first1.shape)
     # build the inception module
     convsecond_1 = Conv2D(64, (1, 1), padding='same')(conv_first1)
     convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
     convsecond_1 = Conv2D(64, (3, 1), padding='same')(convsecond_1)
     convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
 
+    alog.info(convsecond_1.shape)
+
     convsecond_2 = Conv2D(64, (1, 1), padding='same')(conv_first1)
     convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
     convsecond_2 = Conv2D(64, (5, 1), padding='same')(convsecond_2)
     convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
 
+    alog.info(convsecond_2.shape)
+
     convsecond_3 = MaxPooling2D((3, 1), strides=(1, 1), padding='same')(
         conv_first1)
     convsecond_3 = Conv2D(64, (1, 1), padding='same')(convsecond_3)
     convsecond_3 = LeakyReLU(alpha=0.01)(convsecond_3)
+
+    alog.info(convsecond_3.shape)
 
     convsecond_output = tf.keras.layers.concatenate(
         [convsecond_1, convsecond_2, convsecond_3], axis=3)
@@ -159,8 +155,8 @@ class ModelTrainer(object):
 
     def _run(
             self,
-            take,
-            take_ratio,
+            train_df,
+            eval_df,
             batch_size,
             clear,
             directory,
@@ -206,37 +202,46 @@ class ModelTrainer(object):
         if symbol is None:
             symbol = directory
 
-        def ds(dataset_name):
-            labeled_ds = dataset(
-                batch_size=1,
-                epochs=epochs,
-                dataset_name=dataset_name,
-                filename='data_labeled'
-            ).unbatch().take(take)
+        def iterate_rows(_df):
+            def _rows():
+                for i in range(0, len(_df)):
+                    row = _df.iloc[i]
+                    yield row['orderbook_img'], row['expected_position']
 
-            unlabeled_take = int((take * 2) * (1 - take_ratio))
+            return _rows
 
-            unlabeled_ds = dataset(
-                batch_size=1,
-                epochs=1,
-                dataset_name=dataset_name,
-                filename='data_unlabeled'
-            ).unbatch().take(unlabeled_take)
+        def train_ds():
+            return tf.data.Dataset.from_generator(
+                iterate_rows(train_df),
+                (tf.float32, tf.int32),
+                (tf.TensorShape([sequence_length, levels * 2, 1]),
+                 tf.TensorShape([]))
+            ) \
+                .cache() \
+                .batch(batch_size).repeat(epochs)
 
-            return labeled_ds.concatenate(unlabeled_ds) \
-                .shuffle(take + unlabeled_take) \
-                .batch(batch_size) \
-                .repeat(epochs)
+        def eval_ds():
+            return tf.data.Dataset.from_generator(
+                iterate_rows(eval_df),
+                (tf.float32, tf.int32),
+                (tf.TensorShape([sequence_length, levels * 2, 1]),
+                 tf.TensorShape([]))
+            ) \
+                .batch(1)
 
-        # for frame, expected_position in tfds.as_numpy(ds(f'{symbol}_default')):
+
+        # for frame, expected_position in tfds.as_numpy(train_ds()):
+        #     alog.info(frame)
+        #     alog.info(frame.shape)
         #     alog.info(expected_position)
+        #     raise Exception()
 
         train_spec = TrainSpec(
-            input_fn=lambda: ds(f'{symbol}_default'),
+            input_fn=train_ds,
         )
 
         eval_spec = EvalSpec(
-            input_fn=lambda: ds(f'{symbol}_default'),
+            input_fn=eval_ds,
             start_delay_secs=60,
             steps=timeparse('16m'),
             throttle_secs=60
@@ -263,8 +268,10 @@ class ModelTrainer(object):
             except:
                 pass
 
-            resnet_estimator.export_saved_model(export_dir,
+            exp_path = resnet_estimator.export_saved_model(export_dir,
                                                 serving_input_receiver_fn)
+
+            result['exported_model_path'] = exp_path.decode()
 
         return result
 

@@ -40,7 +40,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         self.channels += ['2s']
         self.group_by_min = int(timeparse(group_by)/60)
         self.group_by = f'{int(timeparse(group_by)/3)}s'
-
+        alog.info(interval)
         self.interval_delta = timedelta(seconds=timeparse(interval))
 
         self.channel_name = 'should_trade'
@@ -109,7 +109,7 @@ class TradingWindowEmitter(Messenger, Database, DateTimeUtils):
         for i in range(minmax_pairs.shape[0]):
             t = minmax_pairs[i]
 
-            if t[-1] == 'max':
+            if t[-1] == 'min':
                 if i != last_index:
                     interval = (t[0], minmax_pairs[i + 1][0])
                     intervals += [interval]
