@@ -30,10 +30,22 @@ class MeasurementMeta(Database, DateTimeUtils):
 
 class MeasurementFrame(MeasurementMeta):
 
-    def __init__(self, interval, group_by, **kwargs):
+    def __init__(
+        self,
+        interval,
+        group_by,
+        start_date=None,
+        end_date=None,
+        **kwargs
+    ):
+        alog.info(alog.pformat(kwargs))
         super().__init__(**kwargs)
         self.group_by = group_by
+        self.interval_str = interval
+        alog.info(interval)
         self.interval = timedelta(seconds=timeparse(interval))
+        self._start_date = start_date
+        self._end_date = end_date
 
     @property
     def name(self):
@@ -41,7 +53,14 @@ class MeasurementFrame(MeasurementMeta):
 
     @property
     def start_date(self):
-        return DateTimeUtils.now() - self.interval
+        if self._start_date:
+            return self._start_date
+        else:
+            return DateTimeUtils.now() - self.interval
+
+    @start_date.setter
+    def start_date(self, value):
+        self._start_date = value
 
     @property
     def formatted_start_date(self):
@@ -53,7 +72,14 @@ class MeasurementFrame(MeasurementMeta):
 
     @property
     def end_date(self):
-        return DateTimeUtils.now()
+        if self._end_date:
+            return self._end_date
+        else:
+            return DateTimeUtils.now()
+
+    @end_date.setter
+    def end_date(self, value):
+        self._end_date = value
 
     def frame(self):
         query = f'SELECT first(*) AS data FROM {self.name} WHERE time >=' \

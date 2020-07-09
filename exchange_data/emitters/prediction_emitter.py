@@ -26,17 +26,56 @@ class TradeJob(object):
         self.job_name = f'trade_{self.symbol}'
 
 
+class PredictionBase(object):
+    frames = []
+
+    def get_prediction(self):
+        frames = np.expand_dims(np.asarray(self.frames), axis=0)
+
+        data = json.dumps(dict(
+            signature_name='serving_default',
+            instances=frames.tolist()
+        ))
+
+        headers = {
+            'content-type': 'application/json',
+            'Content-Encoding': 'gzip'
+        }
+
+        data = gzip.compress(bytes(data, encoding='utf8'))
+
+        url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict'
+
+        json_response = requests.post(
+            url,
+            data=data,
+            headers=headers
+        )
+
+        predictions = json.loads(json_response.text)['predictions']
+
+        max_index = np.argmax(predictions[0])
+
+        position = [
+            position for position in Positions
+            if position.value == max_index
+        ][0]
+
+        # alog.info((position, max_index, predictions[0][max_index]))
+
+        return position
+
+
 class PredictionEmitter(Messenger, TradeJob):
     def __init__(self, volume_max, database_name, sequence_length, depth,
                  symbol, **kwargs):
+        super().__init__(symbol=symbol, **kwargs)
+
         self.depth = depth
         self.volume_max = volume_max
         self.symbol = symbol
         self.sequence_length = sequence_length
         self.database_name = database_name
-
-        super().__init__(symbol=symbol, **kwargs)
-
         self.orderbook_channel = \
             f'{symbol}_OrderBookFrame_depth_{depth}_2s'
         self.trading_enabled = True
@@ -85,42 +124,6 @@ class PredictionEmitter(Messenger, TradeJob):
         orderbook_levels = np.reshape(orderbook_levels,
                                       (orderbook_levels.shape[0], 1)) / self.volume_max
         return np.clip(orderbook_levels, a_min=0.0, a_max=self.volume_max)
-
-    def get_prediction(self):
-        frames = np.expand_dims(np.asarray(self.frames), axis=0)
-
-        data = json.dumps(dict(
-            signature_name='serving_default',
-            instances=frames.tolist()
-        ))
-
-        headers = {
-            'content-type': 'application/json',
-            'Content-Encoding': 'gzip'
-        }
-
-        data = gzip.compress(bytes(data, encoding='utf8'))
-
-        url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict'
-
-        json_response = requests.post(
-            url,
-            data=data,
-            headers=headers
-        )
-
-        predictions = json.loads(json_response.text)['predictions']
-
-        max_index = np.argmax(predictions[0])
-
-        position = [
-            position for position in Positions
-            if position.value == max_index
-        ][0]
-
-        # alog.info((position, max_index, predictions[0][max_index]))
-
-        return position
 
     def _emit_prediction(self, data):
         frame = data['fields']['data']

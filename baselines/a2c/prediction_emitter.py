@@ -32,7 +32,25 @@ class TradeJob(object):
         self.job_name = f'trade_{self.symbol.value}'
 
 
-class PredictionEmitter(Messenger, TradeJob):
+class FrameNormalizer(object):
+    observed_max = 0.0
+
+    def normalize_frame(self, orderbook_levels, volume_max):
+        orderbook_levels = np.concatenate((orderbook_levels[0],
+                                          orderbook_levels[1]))
+        orderbook_levels = np.sort(orderbook_levels, axis=0)
+        orderbook_levels = np.delete(orderbook_levels, 0, 1)
+
+        max_value = np.max(orderbook_levels)
+
+        if max_value > self.observed_max:
+            self.observed_max = max_value
+
+        orderbook_levels = np.reshape(orderbook_levels,
+                                      (orderbook_levels.shape[0], 1)) / volume_max
+        return np.clip(orderbook_levels, a_min=0.0, a_max=volume_max)
+
+class PredictionEmitter(Messenger, TradeJob, FrameNormalizer):
     def __init__(self, symbol, depth, run_name, **kwargs):
         self.symbol = symbol
 
@@ -118,13 +136,6 @@ class PredictionEmitter(Messenger, TradeJob):
                 except:
                     pass
 
-    def normalize_frame(self, orderbook_levels):
-        orderbook_levels = np.delete(orderbook_levels, 0, 1)
-        orderbook_levels[0][0] = np.flip(orderbook_levels[0][0])
-        orderbook_levels[1] =  orderbook_levels[1] * -1
-        max = 3.0e6
-        orderbook_levels = np.reshape(orderbook_levels, (80, 1)) / max
-        return np.clip(orderbook_levels, a_min=0.0, a_max=max)
 
     def _emit_prediction(self, data):
         frame = json.loads(data)['fields']['data']
