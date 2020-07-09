@@ -139,6 +139,16 @@ def run(trial: Trial):
 
 
 @click.command()
+@click.option('--database-name', '-d', default='binance', type=str)
+@click.option('--depth', '-d', default=40, type=int)
+@click.option('--group-by', '-g', default='1m', type=str)
+@click.option('--interval', '-i', default='4h', type=str)
+@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
+@click.option('--plot', '-p', is_flag=True)
+@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--volatility-intervals', '-v', is_flag=True)
+@click.option('--window-size', '-w', default='3m', type=str)
+@click.argument('symbol', type=str)
 def main(**kwargs):
 
     logging.getLogger('tensorflow').setLevel(logging.INFO)
