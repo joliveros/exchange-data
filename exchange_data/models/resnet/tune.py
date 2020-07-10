@@ -46,8 +46,8 @@ class SymbolTuner(OrderBookFrame):
         hparams = dict(
             pos_change_quant=trial.suggest_float('pos_change_quant', 0.1, .99),
             # take_ratio=trial.suggest_float('take_ratio', 1.0009, 1.005),
-            # expected_position_length=trial.suggest_int(
-            #     'expected_position_length', 1, 6),
+            expected_position_length=trial.suggest_int(
+                'expected_position_length', 1, 6),
             # expected_position_length=
             # trial.suggest_int('expected_position_length', 1, 12),
             # epochs=trial.suggest_int('epochs', 30),
@@ -57,7 +57,6 @@ class SymbolTuner(OrderBookFrame):
             _df = expected_position_frame(
                 self.train_df,
                 take_ratio=0.99,
-                expected_position_length=1,
                 **hparams
             )
 
@@ -130,8 +129,6 @@ class SymbolTuner(OrderBookFrame):
 @click.argument('symbol', type=str)
 def main(**kwargs):
     SymbolTuner(**kwargs)
-
-
 
 
 if __name__ == '__main__':
