@@ -28,7 +28,7 @@ class BackTest(OrderBookFrame, PredictionBase):
         self.last_position = Positions.Flat
         self.trial: Trial = trial
 
-        self.df = self.frame()
+        self.df = self.frame
 
         if self.should_plot:
             self.plot()

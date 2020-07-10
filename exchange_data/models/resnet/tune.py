@@ -21,10 +21,13 @@ logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 class SymbolTuner(OrderBookFrame):
 
-    def __init__(self, session_limit, backtest_interval, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, volatility_intervals, session_limit, backtest_interval,
+                 **kwargs):
+        if not volatility_intervals:
+            kwargs['window_size'] = '1h'
+        super().__init__(volatility_intervals=volatility_intervals, **kwargs)
 
-        self.train_df = self.frame()
+        self.train_df = self.label_positive_change(5)
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
@@ -45,21 +48,14 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            pos_change_min=trial.suggest_float('pos_change_min', 0.1,
-                                                 .499999999),
-            pos_change_max=trial.suggest_float('pos_change_max', 0.5, 1.0),
-            # take_ratio=trial.suggest_float('take_ratio', 1.0009, 1.005),
-            expected_position_length=trial.suggest_int(
-                'expected_position_length', 3, 9),
-            # expected_position_length=
-            # trial.suggest_int('expected_position_length', 1, 12),
-            # epochs=trial.suggest_int('epochs', 30),
+            # consecutive_positive_change=trial.suggest_int(
+            #     'consecutive_positive_change', 1, 6),
+            take_ratio=trial.suggest_float('take_ratio', 0.99, 1.0)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             _df = expected_position_frame(
-                self.train_df,
-                take_ratio=0.99,
+                df=self.train_df,
                 **hparams
             )
 
@@ -76,7 +72,7 @@ class SymbolTuner(OrderBookFrame):
                 'eval_df': eval_df,
                 'learning_rate': 1.0e-5,
                 'levels': 40,
-                'seed': 216,
+                # 'seed': 216,
                 'sequence_length': 48,
                 'symbol': self.symbol,
             }
@@ -127,7 +123,7 @@ class SymbolTuner(OrderBookFrame):
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
-@click.option('--session-limit', '-s', default=50, type=int)
+@click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)

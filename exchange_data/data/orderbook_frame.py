@@ -2,6 +2,9 @@
 from collections import deque
 from datetime import timedelta
 
+from cached_property import cached_property
+from pandas._libs.tslibs.timestamps import Timestamp
+
 from baselines.a2c.prediction_emitter import FrameNormalizer
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance.volatility_change_emitter import \
@@ -23,7 +26,8 @@ pd.options.plotting.backend = 'plotly'
 
 
 class OrderBookFrame(MeasurementFrame, FrameNormalizer):
-    volume_max = 0.0
+    positive_change_count = 0
+    min_consecutive_count = 1
 
     def __init__(
         self,
@@ -52,6 +56,34 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
+    def label_positive_change(self, min_consecutive_count=3, **kwargs):
+        self.min_consecutive_count = min_consecutive_count
+        self.positive_change_count = 0
+
+        df = self.frame.copy()
+
+        df['change'] = df['best_ask'] - df['best_ask'].shift(1)
+
+        for i, row in df.iterrows():
+            change = row['change']
+
+            if change > 0.0:
+                self.positive_change_count += 1
+            else:
+                self.positive_change_count = 0
+
+            df.loc[i, 'change_count'] = self.positive_change_count
+
+        # pd.set_option('display.max_rows', df.shape[0] + 1)
+
+        df['expected_position'] = np.where(df['change_count'].shift(-1) - df[
+            'change_count'] > 0, 1, 0)
+
+        df = df.drop(columns=['change'])
+
+        return df
+
+    @cached_property
     def frame(self):
         frames = []
 
@@ -157,7 +189,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=40, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--interval', '-i', default='4h', type=str)
+@click.option('--interval', '-i', default='15m', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--tick', is_flag=True)
@@ -166,7 +198,8 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-    frame = OrderBookFrame(**kwargs).frame()
+    df = OrderBookFrame(**kwargs).label_positive_change(2)
+
 
 
 if __name__ == '__main__':
