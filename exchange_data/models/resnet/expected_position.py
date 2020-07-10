@@ -19,8 +19,8 @@ def expected_position_frame(df, expected_position_length, take_ratio=1.0,
 
     change = df['best_ask'] - df['best_ask'].shift(1)
 
-    df['expected_position'] = np.where(change >= min_change & change <=
-                                       max_change, 1, 0)
+    df['expected_position'] = np.where((change >= min_change) & (change <=
+                                       max_change), 1, 0)
 
     if expected_position_length > 1:
         for i in range(0, len(df)):
