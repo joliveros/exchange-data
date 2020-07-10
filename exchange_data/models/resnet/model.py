@@ -188,7 +188,7 @@ class ModelTrainer(object):
         model.summary()
 
         run_config = RunConfig(
-            save_checkpoints_secs=60*3,
+            save_checkpoints_secs=timeparse('4h'),
             tf_random_seed=seed
         )
 
@@ -242,9 +242,9 @@ class ModelTrainer(object):
 
         eval_spec = EvalSpec(
             input_fn=eval_ds,
-            start_delay_secs=timeparse('2h'),
+            start_delay_secs=timeparse('4h'),
             steps=timeparse('16m'),
-            throttle_secs=timeparse('2h')
+            throttle_secs=timeparse('4h')
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
