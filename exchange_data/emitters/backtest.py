@@ -70,15 +70,13 @@ class BackTest(OrderBookFrame, PredictionBase):
                 self.capital = self.capital * (1 - self.trading_fee)
                 self.entry_price = 0.0
 
-                if self.trial:
-                    self.trial.report(self.capital, row.name)
-                    tf.summary.scalar('capital', self.capital, step=row.name)
-
             self.last_position = position
 
         row['capital'] = self.capital
 
-
+        if self.trial:
+            self.trial.report(self.capital, row.name)
+            tf.summary.scalar('capital', self.capital, step=row.name)
 
         return row
 

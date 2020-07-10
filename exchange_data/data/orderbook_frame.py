@@ -27,13 +27,14 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
     def __init__(
         self,
-        depth,
         database_name,
-        max_volume_quantile,
+        depth,
         interval,
+        max_volume_quantile,
         sequence_length,
-        window_size,
         symbol,
+        window_size,
+        quantile=0.0,
         volatility_intervals=False,
         **kwargs
     ):
@@ -44,6 +45,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             symbol=symbol,
             **kwargs)
         self.max_volume_quantile = max_volume_quantile
+        self.quantile = quantile
         self.window_size = window_size
         self.depth = depth
         self.symbol = symbol
@@ -72,8 +74,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         df.drop(['orderbook_img'], axis=1)
         orderbook_img = np.asarray(orderbook_img)
 
-        alog.info(orderbook_img.shape)
-
         orderbook_img = np.concatenate((
             orderbook_img[:, :, 0],
             orderbook_img[:, :, 1]),
@@ -82,11 +82,11 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         orderbook_img = np.sort(orderbook_img, axis=2)
 
-        alog.info(orderbook_img.shape)
-
         orderbook_img = np.delete(orderbook_img, 0, axis=3)
 
-        self.quantile = np.quantile(orderbook_img, self.max_volume_quantile)
+        if self.quantile == 0.0:
+            self.quantile = np.quantile(orderbook_img,
+                                         self.max_volume_quantile)
 
         orderbook_img = orderbook_img / self.quantile
 
