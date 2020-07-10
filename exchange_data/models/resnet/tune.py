@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import shutil
 
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest import BackTest
@@ -26,7 +27,7 @@ class SymbolTuner(OrderBookFrame):
         self.train_df = self.frame()
 
         kwargs['interval'] = backtest_interval
-
+        kwargs['window_size'] = '1h'
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study = optuna.create_study(direction='maximize')
@@ -102,13 +103,14 @@ class SymbolTuner(OrderBookFrame):
                 if trial.study.best_trial.value > self.backtest.capital:
                     alog.info('## deleting trial ###')
                     alog.info(exported_model_path)
-                    Path(exported_model_path).rmdir()
+                    shutil.rmtree(exported_model_path, ignore_errors=True)
             except ValueError:
                 pass
 
             if self.backtest.capital == 1.0:
                 alog.info('## deleting trial ###')
-                Path(exported_model_path).rmdir()
+                alog.info(exported_model_path)
+                shutil.rmtree(exported_model_path, ignore_errors=True)
                 return 0.0
 
             return self.backtest.capital
