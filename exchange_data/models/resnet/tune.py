@@ -45,10 +45,12 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            pos_change_quant=trial.suggest_float('pos_change_quant', 0.1, .99),
+            pos_change_min=trial.suggest_float('pos_change_min', 0.1,
+                                                 .499999999),
+            pos_change_max=trial.suggest_float('pos_change_max', 0.5, 1.0),
             # take_ratio=trial.suggest_float('take_ratio', 1.0009, 1.005),
             expected_position_length=trial.suggest_int(
-                'expected_position_length', 1, 6),
+                'expected_position_length', 3, 9),
             # expected_position_length=
             # trial.suggest_int('expected_position_length', 1, 12),
             # epochs=trial.suggest_int('epochs', 30),
@@ -65,7 +67,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 20,
+                'epochs': 30,
                 'batch_size': 20,
                 'clear': True,
                 'directory': trial.number,

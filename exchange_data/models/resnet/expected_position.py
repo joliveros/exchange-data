@@ -4,9 +4,8 @@ import pandas as pd
 
 
 def expected_position_frame(df, expected_position_length, take_ratio=1.0,
-                            pos_change_quant=0.6):
+                            pos_change_min=0.6, pos_change_max=0.6):
     df = df.copy()
-    min_price = df['best_ask'].min()
     df.dropna(how='any', inplace=True)
     df = df.sort_index()
     df = df.reset_index(drop=False)
@@ -15,10 +14,13 @@ def expected_position_frame(df, expected_position_length, take_ratio=1.0,
     change_df.dropna(how='any', inplace=True)
     change = change_df.to_numpy()
     pos_change = change[change > 0.0]
-    min_change = np.quantile(pos_change, pos_change_quant)
+    min_change = np.quantile(pos_change, pos_change_min)
+    max_change = np.quantile(pos_change, pos_change_max)
 
-    df['expected_position'] = np.where(
-        (df['best_ask']) - df['best_ask'].shift(1) >= min_change, 1, 0)
+    change = df['best_ask'] - df['best_ask'].shift(1)
+
+    df['expected_position'] = np.where(change >= min_change & change <=
+                                       max_change, 1, 0)
 
     if expected_position_length > 1:
         for i in range(0, len(df)):
