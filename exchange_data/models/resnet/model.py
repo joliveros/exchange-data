@@ -242,9 +242,9 @@ class ModelTrainer(object):
 
         eval_spec = EvalSpec(
             input_fn=eval_ds,
-            start_delay_secs=60,
+            start_delay_secs=timeparse('2h'),
             steps=timeparse('16m'),
-            throttle_secs=60
+            throttle_secs=timeparse('2h')
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]
