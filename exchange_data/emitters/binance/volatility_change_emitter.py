@@ -187,6 +187,7 @@ class VolatilityChange(MeasurementFrame):
         df.reset_index(drop=False, inplace=True)
         df.set_index('volatility_change', inplace=True)
         df.sort_index(inplace=True, ascending=False)
+        df.reset_index(drop=False, inplace=True)
 
         # df = df[df.index > 0.001]
 
