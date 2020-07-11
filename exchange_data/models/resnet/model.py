@@ -165,7 +165,7 @@ class ModelTrainer(object):
             learning_rate,
             levels,
             sequence_length,
-            seed,
+            seed=None,
             symbol=None,
             **kwargs
         ):
