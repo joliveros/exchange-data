@@ -48,6 +48,8 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             interval=interval,
             symbol=symbol,
             **kwargs)
+
+        self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
         self.max_volume_quantile = max_volume_quantile
         self.quantile = quantile
         self.window_size = window_size
@@ -62,7 +64,10 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         df = self.frame.copy()
 
-        df['change'] = df['best_ask'] - df['best_ask'].shift(1)
+        df['change'] = (df['best_ask'] - df['best_ask'].shift(1)) / df[
+            'best_ask']
+
+        df['expected_position'] = 0
 
         for i, row in df.iterrows():
             change = row['change']
@@ -74,12 +79,17 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
             df.loc[i, 'change_count'] = self.positive_change_count
 
-        # pd.set_option('display.max_rows', df.shape[0] + 1)
+        for i, row in df.iterrows():
+            change_count = int(row['change_count'])
 
-        df['expected_position'] = np.where(df['change_count'].shift(-1) - df[
-            'change_count'] > 0, 1, 0)
+            if change_count >= min_consecutive_count:
+                for x in range(0, change_count + 2):
+                    t = i - x * self.group_by_delta
+                    df.loc[t, 'expected_position'] = 1
 
         df = df.drop(columns=['change'])
+
+        df.dropna(how='any')
 
         alog.info(f'### volume_max {self.quantile} ####')
 
@@ -190,8 +200,8 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.command()
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=40, type=int)
-@click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--interval', '-i', default='15m', type=str)
+@click.option('--group-by', '-g', default='30s', type=str)
+@click.option('--interval', '-i', default='30m', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--tick', is_flag=True)
@@ -200,7 +210,11 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-    df = OrderBookFrame(**kwargs).label_positive_change(2)
+    df = OrderBookFrame(**kwargs).label_positive_change(4)
+
+    pd.set_option('display.max_rows', df.shape[0] + 1)
+
+    alog.info(df)
 
 
 
