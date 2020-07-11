@@ -42,7 +42,7 @@ class NotifyingDepthCacheManager(DepthCacheManager):
             self.symbol_hosts.remove((self._symbol, self.symbol_hostname))
         except KeyError:
             pass
-
+        kwargs['close_socket'] = True
         super().close(**kwargs)
 
 
@@ -109,7 +109,7 @@ class DepthEmitter(Messenger):
                           cache.symbol_hostname == symbol_host]
                 if len(caches) > 0:
                     _cache = caches[0]
-                    self.caches[_cache._symbol].close(close_socket=True)
+                    self.caches[_cache._symbol].close()
                     del self.caches[_cache._symbol]
 
     @cached_property
