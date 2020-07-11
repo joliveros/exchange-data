@@ -81,6 +81,8 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         df = df.drop(columns=['change'])
 
+        alog.info(f'### volume_max {self.quantile} ####')
+
         return df
 
     @cached_property

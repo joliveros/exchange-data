@@ -27,10 +27,9 @@ class SymbolTuner(OrderBookFrame):
             kwargs['window_size'] = '1h'
         super().__init__(volatility_intervals=volatility_intervals, **kwargs)
 
-        self.train_df = self.label_positive_change(5)
-
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
+        self.train_df = self.label_positive_change(5)
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study = optuna.create_study(direction='maximize')
@@ -48,9 +47,8 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            # consecutive_positive_change=trial.suggest_int(
-            #     'consecutive_positive_change', 1, 6),
-            take_ratio=trial.suggest_float('take_ratio', 0.99, 1.0)
+            epochs=trial.suggest_int('epochs', 5, 30)
+            # take_ratio=trial.suggest_float('take_ratio', 0.997, 1.01)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
@@ -63,7 +61,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 30,
+                # 'epochs': 20,
                 'batch_size': 20,
                 'clear': True,
                 'directory': trial.number,
