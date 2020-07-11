@@ -29,7 +29,6 @@ class SymbolTuner(OrderBookFrame):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
-        self.train_df = self.label_positive_change(5)
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study = optuna.create_study(direction='maximize')
@@ -47,13 +46,15 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            epochs=trial.suggest_int('epochs', 5, 30)
+            # epochs=trial.suggest_int('epochs', 5, 30),
+            min_consecutive_count=trial.suggest_int('min_consecutive_count',
+                                                    1, 12)
             # take_ratio=trial.suggest_float('take_ratio', 0.997, 1.01)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             _df = expected_position_frame(
-                df=self.train_df,
+                df=self.label_positive_change(**hparams),
                 **hparams
             )
 
@@ -61,7 +62,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                # 'epochs': 20,
+                'epochs': 10,
                 'batch_size': 20,
                 'clear': True,
                 'directory': trial.number,
@@ -70,7 +71,7 @@ class SymbolTuner(OrderBookFrame):
                 'eval_df': eval_df,
                 'learning_rate': 1.0e-5,
                 'levels': 40,
-                # 'seed': 216,
+                'seed': 216,
                 'sequence_length': 48,
                 'symbol': self.symbol,
             }
