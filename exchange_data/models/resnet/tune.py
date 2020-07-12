@@ -47,10 +47,10 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            filters=trial.suggest_int('epochs', 1, 12),
-            inception_units=trial.suggest_int('epochs', 1, 12),
-            lstm_units=trial.suggest_int('epochs', 1, 12),
-            epochs=trial.suggest_int('epochs', 2, 10),
+            filters=trial.suggest_int('epochs', 1, 5),
+            inception_units=trial.suggest_int('epochs', 1, 5),
+            lstm_units=trial.suggest_int('epochs', 1, 5),
+            # epochs=trial.suggest_int('epochs', 2, 10),
             # min_consecutive_count=trial.suggest_int('min_consecutive_count',
             #                                         1, 12)
             # take_ratio=trial.suggest_float('take_ratio', 0.997, 1.01)
@@ -66,7 +66,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                # 'epochs': 10,
+                'epochs': 10,
                 'batch_size': 20,
                 'clear': True,
                 'directory': trial.number,
