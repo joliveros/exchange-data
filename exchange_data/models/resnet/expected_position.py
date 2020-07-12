@@ -3,34 +3,37 @@ import numpy as np
 import pandas as pd
 
 
-def expected_position_frame(df, take_ratio=1.0, **kwargs):
+def expected_position_frame(df, **kwargs):
     df = df.copy()
     df.dropna(how='any', inplace=True)
     df = df.sort_index()
     df = df.reset_index(drop=False)
 
-    flat_df = df[df['expected_position'] == 0]
+    flat_df = df[df['change'] == 0.0]
+    short_df = df[df['change'] < 0.0]
     long_df = df[df['expected_position'] == 1]
 
-    if len(flat_df) > len(long_df):
-        df = long_df.copy()
-        long_df = pd.concat((df.sample(len(flat_df) - len(long_df),
-                                            random_state=0, replace=True),
-                             long_df))
-    else:
-        df = flat_df.copy()
-        flat_df = pd.concat((df.sample(len(long_df) - len(flat_df),
-                                           random_state=0, replace=True),
-                             flat_df))
+    lens = [len(flat_df), len(short_df)]
 
-    if take_ratio != 1.0:
-        long_df = long_df.sample(frac=take_ratio, replace=True, random_state=0)
+    max_len = max(lens)
 
-    alog.info('#### here ####')
+    flat_df = resample_to_len(flat_df, max_len)
+    short_df = resample_to_len(short_df, max_len)
+    flat_df = pd.concat([flat_df, short_df])
 
-    alog.info((len(flat_df), len(long_df)))
+    max_len = max([len(flat_df), len(short_df)])
 
-    alog.info('#### here ####')
+    long_df = resample_to_len(long_df, max_len)
+    flat_df = resample_to_len(short_df, max_len)
 
     df = pd.concat((long_df, flat_df))
+
+    return df
+
+
+def resample_to_len(df, max_len):
+    if len(df) < max_len:
+        df = df.sample(frac=max_len / len(df),
+                                 random_state=0,
+                                 replace=True)
     return df

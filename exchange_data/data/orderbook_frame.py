@@ -87,7 +87,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                     t = i - x * self.group_by_delta
                     df.loc[t, 'expected_position'] = 1
 
-        df = df.drop(columns=['change'])
+        # df = df.drop(columns=['change'])
 
         df.dropna(how='any')
 
