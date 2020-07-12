@@ -4,7 +4,7 @@ import shutil
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.expected_position import expected_position_frame
-from exchange_data.models.resnet.model import ModelTrainer
+from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
@@ -29,6 +29,7 @@ class SymbolTuner(OrderBookFrame):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
+        self.train_df = self.label_positive_change(5)
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study = optuna.create_study(direction='maximize')
@@ -46,15 +47,18 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            # epochs=trial.suggest_int('epochs', 5, 30),
-            min_consecutive_count=trial.suggest_int('min_consecutive_count',
-                                                    1, 12)
+            filters=trial.suggest_int('epochs', 1, 12),
+            inception_units=trial.suggest_int('epochs', 1, 12),
+            lstm_units=trial.suggest_int('epochs', 1, 12),
+            epochs=trial.suggest_int('epochs', 2, 10),
+            # min_consecutive_count=trial.suggest_int('min_consecutive_count',
+            #                                         1, 12)
             # take_ratio=trial.suggest_float('take_ratio', 0.997, 1.01)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             _df = expected_position_frame(
-                df=self.label_positive_change(**hparams),
+                df=self.train_df,
                 **hparams
             )
 
@@ -62,7 +66,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 10,
+                # 'epochs': 10,
                 'batch_size': 20,
                 'clear': True,
                 'directory': trial.number,
@@ -114,11 +118,11 @@ class SymbolTuner(OrderBookFrame):
 
 
 @click.command()
-@click.option('--backtest-interval', '-b', default='4h', type=str)
+@click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--depth', '-d', default=40, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--interval', '-i', default='4h', type=str)
+@click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
