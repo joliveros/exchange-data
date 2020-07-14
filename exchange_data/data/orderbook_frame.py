@@ -83,7 +83,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             change_count = int(row['change_count'])
 
             if change_count >= min_consecutive_count:
-                for x in range(0, change_count + 2):
+                for x in range(0, change_count + 1):
                     t = i - x * self.group_by_delta
                     df.loc[t, 'expected_position'] = 1
 

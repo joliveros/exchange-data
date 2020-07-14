@@ -22,10 +22,9 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     levels,
-    inception_units,
-    filters,
-    lstm_units,
     sequence_length,
+    inception_units=2,
+    lstm_units=4,
     learning_rate=5e-5,
     num_categories=2,
     **kwargs
@@ -33,7 +32,7 @@ def Model(
     input_shape = (sequence_length, levels * 2, 1)
     alog.info(input_shape)
 
-    filters = filters * 16
+    filters = 16
 
     inputs = Input(shape=input_shape)
 
@@ -42,6 +41,7 @@ def Model(
     filter_height = [2, ]
     last_layer_filter_height = 0
     last_conv = inputs
+    last_filters = filters
 
     while last_layer_filter_height != 1:
         for i in range(0, len(filter_height)):
@@ -50,9 +50,10 @@ def Model(
                 if (last_layer_filter_height - f) < 0:
                     f = f - 1
 
-                last_conv = conv_block(filters, last_conv, f)
+                last_conv = conv_block(last_filters, last_conv, f)
                 last_layer_filter_height = last_conv.shape[2]
                 alog.info(last_conv.shape)
+                last_filters += filters
 
                 if f not in filter_height:
                     break
@@ -96,7 +97,8 @@ def Model(
         convsecond_output)
 
     # build the last LSTM layer
-    lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False)(conv_reshape)
+    lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False)(
+        conv_reshape)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
