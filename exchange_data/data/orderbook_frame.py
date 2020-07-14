@@ -67,6 +67,12 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         df['change'] = (df['best_ask'] - df['best_ask'].shift(1)) / df[
             'best_ask']
 
+        change = df[df['change'] < 0.0]['change'].to_numpy()
+
+        neg_change = np.quantile(change, 0.5)
+
+        df['large_negative_change'] = np.where(df['change'] < neg_change, 1, 0)
+
         df['expected_position'] = 0
 
         for i, row in df.iterrows():
@@ -88,6 +94,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                     df.loc[t, 'expected_position'] = 1
 
         # df = df.drop(columns=['change'])
+
 
         df.dropna(how='any')
 

@@ -29,7 +29,7 @@ class SymbolTuner(OrderBookFrame):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
-        self.train_df = self.label_positive_change(5)
+        self.train_df = self.label_positive_change(2)
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study = optuna.create_study(direction='maximize')
