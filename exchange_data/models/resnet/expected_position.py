@@ -11,19 +11,22 @@ def expected_position_frame(df, take_ratio=1.0, **kwargs):
 
     flat_df = df[df['expected_position'] == 0]
     long_df = df[df['expected_position'] == 1]
+    negative_df = df[df['large_negative_change'] == 1]
 
-    max_len = max([len(flat_df), len(long_df)])
+    max_len = max([len(flat_df), len(long_df), len(negative_df)])
 
     flat_df = resample_to_len(flat_df, max_len)
 
     long_df = resample_to_len(long_df, max_len)
+
+    negative_df = resample_to_len(negative_df, max_len)
 
     if take_ratio != 1.0:
         long_df = long_df.sample(frac=take_ratio, random_state=0, replace=True)
 
     # flat_df = resample_to_len(short_df, max_len)
 
-    df = pd.concat((long_df, flat_df))
+    df = pd.concat((long_df, flat_df, negative_df))
 
     return df
 
