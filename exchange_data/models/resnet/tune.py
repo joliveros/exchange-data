@@ -61,7 +61,7 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 100,
+                'epochs': 50,
                 'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
