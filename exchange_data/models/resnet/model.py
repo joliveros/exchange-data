@@ -4,6 +4,9 @@ import alog
 import click
 import tensorflow as tf
 
+
+Activation = tf.keras.layers.Activation
+Conv1D = tf.keras.layers.Conv1D
 Conv2D = tf.keras.layers.Conv2D
 ConvLSTM2D = tf.keras.layers.ConvLSTM2D
 Dense = tf.keras.layers.Dense
@@ -23,6 +26,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     levels,
     sequence_length,
+    filters=16,
     inception_units=2,
     lstm_units=4,
     learning_rate=5e-5,
@@ -32,77 +36,56 @@ def Model(
     input_shape = (sequence_length, levels * 2, 1)
     alog.info(input_shape)
 
-    filters = 16
-
     inputs = Input(shape=input_shape)
 
-    alog.info(inputs.shape)
-
-    filter_height = [2, ]
-    last_layer_filter_height = 0
-    last_conv = inputs
-    last_filters = filters
-
-    while last_layer_filter_height != 1:
-        for i in range(0, len(filter_height)):
-            if last_layer_filter_height != 1:
-                f = filter_height[i]
-                if (last_layer_filter_height - f) < 0:
-                    f = f - 1
-
-                last_conv = conv_block(last_filters, last_conv, f)
-                last_layer_filter_height = last_conv.shape[2]
-                alog.info(last_conv.shape)
-                last_filters += filters
-
-                if f not in filter_height:
-                    break
-
-    conv = last_conv
+    conv = TimeDistributed(ResNetTS(input_shape[1:], filters, num_categories))(inputs)
 
     inception_units = inception_units * 16
     lstm_units = lstm_units * 16
 
     alog.info(conv.shape)
+
     # build the inception module
-    convsecond_1 = Conv2D(inception_units, (1, 1), padding='same')(conv)
+    convsecond_1 = Conv1D(inception_units, 1, padding='same')(conv)
     convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
-    convsecond_1 = Conv2D(inception_units, (3, 1), padding='same')(convsecond_1)
+    convsecond_1 = Conv1D(inception_units, 3, padding='same')(convsecond_1)
     convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
 
     alog.info(convsecond_1.shape)
 
-    convsecond_2 = Conv2D(inception_units, (1, 1), padding='same')(conv)
+    convsecond_2 = Conv1D(inception_units, 1, padding='same')(conv)
     convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
-    convsecond_2 = Conv2D(inception_units, (5, 1), padding='same')(convsecond_2)
+    convsecond_2 = Conv1D(inception_units, 5, padding='same')(convsecond_2)
     convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
 
     alog.info(convsecond_2.shape)
 
-    convsecond_3 = MaxPooling2D((3, 1), strides=(1, 1), padding='same')(
+    convsecond_3 = tf.keras.layers.MaxPool1D(3, strides=1, padding='same')(
         conv)
-    convsecond_3 = Conv2D(inception_units, (1, 1), padding='same')(convsecond_3)
+    convsecond_3 = Conv1D(inception_units, 1, padding='same')(convsecond_3)
     convsecond_3 = LeakyReLU(alpha=0.01)(convsecond_3)
 
     alog.info(convsecond_3.shape)
 
     convsecond_output = tf.keras.layers.concatenate(
-        [convsecond_1, convsecond_2, convsecond_3], axis=3)
+        [convsecond_1, convsecond_2, convsecond_3], axis=2)
 
     alog.info(convsecond_output.shape)
 
-    # use the MC dropout here
-    conv_reshape = Reshape(
-        (int(convsecond_output.shape[1]), int(convsecond_output.shape[3])))(
-        convsecond_output)
-
     # build the last LSTM layer
     lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False)(
-        conv_reshape)
+        convsecond_output)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
-    out = Dense(num_categories, activation='softmax')(lstm_out)
+
+    dense_out = Dense(
+        num_categories, activation='softmax',
+        use_bias=True,
+        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+    )
+
+    out = dense_out(lstm_out)
 
     alog.info(out.shape)
 
@@ -115,16 +98,63 @@ def Model(
     )
     return model
 
+def ResNetTS(input_shape, filters=64, num_categories=2):
+    input = Input(input_shape)
+    conv = input
 
-def conv_block(filters, last_conv, filter_height=2):
-    conv = Conv2D(filters, (1, filter_height), strides=(1, filter_height))(
-        last_conv)
-    conv = LeakyReLU(alpha=0.01)(conv)
-    conv = Conv2D(filters, (4, 1), padding='same')(conv)
-    conv = LeakyReLU(alpha=0.01)(conv)
-    conv = Conv2D(filters, (4, 1), padding='same')(conv)
-    last_conv = LeakyReLU(alpha=0.01)(conv)
-    return last_conv
+    conv = Conv1D(filters=filters, kernel_size=1, padding='same')(input)
+    conv = tf.keras.layers.BatchNormalization()(conv)
+    conv = Activation('relu')(conv)
+
+    for i in range(0, 2):
+        conv = conv_block(filters, conv, i)
+        filters = filters * 2
+
+    gap = GlobalAveragePooling1D()(conv)
+
+    alog.info(gap.shape)
+
+    output = Dense(num_categories, activation='softmax')(gap)
+
+    alog.info(output.shape)
+
+    return tf.keras.models.Model(inputs=input, outputs=output)
+
+
+def conv_block(filters, last_conv, block_n):
+
+    if block_n > 0:
+        filters = filters * 2
+
+    alog.info(last_conv.shape)
+    alog.info((block_n, filters))
+
+    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(last_conv)
+    conv = tf.keras.layers.BatchNormalization()(conv)
+    conv = Activation('relu')(conv)
+
+    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(conv)
+    conv = tf.keras.layers.BatchNormalization()(conv)
+    conv = Activation('relu')(conv)
+
+    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(conv)
+    conv = tf.keras.layers.BatchNormalization()(conv)
+
+    alog.info(conv.shape)
+
+    if last_conv.shape[-1] != filters:
+        short_cut = Conv1D(filters=filters, kernel_size=1, padding='same')(
+            last_conv)
+        short_cut = tf.keras.layers.BatchNormalization()(short_cut)
+    else:
+        short_cut = tf.keras.layers.BatchNormalization()(last_conv)
+
+    alog.info(short_cut.shape)
+
+    output = tf.keras.layers.add([short_cut, conv])
+    output = Activation('relu')(output)
+
+    return output
 
 
 @click.command()
@@ -133,6 +163,7 @@ def conv_block(filters, last_conv, filter_height=2):
 @click.option('--sequence-length', type=int, default=48)
 def main(**kwargs):
     Model(**kwargs)
+
 
 if __name__ == '__main__':
     main()

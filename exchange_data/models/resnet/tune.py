@@ -48,25 +48,20 @@ class SymbolTuner(OrderBookFrame):
 
         hparams = dict(
             # filters=trial.suggest_int('epochs', 1, 5),
-            inception_units=trial.suggest_int('inception_units', 1, 4),
-            lstm_units=trial.suggest_int('lstm_units', 1, 16),
-            epochs=trial.suggest_int('epochs', 5, 30),
+            # inception_units=trial.suggest_int('inception_units', 1, 4),
+            # lstm_units=trial.suggest_int('lstm_units', 1, 16),
+            # epochs=trial.suggest_int('epochs', 5, 30),
             # min_consecutive_count=trial.suggest_int('min_consecutive_count',
             #                                         1, 12)
-            # take_ratio=trial.suggest_float('take_ratio', 0.95, 1.0)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            _df = expected_position_frame(
-                df=self.train_df,
-                **hparams
-            )
-
+            _df = self.train_df
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                # 'epochs': 10,
+                'epochs': 100,
                 'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
@@ -82,11 +77,7 @@ class SymbolTuner(OrderBookFrame):
 
             hp.hparams(hparams, trial_id=str(trial.number))
 
-            alog.info(hparams)
-
             hparams = {**params, **hparams}
-
-            alog.info(alog.pformat(hparams))
 
             model = ModelTrainer(**hparams)
             result = model.run()

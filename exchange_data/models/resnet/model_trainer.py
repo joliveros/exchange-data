@@ -18,6 +18,7 @@ from exchange_data.models.resnet.model import Model
 
 class ModelTrainer(object):
     def __init__(self, **kwargs):
+        alog.info(alog.pformat(kwargs))
         self.kwargs = kwargs
 
     def done(self):
@@ -62,7 +63,7 @@ class ModelTrainer(object):
         model.summary()
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse('4h'),
+            save_checkpoints_secs=timeparse('3m'),
             tf_random_seed=seed
         )
 
@@ -116,9 +117,9 @@ class ModelTrainer(object):
 
         eval_spec = EvalSpec(
             input_fn=eval_ds,
-            start_delay_secs=timeparse('4h'),
+            start_delay_secs=timeparse('3m'),
             steps=timeparse('16m'),
-            throttle_secs=timeparse('4h')
+            throttle_secs=timeparse('3m')
         )
 
         result = train_and_evaluate(resnet_estimator, train_spec, eval_spec)[0]

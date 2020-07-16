@@ -20,6 +20,8 @@ import pandas as pd
 import re
 
 from exchange_data.emitters.trading_window_emitter import TradingWindowEmitter
+from exchange_data.models.resnet.expected_position import \
+    expected_position_frame
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 
 pd.options.plotting.backend = 'plotly'
@@ -69,7 +71,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         change = df[df['change'] < 0.0]['change'].to_numpy()
 
-        neg_change = np.quantile(change, 0.5)
+        neg_change = np.quantile(change, 0.2)
 
         df['large_negative_change'] = np.where(df['change'] < neg_change, 1, 0)
 
@@ -96,7 +98,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         # df = df.drop(columns=['change'])
 
 
-        df.dropna(how='any')
+        df.dropna(how='any', inplace=True)
 
         alog.info(f'### volume_max {self.quantile} ####')
 
@@ -208,7 +210,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=40, type=int)
 @click.option('--group-by', '-g', default='30s', type=str)
-@click.option('--interval', '-i', default='30m', type=str)
+@click.option('--interval', '-i', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--tick', is_flag=True)
@@ -219,7 +221,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 def main(**kwargs):
     df = OrderBookFrame(**kwargs).label_positive_change(4)
 
-    pd.set_option('display.max_rows', df.shape[0] + 1)
+    pd.set_option('display.max_rows', len(df) + 1)
 
     alog.info(df)
 
