@@ -47,6 +47,7 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
+            # learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.001)
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
             # lstm_units=trial.suggest_int('lstm_units', 1, 16),
@@ -61,14 +62,14 @@ class SymbolTuner(OrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 50,
+                'epochs': 5,
                 'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                'learning_rate': 1.0e-5,
+                'learning_rate': 0.00057742,
                 'levels': 40,
                 'seed': 216,
                 'sequence_length': 48,
