@@ -86,6 +86,7 @@ class SymbolTuner(OrderBookFrame):
             accuracy = result.get('accuracy')
             global_step = result.get('global_step')
             exported_model_path = result.get('exported_model_path')
+            trial.set_user_attr('exported_model_path', exported_model_path)
 
             tf.summary.scalar('accuracy', accuracy, step=global_step)
 
@@ -101,7 +102,7 @@ class SymbolTuner(OrderBookFrame):
             except ValueError:
                 pass
 
-        if self.backtest.capital == 1.0:
+        if self.backtest.capital <= 0.99 or self.backtest.capital == 1.0:
             alog.info('## deleting trial ###')
             alog.info(exported_model_path)
             shutil.rmtree(self.run_dir)
