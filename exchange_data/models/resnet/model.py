@@ -106,7 +106,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
-    for i in range(0, 2):
+    for i in range(0, 3):
         conv = conv_block(filters, conv, i)
         filters = filters * 2
 
