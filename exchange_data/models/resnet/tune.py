@@ -47,8 +47,8 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            # learning_rate=trial.suggest_float('learning_rate', 0.0001, 0.01),
-            # prefix_length=trial.suggest_int('epochs', 1, 24),
+            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.005),
+            # prefix_length=trial.suggest_int('prefix_length', 1, 12),
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
             # lstm_units=trial.suggest_int('lstm_units', 1, 16),
@@ -58,19 +58,19 @@ class SymbolTuner(OrderBookFrame):
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            _df = self.label_positive_change(2, prefix_length=5)
+            _df = self.label_positive_change(2, prefix_length=4)
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
                 'epochs': 5,
-                'batch_size': 4,
+                'batch_size': 3,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                'learning_rate': 0.0024994,
+                # 'learning_rate': 0.0024994,
                 'levels': 40,
                 'seed': 216,
                 'sequence_length': 48,
@@ -105,7 +105,7 @@ class SymbolTuner(OrderBookFrame):
         if self.backtest.capital <= 0.99 or self.backtest.capital == 1.0:
             alog.info('## deleting trial ###')
             alog.info(exported_model_path)
-            shutil.rmtree(self.run_dir)
+            # shutil.rmtree(self.run_dir)
             shutil.rmtree(exported_model_path, ignore_errors=True)
             return 0.0
 
