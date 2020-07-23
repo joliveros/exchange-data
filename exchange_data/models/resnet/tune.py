@@ -47,7 +47,8 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.002),
+            learning_rate=trial.suggest_loguniform('learning_rate', 0.00001,
+                                                0.005),
             # prefix_length=trial.suggest_int('prefix_length', 1, 12),
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
