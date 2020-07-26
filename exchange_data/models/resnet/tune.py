@@ -8,7 +8,7 @@ from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
-
+import pandas as pd
 import alog
 import click
 import logging
@@ -31,7 +31,8 @@ class SymbolTuner(OrderBookFrame):
         kwargs['window_size'] = '1h'
 
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
-
+        self.train_df = self.label_positive_change(min_consecutive_count=2,
+                                         prefix_length=4)
         self.study = optuna.create_study(direction='maximize')
         self.study.optimize(self.run, n_trials=session_limit)
 
@@ -47,25 +48,30 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            learning_rate=trial.suggest_loguniform('learning_rate', 0.00001,
-                                                0.005),
-            # prefix_length=trial.suggest_int('prefix_length', 1, 12),
+            learning_rate=trial.suggest_float('learning_rate', 0.01, 0.1),
+            lstm_units=trial.suggest_int('lstm_units', 8, 16),
+            # prefix_length=trial.suggest_int('prefix_length', 1, 6),
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
-            # lstm_units=trial.suggest_int('lstm_units', 1, 16),
             # epochs=trial.suggest_int('epochs', 5, 30),
             # min_consecutive_count=trial.suggest_int('min_consecutive_count',
-            #                                         1, 12)
+            #                                         1, 5)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            _df = self.label_positive_change(2, prefix_length=4)
+            _df = self.train_df.copy(deep=True)
+            flat_df = _df[_df['expected_position'] == 0]
+            long_df = _df[_df['expected_position'] == 1]
+            flat_df = flat_df.sample(frac=len(long_df)/len(flat_df),
+                                       replace=True)
+            _df = pd.concat([flat_df, long_df])
+
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 5,
-                'batch_size': 3,
+                'epochs': 15,
+                'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
@@ -108,6 +114,8 @@ class SymbolTuner(OrderBookFrame):
             alog.info(exported_model_path)
             # shutil.rmtree(self.run_dir)
             shutil.rmtree(exported_model_path, ignore_errors=True)
+
+        if self.backtest.capital == 1.0:
             return 0.0
 
         return self.backtest.capital
