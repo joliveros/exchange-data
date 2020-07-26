@@ -75,7 +75,7 @@ class BackTest(OrderBookFrame, PredictionBase):
         row['capital'] = self.capital
 
         if self.trial:
-            self.trial.report(self.capital, row.name)
+            # self.trial.report(self.capital, row.name)
             tf.summary.scalar('capital', self.capital, step=row.name)
 
         return row

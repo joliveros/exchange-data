@@ -43,3 +43,4 @@ timestamp
 tqdm
 redis-collections
 redlock
+keras-self-attention

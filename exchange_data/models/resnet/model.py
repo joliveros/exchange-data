@@ -3,7 +3,7 @@
 import alog
 import click
 import tensorflow as tf
-
+from keras_self_attention import SeqSelfAttention
 
 Activation = tf.keras.layers.Activation
 Conv1D = tf.keras.layers.Conv1D
@@ -73,11 +73,22 @@ def Model(
     alog.info(convsecond_output.shape)
 
     # build the last LSTM layer
-    lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False)(
+    lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
+                    recurrent_activation='sigmoid')(
         convsecond_output)
+
+    lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
+                    recurrent_activation='sigmoid')(
+        lstm_out)
+
+    lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False,
+                    recurrent_activation='sigmoid')(
+        lstm_out)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
+
+    # attn = SeqSelfAttention(attention_activation='sigmoid')(lstm_out)
 
     dense_out = Dense(
         num_categories, activation='softmax',
@@ -114,7 +125,9 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
 
     alog.info(gap.shape)
 
-    output = Dense(num_categories, activation='softmax')(gap)
+    output = gap
+
+    # output = Dense(num_categories, activation='softmax')(gap)
 
     alog.info(output.shape)
 

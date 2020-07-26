@@ -159,7 +159,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
     def intervals(self):
         if self.volatility_intervals:
             twindow = TradingWindowEmitter(interval=self.interval_str,
-                                           group_by='2m',
+                                           group_by='1m',
                                            database_name=self.database_name,
                                            plot=False,
                                            symbol=self.symbol)
