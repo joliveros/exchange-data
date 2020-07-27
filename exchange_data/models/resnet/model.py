@@ -28,7 +28,7 @@ def Model(
     sequence_length,
     filters=16,
     inception_units=2,
-    lstm_units=4,
+    lstm_units=8,
     learning_rate=5e-5,
     num_categories=2,
     **kwargs
@@ -81,6 +81,10 @@ def Model(
                     recurrent_activation='sigmoid')(
         lstm_out)
 
+    lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
+                    recurrent_activation='sigmoid')(
+        lstm_out)
+
     lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False,
                     recurrent_activation='sigmoid')(
         lstm_out)
@@ -105,7 +109,8 @@ def Model(
     model.compile(
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'],
-        optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate)
+        optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
+                                               clipnorm=1.0)
     )
     return model
 
