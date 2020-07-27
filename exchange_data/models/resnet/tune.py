@@ -31,8 +31,7 @@ class SymbolTuner(OrderBookFrame):
         kwargs['window_size'] = '1h'
 
         self.backtest = BackTest(quantile=self.quantile, **kwargs)
-        self.train_df = self.label_positive_change(min_consecutive_count=2,
-                                         prefix_length=4)
+
         self.study = optuna.create_study(direction='maximize')
         self.study.optimize(self.run, n_trials=session_limit)
 
@@ -48,29 +47,32 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            learning_rate=trial.suggest_float('learning_rate', 0.01, 0.1),
-            lstm_units=trial.suggest_int('lstm_units', 8, 16),
-            # prefix_length=trial.suggest_int('prefix_length', 1, 6),
+            learning_rate=trial.suggest_float('learning_rate', 0.03, 0.1),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.0, 5.0),
+            # lstm_units=trial.suggest_int('lstm_units', 8, 16),
+            prefix_length=trial.suggest_int('prefix_length', 1, 6),
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
             # epochs=trial.suggest_int('epochs', 5, 30),
-            # min_consecutive_count=trial.suggest_int('min_consecutive_count',
-            #                                         1, 5)
+            min_consecutive_count=trial.suggest_int('min_consecutive_count',
+                                                    5, 6)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            _df = self.train_df.copy(deep=True)
+            flat_ratio = hparams.get('flat_ratio')
+            _df = self.label_positive_change(**hparams)
             flat_df = _df[_df['expected_position'] == 0]
             long_df = _df[_df['expected_position'] == 1]
-            flat_df = flat_df.sample(frac=len(long_df)/len(flat_df),
-                                       replace=True)
+            flat_count = len(long_df) * flat_ratio
+            flat_df = flat_df.sample(frac=flat_count/len(flat_df),
+                                     replace=True)
             _df = pd.concat([flat_df, long_df])
 
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 15,
+                'epochs': 25,
                 'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
