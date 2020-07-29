@@ -61,7 +61,8 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.sequence_length = sequence_length
 
     def label_positive_change(self, min_consecutive_count=3,
-                              prefix_length=4, **kwargs):
+                              prefix_length=4, neg_change_quantile=0.1,
+                              **kwargs):
         self.min_consecutive_count = min_consecutive_count
         self.positive_change_count = 0
 
@@ -72,7 +73,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         change = df[df['change'] < 0.0]['change'].to_numpy()
 
-        neg_change = np.quantile(change, 0.2)
+        neg_change = np.quantile(change, neg_change_quantile)
 
         df['large_negative_change'] = np.where(df['change'] < neg_change, 1, 0)
 

@@ -26,8 +26,8 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     levels,
     sequence_length,
-    filters=16,
-    inception_units=2,
+    filters=32,
+    inception_units=4,
     lstm_units=8,
     learning_rate=5e-5,
     num_categories=2,
@@ -124,7 +124,6 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
 
     for i in range(0, 3):
         conv = conv_block(filters, conv, i)
-        filters = filters * 2
 
     gap = GlobalAveragePooling1D()(conv)
 

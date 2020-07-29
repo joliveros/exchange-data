@@ -47,39 +47,54 @@ class SymbolTuner(OrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            learning_rate=trial.suggest_float('learning_rate', 0.03, 0.1),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.0, 5.0),
+            # learning_rate=trial.suggest_float('learning_rate', 0.03, 0.1),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.1, 10.0),
+            neg_change_ratio=trial.suggest_float('neg_change_ratio', 0.1, 10.0),
+            neg_change_quantile=trial.suggest_float('neg_change_quantile', 0.0,
+                                                    1.0),
             # lstm_units=trial.suggest_int('lstm_units', 8, 16),
-            prefix_length=trial.suggest_int('prefix_length', 1, 6),
+            # prefix_length=trial.suggest_int('prefix_length', 1, 6),
             # filters=trial.suggest_int('epochs', 1, 5),
             # inception_units=trial.suggest_int('inception_units', 1, 4),
-            # epochs=trial.suggest_int('epochs', 5, 30),
-            min_consecutive_count=trial.suggest_int('min_consecutive_count',
-                                                    5, 6)
+            epochs=trial.suggest_int('epochs', 5, 14),
+            # min_consecutive_count=trial.suggest_int('min_consecutive_count',
+            #                                         5, 6)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
-            _df = self.label_positive_change(**hparams)
+            neg_change_ratio = hparams.get('neg_change_ratio')
+            # flat_ratio = 2.4
+            _df = self.label_positive_change(min_consecutive_count=3,
+                                             prefix_length=2)
+            large_change_df = _df[_df['large_negative_change'] == 1]
             flat_df = _df[_df['expected_position'] == 0]
             long_df = _df[_df['expected_position'] == 1]
+
             flat_count = len(long_df) * flat_ratio
+            neg_change_count = len(long_df) * neg_change_ratio
+
             flat_df = flat_df.sample(frac=flat_count/len(flat_df),
                                      replace=True)
-            _df = pd.concat([flat_df, long_df])
+
+            large_change_df = large_change_df.sample(frac=neg_change_count / len(
+                large_change_df),
+                                     replace=True)
+
+            _df = pd.concat([large_change_df, flat_df, long_df])
 
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 25,
+                # 'epochs': 10,
                 'batch_size': 4,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                # 'learning_rate': 0.0024994,
+                'learning_rate': 0.078735,
                 'levels': 40,
                 'seed': 216,
                 'sequence_length': 48,
