@@ -36,10 +36,10 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         database_name,
         depth,
         interval,
-        max_volume_quantile,
         sequence_length,
         symbol,
         window_size,
+        max_volume_quantile=0.99,
         quantile=0.0,
         volatility_intervals=False,
         **kwargs

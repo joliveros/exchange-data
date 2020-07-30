@@ -21,6 +21,9 @@ class BackTest(OrderBookFrame, PredictionBase):
         **kwargs
     ):
         super().__init__(**kwargs)
+
+        PredictionBase.__init__(self, **kwargs)
+
         self.should_plot = plot
         self.capital = 1.0
         self.entry_price = 0.0
@@ -33,7 +36,8 @@ class BackTest(OrderBookFrame, PredictionBase):
         if self.should_plot:
             self.plot()
 
-    def test(self):
+    def test(self, model_version):
+        self.model_version = model_version
         self.capital = 1.0
         df = self.df.copy()
         df.reset_index(drop=False, inplace=True)
@@ -156,6 +160,7 @@ class BackTest(OrderBookFrame, PredictionBase):
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--volume-max', default=1.0e4, type=float)
 @click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--model-version', default=None, type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     # start_date = DateTimeUtils.parse_datetime_str('2020-06-30 23:31:00')
