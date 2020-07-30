@@ -17,11 +17,13 @@ services:
             - 0.0.0.0:8501:8501
         volumes:
             - ${HOME}/.exchange-data/models/${SYMBOL}_export:/models/resnet
+            - ./tfserving/models.config:/models/models.config
         environment:
             - CUDA_VISIBLE_DEVICES=-1
             - MODEL_NAME=resnet
         networks:
             - public
+        command: --model_config_file=/models/models.config
 
 secrets:
   DB:
