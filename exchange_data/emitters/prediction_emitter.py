@@ -29,6 +29,9 @@ class TradeJob(object):
 class PredictionBase(object):
     frames = []
 
+    def __init__(self, model_version=None, **kwargs):
+        self.model_version = model_version
+
     def get_prediction(self):
         frames = np.expand_dims(np.asarray(self.frames), axis=0)
 
@@ -43,8 +46,13 @@ class PredictionBase(object):
         }
 
         data = gzip.compress(bytes(data, encoding='utf8'))
+        url = None
 
-        url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict'
+        if self.model_version:
+            url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet' \
+                  f'/versions/{self.model_version}:predict'
+        else:
+            url = f'http://{settings.RESNET_HOST}:8501/v1/models/resnet:predict'
 
         json_response = requests.post(
             url,
