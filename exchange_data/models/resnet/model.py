@@ -3,7 +3,6 @@
 import alog
 import click
 import tensorflow as tf
-from keras_self_attention import SeqSelfAttention
 
 Activation = tf.keras.layers.Activation
 Conv1D = tf.keras.layers.Conv1D
@@ -93,8 +92,6 @@ def Model(
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
-
-    # attn = SeqSelfAttention(attention_activation='sigmoid')(lstm_out)
 
     dense_out = Dense(
         num_categories, activation='softmax',
