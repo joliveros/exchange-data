@@ -34,8 +34,9 @@ class SymbolTuner(OrderBookFrame):
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
-        self.on('run', self.run)
+
         self.split_gpu()
+
         study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
         study_db_path = Path(study_db_path)
         db_conn_str = f'sqlite:///{study_db_path}'
@@ -98,7 +99,7 @@ class SymbolTuner(OrderBookFrame):
         hparams = dict(
             # learning_rate=trial.suggest_float('learning_rate', 0.03, 0.1),
             # flat_ratio=trial.suggest_float('flat_ratio', 0.1, 10.0),
-            # neg_change_ratio=trial.suggest_float('neg_change_ratio', 0.1, 2.0),
+            neg_change_ratio=trial.suggest_float('neg_change_ratio', 0.1, 2.0),
             # neg_change_quantile=trial.suggest_float('neg_change_quantile', 0.0,
             #                                         1.0),
             # lstm_units=trial.suggest_int('lstm_units', 8, 16),
@@ -115,10 +116,11 @@ class SymbolTuner(OrderBookFrame):
             neg_change_ratio = hparams.get('neg_change_ratio', 0.30394)
             # flat_ratio = 2.4
             _df = self.label_positive_change(prefix_length=2,
+                                             negative_prefix_length=2,
                                              min_consecutive_count=4,
                                              neg_change_quantile=0.15136,
                                              **hparams)
-            large_change_df = _df[_df['large_negative_change'] == 1]
+            neg_change_df = _df[_df['consecutive_negative_change_position'] == 1]
             flat_df = _df[_df['expected_position'] == 0]
             long_df = _df[_df['expected_position'] == 1]
 
@@ -128,11 +130,11 @@ class SymbolTuner(OrderBookFrame):
             flat_df = flat_df.sample(frac=flat_count/len(flat_df),
                                      replace=True)
 
-            large_change_df = large_change_df.sample(frac=neg_change_count / len(
-                large_change_df),
+            neg_change_df = neg_change_df.sample(frac=neg_change_count / len(
+                neg_change_df),
                                      replace=True)
 
-            _df = pd.concat([large_change_df, flat_df, long_df])
+            _df = pd.concat([neg_change_df, flat_df, long_df])
 
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
