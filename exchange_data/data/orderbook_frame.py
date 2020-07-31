@@ -60,9 +60,14 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    def label_positive_change(self, min_consecutive_count=3,
-                              prefix_length=4, neg_change_quantile=0.1,
-                              **kwargs):
+    def label_positive_change(
+        self,
+        min_consecutive_count=3,
+        prefix_length=4,
+        negative_prefix_length=4,
+        neg_change_quantile=0.1,
+        **kwargs
+    ):
         self.min_consecutive_count = min_consecutive_count
         self.positive_change_count = 0
 
@@ -96,6 +101,28 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                 for x in range(0, change_count + prefix_length):
                     t = i - x * self.group_by_delta
                     df.loc[t, 'expected_position'] = 1
+
+        self.positive_change_count = 0
+
+        for i, row in df.iterrows():
+            change = row['change']
+
+            if change <= 0.0:
+                self.positive_change_count += 1
+            else:
+                self.positive_change_count = 0
+
+            df.loc[i, 'negative_change_count'] = self.positive_change_count
+
+        df['consecutive_negative_change_position'] = 0
+
+        for i, row in df.iterrows():
+            change_count = int(row['negative_change_count'])
+
+            if change_count >= min_consecutive_count:
+                for x in range(0, change_count + negative_prefix_length):
+                    t = i - x * self.group_by_delta
+                    df.loc[t, 'consecutive_negative_change_position'] = 1
 
         # df = df.drop(columns=['change'])
 
