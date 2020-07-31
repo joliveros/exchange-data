@@ -116,23 +116,20 @@ class DepthEmitter(Messenger):
     def client(self):
         return Client()
 
-    def add_cache_lock(self):
-        self.last_lock_id = self.last_lock_id + 1
-
-        if self.last_lock_id > self.num_locks - 1:
-            self.last_lock_id = 0
-        lock_name = f'add_cache_lock_{self.last_lock_id}'
+    def add_cache_lock(self, symbol):
+        lock_name = f'add_cache_lock_{symbol}'
 
         alog.info(lock_name)
 
         return RedLock(lock_name, [dict(
             host=settings.REDIS_HOST,
             db=0
-        )], retry_delay=200, retry_times=3)
+        )], retry_delay=200, retry_times=3, ttl=timeparse('3m') * 1000)
 
     def add_cache(self, symbol):
         try:
-            self._add_cache(symbol)
+            with self.add_cache_lock(symbol):
+                self._add_cache(symbol)
 
         except BinanceAPIException as e:
             alog.info(alog.pformat(vars(e)))
@@ -141,7 +138,8 @@ class DepthEmitter(Messenger):
                 time.sleep(30)
 
         except RedLockError as e:
-            self.add_cache(symbol)
+            alog.info(e)
+            pass
 
     def _add_cache(self, symbol):
         if symbol in self.caches.keys():
