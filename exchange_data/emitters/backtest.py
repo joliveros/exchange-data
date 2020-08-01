@@ -13,49 +13,25 @@ import tensorflow as tf
 from exchange_data.trading import Positions
 
 
-class BackTest(OrderBookFrame, PredictionBase):
+class BackTestBase(OrderBookFrame):
     def __init__(
         self,
         plot=False,
-        trial=None,
         **kwargs
     ):
         super().__init__(**kwargs)
-
-        PredictionBase.__init__(self, **kwargs)
-
         self.should_plot = plot
         self.capital = 1.0
         self.entry_price = 0.0
         self.trading_fee = (0.075 / 100)
         self.last_position = Positions.Flat
-        self.trial: Trial = trial
-
         self.df = self.frame
 
         if self.should_plot:
             self.plot()
 
-    def test(self, model_version):
-        self.model_version = model_version
-        self.capital = 1.0
-        df = self.df.copy()
-        df.reset_index(drop=False, inplace=True)
-        df = df.apply(self.prediction, axis=1)
-        df['capital'] = self.capital
-        df = df.apply(self.pnl, axis=1)
-
-        # for i in range(0, len(df)):
-        #     alog.info(df.loc[i])
-
-        alog.info(df)
-
-        alog.info(self.capital)
-        # alog.info(df['capital'].iloc[-1])
-        # alog.info(self.capital)
-
-    def load_previous_frames(self, depth):
-        pass
+    def test(self):
+        raise NotImplemented()
 
     def pnl(self, row):
         exit_price = 0.0
@@ -81,22 +57,6 @@ class BackTest(OrderBookFrame, PredictionBase):
         if self.trial:
             # self.trial.report(self.capital, row.name)
             tf.summary.scalar('capital', self.capital, step=row.name)
-
-        return row
-
-    # def get_prediction(self):
-    #     if random.randint(0, 1) == 0:
-    #         return Positions.Flat
-    #     else:
-    #         return Positions.Long
-
-    def prediction(self, row):
-        # alog.info(row)
-        self.frames = row['orderbook_img']
-
-        if len(self.frames) == self.sequence_length:
-            position = self.get_prediction()
-            row['position'] = position
 
         return row
 
@@ -148,6 +108,58 @@ class BackTest(OrderBookFrame, PredictionBase):
         ohlc_df = ohlc_df[ohlc_df.low != 0.0]
 
         return ohlc_df
+
+
+class BackTest(BackTestBase, PredictionBase):
+    def __init__(
+        self,
+        plot=False,
+        trial=None,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        PredictionBase.__init__(self, **kwargs)
+
+        self.trial: Trial = trial
+
+    def test(self, model_version):
+        self.model_version = model_version
+        self.capital = 1.0
+        df = self.df.copy()
+        df.reset_index(drop=False, inplace=True)
+        df = df.apply(self.prediction, axis=1)
+        df['capital'] = self.capital
+        df = df.apply(self.pnl, axis=1)
+
+        # for i in range(0, len(df)):
+        #     alog.info(df.loc[i])
+
+        alog.info(df)
+
+        alog.info(self.capital)
+        # alog.info(df['capital'].iloc[-1])
+        # alog.info(self.capital)
+
+    def load_previous_frames(self, depth):
+        pass
+
+    # def get_prediction(self):
+    #     if random.randint(0, 1) == 0:
+    #         return Positions.Flat
+    #     else:
+    #         return Positions.Long
+
+    def prediction(self, row):
+        # alog.info(row)
+        self.frames = row['orderbook_img']
+
+        if len(self.frames) == self.sequence_length:
+            position = self.get_prediction()
+            row['position'] = position
+
+        return row
+
 
 
 @click.command()
