@@ -6,8 +6,10 @@ import alog
 import click
 import numpy as np
 from exchange_data.trading import Positions
+from optuna import create_study, Trial
 from pandas import DataFrame
 import pandas as pd
+
 
 
 class BackTest(PriceFrame, BackTestBase):
@@ -18,11 +20,15 @@ class BackTest(PriceFrame, BackTestBase):
         super().__init__(**kwargs)
         BackTestBase.__init__(self, **kwargs)
 
-        df = self.ohlc
+    def label_position(self, short_period=8, long_period=22, group_by_min=None):
+        if group_by_min:
+            self.group_by_min = group_by_min
+
+        df = self.ohlc.copy()
         df.reset_index(drop=False, inplace=True)
         df_close = df['close']
-        exp1 = df_close.ewm(span=8, adjust=False).mean()
-        exp2 = df_close.ewm(span=22, adjust=False).mean()
+        exp1 = df_close.ewm(span=short_period, adjust=False).mean()
+        exp2 = df_close.ewm(span=long_period, adjust=False).mean()
         macd = exp1 - exp2
         exp3 = macd.ewm(span=9, adjust=False).mean()
         minDf = DataFrame(exp3)
@@ -44,16 +50,13 @@ class BackTest(PriceFrame, BackTestBase):
         minDf = minDf.dropna()
         minDf = minDf.drop(columns=['min'])
         minDf['type'] = 'min'
-
         minmax_pairs = \
             sorted(
-            tuple(zip(maxDf.time, maxDf.avg, maxDf.type)) + tuple(
-                zip(minDf.time, minDf.avg, minDf.type))
-        )
+                tuple(zip(maxDf.time, maxDf.avg, maxDf.type)) + tuple(
+                    zip(minDf.time, minDf.avg, minDf.type))
+            )
 
-        df = self.frame
-        df.set_index('time', inplace=True)
-        df.sort_index(inplace=True)
+        df = self.frame.copy()
         df['position'] = Positions.Flat
 
         for d, val, type in minmax_pairs:
@@ -64,14 +67,12 @@ class BackTest(PriceFrame, BackTestBase):
 
             df.loc[pd.DatetimeIndex(df.index) > d, 'position'] = \
                 position
-
         # pd.set_option('display.max_rows', len(df) + 1)
-
         df.dropna(how='any', inplace=True)
-
         self.df = df
 
-    def test(self):
+    def test(self, **kwargs):
+        self.label_position(**kwargs)
         self.capital = 1.0
         df = self.df.copy()
         df.reset_index(drop=False, inplace=True)
@@ -79,13 +80,31 @@ class BackTest(PriceFrame, BackTestBase):
         df = df.apply(self.pnl, axis=1)
 
         alog.info(df)
-        alog.info(df['capital'].iloc[-1])
-        alog.info(self.capital)
         return self.capital
 
     def load_previous_frames(self, depth):
         pass
 
+
+class TuneMACDSignal(BackTest):
+    def __init__(self, session_limit=100, **kwargs):
+        super().__init__(**kwargs)
+
+        self.study = create_study(
+            study_name=self.symbol, direction='maximize')
+
+        self.study.optimize(self.run, n_trials=session_limit)
+
+        alog.info(alog.pformat(vars(self.study.best_trial)))
+
+    def run(self, trial: Trial):
+        params = dict(
+            short_period = trial.suggest_int('short_period', 1, 36),
+            long_period = trial.suggest_int('long_period', 1, 36),
+            group_by_min = trial.suggest_int('group_by_min', 1, 30)
+        )
+
+        return self.test(**params)
 
 
 @click.command()
@@ -95,10 +114,10 @@ class BackTest(PriceFrame, BackTestBase):
 @click.option('--interval', '-i', default='12h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--session-limit', '-s', default=100, type=int)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-    backtest = BackTest(**kwargs)
-    backtest.test()
+    TuneMACDSignal(**kwargs)
 
 
 if __name__ == '__main__':
