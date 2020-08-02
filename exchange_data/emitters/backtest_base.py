@@ -1,3 +1,5 @@
+from functools import cached_property
+
 import alog
 import tensorflow as tf
 from plotly import graph_objects as go
@@ -94,7 +96,7 @@ class BackTestBase(object):
 
     @property
     def ohlc(self):
-        df = self.frame
+        df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
 
         df['openbid'] = (df['best_ask'] + df['best_bid']) / 2
@@ -104,5 +106,7 @@ class BackTestBase(object):
         ohlc_df = ohlc_df.resample(f'{self.group_by_min}T').ohlc()
         ohlc_df.columns = ohlc_df.columns.droplevel()
         ohlc_df = ohlc_df[ohlc_df.low != 0.0]
+
+        alog.info(ohlc_df)
 
         return ohlc_df
