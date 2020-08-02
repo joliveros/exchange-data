@@ -101,7 +101,6 @@ class BackTestBase(object):
         ohlc_df = df.drop(df.columns.difference(['time', 'openbid']), 1,
                           inplace=False)
         ohlc_df = ohlc_df.set_index('time')
-        alog.info(ohlc_df)
         ohlc_df = ohlc_df.resample(f'{self.group_by_min}T').ohlc()
         ohlc_df.columns = ohlc_df.columns.droplevel()
         ohlc_df = ohlc_df[ohlc_df.low != 0.0]

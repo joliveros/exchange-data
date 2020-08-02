@@ -162,11 +162,7 @@ class VolatilityChange(MeasurementFrame):
             df['log_ret'] = np.log(df['price'] / df['price'].shift(1))
             df.dropna(how='any', inplace=True)
 
-            window = 8
-
-            df['volatility'] = df['log_ret'].rolling(
-                window=window).std() * np.sqrt(
-                window)
+            df['volatility'] = df['price'].rolling(20).std(ddof=0)
 
             _volatility = df.volatility.tail(1)
             _volatility.index = [df.name]

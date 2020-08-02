@@ -21,8 +21,8 @@ class BackTest(PriceFrame, BackTestBase):
         df = self.ohlc
         df.reset_index(drop=False, inplace=True)
         df_close = df['close']
-        exp1 = df_close.ewm(span=12, adjust=False).mean()
-        exp2 = df_close.ewm(span=26, adjust=False).mean()
+        exp1 = df_close.ewm(span=8, adjust=False).mean()
+        exp2 = df_close.ewm(span=22, adjust=False).mean()
         macd = exp1 - exp2
         exp3 = macd.ewm(span=9, adjust=False).mean()
         minDf = DataFrame(exp3)
@@ -79,9 +79,9 @@ class BackTest(PriceFrame, BackTestBase):
         df = df.apply(self.pnl, axis=1)
 
         alog.info(df)
-        alog.info(self.capital)
         alog.info(df['capital'].iloc[-1])
         alog.info(self.capital)
+        return self.capital
 
     def load_previous_frames(self, depth):
         pass
@@ -92,7 +92,7 @@ class BackTest(PriceFrame, BackTestBase):
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--group-by-min', '-m', default='4', type=str)
-@click.option('--interval', '-i', default='21d', type=str)
+@click.option('--interval', '-i', default='12h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--window-size', '-w', default='2h', type=str)
 @click.argument('symbol', type=str)
