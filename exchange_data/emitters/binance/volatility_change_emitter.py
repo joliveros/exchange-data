@@ -191,7 +191,10 @@ class VolatilityChange(MeasurementFrame):
 
         # df = df[df.index > 0.001]
 
+        pd.set_option('display.max_rows', len(df) + 1)
+
         alog.info(df)
+
         self.df = df
         return df
 
