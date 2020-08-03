@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from functools import cached_property
 
+from cached_property import cached_property
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
