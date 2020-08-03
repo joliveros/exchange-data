@@ -12,7 +12,7 @@ from pytimeparse.timeparse import timeparse
 class BackTestBase(object):
     def __init__(
         self,
-        group_by_min,
+        group_by_min=4,
         plot=False,
         **kwargs
     ):
