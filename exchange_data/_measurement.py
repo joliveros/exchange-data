@@ -13,13 +13,16 @@ class Measurement(DateTimeUtils):
         self,
         fields: dict or DataFrame,
         measurement: str,
-        time: datetime,
+        time: datetime = None,
         tags: dict = []
     ):
         if type(fields) == DataFrame:
             fields = dict(data=fields.to_json())
 
         self.fields = fields
+
+        if time is None:
+            time = self.now()
 
         if isinstance(time, float):
             time = self.parse_timestamp(time)

@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
+from exchange_data import Database, Measurement
 from exchange_data.data.price_frame import PriceFrame
 from exchange_data.emitters.backtest_base import BackTestBase
-import alog
-import click
-import numpy as np
 from exchange_data.trading import Positions
 from optuna import create_study, Trial
 from pandas import DataFrame
+
+import alog
+import click
+import json
 import pandas as pd
 
 
@@ -86,7 +88,7 @@ class BackTest(PriceFrame, BackTestBase):
         pass
 
 
-class TuneMACDSignal(BackTest):
+class TuneMACDSignal(BackTest, Database):
     def __init__(self, session_limit=100, **kwargs):
         super().__init__(**kwargs)
 
@@ -96,6 +98,17 @@ class TuneMACDSignal(BackTest):
         self.study.optimize(self.run, n_trials=session_limit)
 
         alog.info(alog.pformat(vars(self.study.best_trial)))
+
+        data = dict(
+            params=json.dumps(self.study.best_trial.params),
+            symbol=self.symbol,
+            value=self.study.best_trial.value,
+        )
+
+        m = Measurement(fields=data, measurement='macd_params')
+
+        self.write_points([m.__dict__])
+
 
     def run(self, trial: Trial):
         params = dict(
