@@ -29,9 +29,10 @@ services:
         deploy:
             labels:
                 - "swarm.cronjob.enable=true"
-                - "swarm.cronjob.schedule=0 0-23/3 * * *"
+                - "swarm.cronjob.schedule=0 */2 * * *"
                 - "swarm.cronjob.skip-running=false"
-            replicas: 0
+                - "swarm.cronjob.replicas=6"
+            replicas: 1
             restart_policy:
                 condition: none
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
