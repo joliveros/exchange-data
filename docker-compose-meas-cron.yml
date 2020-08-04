@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 networks:
     public:
         name: public
@@ -11,6 +11,8 @@ services:
                 - "swarm.cronjob.schedule=*/15 * * * *"
                 - "swarm.cronjob.skip-running=false"
             replicas: 0
+            placement:
+               constraints: [node.hostname != ip-172-31-19-30]
             restart_policy:
                 condition: none
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -31,8 +33,10 @@ services:
                 - "swarm.cronjob.enable=true"
                 - "swarm.cronjob.schedule=0 */2 * * *"
                 - "swarm.cronjob.skip-running=false"
-                - "swarm.cronjob.replicas=6"
+                - "swarm.cronjob.replicas=2"
             replicas: 1
+            placement:
+               constraints: [node.hostname != ip-172-31-19-30]
             restart_policy:
                 condition: none
         image: 'registry.rubercubic.com:5001/exchange-data:latest'

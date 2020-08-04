@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 networks:
     public:
         name: public
@@ -6,7 +6,13 @@ networks:
 services:
     emit_depth_0:
         deploy:
-            replicas: 5
+          replicas: 40
+          placement:
+            constraints: [node.hostname != ip-172-31-19-30]
+            max_replicas_per_node: 20
+          update_config:
+            parallelism: 2 
+            delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
