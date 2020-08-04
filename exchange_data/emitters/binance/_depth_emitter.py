@@ -4,15 +4,13 @@ from binance.client import Client
 from binance.depthcache import DepthCacheManager, DepthCache
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property
-from datetime import timedelta, datetime
-
-from redlock import RedLock, RedLockError
-
+from datetime import timedelta
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
-from redis_collections import List, Dict, Set
+from redis_collections import Set
+from redlock import RedLock, RedLockError
 
 import alog
 import click
