@@ -1,24 +1,15 @@
 #!/usr/bin/env python
 
 from cached_property import cached_property
+from exchange_data import Database, settings
+from exchange_data.emitters import Messenger
+from exchange_data.ta_model.backtest import TuneMACDSignal
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
 
-from exchange_data import Database, Measurement, settings
-from exchange_data.data.price_frame import PriceFrame
-from exchange_data.emitters import Messenger
-from exchange_data.emitters.backtest_base import BackTestBase
-from exchange_data.ta_model.backtest import TuneMACDSignal
-from exchange_data.trading import Positions
-from optuna import create_study, Trial
-from pandas import DataFrame
-
 import alog
 import click
-import json
-import pandas as pd
-
 
 
 class TuneSymbols(Database, Messenger):
@@ -34,7 +25,13 @@ class TuneSymbols(Database, Messenger):
 
         while len(self.symbols_queue) > 0:
             symbol = self.symbols_queue.pop()
-            TuneMACDSignal(symbol=symbol, **kwargs)
+
+            try:
+                TuneMACDSignal(symbol=symbol, **kwargs)
+            except KeyError:
+                pass
+
+        alog.info('## should exit ##')
 
 
     def reset_queue_lock(self):
