@@ -8,10 +8,10 @@ networks:
 services:
     emit_trades:
         deploy:
-          replicas: 20
+          replicas: 30
           placement:
             constraints: [node.hostname != ip-172-31-19-30]
-            max_replicas_per_node: 10
+            max_replicas_per_node: 15
           update_config:
             parallelism: 2
             delay: 20s
