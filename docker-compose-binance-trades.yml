@@ -1,0 +1,71 @@
+version: '3.8'
+
+networks:
+    public:
+        name: public
+        external: true
+
+services:
+    emit_trades:
+        deploy:
+          replicas: 80
+          placement:
+            constraints: [node.hostname != ip-172-31-19-30]
+#            max_replicas_per_node: 20
+          update_config:
+            parallelism: 2
+            delay: 20s
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_trade_emitter.py"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+
+    emit_trade_queue:
+        deploy:
+            replicas: 1
+#            placement:
+#                constraints: [node.hostname == ip-172-31-19-30]
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_trade_emitter_queue.py -t 5m"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+
+    record_trades:
+        deploy:
+            replicas: 1
+#            placement:
+#              constraints: [node.hostname == ip-172-31-19-30]
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_trade_recorder.py"
+        env_file:
+            - ./.env.prod
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+        networks:
+            - public
+
+
+secrets:
+    DB:
+        external: true
+    ROLLBAR_API_KEY:
+        external: true
+
