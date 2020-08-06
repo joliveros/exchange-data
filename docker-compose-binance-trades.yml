@@ -8,10 +8,10 @@ networks:
 services:
     emit_trades:
         deploy:
-          replicas: 80
+          replicas: 40
           placement:
             constraints: [node.hostname != ip-172-31-19-30]
-#            max_replicas_per_node: 20
+            max_replicas_per_node: 20
           update_config:
             parallelism: 2
             delay: 20s
@@ -29,8 +29,8 @@ services:
     emit_trade_queue:
         deploy:
             replicas: 1
-#            placement:
-#                constraints: [node.hostname == ip-172-31-19-30]
+            placement:
+                constraints: [node.hostname == ip-172-31-19-30]
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
@@ -45,8 +45,8 @@ services:
     record_trades:
         deploy:
             replicas: 1
-#            placement:
-#              constraints: [node.hostname == ip-172-31-19-30]
+            placement:
+              constraints: [node.hostname == ip-172-31-19-30]
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
