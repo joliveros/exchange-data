@@ -113,15 +113,9 @@ class TradeEmitterQueue(Messenger):
             symbols).items()
                       if count > 1]
 
-        host_duplicates = []
-
-        alog.info(alog.pformat(duplicates))
-
         for symbol in duplicates:
             hosts = [symbol_host for symbol_host in symbol_hosts if
                      symbol == symbol_host[0]]
-
-            alog.info(alog.pformat(hosts))
 
             try:
                 hosts.pop()
