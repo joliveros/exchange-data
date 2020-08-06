@@ -48,7 +48,11 @@ class TradeSocketManager(BinanceSocketManager):
         super().__init__(user_timeout=timeparse('5m'), **kwargs)
         self.symbol = symbol
         self.lock = TradeEmitterLock(symbol)
-        self.lock.acquire()
+        lock = self.lock.acquire()
+
+        if not lock:
+            raise RedLockError(f'Unable to acquire lock {self.symbol}')
+
         self.symbol_hosts = Set(key='trade_symbol_hosts', redis=redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.last_publish_time = DateTimeUtils.now() - delay
@@ -118,9 +122,23 @@ class TradeEmitter(Messenger):
         queue = self.symbols_queue
 
         if len(queue) > 0:
-            symbol = queue.pop()
+            symbol = self.next_symbol(queue)
+
             alog.info(f'## take next {symbol} ##')
             self.add_trade_socket(symbol)
+
+    def next_symbol(self, *args):
+        try:
+            return self._next_symbol(*args)
+        except RedLockError as e:
+            time.sleep(0.1)
+            return self.next_symbol(*args)
+
+    def _next_symbol(self, queue):
+        with self.take_lock():
+            symbol = queue.pop()
+
+        return symbol
 
     def purge(self):
         alog.info('### purge ###')
@@ -167,7 +185,7 @@ class TradeEmitter(Messenger):
         return RedLock(lock_name, [dict(
             host=settings.REDIS_HOST,
             db=0
-        )], retry_delay=200, retry_times=3, ttl=timeparse('1m') * 1000)
+        )], retry_delay=200, retry_times=1000, ttl=timeparse('1m') * 1000)
 
     def add_trade_socket(self, symbol):
         try:
