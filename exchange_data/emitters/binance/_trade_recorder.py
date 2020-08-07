@@ -55,7 +55,8 @@ class TradeRecorder(
                     fields=data,
                     tags=dict(symbol=symbol),
                     time=timestamp)
-        self.write_points([vars(m)])
+
+        self.write_points([vars(m)], time_precision='ms')
 
     def start(self, channels=[]):
         self.sub([
