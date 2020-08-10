@@ -31,7 +31,6 @@ class TradeRecorder(
 
         super().__init__(
             database_name=database_name,
-            database_batch_size=100,
             **kwargs
         )
 
@@ -69,6 +68,7 @@ class TradeRecorder(
 
 
 @click.command()
+@click.option('--database-batch-size', '-b', type=int, default=300)
 def main(**kwargs):
     recorder = TradeRecorder(
         subscriptions_enabled=True,
