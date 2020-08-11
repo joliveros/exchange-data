@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from cached_property import cached_property
-from exchange_data.emitters.binance.volatility_change_emitter import MeasurementFrame
+from exchange_data.data.measurement_frame import MeasurementFrame
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 
