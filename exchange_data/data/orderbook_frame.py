@@ -7,8 +7,7 @@ from pandas._libs.tslibs.timestamps import Timestamp
 
 from baselines.a2c.prediction_emitter import FrameNormalizer
 from exchange_data.emitters import Messenger
-from exchange_data.emitters.binance.volatility_change_emitter import \
-    MeasurementFrame
+from exchange_data.data.measurement_frame import MeasurementFrame
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 import alog
