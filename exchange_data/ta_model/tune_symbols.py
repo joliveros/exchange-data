@@ -71,14 +71,14 @@ class TuneSymbols(Database, Messenger):
 
 
 @click.command()
+@click.option('--base-currency', '-c', default='BNB', type=str)
+@click.option('--clear', is_flag=True)
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='12h', type=str)
-@click.option('--window-size', '-w', default='2h', type=str)
-@click.option('--base-currency', '-c', default='BNB', type=str)
 @click.option('--session-limit', '-s', default=100, type=int)
 @click.option('--symbol-limit', default=15, type=int)
-@click.option('--clear', is_flag=True)
+@click.option('--window-size', '-w', default='2h', type=str)
 def main(**kwargs):
     TuneSymbols(**kwargs)
 

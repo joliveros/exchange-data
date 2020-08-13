@@ -42,6 +42,7 @@ class BackTestBase(object):
             exit_price = row['best_bid']
 
             if self.entry_price > 0.0:
+
                 change = (exit_price - self.entry_price) / self.entry_price
                 self.capital = self.capital * (1 + change)
                 self.capital = self.capital * (1 - self.trading_fee)
@@ -105,6 +106,6 @@ class BackTestBase(object):
         ohlc_df.columns = ohlc_df.columns.droplevel()
         ohlc_df = ohlc_df[ohlc_df.low != 0.0]
 
-        alog.info(ohlc_df)
+        # alog.info(ohlc_df)
 
         return ohlc_df
