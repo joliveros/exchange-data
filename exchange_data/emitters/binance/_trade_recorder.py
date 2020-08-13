@@ -50,6 +50,8 @@ class TradeRecorder(
         symbol = data['symbol']
         del data['symbol']
 
+        alog.info(data)
+
         m = Measurement(measurement='trade',
                     fields=data,
                     tags=dict(symbol=symbol),
