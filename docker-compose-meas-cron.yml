@@ -27,28 +27,28 @@ services:
             - redis
             - influxdb
 
-    macd_param_tuner:
-        deploy:
-            mode: replicated
-            labels:
-                - "swarm.cronjob.enable=true"
-                - "swarm.cronjob.schedule=0 */2 * * *"
-                - "swarm.cronjob.skip-running=false"
-                - "swarm.cronjob.replicas=1"
-            replicas: 1
-            restart_policy:
-                condition: none
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 14d"
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - redis
-            - influxdb
+#    macd_param_tuner:
+#        deploy:
+#            mode: replicated
+#            labels:
+#                - "swarm.cronjob.enable=true"
+#                - "swarm.cronjob.schedule=0 */2 * * *"
+#                - "swarm.cronjob.skip-running=false"
+#                - "swarm.cronjob.replicas=1"
+#            replicas: 0
+#            restart_policy:
+#                condition: none
+#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+#        command: >-
+#            bash -c "source ~/.bashrc &&
+#            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 14d"
+#        env_file:
+#            - ./.env.prod
+#        networks:
+#            - public
+#        depends_on:
+#            - redis
+#            - influxdb
 
 secrets:
     DB:
