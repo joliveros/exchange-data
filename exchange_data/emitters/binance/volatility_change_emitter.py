@@ -177,16 +177,10 @@ class VolatilityChange(MeasurementFrame):
 
 class VolatilityChangeEmitter(VolatilityChange, Messenger):
     def __init__(self, plot, tick=False, **kwargs):
-        alog.info(alog.pformat(kwargs))
         super().__init__(plot=plot, **kwargs)
 
         if tick:
             self.tick()
-
-        # self.group_by = group_by
-        # self.interval = timedelta(seconds=timeparse(interval))
-
-        plot = True
 
     def plot(self):
         self.df.plot().show()
