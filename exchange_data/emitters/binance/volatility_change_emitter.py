@@ -16,7 +16,7 @@ pd.options.plotting.backend = 'plotly'
 
 
 class VolatilityChange(MeasurementFrame):
-    def __init__(self, filter, pairs_limit, **kwargs):
+    def __init__(self, filter, pairs_limit=0, **kwargs):
         super().__init__(
             batch_size=1,
             **kwargs)
@@ -176,7 +176,7 @@ class VolatilityChange(MeasurementFrame):
 
 
 class VolatilityChangeEmitter(VolatilityChange, Messenger):
-    def __init__(self, plot, tick=False, **kwargs):
+    def __init__(self, plot=False, tick=False, **kwargs):
         super().__init__(plot=plot, **kwargs)
 
         if tick:
@@ -185,6 +185,24 @@ class VolatilityChangeEmitter(VolatilityChange, Messenger):
     def plot(self):
         self.df.plot().show()
 
+    def frame(self):
+        query = f'SELECT first(*) AS data FROM {self.name} WHERE time >=' \
+                f' {self.formatted_start_date} AND ' \
+                f'time <= {self.formatted_end_date} GROUP BY time(' \
+                f'{self.group_by})'
+
+        alog.info(query)
+
+        frames = []
+
+        for data in self.query(query).get_points(self.name):
+            data = data['data_data'] or {}
+
+            if type(data) is str:
+                data = pd.read_json(data)
+                frames.append(data)
+
+        return frames
 
 @click.command()
 @click.option('--interval', '-i', default='12h', type=str)
