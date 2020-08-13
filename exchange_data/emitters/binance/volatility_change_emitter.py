@@ -20,6 +20,9 @@ class VolatilityChange(MeasurementFrame):
         super().__init__(
             batch_size=1,
             **kwargs)
+        now = self.now()
+        self.start_date = now - self.interval
+        self.end_date = now
         self.pairs_limit = pairs_limit
         self.filter = filter
 
@@ -44,21 +47,31 @@ class VolatilityChange(MeasurementFrame):
             df['log_ret'] = np.log(df['price'] / df['price'].shift(1))
             df.dropna(how='any', inplace=True)
 
-            df['volatility'] = df['price'].rolling(20).std(ddof=0)
+            df['volatility'] = df['price'].rolling(18).std(ddof=0)
+
+            df['volume_avg'] = df.volume.rolling(18).std(ddof=0)
+
+            _volume_avg = df.volume_avg.tail(1)
+            _volume_avg.index = [df.name]
 
             _volatility = df.volatility.tail(1)
             _volatility.index = [df.name]
             _change = pd.concat([df['price'].head(1), df['price'].tail(1)])
+
+            # alog.info(_change)
+
             _change = _change.pct_change().rename('change') \
                 .dropna(how='any')
             _change.index = [df.name]
 
-            _df = pd.concat((_volatility, _change), axis=1)
+            _df = pd.concat((_volatility, _change, _volume_avg), axis=1)
+
             volatility_change.append(_df)
+
         df = pd.concat(volatility_change)
         df.index.rename('pair', inplace=True)
         df.reset_index(drop=False, inplace=True)
-        df['partial_sum'] = df.volatility * df.change
+        df['partial_sum'] = df.volatility * df.change * df.volume_avg
         out = df.groupby('pair').partial_sum.agg('sum')
         out.rename('volatility_change', inplace=True)
         df = out.to_frame()
@@ -90,15 +103,49 @@ class VolatilityChange(MeasurementFrame):
 
         return pair_frames
 
+    def get_volume(self):
+        volume = self.query_volume()
+        series = volume._get_series()
+
+        volume_dfs = []
+
+        for s in series:
+            symbol = s['tags']['symbol']
+            values = np.array(s['values'])
+
+            df = DataFrame(dict(
+                time=values[:, 0] * 1000000,
+                volume=values[:,1],
+                price=values[:, 2]
+            ))
+
+            df.volume = pd.to_numeric(df.volume)
+            df.price = pd.to_numeric(df.price)
+            df.volume = df.volume / df.price
+            df.time = pd.to_datetime(df.time)
+
+            df.fillna(0.0, inplace=True)
+
+            df.name = symbol
+
+            volume_dfs.append(df)
+
+        return volume_dfs
+
     def get_frames(self):
+        volume_dfs = self.get_volume()
+
         pairs = self.query_pairs()
+
         series = [series['name'] for series in pairs._get_series()]
 
         frames = []
 
         for s in series:
             symbol = re.match(r'^([A-Z]+)', s).group(0)
+            vdf = [df for df in volume_dfs if df.name == symbol][0]
             df = DataFrame([m for m in pairs.get_points(s)])
+            df['volume'] = vdf.volume
             df.name = symbol
             df['time'] = pd.to_datetime(df['time'], unit='ms')
             frames.append(df)
@@ -106,18 +153,22 @@ class VolatilityChange(MeasurementFrame):
         return frames
 
     def query_pairs(self):
-        now = self.now()
-        start_date = now - self.interval
-        end_date = now
-
-        start_date = self.format_date_query(start_date)
-        end_date = self.format_date_query(end_date)
-
         channels = ', '.join(self.pairs)
 
         query = f'SELECT first(best_ask) AS price FROM {channels} ' \
-                f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
+                f'WHERE time >= {self.formatted_start_date} AND time <= ' \
+                f'{self.formatted_end_date} GROUP BY ' \
                 f'time({self.group_by});'
+
+        alog.info(query)
+
+        return self.query(query)
+
+    def query_volume(self):
+        query = f'SELECT SUM("quantity"), FIRST("price") FROM "trade" ' \
+                f'WHERE time >= {self.formatted_start_date} AND time <= ' \
+                f'{self.formatted_end_date} GROUP BY ' \
+                f'time({self.group_by}),"symbol";'
 
         alog.info(query)
 
@@ -125,15 +176,15 @@ class VolatilityChange(MeasurementFrame):
 
 
 class VolatilityChangeEmitter(VolatilityChange, Messenger):
-    def __init__(self, plot, interval, group_by, tick=False, **kwargs):
+    def __init__(self, plot, tick=False, **kwargs):
         alog.info(alog.pformat(kwargs))
-        super().__init__(plot=plot, group_by='30m', interval='1d', **kwargs)
+        super().__init__(plot=plot, **kwargs)
 
         if tick:
             self.tick()
 
-        self.group_by = group_by
-        self.interval = timedelta(seconds=timeparse(interval))
+        # self.group_by = group_by
+        # self.interval = timedelta(seconds=timeparse(interval))
 
         plot = True
 
@@ -142,7 +193,7 @@ class VolatilityChangeEmitter(VolatilityChange, Messenger):
 
 
 @click.command()
-@click.option('--interval', '-i', default='14m', type=str)
+@click.option('--interval', '-i', default='12h', type=str)
 @click.option('--filter', '-f', default='BNB', type=str)
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--window-size', '-w', default='15m', type=str)

@@ -231,10 +231,10 @@ class TradeEmitter(Messenger):
 
     def message(self, data, socket):
         msg = dict(
-            price=data['p'],
-            quantity=data['q'],
+            price=float(data['p']),
+            quantity=float(data['q']),
             symbol=data['s'],
-            timestamp=str(DateTimeUtils.parse_timestamp(data['T']/1000)),
+            timestamp=str(DateTimeUtils.parse_db_timestamp(data['T'])),
         )
 
         self.publish('trade', json.dumps(msg))
