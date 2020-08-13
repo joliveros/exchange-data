@@ -87,6 +87,11 @@ class MeasurementFrame(MeasurementMeta):
             timestamp = self.parse_db_timestamp(data['time'])
             data = data['data_data'] or {}
 
+            if type(data) is str:
+                data = pd.read_json(data)
+
+            alog.info(alog.pformat(data))
+
             if 'pair' in data:
                 data = json.loads(data)
                 pair = data['pair']
