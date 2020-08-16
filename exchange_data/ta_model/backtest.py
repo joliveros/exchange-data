@@ -116,9 +116,9 @@ class TuneMACDSignal(BackTest, Database):
 
     def run(self, trial: Trial):
         params = dict(
-            short_period = trial.suggest_int('short_period', 1, 36),
+            short_period = trial.suggest_int('short_period', 1, 8),
             long_period = trial.suggest_int('long_period', 1, 36),
-            group_by_min = trial.suggest_int('group_by_min', 1, 30)
+            group_by_min = trial.suggest_int('group_by_min', 1, 16)
         )
 
         return self.test(**params)
