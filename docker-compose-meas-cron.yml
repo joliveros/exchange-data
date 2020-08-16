@@ -44,7 +44,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 14d"
+            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 14d --symbol-limit "
         env_file:
             - ./.env.prod
         networks:

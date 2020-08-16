@@ -38,7 +38,6 @@ class TuneSymbols(Database, Messenger):
 
         alog.info('## should exit ##')
 
-
     def reset_queue_lock(self):
         lock_name = 'reset_queue_lock'
 
@@ -66,6 +65,7 @@ class TuneSymbols(Database, Messenger):
     def _reset_queue(self):
         with self.reset_queue_lock():
             for s in self.symbols:
+                alog.info(s)
                 self.symbols_queue.add(s)
 
 
