@@ -24,8 +24,8 @@ class MeasurementFrame(MeasurementMeta):
 
     def __init__(
         self,
-        interval,
-        group_by,
+        interval='1h',
+        group_by='1m',
         start_date=None,
         end_date=None,
         **kwargs

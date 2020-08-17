@@ -1,21 +1,18 @@
 #!/usr/bin/env python
-from binance.client import Client
 
+from binance.client import Client
 from exchange_data import Database, settings
-from exchange_data.emitters import Messenger
-from exchange_data.utils import DateTimeUtils
+from exchange_data.data.measurement_frame import MeasurementFrame
 
 import alog
 import click
 import signal
 import sys
 
+from exchange_data.emitters import Messenger
 
-class BinanceAccountEmitter(
-    Database,
-    Messenger,
-    DateTimeUtils,
-):
+
+class BinanceAccountEmitter(MeasurementFrame, Messenger):
     measurements = []
 
     def __init__(self, **kwargs):
@@ -28,7 +25,15 @@ class BinanceAccountEmitter(
             api_secret=settings.BINANCE_API_SECRET
         )
 
+        data = dict(
+            account_status=self.client.get_account_status(),
+            info=self.client.get_account(),
+        )
+
+        alog.info(alog.pformat(data))
+
     def start(self):
+        self.sub(['30s'])
 
     def stop(self):
         sys.exit(0)
@@ -38,7 +43,7 @@ class BinanceAccountEmitter(
 @click.option('--database-name', '-d', default='binance', type=str)
 def main(**kwargs):
     emitter = BinanceAccountEmitter(**kwargs)
-    emitter.start()
+    # emitter.start()
 
 
 if __name__ == '__main__':
