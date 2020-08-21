@@ -80,8 +80,12 @@ class BackTest(PriceFrame, BackTestBase):
         df.reset_index(drop=False, inplace=True)
         df['capital'] = self.capital
         df = df.apply(self.pnl, axis=1)
-
+        pd.set_option('display.max_rows', len(df) + 1)
         alog.info(df)
+
+        if self.capital > 50.0:
+            return 0.0
+
         return self.capital
 
     def load_previous_frames(self, depth):
