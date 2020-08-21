@@ -31,20 +31,22 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '1.0'
+                    cpus: '0.6'
             mode: replicated
             labels:
                 - "swarm.cronjob.enable=true"
                 - "swarm.cronjob.schedule=0 */2 * * *"
                 - "swarm.cronjob.skip-running=false"
-                - "swarm.cronjob.replicas=1"
+                - "swarm.cronjob.replicas=2"
             replicas: 0
+            placement:
+               constraints: [node.hostname == ip-172-31-19-30]
             restart_policy:
                 condition: none
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 14d"
+            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 5d"
         env_file:
             - ./.env.prod
         networks:
