@@ -84,8 +84,9 @@ class MeasurementFrame(MeasurementMeta):
         frames = []
 
         for data in self.query(query).get_points(self.name):
+            alog.info(alog.pformat(data))
             timestamp = self.parse_db_timestamp(data['time'])
-            data = data['data_data'] or {}
+            data = data.get('data_data', None) or {}
 
             if type(data) is str:
                 data = pd.read_json(data)
@@ -104,7 +105,6 @@ class MeasurementFrame(MeasurementMeta):
 
                 frames.append(data)
 
-
         df = DataFrame.from_dict(frames)
 
         df['time'] = pd.to_datetime(df['time'])
@@ -114,6 +114,35 @@ class MeasurementFrame(MeasurementMeta):
 
         return df
 
+    def frame_all_keys(self):
+        query = f'SELECT first("short_period") AS short_period, ' \
+                f'first("long_period") as long_period, first("group_by_min") ' \
+                f'as group_by_min, first("symbol") as symbol, first("value") ' \
+                f'as value FROM' \
+                f' {self.name} WHERE time >=' \
+                f' {self.formatted_start_date} AND ' \
+                f'time <= {self.formatted_end_date} GROUP BY time(' \
+                f'{self.group_by})'
+
+        alog.info(query)
+
+        frames = []
+
+        for data in self.query(query).get_points(self.name):
+            timestamp = self.parse_db_timestamp(data['time'])
+            data['time'] = timestamp
+
+            frames.append(data)
+
+        df = DataFrame.from_dict(frames)
+
+        df['time'] = pd.to_datetime(df['time'])
+
+        df.set_index('time', inplace=True)
+        df.sort_index(inplace=True)
+        df.dropna(subset=['value'], inplace=True)
+
+        return df
 
     def append(self, data: dict, timestamp: datetime = None):
         if timestamp is None:
@@ -124,7 +153,5 @@ class MeasurementFrame(MeasurementMeta):
             fields=data,
             time=timestamp
         )
-
-        alog.info(alog.pformat(m))
 
         self.write_points([m.__dict__])
