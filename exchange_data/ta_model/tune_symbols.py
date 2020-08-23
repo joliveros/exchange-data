@@ -32,7 +32,7 @@ class TuneSymbols(Database, Messenger):
             symbol = self.symbols_queue.pop()
 
             try:
-                TuneMACDSignal(symbol=symbol, **kwargs)
+                TuneMACDSignal(symbol=symbol, **kwargs).run_study()
             except KeyError:
                 pass
 
