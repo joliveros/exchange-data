@@ -20,8 +20,8 @@ class PriceFrame(MeasurementFrame):
         self,
         database_name,
         interval,
-        symbol,
-        window_size,
+        symbol=None,
+        window_size=None,
         **kwargs
     ):
         super().__init__(
@@ -34,15 +34,12 @@ class PriceFrame(MeasurementFrame):
         self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
         self.window_size = window_size
         self.symbol = symbol
-
-    @property
-    def name(self):
-        return f'{self.symbol}_OrderBookFrame_depth_40'
+        self.price_measurement = f'{self.symbol}_OrderBookFrame_depth_40'
 
     @cached_property
     def frame(self):
         query = f'SELECT first(best_ask) AS best_ask, first(best_bid) AS ' \
-                f'best_bid FROM {self.name} WHERE time ' \
+                f'best_bid FROM {self.price_measurement} WHERE time ' \
                 f'>=' \
                 f' {self.formatted_start_date} AND ' \
                 f'time <= {self.formatted_end_date} GROUP BY time(' \
@@ -52,7 +49,7 @@ class PriceFrame(MeasurementFrame):
 
         frames = []
 
-        for data in self.query(query).get_points(self.name):
+        for data in self.query(query).get_points(self.price_measurement):
             data['time'] = self.parse_db_timestamp(data['time'])
 
             frames.append(data)
