@@ -30,11 +30,9 @@ class MeasurementFrame(MeasurementMeta):
         end_date=None,
         **kwargs
     ):
-        alog.info(alog.pformat(kwargs))
         super().__init__(**kwargs)
         self.group_by = group_by
         self.interval_str = interval
-        alog.info(interval)
         self.interval = timedelta(seconds=timeparse(interval))
         self._start_date = start_date
         self._end_date = end_date
@@ -123,8 +121,6 @@ class MeasurementFrame(MeasurementMeta):
                 f' {self.formatted_start_date} AND ' \
                 f'time <= {self.formatted_end_date} GROUP BY time(' \
                 f'{self.group_by})'
-
-        alog.info(query)
 
         frames = []
 

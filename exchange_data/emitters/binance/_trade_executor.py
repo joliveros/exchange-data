@@ -10,7 +10,8 @@ from redis_collections import Dict
 from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
-from exchange_data.ta_model.backtest import MacdParamFrame, BackTest
+from exchange_data.ta_model.tune_macd import MacdParamFrame
+from exchange_data.ta_model.backtest import BackTest
 
 import alog
 import binance
@@ -49,16 +50,19 @@ class TradeExecutor(MeasurementFrame, Messenger):
     current_position = Positions.Flat
     symbol = None
 
-    def __init__(self, base_asset, fee=0.0075, **kwargs):
+    def __init__(self, base_asset, tick_interval, fee=0.0075, **kwargs):
         super().__init__(
             **kwargs
         )
         self.fee = fee
+        self.tick_interval = tick_interval
         self.base_asset = base_asset
         self.asset = None
-        self.on('30s', self.trade)
+        self.on(tick_interval, self.trade)
 
-        self.client = Client(
+    @cached_property_with_ttl(ttl=15)
+    def client(self):
+        return Client(
             api_key=settings.BINANCE_API_KEY,
             api_secret=settings.BINANCE_API_SECRET
         )
@@ -178,8 +182,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         alog.info(self.position)
 
-        alog.info(self.orders)
-
         if len(self.orders) == 0 and self.quantity > 0  and self.position == \
             Positions.Long and self.asset_quantity < self.min_quantity:
             # add limit orders
@@ -215,6 +217,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
             self.client.create_order(**params)
 
+        if self.position == Positions.Flat:
             self.last_params = self.best_params()
 
     def long(self):
@@ -265,14 +268,14 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def balance(self):
         return float(self.account_data['balance']['free'])
 
-    @property
+    @cached_property_with_ttl(ttl=2)
     def orders(self):
         orders = self.client.get_all_orders(symbol=self.symbol)
 
         return [order for order in orders if order['status'] == 'NEW']
 
     def start(self):
-        self.sub(['30s'])
+        self.sub([self.tick_interval])
 
     def stop(self):
         sys.exit(0)
@@ -281,7 +284,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.command()
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--base-asset', '-b', default='BNB', type=str)
-@click.option('--interval', '-i', default='6h', type=str)
+@click.option('--tick-interval', '-t', default='1m', type=str)
+@click.option('--interval', '-i', default='2h', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
     emitter.start()
