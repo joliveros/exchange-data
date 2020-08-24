@@ -5,7 +5,7 @@ from cached_property import cached_property, cached_property_with_ttl
 from exchange_data import settings, Database
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger
-from exchange_data.ta_model.backtest import MacdParamsFrame
+from exchange_data.ta_model.tune_macd import MacdParamsFrame
 
 import alog
 import click
