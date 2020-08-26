@@ -5,9 +5,8 @@ import shutil
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
-from exchange_data.data.orderbook_frame import OrderBookFrame
+from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
 from exchange_data.emitters.backtest import BackTest
-from exchange_data.models.resnet.expected_position import expected_position_frame
 from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial, load_study
 from pathlib import Path
@@ -23,7 +22,7 @@ import time
 logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 
-class SymbolTuner(OrderBookFrame):
+class SymbolTuner(MacdOrderBookFrame):
 
     def __init__(self, volatility_intervals, session_limit, backtest_interval,
                  num_locks=2,

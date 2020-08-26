@@ -105,6 +105,9 @@ class MeasurementFrame(MeasurementMeta):
 
         df = DataFrame.from_dict(frames)
 
+        if df.empty:
+            return df
+
         df['time'] = pd.to_datetime(df['time'])
 
         df.set_index('time', inplace=True)

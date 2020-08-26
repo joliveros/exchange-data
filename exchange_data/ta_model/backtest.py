@@ -10,9 +10,6 @@ from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.trading import Positions
 
 
-
-
-
 class BackTest(PriceFrame, BackTestBase):
     def __init__(
         self,
@@ -21,8 +18,13 @@ class BackTest(PriceFrame, BackTestBase):
         super().__init__(**kwargs)
         BackTestBase.__init__(self, **kwargs)
 
-    def label_position(self, df=None, short_period=8, long_period=22,
-                       **kwargs):
+    def label_position(
+        self,
+        df=None,
+        short_period=8,
+        long_period=22,
+        **kwargs
+    ):
         if df is None:
             df = self.ohlc
 
@@ -103,26 +105,6 @@ class BackTest(PriceFrame, BackTestBase):
 
     def load_previous_frames(self, depth):
         pass
-
-
-class SinglePassBackTest(BackTest):
-    def test(self, **kwargs):
-        df: DataFrame = self.frame.copy()
-
-        labeled_df = self.label_position(**kwargs)
-
-        self.capital = 1.0
-
-        df.reset_index(drop=False, inplace=True)
-        df['capital'] = self.capital
-        df = df.apply(self.pnl, axis=1)
-        pd.set_option('display.max_rows', len(df) + 1)
-        alog.info(df)
-
-        if self.capital > 50.0:
-            return 0.0
-
-        return self.capital
 
 
 @click.command()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from datetime import timedelta
-from exchange_data.channels import BitmexChannels
 from exchange_data.streamers._bitmex import BitmexStreamer
 from exchange_data.utils import DateTimeUtils
 
