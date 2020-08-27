@@ -4,7 +4,7 @@ from cached_property import cached_property
 from exchange_data import Database, settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance.volatility_change_emitter import VolatilityChangeEmitter
-from exchange_data.ta_model.backtest import TuneMACDSignal
+from exchange_data.ta_model.tune_macd import TuneMACDSignal
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
@@ -32,7 +32,7 @@ class TuneSymbols(Database, Messenger):
             symbol = self.symbols_queue.pop()
 
             try:
-                TuneMACDSignal(symbol=symbol, **kwargs)
+                TuneMACDSignal(symbol=symbol, **kwargs).run_study()
             except KeyError:
                 pass
 
@@ -79,6 +79,7 @@ class TuneSymbols(Database, Messenger):
 @click.option('--session-limit', '-s', default=100, type=int)
 @click.option('--symbol-limit', default=15, type=int)
 @click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--n-jobs', '-n', default=1, type=int)
 def main(**kwargs):
     TuneSymbols(**kwargs)
 
