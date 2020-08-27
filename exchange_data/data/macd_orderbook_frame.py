@@ -71,6 +71,7 @@ class MacdOrderBookFrame(OrderBookFrame):
         with self.macd_params_lock():
             result = TuneMACDSignalSinglePass(
                 n_jobs=1,
+                group_by_min=1,
                 **self._kwargs
             ).run_study()
             alog.info(result)
