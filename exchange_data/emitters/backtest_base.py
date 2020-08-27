@@ -1,5 +1,6 @@
 import alog
 import tensorflow as tf
+from cached_property import cached_property
 from plotly import graph_objects as go
 
 from exchange_data.data.orderbook_frame import OrderBookFrame
@@ -10,7 +11,7 @@ from pytimeparse.timeparse import timeparse
 class BackTestBase(object):
     def __init__(
         self,
-        group_by_min=4,
+        group_by_min=1,
         plot=False,
         **kwargs
     ):
@@ -45,7 +46,7 @@ class BackTestBase(object):
 
                 change = (exit_price - self.entry_price) / self.entry_price
                 self.capital = self.capital * (1 + change)
-                self.capital = self.capital * (1 - self.trading_fee)
+                self.capital = self.capital * ((1 - self.trading_fee) ** 2)
                 self.entry_price = 0.0
 
             self.last_position = position
@@ -93,7 +94,7 @@ class BackTestBase(object):
                                      close=df['close'], yaxis='y4'))
         fig.show()
 
-    @property
+    @cached_property
     def ohlc(self):
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
