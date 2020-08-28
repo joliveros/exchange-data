@@ -26,7 +26,7 @@ class BackTest(PriceFrame, BackTestBase):
         **kwargs
     ):
         if df is None:
-            df = self.ohlc
+            df = self.ohlc.copy()
 
         df.reset_index(drop=False, inplace=True)
         df_close = df['close']

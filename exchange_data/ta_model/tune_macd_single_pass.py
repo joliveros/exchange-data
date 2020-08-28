@@ -9,6 +9,10 @@ import click
 
 
 class TuneMACDSignalSinglePass(TuneMACDSignal):
+    def __init__(self, **kwargs):
+        self.backtest = SinglePassBackTest(**kwargs)
+
+        super().__init__(**kwargs)
 
     def run(self, trial: Trial):
 
@@ -17,7 +21,7 @@ class TuneMACDSignalSinglePass(TuneMACDSignal):
             long_period=trial.suggest_int('long_period', 1, 96),
         )
 
-        return SinglePassBackTest(**self._kwargs).test(**params)
+        return self.backtest.test(**params)
 
 
 
