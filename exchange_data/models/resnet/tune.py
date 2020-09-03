@@ -101,8 +101,9 @@ class SymbolTuner(MacdOrderBookFrame):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 0.1, 3.0),
-            sequence_length=trial.suggest_int('sequence_length', 2, 96)
+            flat_ratio=trial.suggest_float('flat_ratio', 0.7, 0.92),
+            sequence_length=trial.suggest_int('sequence_length', 56, 96),
+            epochs=trial.suggest_int('epochs', 1, 4)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
@@ -131,7 +132,7 @@ class SymbolTuner(MacdOrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 1,
+                # 'epochs': 1,
                 'batch_size': 1,
                 'clear': True,
                 'directory': trial.number,
