@@ -43,10 +43,11 @@ class TuneMACDSignal(object):
 
         MacdParamFrame(database_name=self.database_name).append(data)
 
+        return data
+
     def run(self, trial: Trial):
         params = dict(
-            short_period=trial.suggest_int('short_period', 1, 96 * 3),
-            long_period=trial.suggest_int('long_period', 1, 96 * 3),
+            period=trial.suggest_int('short_period', 1, 96 * 3),
         )
 
         return BackTest(**self._kwargs).test(**params)

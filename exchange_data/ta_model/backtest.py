@@ -10,9 +10,6 @@ from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.trading import Positions
 
 
-
-
-
 class BackTest(PriceFrame, BackTestBase):
     def __init__(
         self,
@@ -21,18 +18,32 @@ class BackTest(PriceFrame, BackTestBase):
         super().__init__(**kwargs)
         BackTestBase.__init__(self, **kwargs)
 
-    def label_position(self, df=None, short_period=8, long_period=22,
-                       **kwargs):
+    def label_position(
+        self,
+        df=None,
+        span_1=12,
+        span_2=26,
+        span_3=9,
+        **kwargs
+    ):
         if df is None:
-            df = self.ohlc
+            df = self.ohlc.copy()
 
         df.reset_index(drop=False, inplace=True)
         df_close = df['close']
-        exp1 = df_close.ewm(span=short_period, adjust=False).mean()
-        exp2 = df_close.ewm(span=long_period, adjust=False).mean()
+
+        adjust = True
+
+        exp1 = df_close.ewm(span=span_1, adjust=adjust).mean()
+
+        exp2 = df_close.ewm(span=span_2, adjust=adjust).mean()
+
         macd = exp1 - exp2
-        exp3 = macd.ewm(span=9, adjust=False).mean()
+
+        exp3 = macd.ewm(span=span_3, adjust=adjust).mean()
+
         minDf = DataFrame(exp3)
+
         minDf['time'] = df['time']
         minDf.columns = ['avg', 'time']
         minDf = minDf.set_index('time')
@@ -103,26 +114,6 @@ class BackTest(PriceFrame, BackTestBase):
 
     def load_previous_frames(self, depth):
         pass
-
-
-class SinglePassBackTest(BackTest):
-    def test(self, **kwargs):
-        df: DataFrame = self.frame.copy()
-
-        labeled_df = self.label_position(**kwargs)
-
-        self.capital = 1.0
-
-        df.reset_index(drop=False, inplace=True)
-        df['capital'] = self.capital
-        df = df.apply(self.pnl, axis=1)
-        pd.set_option('display.max_rows', len(df) + 1)
-        alog.info(df)
-
-        if self.capital > 50.0:
-            return 0.0
-
-        return self.capital
 
 
 @click.command()
