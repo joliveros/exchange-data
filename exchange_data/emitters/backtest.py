@@ -1,32 +1,36 @@
 #!/usr/bin/env python
-
+from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.emitters.prediction_emitter import PredictionBase
 from optuna import Trial
+
 import alog
 import click
 
 
-class BackTest(BackTestBase, PredictionBase):
+class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
     def __init__(
         self,
-        plot=False,
         trial=None,
         **kwargs
     ):
         super().__init__(**kwargs)
 
+        BackTestBase.__init__(self, **kwargs)
         PredictionBase.__init__(self, **kwargs)
 
         self.trial: Trial = trial
 
-    def test(self, model_version):
+    def test(self, model_version=None):
         self.model_version = model_version
         self.capital = 1.0
-        df = self.df.copy()
+        df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
         df = df.apply(self.prediction, axis=1)
         df['capital'] = self.capital
+
+        alog.info(df)
+
         df = df.apply(self.pnl, axis=1)
 
         # for i in range(0, len(df)):
@@ -48,7 +52,6 @@ class BackTest(BackTestBase, PredictionBase):
     #         return Positions.Long
 
     def prediction(self, row):
-        # alog.info(row)
         self.frames = row['orderbook_img']
 
         if len(self.frames) == self.sequence_length:

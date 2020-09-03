@@ -5,9 +5,8 @@ import shutil
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
-from exchange_data.data.orderbook_frame import OrderBookFrame
+from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
 from exchange_data.emitters.backtest import BackTest
-from exchange_data.models.resnet.expected_position import expected_position_frame
 from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial, load_study
 from pathlib import Path
@@ -18,19 +17,27 @@ import click
 import logging
 import optuna
 import tensorflow as tf
-import time
+import time as t
+
+from exchange_data.trading import Positions
 
 logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 
-class SymbolTuner(OrderBookFrame):
+class SymbolTuner(MacdOrderBookFrame):
+    backtest = None
 
-    def __init__(self, volatility_intervals, session_limit, backtest_interval,
+    def __init__(self, volatility_intervals, session_limit,
+                 macd_session_limit, backtest_interval,
                  num_locks=2,
                  **kwargs):
+
+        self._kwargs = kwargs
+
         if not volatility_intervals:
             kwargs['window_size'] = '1h'
-        super().__init__(volatility_intervals=volatility_intervals, **kwargs)
+        super().__init__(volatility_intervals=volatility_intervals,
+                         session_limit=macd_session_limit, **kwargs)
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
@@ -50,8 +57,6 @@ class SymbolTuner(OrderBookFrame):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
-
-        self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.study.optimize(self.run, n_trials=session_limit)
 
@@ -78,70 +83,56 @@ class SymbolTuner(OrderBookFrame):
 
         try:
             if self.run_count > 1:
-                time.sleep(retry_relay)
+                t.sleep(retry_relay)
             with RedLock(self.train_lock, retry_delay=timeparse('1m'),
                          retry_times=120, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
 
-        except Exception as e:
+        except RedLockError as e:
             alog.info(e)
-            time.sleep(retry_relay)
+            t.sleep(retry_relay)
             return self.run(*args)
 
     def _run(self, trial: Trial):
         self.trial = trial
-        self.backtest.trial = trial
 
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            # learning_rate=trial.suggest_float('learning_rate', 0.03, 0.1),
-            # flat_ratio=trial.suggest_float('flat_ratio', 0.1, 10.0),
-            neg_change_ratio=trial.suggest_float('neg_change_ratio', 0.1, 2.0),
-            # neg_change_quantile=trial.suggest_float('neg_change_quantile', 0.0,
-            #                                         1.0),
-            # lstm_units=trial.suggest_int('lstm_units', 8, 16),
-            # prefix_length=trial.suggest_int('prefix_length', 1, 6),
-            # filters=trial.suggest_int('epochs', 1, 6),
-            # inception_units=trial.suggest_int('inception_units', 1, 6),
-            # epochs=trial.suggest_int('epochs', 5, 14),
-            # min_consecutive_count=trial.suggest_int('min_consecutive_count',
-            #                                         3, 6)
+            flat_ratio=trial.suggest_float('flat_ratio', 0.1, 3.0),
+            sequence_length=trial.suggest_int('sequence_length', 2, 96)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio', 1.0)
-            neg_change_ratio = hparams.get('neg_change_ratio', 0.30394)
-            # flat_ratio = 2.4
-            _df = self.label_positive_change(prefix_length=2,
-                                             negative_prefix_length=2,
-                                             min_consecutive_count=4,
-                                             neg_change_quantile=0.15136,
-                                             **hparams)
-            neg_change_df = _df[_df['consecutive_negative_change_position'] == 1]
-            flat_df = _df[_df['expected_position'] == 0]
-            long_df = _df[_df['expected_position'] == 1]
+
+            self.sequence_length = hparams.get('sequence_length')
+            self._kwargs['sequence_length'] = self.sequence_length
+            self.backtest = BackTest(quantile=self.quantile,
+                                     trial=trial, **self._kwargs)
+
+            _df = self.label_positive_change(**hparams)
+
+            flat_df = _df[_df['expected_position'] == Positions.Flat]
+            flat_df.loc[:, 'expected_position'] = 0
+            long_df = _df[_df['expected_position'] == Positions.Long]
+            long_df.loc[:, 'expected_position'] = 1
 
             flat_count = len(long_df) * flat_ratio
-            neg_change_count = len(long_df) * neg_change_ratio
 
             flat_df = flat_df.sample(frac=flat_count/len(flat_df),
                                      replace=True)
 
-            neg_change_df = neg_change_df.sample(frac=neg_change_count / len(
-                neg_change_df),
-                                     replace=True)
-
-            _df = pd.concat([neg_change_df, flat_df, long_df])
+            _df = pd.concat([flat_df, long_df])
 
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                'epochs': 5,
-                'batch_size': 4,
+                'epochs': 1,
+                'batch_size': 1,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
@@ -150,7 +141,7 @@ class SymbolTuner(OrderBookFrame):
                 'learning_rate': 0.078735,
                 'levels': 40,
                 # 'seed': 216,
-                'sequence_length': 48,
+                # 'sequence_length': 48,
                 'symbol': self.symbol,
             }
 
@@ -167,7 +158,7 @@ class SymbolTuner(OrderBookFrame):
 
             tf.summary.scalar('accuracy', accuracy, step=global_step)
 
-            time.sleep(5)
+            t.sleep(5)
 
     @property
     def model_version(self):
@@ -220,6 +211,7 @@ class SymbolTuner(OrderBookFrame):
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
+@click.option('--macd-session-limit', default=200, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)

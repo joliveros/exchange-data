@@ -82,14 +82,11 @@ class MeasurementFrame(MeasurementMeta):
         frames = []
 
         for data in self.query(query).get_points(self.name):
-            alog.info(alog.pformat(data))
             timestamp = self.parse_db_timestamp(data['time'])
             data = data.get('data_data', None) or {}
 
             if type(data) is str:
                 data = pd.read_json(data)
-
-            alog.info(alog.pformat(data))
 
             if 'pair' in data:
                 data = json.loads(data)
@@ -104,6 +101,9 @@ class MeasurementFrame(MeasurementMeta):
                 frames.append(data)
 
         df = DataFrame.from_dict(frames)
+
+        if df.empty:
+            return df
 
         df['time'] = pd.to_datetime(df['time'])
 
