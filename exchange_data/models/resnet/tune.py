@@ -58,6 +58,10 @@ class SymbolTuner(MacdOrderBookFrame):
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
+        self.train_df = self.label_positive_change()
+
+        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+
         self.study.optimize(self.run, n_trials=session_limit)
 
     @property
@@ -97,24 +101,17 @@ class SymbolTuner(MacdOrderBookFrame):
 
     def _run(self, trial: Trial):
         self.trial = trial
+        self.backtest.trial = trial
 
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 0.7, 0.92),
-            sequence_length=trial.suggest_int('sequence_length', 56, 96),
-            epochs=trial.suggest_int('epochs', 1, 4)
+            flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            flat_ratio = hparams.get('flat_ratio', 1.0)
-
-            self.sequence_length = hparams.get('sequence_length')
-            self._kwargs['sequence_length'] = self.sequence_length
-            self.backtest = BackTest(quantile=self.quantile,
-                                     trial=trial, **self._kwargs)
-
-            _df = self.label_positive_change(**hparams)
+            flat_ratio = hparams.get('flat_ratio')
+            _df = self.train_df.copy()
 
             flat_df = _df[_df['expected_position'] == Positions.Flat]
             flat_df.loc[:, 'expected_position'] = 0
@@ -132,18 +129,18 @@ class SymbolTuner(MacdOrderBookFrame):
             eval_df = _df.sample(frac=0.1, random_state=0)
 
             params = {
-                # 'epochs': 1,
+                'epochs': 1,
                 'batch_size': 1,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                'learning_rate': 0.078735,
+                'learning_rate': 0.077431,
                 'levels': 40,
                 # 'seed': 216,
-                # 'sequence_length': 48,
                 'symbol': self.symbol,
+                'sequence_length': self.sequence_length
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -183,7 +180,7 @@ class SymbolTuner(MacdOrderBookFrame):
             if self.backtest.capital <= 0.99 or self.backtest.capital == 1.0:
                 alog.info('## deleting trial ###')
                 alog.info(exported_model_path)
-                shutil.rmtree(self.run_dir)
+                # shutil.rmtree(self.run_dir)
                 shutil.rmtree(exported_model_path, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
@@ -210,7 +207,7 @@ class SymbolTuner(MacdOrderBookFrame):
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
-@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--sequence-length', '-l', default=60, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
