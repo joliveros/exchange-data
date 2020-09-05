@@ -55,6 +55,8 @@ class SymbolTuner(MacdOrderBookFrame):
         else:
             self.study = load_study(study_name=self.symbol, storage=db_conn_str)
 
+        alog.info(self.study.best_trial)
+
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
@@ -153,6 +155,7 @@ class SymbolTuner(MacdOrderBookFrame):
             global_step = result.get('global_step')
             self.exported_model_path = result.get('exported_model_path')
             trial.set_user_attr('exported_model_path', self.exported_model_path)
+            trial.set_user_attr('model_version', self.model_version)
 
             tf.summary.scalar('accuracy', accuracy, step=global_step)
 
@@ -180,7 +183,7 @@ class SymbolTuner(MacdOrderBookFrame):
             if self.backtest.capital <= 0.99 or self.backtest.capital == 1.0:
                 alog.info('## deleting trial ###')
                 alog.info(exported_model_path)
-                # shutil.rmtree(self.run_dir)
+                shutil.rmtree(self.run_dir)
                 shutil.rmtree(exported_model_path, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
