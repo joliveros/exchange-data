@@ -9,30 +9,37 @@ from pytimeparse.timeparse import timeparse
 
 
 class BackTestBase(object):
+    capital = 1.0
+
     def __init__(
         self,
         group_by_min=1,
+        print_all_rows=False,
         plot=False,
         **kwargs
     ):
         super().__init__()
+        self.print_all_rows = print_all_rows
         self.trial = None
         self.group_by_min = group_by_min
         self.should_plot = plot
-        self.capital = 1.0
         self.entry_price = 0.0
         self.trading_fee = (0.075 / 100)
         self.last_position = Positions.Flat
-        self.df = self.frame
 
         if self.should_plot:
             self.plot()
+
+    @property
+    def frame(self):
+        raise NotImplemented()
 
     def test(self):
         raise NotImplemented()
 
     def pnl(self, row):
         exit_price = 0.0
+
         position = row['position']
 
         if position == Positions.Long and self.last_position == Positions.Flat:
