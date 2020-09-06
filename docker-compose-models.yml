@@ -7,20 +7,18 @@ networks:
 
 services:
 
-    resnet_server:
+    server:
         deploy:
             replicas: 1
-#        image: tensorflow/serving:2.1.0
         image: tensorflow/serving
         ports:
             - 0.0.0.0:8500:8500
             - 0.0.0.0:8501:8501
         volumes:
-            - ${HOME}/.exchange-data/models/${SYMBOL}_export:/models/resnet
+            - ${HOME}/.exchange-data/models/:/models
             - ./tfserving/models.config:/models/models.config
         environment:
             - CUDA_VISIBLE_DEVICES=-1
-            - MODEL_NAME=resnet
         networks:
             - public
         command: --model_config_file=/models/models.config
