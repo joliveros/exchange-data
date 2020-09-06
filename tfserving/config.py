@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import alog
 
 from exchange_data.emitters.binance._trade_executor import TradeExecutor
 from pathlib import Path
@@ -9,15 +10,19 @@ import click
 
 @click.command()
 def main(**kwargs):
-    symbols = TradeExecutor(base_asset='BNB',
-                            database_name='binance').symbols
+    models_dir = Path().home() / '.exchange-data/models/'
+    exported_model_dirs = list(models_dir.rglob('*_export'))
+
+    exported_models = [
+        (p.name, p.name.split('_')[0]) for p in exported_model_dirs
+    ]
 
     server_config: ModelServerConfig = ModelServerConfig()
 
-    for symbol in symbols:
+    for path, symbol in exported_models:
         config = server_config.model_config_list.config.add()
         config.name = symbol
-        config.base_path = f'/models/{symbol}_export'
+        config.base_path = f'/models/{path}'
         config.model_platform = 'tensorflow'
         config.model_version_policy.All()
 
