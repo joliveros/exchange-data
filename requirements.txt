@@ -6,6 +6,7 @@ click
 coveralls
 docker
 flake8
+gax-google-logging-v2
 git+https://github.com/joliveros/gdax-python.git#egg=gdax
 git+https://github.com/joliveros/python-binance.git#egg=python-binance
 git+https://github.com/joliveros/sec.git#egg=sec
@@ -30,6 +31,8 @@ pytest-vcr
 pytimeparse
 pytz
 redis
+redis-collections
+redlock
 rollbar>=0.13.12
 scikit-image
 scipy==1.4.1
@@ -38,8 +41,7 @@ sortedcontainers
 statsd
 stringcase
 tensorflow-datasets
+tensorflow-serving-api
 tf-nightly-gpu
 timestamp
 tqdm
-redis-collections
-redlock

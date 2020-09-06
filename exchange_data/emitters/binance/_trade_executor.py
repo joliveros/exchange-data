@@ -50,7 +50,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     current_position = Positions.Flat
     symbol = None
 
-    def __init__(self, base_asset, tick_interval, fee=0.0075, **kwargs):
+    def __init__(self, base_asset, tick_interval='5s', fee=0.0075, **kwargs):
         super().__init__(
             **kwargs
         )
@@ -87,6 +87,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def symbol_info(self):
         return [info for info in self.exchange_info['symbols'] if
                    info['symbol'] == self.symbol][0]
+
+    @property
+    def symbols(self):
+        return [symbol['symbol'] for symbol in self.exchange_info['symbols']
+                   if symbol['symbol'].endswith(self.base_asset)]
 
     @property
     def asset_name(self):
