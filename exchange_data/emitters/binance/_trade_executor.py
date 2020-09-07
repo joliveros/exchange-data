@@ -10,8 +10,8 @@ from redis_collections import Dict
 from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
+from exchange_data.emitters.backtest import BackTest
 from exchange_data.ta_model.tune_macd import MacdParamFrame
-from exchange_data.ta_model.backtest import BackTest
 
 import alog
 import binance
@@ -46,18 +46,22 @@ class MacdParams(object):
 
 class TradeExecutor(MeasurementFrame, Messenger):
     measurements = []
-    _last_params = None
     current_position = Positions.Flat
     symbol = None
 
-    def __init__(self, base_asset, tick_interval='5s', fee=0.0075, **kwargs):
+    def __init__(self, symbol, base_asset, trading_enabled,
+                 model_version=None, tick_interval='5s',
+                 fee=0.0075, **kwargs):
         super().__init__(
             **kwargs
         )
+        self.symbol = symbol
+        self.trading_enabled = trading_enabled
         self.fee = fee
         self.tick_interval = tick_interval
         self.base_asset = base_asset
         self.asset = None
+        self.model_version = model_version
         self.on(tick_interval, self.trade)
 
     @cached_property_with_ttl(ttl=15)
@@ -66,18 +70,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             api_key=settings.BINANCE_API_KEY,
             api_secret=settings.BINANCE_API_SECRET
         )
-
-    @property
-    def last_params(self):
-        return MacdParams(**Dict(key=f'{self.symbol}_params',
-                                 redis=self.redis_client))
-
-    @last_params.setter
-    def last_params(self, value: MacdParams):
-        self.symbol = value.symbol
-
-        self._last_params = Dict(data=vars(value), key=f'{self.symbol}_params',
-                                 redis=self.redis_client)
 
     @cached_property_with_ttl(ttl=timeparse('10m'))
     def exchange_info(self):
@@ -182,9 +174,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return None
 
     def trade(self, timestamp=None):
-        if not self.last_params.symbol:
-            self.last_params = self.best_params()
-
         alog.info(self.position)
 
         if len(self.orders) == 0 and self.quantity > 0  and self.position == \
@@ -222,26 +211,32 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
             self.client.create_order(**params)
 
-        if self.position == Positions.Flat:
-            self.last_params = self.best_params()
-
     def long(self):
+        if self.trading_enabled:
+            alog.info(self.min_quantity)
 
-        alog.info(self.min_quantity)
-
-        response = self.client.create_order(
-            symbol=self.symbol,
-            side=SIDE_BUY,
-            type=binance.enums.ORDER_TYPE_MARKET,
-            quantity=self.quantity,
-        )
-        alog.info(alog.pformat(response))
+            response = self.client.create_order(
+                symbol=self.symbol,
+                side=SIDE_BUY,
+                type=binance.enums.ORDER_TYPE_MARKET,
+                quantity=self.quantity,
+            )
+            alog.info(alog.pformat(response))
 
     @cached_property_with_ttl(ttl=4)
     def position(self) -> Positions:
-        df = BackTest(symbol=self.last_params.symbol,
-                      database_name=self.database_name,
-                      interval='1d').label_position(**vars(self.last_params))
+        df = BackTest(
+            database_name=self.database_name,
+            depth=40,
+            interval='2m',
+            model_version=self.model_version,
+            sequence_length=60,
+            symbol=f'{self.symbol}{self.base_asset}',
+            window_size='3m',
+        ).test()
+
+        alog.info(df['position'].iloc[-1])
+
         return df.iloc[-1]['position']
 
     def best_params(self) -> MacdParams:
@@ -290,10 +285,14 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--base-asset', '-b', default='BNB', type=str)
 @click.option('--tick-interval', '-t', default='1m', type=str)
-@click.option('--interval', '-i', default='2h', type=str)
+@click.option('--interval', '-i', default='2m', type=str)
+@click.option('--model-version', '-m', default=None, type=str)
+@click.option('--trading-enabled', '-e', is_flag=True)
+@click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
-    emitter.start()
+    emitter.position
+    # emitter.start()
 
 
 if __name__ == '__main__':
