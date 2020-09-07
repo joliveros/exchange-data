@@ -38,8 +38,6 @@ class StudyWrapper(object):
         else:
             self.study = load_study(study_name=self.symbol, storage=db_conn_str)
 
-        alog.info(alog.pformat(vars(self.study.best_trial)))
-
 
 class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
     backtest = None
