@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-import alog
-from tensorflow_serving.sources.storage_path.file_system_storage_path_source_pb2 import \
-    FileSystemStoragePathSourceConfig
 
-from exchange_data.emitters.binance._trade_executor import TradeExecutor
 from pathlib import Path
+from tensorflow_serving.sources.storage_path.file_system_storage_path_source_pb2 \
+    import FileSystemStoragePathSourceConfig
 from tfserving.model_server_config_pb2 import ModelServerConfig
 
+import alog
 import click
 
 
