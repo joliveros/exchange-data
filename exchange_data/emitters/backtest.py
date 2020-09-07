@@ -22,25 +22,18 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
         self.trial: Trial = trial
 
     def test(self, model_version=None):
-        self.model_version = model_version
+        if model_version:
+            self.model_version = model_version
+
         self.capital = 1.0
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
         df = df.apply(self.prediction, axis=1)
         df['capital'] = self.capital
 
-        alog.info(df)
-
         df = df.apply(self.pnl, axis=1)
 
-        # for i in range(0, len(df)):
-        #     alog.info(df.loc[i])
-
-        alog.info(df)
-
-        alog.info(self.capital)
-        # alog.info(df['capital'].iloc[-1])
-        # alog.info(self.capital)
+        return df
 
     def load_previous_frames(self, depth):
         pass
