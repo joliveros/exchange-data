@@ -148,10 +148,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
 
-        alog.info(df)
-
-        imgs = []
-
         orderbook_img = df.orderbook_img.to_numpy().tolist()
         df.drop(['orderbook_img'], axis=1)
         orderbook_img = np.asarray(orderbook_img)
