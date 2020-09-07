@@ -24,7 +24,24 @@ from exchange_data.trading import Positions
 logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 
-class SymbolTuner(MacdOrderBookFrame):
+class StudyWrapper(object):
+    def __init__(self, symbol, **kwargs):
+        self.symbol = symbol
+        study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
+        study_db_path = Path(study_db_path)
+        db_conn_str = f'sqlite:///{study_db_path}'
+
+        if not study_db_path.exists():
+            self.study = optuna.create_study(
+                study_name=self.symbol, direction='maximize',
+                storage=db_conn_str)
+        else:
+            self.study = load_study(study_name=self.symbol, storage=db_conn_str)
+
+        alog.info(alog.pformat(vars(self.study.best_trial)))
+
+
+class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
     backtest = None
 
     def __init__(self, volatility_intervals, session_limit,
@@ -38,24 +55,14 @@ class SymbolTuner(MacdOrderBookFrame):
             kwargs['window_size'] = '1h'
         super().__init__(volatility_intervals=volatility_intervals,
                          session_limit=macd_session_limit, **kwargs)
+
+        StudyWrapper.__init__(self, **kwargs)
+
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
 
         self.split_gpu()
-
-        study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
-        study_db_path = Path(study_db_path)
-        db_conn_str = f'sqlite:///{study_db_path}'
-
-        if not study_db_path.exists():
-            self.study = optuna.create_study(
-                study_name=self.symbol, direction='maximize',
-                storage=db_conn_str)
-        else:
-            self.study = load_study(study_name=self.symbol, storage=db_conn_str)
-
-        alog.info(self.study.best_trial)
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
@@ -156,6 +163,7 @@ class SymbolTuner(MacdOrderBookFrame):
             self.exported_model_path = result.get('exported_model_path')
             trial.set_user_attr('exported_model_path', self.exported_model_path)
             trial.set_user_attr('model_version', self.model_version)
+            trial.set_user_attr('quantile', self.quantile)
 
             tf.summary.scalar('accuracy', accuracy, step=global_step)
 
