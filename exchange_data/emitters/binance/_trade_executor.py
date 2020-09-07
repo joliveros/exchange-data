@@ -11,6 +11,7 @@ from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
 from exchange_data.emitters.backtest import BackTest
+from exchange_data.models.resnet.tune import StudyWrapper
 from exchange_data.ta_model.tune_macd import MacdParamFrame
 
 import alog
@@ -49,19 +50,34 @@ class TradeExecutor(MeasurementFrame, Messenger):
     current_position = Positions.Flat
     symbol = None
 
-    def __init__(self, symbol, base_asset, trading_enabled,
-                 model_version=None, tick_interval='5s',
-                 fee=0.0075, **kwargs):
+    def __init__(
+        self,
+        base_asset,
+        symbol,
+        trading_enabled,
+        tick=False,
+        fee=0.0075,
+        model_version=None,
+        tick_interval='5s',
+        **kwargs
+    ):
         super().__init__(
             **kwargs
         )
-        self.symbol = symbol
+        self.tick = tick
+        self.symbol = f'{symbol}{base_asset}'
         self.trading_enabled = trading_enabled
         self.fee = fee
         self.tick_interval = tick_interval
         self.base_asset = base_asset
         self.asset = None
+        self._model_version = None
         self.model_version = model_version
+
+        if tick:
+            self.position
+            sys.exit(0)
+
         self.on(tick_interval, self.trade)
 
     @cached_property_with_ttl(ttl=15)
@@ -223,6 +239,31 @@ class TradeExecutor(MeasurementFrame, Messenger):
             )
             alog.info(alog.pformat(response))
 
+    @cached_property_with_ttl(ttl=timeparse('15m'))
+    def trial_params(self):
+        study = StudyWrapper(self.symbol)
+
+        return vars(study.study.best_trial)
+
+    @property
+    def quantile(self):
+        return self.trial_params['user_attrs']['quantile']
+
+    @property
+    def model_version(self):
+        if self._model_version:
+            return self._model_version
+        else:
+            v = self.trial_params['user_attrs']['model_version']
+            self._model_version = v
+
+        return self._model_version
+
+    @model_version.setter
+    def model_version(self, value):
+        self._model_version = value
+
+
     @cached_property_with_ttl(ttl=4)
     def position(self) -> Positions:
         df = BackTest(
@@ -231,7 +272,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
             interval='2m',
             model_version=self.model_version,
             sequence_length=60,
-            symbol=f'{self.symbol}{self.base_asset}',
+            quantile=self.quantile,
+            symbol=self.symbol,
             window_size='3m',
         ).test()
 
@@ -288,11 +330,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--interval', '-i', default='2m', type=str)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
+@click.option('--tick', is_flag=True)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
-    emitter.position
-    # emitter.start()
+    emitter.start()
 
 
 if __name__ == '__main__':
