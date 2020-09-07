@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import alog
+from tensorflow_serving.sources.storage_path.file_system_storage_path_source_pb2 import \
+    FileSystemStoragePathSourceConfig
 
 from exchange_data.emitters.binance._trade_executor import TradeExecutor
 from pathlib import Path
@@ -24,12 +26,16 @@ def main(**kwargs):
         config.name = symbol
         config.base_path = f'/models/{path}'
         config.model_platform = 'tensorflow'
-        config.model_version_policy.All()
+
+        config.model_version_policy.all.CopyFrom(
+            FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
 
     config_file = Path('./tfserving/models.config')
 
     if config_file.exists():
         config_file.unlink()
+
+    alog.info(server_config)
 
     with open(config_file, 'wb') as f:
         f.write(str(server_config).encode())
