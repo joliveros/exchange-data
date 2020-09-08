@@ -59,6 +59,7 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
+        self.export_dir.mkdir(exist_ok=True)
 
         self.split_gpu()
 
@@ -70,6 +71,11 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
         self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
 
         self.study.optimize(self.run, n_trials=session_limit)
+
+    @property
+    def export_dir(self):
+        return Path(f'{Path.home()}/.exchange-data/models/' \
+                 f'{self.symbol}_export')
 
     @property
     def run_dir(self):
