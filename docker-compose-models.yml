@@ -16,7 +16,6 @@ services:
             - 0.0.0.0:8501:8501
         volumes:
             - ${HOME}/.exchange-data/models/:/models
-            - ./tfserving/models.config:/models/models.config
         environment:
             - CUDA_VISIBLE_DEVICES=-1
         networks:
