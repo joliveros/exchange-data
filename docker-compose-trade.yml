@@ -25,8 +25,13 @@ services:
             - influxdb
         secrets:
             - DB
+            - BINANCE_API_KEY
+            - BINANCE_API_SECRET
 
 secrets:
-  DB:
-      external: true
-
+    DB:
+        external: true
+    BINANCE_API_KEY:
+        external: true
+    BINANCE_API_SECRET:
+        external: true
