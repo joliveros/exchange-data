@@ -29,7 +29,7 @@ def main(**kwargs):
         config.model_version_policy.all.CopyFrom(
             FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
 
-    config_file = Path('./tfserving/models.config')
+    config_file = Path.home() / Path('.exchange-data/models/models.config')
 
     if config_file.exists():
         config_file.unlink()
