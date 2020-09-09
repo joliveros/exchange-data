@@ -28,7 +28,7 @@ class OrderBookLevelStreamer(BitmexStreamer):
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.groupby});'
 
-        alog.info(query)
+        # alog.info(query)
 
         return self.query(query)
 
