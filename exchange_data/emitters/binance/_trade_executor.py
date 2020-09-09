@@ -83,7 +83,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def client(self):
         return Client(
             api_key=settings.BINANCE_API_KEY,
-            api_secret=settings.BINANCE_API_SECRET
+            api_secret=settings.BINANCE_API_SECRET,
         )
 
     @cached_property_with_ttl(ttl=timeparse('10m'))

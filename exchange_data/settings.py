@@ -46,7 +46,7 @@ CERT_FILE = './ca.pem'
 
 REDIS_HOST = environ.get('REDIS_HOST') or 'redis'
 
-RESNET_HOST = environ.get('RESNET_HOST') or 'resnet_server'
+MODEL_HOST = environ.get('MODEL_HOST') or 'model_host'
 
 WS_HOST = environ.get('WS_HOST') or 'proxy'
 

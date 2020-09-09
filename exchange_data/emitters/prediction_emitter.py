@@ -49,10 +49,10 @@ class PredictionBase(object):
         url = None
 
         if self.model_version:
-            url = f'http://{settings.RESNET_HOST}:8501/v1/models/{self.symbol}' \
+            url = f'http://{settings.MODEL_HOST}:8501/v1/models/{self.symbol}' \
                   f'/versions/{self.model_version}:predict'
         else:
-            url = f'http://{settings.RESNET_HOST}:8501/v1/models/' \
+            url = f'http://{settings.MODEL_HOST}:8501/v1/models/' \
                   f'{self.symbol}:predict'
 
         json_response = requests.post(
