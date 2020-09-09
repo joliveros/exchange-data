@@ -174,8 +174,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
         ]
 
-        alog.info(df)
-
         return df
 
     @property

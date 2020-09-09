@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
-from decimal import Decimal, getcontext
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
-from cached_property import cached_property, cached_property_with_ttl
-from pytimeparse.timeparse import timeparse
-from redis_collections import Dict
-
+from cached_property import cached_property_with_ttl
+from decimal import Decimal, getcontext
 from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.tune import StudyWrapper
 from exchange_data.ta_model.tune_macd import MacdParamFrame
+from exchange_data.trading import Positions
+from pytimeparse.timeparse import timeparse
 
 import alog
 import binance
@@ -20,12 +19,11 @@ import click
 import signal
 import sys
 
-from exchange_data.trading import Positions
-
 
 def truncate(n, decimals=0):
     multiplier = 10 ** decimals
     return int(n * multiplier) / multiplier
+
 
 class MacdParams(object):
     def __init__(
@@ -68,6 +66,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self.symbol = f'{symbol}{base_asset}'
         self.trading_enabled = trading_enabled
         self.fee = fee
+
         self.tick_interval = tick_interval
         self.base_asset = base_asset
         self.asset = None
@@ -190,7 +189,9 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return None
 
     def trade(self, timestamp=None):
+        alog.info('### trade ###')
         alog.info(self.position)
+        alog.info(self.quantity)
 
         if len(self.orders) == 0 and self.quantity > 0  and self.position == \
             Positions.Long and self.asset_quantity < self.min_quantity:
@@ -229,8 +230,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     def long(self):
         if self.trading_enabled:
-            alog.info(self.min_quantity)
-
             response = self.client.create_order(
                 symbol=self.symbol,
                 side=SIDE_BUY,
@@ -263,8 +262,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def model_version(self, value):
         self._model_version = value
 
-
-    @cached_property_with_ttl(ttl=4)
+    @cached_property_with_ttl(ttl=48)
     def position(self) -> Positions:
         df = BackTest(
             database_name=self.database_name,
@@ -276,8 +274,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             symbol=self.symbol,
             window_size='3m',
         ).test()
-
-        alog.info(df['position'].iloc[-1])
 
         return df.iloc[-1]['position']
 
