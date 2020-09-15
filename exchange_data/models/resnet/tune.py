@@ -120,6 +120,8 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
 
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
+            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 0.1),
+            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.01)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
@@ -143,13 +145,13 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
 
             params = {
                 'epochs': 1,
-                'batch_size': 1,
+                'batch_size': 2,
                 'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                'learning_rate': 0.077431,
+                # 'learning_rate': 0.021332,
                 'levels': 40,
                 # 'seed': 216,
                 'symbol': self.symbol,
@@ -182,7 +184,9 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
             trial = self.trial
             exported_model_path = self.exported_model_path
 
-            self.backtest.test(self.model_version)
+            test_df = self.backtest.test(self.model_version)
+
+            alog.info(test_df)
 
             try:
                 if trial.study.best_trial.value > self.backtest.capital:
