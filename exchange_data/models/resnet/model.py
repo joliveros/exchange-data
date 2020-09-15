@@ -25,9 +25,10 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     levels,
     sequence_length,
-    filters=2,
+    filters=1,
     inception_units=2,
     lstm_units=8,
+    relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
     **kwargs
@@ -48,23 +49,23 @@ def Model(
 
     # build the inception module
     convsecond_1 = Conv1D(inception_units, 1, padding='same')(conv)
-    convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
+    convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
     convsecond_1 = Conv1D(inception_units, 3, padding='same')(convsecond_1)
-    convsecond_1 = LeakyReLU(alpha=0.01)(convsecond_1)
+    convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
 
     alog.info(convsecond_1.shape)
 
     convsecond_2 = Conv1D(inception_units, 1, padding='same')(conv)
-    convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
+    convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
     convsecond_2 = Conv1D(inception_units, 5, padding='same')(convsecond_2)
-    convsecond_2 = LeakyReLU(alpha=0.01)(convsecond_2)
+    convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
 
     alog.info(convsecond_2.shape)
 
     convsecond_3 = tf.keras.layers.MaxPool1D(3, strides=1, padding='same')(
         conv)
     convsecond_3 = Conv1D(inception_units, 1, padding='same')(convsecond_3)
-    convsecond_3 = LeakyReLU(alpha=0.01)(convsecond_3)
+    convsecond_3 = LeakyReLU(alpha=relu_alpha)(convsecond_3)
 
     alog.info(convsecond_3.shape)
 
@@ -121,7 +122,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
-    for i in range(0, 2):
+    for i in range(0, 5):
         conv = conv_block(filters, conv, i)
 
     gap = GlobalAveragePooling1D()(conv)
