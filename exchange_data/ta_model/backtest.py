@@ -18,73 +18,11 @@ class BackTest(PriceFrame, BackTestBase):
         super().__init__(**kwargs)
         BackTestBase.__init__(self, **kwargs)
 
-    def label_position(
-        self,
-        df=None,
-        span_1=12,
-        span_2=26,
-        span_3=9,
-        **kwargs
-    ):
-        if df is None:
-            df = self.ohlc.copy()
+    def label_position(self, func=None, **kwargs):
+        if func:
+            return func(**kwargs)
 
-        df.reset_index(drop=False, inplace=True)
-        df_close = df['close']
-
-        adjust = True
-
-        exp1 = df_close.ewm(span=span_1, adjust=adjust).mean()
-
-        exp2 = df_close.ewm(span=span_2, adjust=adjust).mean()
-
-        macd = exp1 - exp2
-
-        exp3 = macd.ewm(span=span_3, adjust=adjust).mean()
-
-        minDf = DataFrame(exp3)
-
-        minDf['time'] = df['time']
-        minDf.columns = ['avg', 'time']
-        minDf = minDf.set_index('time')
-        maxDf = minDf.copy()
-        minDf['min'] = \
-            minDf.avg[(minDf.avg.shift(1) > minDf.avg) & (
-                minDf.avg.shift(-1) > minDf.avg)]
-        maxDf['max'] = \
-            maxDf.avg[(maxDf.avg.shift(1) < maxDf.avg) & (
-                maxDf.avg.shift(-1) < maxDf.avg)]
-        maxDf = maxDf.reset_index(drop=False)
-        maxDf = maxDf.dropna()
-        maxDf = maxDf.drop(columns=['max'])
-        maxDf['type'] = 'max'
-        minDf = minDf.reset_index(drop=False)
-        minDf = minDf.dropna()
-        minDf = minDf.drop(columns=['min'])
-        minDf['type'] = 'min'
-        minmax_pairs = \
-            sorted(
-                tuple(zip(maxDf.time, maxDf.avg, maxDf.type)) + tuple(
-                    zip(minDf.time, minDf.avg, minDf.type))
-            )
-
-        df = self.frame.copy()
-        df['position'] = Positions.Flat
-
-        for d, val, type in minmax_pairs:
-            position = Positions.Flat
-
-            if type == 'min':
-                position = Positions.Long
-
-            df.loc[pd.DatetimeIndex(df.index) > d, 'position'] = \
-                position
-
-        # pd.set_option('display.max_rows', len(df) + 1)
-
-        df.dropna(how='any', inplace=True)
-
-        return df
+        raise NotImplementedError()
 
     def test(self, **kwargs):
         df: DataFrame = self.frame.copy()
@@ -111,6 +49,7 @@ class BackTest(PriceFrame, BackTestBase):
             return 0.0
 
         return self.capital
+
 
     def load_previous_frames(self, depth):
         pass

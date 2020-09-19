@@ -6,6 +6,7 @@ from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
 from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
+from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial, load_study
@@ -39,7 +40,7 @@ class StudyWrapper(object):
             self.study = load_study(study_name=self.symbol, storage=db_conn_str)
 
 
-class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
+class SymbolTuner(MaxMinFrame, StudyWrapper):
     backtest = None
 
     def __init__(self, volatility_intervals, session_limit,
@@ -127,6 +128,8 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
             _df = self.train_df.copy()
+
+            alog.info(_df)
 
             flat_df = _df[_df['expected_position'] == Positions.Flat]
             flat_df.loc[:, 'expected_position'] = 0
