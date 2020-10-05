@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from exchange_data.data.labeled_orderbook_frame import LabeledOrderBookFrame
+from exchange_data.data.orderbook_frame import OrderBookFrame
+from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.trading import Positions
 
 import alog
@@ -10,10 +11,13 @@ import pandas as pd
 pd.options.plotting.backend = 'plotly'
 
 
-class MaxMinFrame(LabeledOrderBookFrame):
+class MaxMinFrame(OrderBookFrame, BackTestBase):
+    def __init__(self, symbol, **kwargs):
+        super().__init__(symbol=symbol, **kwargs)
+        BackTestBase.__init__(self, symbol=symbol, **kwargs)
 
     def label_position(self):
-        df = self.single_pass_backtest.ohlc.copy()
+        df = self.ohlc.copy()
 
         df.reset_index(drop=False, inplace=True)
 
@@ -54,12 +58,13 @@ class MaxMinFrame(LabeledOrderBookFrame):
         self,
         **kwargs
     ):
-        position = self.single_pass_backtest.label_position(
-            func=self.label_position).position
+        position = self.label_position().position
 
         df = self.frame.copy()
 
         df['expected_position'] = position
+
+        df['expected_position'] = df.expected_position.ffill()
 
         df.dropna(how='any', inplace=True)
 
@@ -72,11 +77,11 @@ class MaxMinFrame(LabeledOrderBookFrame):
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=40, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
+@click.option('--group-by-min', '-G', default=5, type=int)
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
-@click.option('--session-limit', '-s', default=200, type=int)
 @click.option('--tick', is_flag=True)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)

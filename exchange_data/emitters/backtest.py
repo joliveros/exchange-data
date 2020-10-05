@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from exchange_data.data.labeled_orderbook_frame import LabeledOrderBookFrame
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.emitters.prediction_emitter import PredictionBase
