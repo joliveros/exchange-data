@@ -122,7 +122,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
             relu_alpha=trial.suggest_float('relu_alpha', 0.001, 0.1),
-            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.01)
+            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.01),
+            round_decimals=trial.suggest_int('round_decimals', 2, 5),
+            group_by_min=trial.suggest_int('group_by_min', 2, 6)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
