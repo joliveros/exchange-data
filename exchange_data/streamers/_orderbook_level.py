@@ -12,10 +12,18 @@ class OrderBookLevelStreamer(BitmexStreamer):
     def __init__(self, symbol, depth=40, groupby='2s',
                  **kwargs):
         super().__init__(**kwargs)
+        self.symbol = symbol
+        self.depth = depth
         self.groupby = groupby
         self.last_timestamp = self.start_date
-        self.channel_name = f'{symbol}_OrderBookFrame_depth_{depth}'
+        self.channel_name = self.gen_channel_name()
         self.current_query = self.get_orderbook_frames()
+
+    def gen_channel_name(self):
+        if self.depth > 0:
+            return f'{self.symbol}_OrderBookFrame_depth_{self.depth}'
+        else:
+            return f'{self.symbol}_OrderBookFrame'
 
     def orderbook_frame_query(self):
         start_date = self.start_date
