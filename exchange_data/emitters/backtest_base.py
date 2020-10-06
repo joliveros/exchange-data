@@ -18,7 +18,6 @@ class BackTestBase(object):
         plot=False,
         **kwargs
     ):
-        super().__init__()
         self.print_all_rows = print_all_rows
         self.trial = None
         self.group_by_min = group_by_min
@@ -105,7 +104,6 @@ class BackTestBase(object):
     def ohlc(self):
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
-
         df['openbid'] = (df['best_ask'] + df['best_bid']) / 2
         ohlc_df = df.drop(df.columns.difference(['time', 'openbid']), 1,
                           inplace=False)

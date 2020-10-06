@@ -6,6 +6,7 @@ from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
 from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
+from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
 from optuna import Trial, load_study
@@ -39,7 +40,7 @@ class StudyWrapper(object):
             self.study = load_study(study_name=self.symbol, storage=db_conn_str)
 
 
-class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
+class SymbolTuner(MaxMinFrame, StudyWrapper):
     backtest = None
 
     def __init__(self, volatility_intervals, session_limit,
@@ -96,7 +97,7 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
         return lock_name
 
     def run(self, *args):
-        retry_relay = 40
+        retry_relay = 4
 
         try:
             if self.run_count > 1:
@@ -120,13 +121,17 @@ class SymbolTuner(MacdOrderBookFrame, StudyWrapper):
 
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 0.1),
-            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.01)
+            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
+            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.1),
+            round_decimals=trial.suggest_int('round_decimals', 2, 10),
+            group_by_min=trial.suggest_int('group_by_min', 1, 12)
         )
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
             _df = self.train_df.copy()
+
+            alog.info(_df)
 
             flat_df = _df[_df['expected_position'] == Positions.Flat]
             flat_df.loc[:, 'expected_position'] = 0

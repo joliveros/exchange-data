@@ -42,6 +42,6 @@ statsd
 stringcase
 tensorflow-datasets
 tensorflow-serving-api
-tf-nightly-gpu
+tensorflow-gpu==2.3.1
 timestamp
 tqdm

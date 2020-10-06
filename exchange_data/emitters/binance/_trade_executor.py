@@ -74,7 +74,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self.model_version = model_version
 
         if tick:
-            self.position
+            alog.info(self.position)
             sys.exit(0)
 
         self.on(tick_interval, self.trade)
@@ -246,17 +246,21 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @property
     def quantile(self):
-        return self.trial_params['user_attrs']['quantile']
+        return self.trial_params['_user_attrs']['quantile']
 
     @property
     def model_version(self):
         if self._model_version:
             return self._model_version
         else:
-            v = self.trial_params['user_attrs']['model_version']
+            v = self.trial_params['_user_attrs']['model_version']
             self._model_version = v
 
         return self._model_version
+
+    @property
+    def model_params(self):
+        return self.trial_params['_params']
 
     @model_version.setter
     def model_version(self, value):
@@ -273,6 +277,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             quantile=self.quantile,
             symbol=self.symbol,
             window_size='3m',
+            **self.model_params
         ).test()
 
         return df.iloc[-1]['position']
