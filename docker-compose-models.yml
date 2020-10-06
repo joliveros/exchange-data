@@ -10,17 +10,17 @@ services:
     model_host:
         deploy:
             replicas: 1
-        image: tensorflow/serving
+        image: tensorflow/serving:latest-gpu
+        environment:
+            - NVIDIA_VISIBLE_DEVCIES=all
         ports:
             - 0.0.0.0:8500:8500
             - 0.0.0.0:8501:8501
         volumes:
             - ${HOME}/.exchange-data/models/:/models
-        environment:
-            - CUDA_VISIBLE_DEVICES=-1
         networks:
             - public
-        command: --model_config_file=/models/models.config
+        command: --model_config_file=/models/models.config --per_process_gpu_memory_fraction=0.2
 
 secrets:
   DB:
