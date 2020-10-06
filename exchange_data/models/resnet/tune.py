@@ -97,7 +97,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return lock_name
 
     def run(self, *args):
-        retry_relay = 40
+        retry_relay = 4
 
         try:
             if self.run_count > 1:

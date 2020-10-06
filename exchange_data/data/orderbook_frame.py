@@ -94,7 +94,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         orderbook_img = orderbook_img / self.quantile
 
-
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
 
         df['orderbook_img'] = [
