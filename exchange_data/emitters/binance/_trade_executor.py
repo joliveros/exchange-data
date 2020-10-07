@@ -270,7 +270,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def position(self) -> Positions:
         df = BackTest(
             database_name=self.database_name,
-            depth=40,
             interval='2m',
             model_version=self.model_version,
             sequence_length=60,
