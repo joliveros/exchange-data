@@ -5,7 +5,6 @@ import shutil
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
-from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
 from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
@@ -57,6 +56,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         StudyWrapper.__init__(self, **kwargs)
 
+        self.hparams = None
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
@@ -66,10 +66,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
-
-        self.train_df = self.label_positive_change()
-
-        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
 
         self.study.optimize(self.run, n_trials=session_limit)
 
@@ -115,17 +111,25 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def _run(self, trial: Trial):
         self.trial = trial
-        self.backtest.trial = trial
 
         tf.keras.backend.clear_session()
 
         hparams = dict(
+            depth=trial.suggest_int('depth', 4, 40),
             flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
+            group_by_min=trial.suggest_int('group_by_min', 1, 12),
             learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.1),
-            round_decimals=trial.suggest_int('round_decimals', 2, 10),
-            group_by_min=trial.suggest_int('group_by_min', 1, 12)
+            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
+            round_decimals=trial.suggest_int('round_decimals', 2, 10)
         )
+        self.output_depth = hparams.get('depth')
+
+        self.hparams = hparams
+
+        depth = self.hparams.get('depth')
+        self._kwargs['depth'] = depth
+
+        self.train_df = self.label_positive_change()
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
@@ -151,14 +155,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             params = {
                 'epochs': 1,
                 'batch_size': 2,
-                'clear': True,
+                'clear': False,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                # 'learning_rate': 0.021332,
-                'levels': 40,
-                # 'seed': 216,
                 'symbol': self.symbol,
                 'sequence_length': self.sequence_length
             }
@@ -166,6 +167,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             hp.hparams(hparams, trial_id=str(trial.number))
 
             hparams = {**params, **hparams}
+
+            self.hparams = hparams
 
             model = ModelTrainer(**hparams)
             result = model.run()
@@ -185,6 +188,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return re.match(r'.+\/(\d+)$', self.exported_model_path).group(1)
 
     def run_backtest(self):
+        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+
+        self.backtest.trial = self.trial
+
         with tf.summary.create_file_writer(self.run_dir).as_default():
             trial = self.trial
             exported_model_path = self.exported_model_path
