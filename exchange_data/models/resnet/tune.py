@@ -99,7 +99,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             if self.run_count > 1:
                 t.sleep(retry_relay)
             with RedLock(self.train_lock, retry_delay=timeparse('1m'),
-                         retry_times=120, ttl=timeparse('1h') * 1000):
+                         retry_times=120*1000, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
@@ -116,10 +116,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             depth=trial.suggest_int('depth', 4, 40),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.3),
             # group_by=trial.suggest_int('group_by', 1, 6),
-            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.1),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
+            learning_rate=trial.suggest_float('learning_rate', 0.009, 0.0144),
+            relu_alpha=trial.suggest_float('relu_alpha', 0.063, 0.33),
             # round_decimals=trial.suggest_int('round_decimals', 1, 6)
         )
 
@@ -165,7 +165,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             params = {
                 'epochs': 1,
                 'batch_size': 2,
-                'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
@@ -183,6 +182,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
             model = ModelTrainer(**hparams)
             result = model.run()
+
+            self.model_dir = model.model_dir
+
             accuracy = result.get('accuracy')
             global_step = result.get('global_step')
             self.exported_model_path = result.get('exported_model_path')
@@ -223,6 +225,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 alog.info('## deleting trial ###')
                 alog.info(exported_model_path)
                 shutil.rmtree(self.run_dir)
+                shutil.rmtree(self.model_dir)
                 shutil.rmtree(exported_model_path, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
