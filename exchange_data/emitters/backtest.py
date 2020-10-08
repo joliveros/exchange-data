@@ -28,6 +28,7 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
 
         self.capital = 1.0
         df = self.frame.copy()
+
         df.reset_index(drop=False, inplace=True)
         df = df.apply(self.prediction, axis=1)
         df['capital'] = self.capital

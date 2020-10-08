@@ -260,7 +260,15 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @property
     def model_params(self):
-        return self.trial_params['_params']
+        params = self.trial_params['_params']
+
+        if 'group_by' in params:
+            group_by = params['group_by']
+            params['group_by'] = f'{group_by}m'
+
+        alog.info(alog.pformat(params))
+
+        return params
 
     @model_version.setter
     def model_version(self, value):

@@ -93,7 +93,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return lock_name
 
     def run(self, *args):
-        retry_relay = 4
+        retry_relay = 6
 
         try:
             if self.run_count > 1:
@@ -117,17 +117,24 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         hparams = dict(
             depth=trial.suggest_int('depth', 4, 40),
             flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
-            group_by_min=trial.suggest_int('group_by_min', 1, 12),
+            # group_by=trial.suggest_int('group_by', 1, 6),
             learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.1),
             relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
-            round_decimals=trial.suggest_int('round_decimals', 2, 10)
+            # round_decimals=trial.suggest_int('round_decimals', 1, 6)
         )
+
         self.output_depth = hparams.get('depth')
+
+        group_by = 4
+
+        self.group_by_min = group_by
+        self.group_by = f'{group_by}m'
 
         self.hparams = hparams
 
         depth = self.hparams.get('depth')
         self._kwargs['depth'] = depth
+        self._kwargs['group_by'] = self.group_by
 
         self.train_df = self.label_positive_change()
 
@@ -152,16 +159,20 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
+            alog.info(train_df)
+            alog.info(eval_df)
+
             params = {
                 'epochs': 1,
                 'batch_size': 2,
-                'clear': False,
+                'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
                 'symbol': self.symbol,
-                'sequence_length': self.sequence_length
+                'sequence_length': self.sequence_length,
+                'round_decimals': 2
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
