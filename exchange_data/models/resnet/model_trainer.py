@@ -17,6 +17,8 @@ from exchange_data.models.resnet.model import Model
 
 
 class ModelTrainer(object):
+    model_dir = None
+
     def __init__(self, **kwargs):
         alog.info(alog.pformat(kwargs))
         self.kwargs = kwargs
@@ -32,7 +34,6 @@ class ModelTrainer(object):
             train_df,
             eval_df,
             batch_size,
-            clear,
             directory,
             epochs,
             export_model,
@@ -45,13 +46,7 @@ class ModelTrainer(object):
         ):
 
         base_model_dir = f'{Path.home()}/.exchange-data/models/resnet'
-        model_dir = f'{base_model_dir}/{directory}'
-
-        if clear:
-            try:
-                shutil.rmtree(base_model_dir)
-            except Exception:
-                pass
+        self.model_dir = f'{base_model_dir}/{directory}'
 
         model = Model(
             depth=depth,
@@ -70,7 +65,7 @@ class ModelTrainer(object):
 
         resnet_estimator = model_to_estimator(
             keras_model=model,
-            model_dir=model_dir,
+            model_dir=self.model_dir,
             checkpoint_format='saver',
             config=run_config,
         )
