@@ -25,7 +25,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
-    filters=1,
+    filters=2,
     inception_units=2,
     lstm_units=8,
     relu_alpha=0.01,

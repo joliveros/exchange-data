@@ -93,13 +93,13 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return lock_name
 
     def run(self, *args):
-        retry_relay = 6
+        retry_relay = 4
 
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
-            with RedLock(self.train_lock, retry_delay=timeparse('1m'),
-                         retry_times=120*1000, ttl=timeparse('1h') * 1000):
+            with RedLock(self.train_lock, retry_delay=timeparse('5s'),
+                         retry_times=12, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
@@ -115,12 +115,12 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            depth=trial.suggest_int('depth', 4, 40),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.3),
+            depth=trial.suggest_int('depth', 30, 75),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.99, 1.115),
             # group_by=trial.suggest_int('group_by', 1, 6),
-            learning_rate=trial.suggest_float('learning_rate', 0.009, 0.0144),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.063, 0.33),
-            # round_decimals=trial.suggest_int('round_decimals', 1, 6)
+            learning_rate=trial.suggest_float('learning_rate', 0.0123, 0.0143),
+            relu_alpha=trial.suggest_float('relu_alpha', 0.15, 0.32),
+            round_decimals=trial.suggest_int('round_decimals', 1, 2)
         )
 
         self.output_depth = hparams.get('depth')
@@ -171,7 +171,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'symbol': self.symbol,
                 'sequence_length': self.sequence_length,
-                'round_decimals': 2
+                # 'round_decimals': 2
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
