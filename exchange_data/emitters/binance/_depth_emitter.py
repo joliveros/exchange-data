@@ -60,7 +60,7 @@ class DepthEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        self.on('30s', self.check_queues)
+        self.on('5s', self.check_queues)
         self.check_queues()
 
     def check_queues(self, timestamp=None):
@@ -204,7 +204,7 @@ class DepthEmitter(Messenger):
             )))
 
     def start(self):
-        self.sub(['2s', '30s', 'remove_symbol'])
+        self.sub(['5s', 'remove_symbol'])
 
 
 @click.command()
