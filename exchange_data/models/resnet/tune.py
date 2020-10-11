@@ -115,12 +115,15 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            depth=trial.suggest_int('depth', 30, 75),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.99, 1.115),
             # group_by=trial.suggest_int('group_by', 1, 6),
-            learning_rate=trial.suggest_float('learning_rate', 0.0123, 0.0143),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.15, 0.32),
-            round_decimals=trial.suggest_int('round_decimals', 1, 2)
+            # round_decimals=trial.suggest_int('round_decimals', 3, 7),
+            # depth=trial.suggest_int('depth', 71, 90),
+            depth=72,
+            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.102),
+            learning_rate=trial.suggest_float('learning_rate', 0.0042,
+                                              0.018125),
+            # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
+            relu_alpha=0.294
         )
 
         self.output_depth = hparams.get('depth')
@@ -171,7 +174,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'symbol': self.symbol,
                 'sequence_length': self.sequence_length,
-                # 'round_decimals': 2
+                'round_decimals': 3
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -237,8 +240,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         tf.config.set_logical_device_configuration(
             physical_devices[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=100),
-             tf.config.LogicalDeviceConfiguration(memory_limit=100)])
+            [tf.config.LogicalDeviceConfiguration(memory_limit=250),
+             tf.config.LogicalDeviceConfiguration(memory_limit=250)])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
@@ -253,6 +256,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=60, type=int)
+@click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
