@@ -61,7 +61,9 @@ class PredictionBase(object):
             headers=headers
         )
 
-        predictions = json.loads(json_response.text)['predictions']
+        data = json.loads(json_response.text)
+
+        predictions = data['predictions']
 
         max_index = np.argmax(predictions[0])
 

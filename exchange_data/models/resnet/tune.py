@@ -250,7 +250,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.command()
 @click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
-@click.option('--depth', '-d', default=40, type=int)
+@click.option('--depth', '-d', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
