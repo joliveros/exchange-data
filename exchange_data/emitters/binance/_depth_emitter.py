@@ -73,7 +73,15 @@ class DepthEmitter(Messenger):
             self.remove_cache(symbol)
 
         if len(self.symbols_queue) > 0:
-            symbol = self.symbols_queue.pop()
+            self.add_next_cache()
+            self.add_next_cache()
+            self.add_next_cache()
+            self.add_next_cache()
+
+    def add_next_cache(self):
+        symbol = self.symbols_queue.pop()
+
+        if symbol:
             alog.info(f'## take next {symbol} ##')
             self.add_cache(symbol)
 
