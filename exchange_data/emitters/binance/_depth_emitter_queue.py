@@ -4,7 +4,7 @@ from collections import Counter
 from binance.client import Client
 from binance.depthcache import DepthCacheManager
 from binance.exceptions import BinanceAPIException
-from cached_property import cached_property
+from cached_property import cached_property, cached_property_with_ttl
 from datetime import timedelta, datetime
 
 from redlock import RedLock, RedLockError
@@ -31,7 +31,6 @@ class DepthEmitterQueue(Messenger):
 
         super().__init__(**kwargs)
 
-        self.symbols = self.get_symbols()
         self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
         self.remove_symbols_queue = Set(key='remove_symbols_queue',
                                         redis=self.redis_client)
@@ -43,6 +42,10 @@ class DepthEmitterQueue(Messenger):
         self.on('symbol_timeout', self.symbol_timeout)
 
         self.check_symbol_timeout(None)
+
+    @cached_property_with_ttl(ttl=60)
+    def symbols(self):
+        return self.get_symbols()
 
     def symbol_timeout(self, data):
         symbol = data['symbol']
