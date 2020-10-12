@@ -56,7 +56,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    @cached_property
+    @property
     def frame(self):
         frames = []
 
@@ -193,7 +193,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
 @click.command()
 @click.option('--database_name', '-d', default='binance', type=str)
-@click.option('--depth', default=40, type=int)
+@click.option('--depth', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
@@ -207,9 +207,9 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 def main(**kwargs):
     df = OrderBookFrame(**kwargs).frame
 
-    # pd.set_option('display.max_rows', len(df) + 1)
+    pd.set_option('display.max_rows', len(df) + 1)
 
-    # alog.info(df)
+    alog.info(df)
 
 
 if __name__ == '__main__':

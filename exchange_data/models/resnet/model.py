@@ -23,9 +23,9 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 
 def Model(
-    levels,
+    depth,
     sequence_length,
-    filters=1,
+    filters=2,
     inception_units=2,
     lstm_units=8,
     relu_alpha=0.01,
@@ -33,7 +33,7 @@ def Model(
     num_categories=2,
     **kwargs
 ):
-    input_shape = (sequence_length, levels * 2, 1)
+    input_shape = (sequence_length, depth * 2, 1)
     alog.info(input_shape)
 
     inputs = Input(shape=input_shape)
@@ -176,7 +176,7 @@ def conv_block(filters, last_conv, block_n):
 
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
-@click.option('--levels', type=int, default=40)
+@click.option('--depth', type=int, default=40)
 @click.option('--sequence-length', type=int, default=48)
 def main(**kwargs):
     Model(**kwargs)

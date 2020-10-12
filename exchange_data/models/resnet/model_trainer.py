@@ -17,6 +17,8 @@ from exchange_data.models.resnet.model import Model
 
 
 class ModelTrainer(object):
+    model_dir = None
+
     def __init__(self, **kwargs):
         alog.info(alog.pformat(kwargs))
         self.kwargs = kwargs
@@ -32,28 +34,22 @@ class ModelTrainer(object):
             train_df,
             eval_df,
             batch_size,
-            clear,
             directory,
             epochs,
             export_model,
             learning_rate,
-            levels,
+            depth,
             sequence_length,
             seed=None,
             symbol=None,
             **kwargs
         ):
 
-        model_dir = f'{Path.home()}/.exchange-data/models/resnet/{directory}'
-
-        if clear:
-            try:
-                shutil.rmtree(model_dir)
-            except Exception:
-                pass
+        base_model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+        self.model_dir = f'{base_model_dir}/{directory}'
 
         model = Model(
-            levels=levels,
+            depth=depth,
             sequence_length=sequence_length,
             batch_size=batch_size,
             learning_rate=learning_rate,
@@ -69,7 +65,7 @@ class ModelTrainer(object):
 
         resnet_estimator = model_to_estimator(
             keras_model=model,
-            model_dir=model_dir,
+            model_dir=self.model_dir,
             checkpoint_format='saver',
             config=run_config,
         )
@@ -89,7 +85,7 @@ class ModelTrainer(object):
             return tf.data.Dataset.from_generator(
                 iterate_rows(train_df),
                 (tf.float32, tf.int32),
-                (tf.TensorShape([sequence_length, levels * 2, 1]),
+                (tf.TensorShape([sequence_length, depth * 2, 1]),
                  tf.TensorShape([]))
             ) \
                 .cache() \
@@ -99,7 +95,7 @@ class ModelTrainer(object):
             return tf.data.Dataset.from_generator(
                 iterate_rows(eval_df),
                 (tf.float32, tf.int32),
-                (tf.TensorShape([sequence_length, levels * 2, 1]),
+                (tf.TensorShape([sequence_length, depth * 2, 1]),
                  tf.TensorShape([]))
             ) \
                 .batch(1)
@@ -128,9 +124,9 @@ class ModelTrainer(object):
 
         def serving_input_receiver_fn():
             inputs = {
-              'input_1': tf.compat.v1.placeholder(
-                  tf.float32, [1, sequence_length, levels * 2, 1]
-              ),
+                'input_1': tf.compat.v1.placeholder(
+                    tf.float32, [1, sequence_length, depth * 2, 1]
+                ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
@@ -144,7 +140,7 @@ class ModelTrainer(object):
                 pass
 
             exp_path = resnet_estimator.export_saved_model(export_dir,
-                                                serving_input_receiver_fn)
+                                                           serving_input_receiver_fn)
 
             result['exported_model_path'] = exp_path.decode()
 
@@ -153,7 +149,7 @@ class ModelTrainer(object):
 
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
-@click.option('--levels', type=int, default=40)
+@click.option('--depth', type=int, default=40)
 @click.option('--sequence-length', type=int, default=48)
 @click.option('--take', type=int, default=1000)
 @click.option('--take-ratio', type=float, default=0.5)
