@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from math import floor
 
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
@@ -77,6 +78,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         if tick:
             alog.info(self.position)
+            self.trade()
             sys.exit(0)
 
         self.on(tick_interval, self.trade)
@@ -176,6 +178,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         quantity = self.client.get_asset_balance(self.asset_name)['free']
 
+        quantity = floor(Decimal(quantity) / Decimal(self.step_size))
+
         quantity = Decimal(quantity)
 
         return quantity
@@ -262,15 +266,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @property
     def model_params(self):
-        alog.info(alog.pformat(self.trial_params))
-
         params = self.trial_params['_params']
 
         if 'group_by' in params:
             group_by = params['group_by']
             params['group_by'] = f'{group_by}m'
-
-        alog.info(alog.pformat(params))
 
         return params
 
