@@ -64,6 +64,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         self.split_gpu()
 
+        self.train_df = self.label_positive_change()
+
+        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
@@ -118,28 +122,18 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             # group_by=trial.suggest_int('group_by', 1, 6),
             # round_decimals=trial.suggest_int('round_decimals', 3, 7),
             # depth=trial.suggest_int('depth', 71, 90),
-            depth=72,
             flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.102),
             learning_rate=trial.suggest_float('learning_rate', 0.0042,
                                               0.018125),
             # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
-            relu_alpha=0.294
         )
-
-        self.output_depth = hparams.get('depth')
-
         group_by = 4
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
 
         self.hparams = hparams
-
-        depth = self.hparams.get('depth')
-        self._kwargs['depth'] = depth
         self._kwargs['group_by'] = self.group_by
-
-        self.train_df = self.label_positive_change()
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
@@ -166,15 +160,16 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             alog.info(eval_df)
 
             params = {
-                'epochs': 1,
                 'batch_size': 2,
                 'directory': trial.number,
-                'export_model': True,
-                'train_df': train_df,
+                'epochs': 1,
                 'eval_df': eval_df,
-                'symbol': self.symbol,
+                'export_model': True,
+                'relu_alpha': 0.294,
+                'round_decimals': 1,
                 'sequence_length': self.sequence_length,
-                'round_decimals': 3
+                'symbol': self.symbol,
+                'train_df': train_df,
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -204,8 +199,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return re.match(r'.+\/(\d+)$', self.exported_model_path).group(1)
 
     def run_backtest(self):
-        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
-
         self.backtest.trial = self.trial
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
@@ -255,7 +248,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
-@click.option('--sequence-length', '-l', default=60, type=int)
+@click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--macd-session-limit', default=200, type=int)
