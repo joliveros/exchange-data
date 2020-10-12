@@ -207,9 +207,10 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 def main(**kwargs):
     df = OrderBookFrame(**kwargs).frame
 
-    pd.set_option('display.max_rows', len(df) + 1)
+    # pd.set_option('display.max_rows', len(df) + 1)
 
     alog.info(df)
+    alog.info(alog.pformat(df.iloc[-1].orderbook_img.tolist()))
 
 
 if __name__ == '__main__':
