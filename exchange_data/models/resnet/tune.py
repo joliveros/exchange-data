@@ -161,6 +161,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
             params = {
                 'batch_size': 2,
+                'depth': self.output_depth,
                 'directory': trial.number,
                 'epochs': 1,
                 'eval_df': eval_df,
