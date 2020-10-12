@@ -53,6 +53,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         base_asset,
         symbol,
         trading_enabled,
+        depth,
         tick=False,
         fee=0.0075,
         model_version=None,
@@ -62,6 +63,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         super().__init__(
             **kwargs
         )
+        self.depth = depth
         self.tick = tick
         self.symbol = f'{symbol}{base_asset}'
         self.trading_enabled = trading_enabled
@@ -260,6 +262,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @property
     def model_params(self):
+        alog.info(alog.pformat(self.trial_params))
+
         params = self.trial_params['_params']
 
         if 'group_by' in params:
@@ -278,10 +282,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def position(self) -> Positions:
         df = BackTest(
             database_name=self.database_name,
+            depth=self.depth,
             interval='2m',
             model_version=self.model_version,
-            sequence_length=60,
             quantile=self.quantile,
+            sequence_length=48,
             symbol=self.symbol,
             window_size='3m',
             **self.model_params
@@ -336,6 +341,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--base-asset', '-b', default='BNB', type=str)
 @click.option('--tick-interval', '-t', default='1m', type=str)
 @click.option('--interval', '-i', default='2m', type=str)
+@click.option('--depth', default=72, type=int)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--tick', is_flag=True)
