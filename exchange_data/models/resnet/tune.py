@@ -5,7 +5,6 @@ import shutil
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
-from exchange_data.data.macd_orderbook_frame import MacdOrderBookFrame
 from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
@@ -57,6 +56,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         StudyWrapper.__init__(self, **kwargs)
 
+        self.hparams = None
         self.num_locks = num_locks
         self.current_lock_ix = 0
         self.run_count = 0
@@ -66,10 +66,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
-
-        self.train_df = self.label_positive_change()
-
-        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
 
         self.study.optimize(self.run, n_trials=session_limit)
 
@@ -102,8 +98,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
-            with RedLock(self.train_lock, retry_delay=timeparse('1m'),
-                         retry_times=120, ttl=timeparse('1h') * 1000):
+            with RedLock(self.train_lock, retry_delay=timeparse('5s'),
+                         retry_times=12, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
@@ -115,17 +111,35 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def _run(self, trial: Trial):
         self.trial = trial
-        self.backtest.trial = trial
 
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 0.8, 1.2),
-            relu_alpha=trial.suggest_float('relu_alpha', 0.001, 1.0),
-            learning_rate=trial.suggest_float('learning_rate', 0.00001, 0.1),
-            round_decimals=trial.suggest_int('round_decimals', 2, 10),
-            group_by_min=trial.suggest_int('group_by_min', 1, 12)
+            # group_by=trial.suggest_int('group_by', 1, 6),
+            # round_decimals=trial.suggest_int('round_decimals', 3, 7),
+            # depth=trial.suggest_int('depth', 71, 90),
+            depth=72,
+            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.102),
+            learning_rate=trial.suggest_float('learning_rate', 0.0042,
+                                              0.018125),
+            # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
+            relu_alpha=0.294
         )
+
+        self.output_depth = hparams.get('depth')
+
+        group_by = 4
+
+        self.group_by_min = group_by
+        self.group_by = f'{group_by}m'
+
+        self.hparams = hparams
+
+        depth = self.hparams.get('depth')
+        self._kwargs['depth'] = depth
+        self._kwargs['group_by'] = self.group_by
+
+        self.train_df = self.label_positive_change()
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
@@ -148,27 +162,32 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
 
+            alog.info(train_df)
+            alog.info(eval_df)
+
             params = {
                 'epochs': 1,
                 'batch_size': 2,
-                'clear': True,
                 'directory': trial.number,
                 'export_model': True,
                 'train_df': train_df,
                 'eval_df': eval_df,
-                # 'learning_rate': 0.021332,
-                'levels': 40,
-                # 'seed': 216,
                 'symbol': self.symbol,
-                'sequence_length': self.sequence_length
+                'sequence_length': self.sequence_length,
+                'round_decimals': 3
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
 
             hparams = {**params, **hparams}
 
+            self.hparams = hparams
+
             model = ModelTrainer(**hparams)
             result = model.run()
+
+            self.model_dir = model.model_dir
+
             accuracy = result.get('accuracy')
             global_step = result.get('global_step')
             self.exported_model_path = result.get('exported_model_path')
@@ -185,6 +204,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return re.match(r'.+\/(\d+)$', self.exported_model_path).group(1)
 
     def run_backtest(self):
+        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+
+        self.backtest.trial = self.trial
+
         with tf.summary.create_file_writer(self.run_dir).as_default():
             trial = self.trial
             exported_model_path = self.exported_model_path
@@ -205,6 +228,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 alog.info('## deleting trial ###')
                 alog.info(exported_model_path)
                 shutil.rmtree(self.run_dir)
+                shutil.rmtree(self.model_dir)
                 shutil.rmtree(exported_model_path, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
@@ -216,8 +240,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         tf.config.set_logical_device_configuration(
             physical_devices[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=100),
-             tf.config.LogicalDeviceConfiguration(memory_limit=100)])
+            [tf.config.LogicalDeviceConfiguration(memory_limit=250),
+             tf.config.LogicalDeviceConfiguration(memory_limit=250)])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
@@ -226,12 +250,13 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.command()
 @click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
-@click.option('--depth', '-d', default=40, type=int)
+@click.option('--depth', '-d', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=60, type=int)
+@click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
