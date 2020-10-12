@@ -240,7 +240,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             )
             alog.info(alog.pformat(response))
 
-    @cached_property_with_ttl(ttl=timeparse('15m'))
+    @cached_property_with_ttl(ttl=timeparse('30s'))
     def trial_params(self):
         study = StudyWrapper(self.symbol)
 
