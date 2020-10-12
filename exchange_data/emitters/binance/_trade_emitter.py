@@ -122,8 +122,15 @@ class TradeEmitter(Messenger):
         queue = self.symbols_queue
 
         if len(queue) > 0:
-            symbol = self.next_symbol(queue)
+            self.add_next_trade_socket(queue)
+            self.add_next_trade_socket(queue)
+            self.add_next_trade_socket(queue)
+            self.add_next_trade_socket(queue)
 
+    def add_next_trade_socket(self, queue):
+        symbol = self.next_symbol(queue)
+
+        if symbol:
             alog.info(f'## take next {symbol} ##')
             self.add_trade_socket(symbol)
 
