@@ -25,6 +25,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    num_conv=2,
     filters=2,
     inception_units=2,
     lstm_units=8,
@@ -40,7 +41,9 @@ def Model(
 
     filters = filters * 16
 
-    conv = TimeDistributed(ResNetTS(input_shape[1:], filters, num_categories))(inputs)
+    conv = TimeDistributed(ResNetTS(input_shape[1:], filters, num_categories,
+                                    num_conv
+                                    ))(inputs)
 
     inception_units = inception_units * 16
     lstm_units = lstm_units * 16
@@ -114,7 +117,11 @@ def Model(
     )
     return model
 
-def ResNetTS(input_shape, filters=64, num_categories=2):
+
+def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
+    if num_conv < 1:
+        raise Exception()
+
     input = Input(input_shape)
     conv = input
 
@@ -122,7 +129,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
-    for i in range(0, 4):
+    for i in range(0, num_conv):
         conv = conv_block(filters, conv, i)
 
     gap = GlobalAveragePooling1D()(conv)
