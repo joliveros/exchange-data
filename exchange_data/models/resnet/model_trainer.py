@@ -59,7 +59,7 @@ class ModelTrainer(object):
         model.summary()
 
         run_config = RunConfig(
-            save_checkpoints_secs=timeparse('3m'),
+            save_checkpoints_secs=timeparse('2h'),
             tf_random_seed=seed
         )
 
