@@ -102,7 +102,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
-            with RedLock(self.train_lock, retry_delay=timeparse('5s'),
+            with RedLock(self.train_lock, retry_delay=timeparse('15s'),
                          retry_times=12, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
