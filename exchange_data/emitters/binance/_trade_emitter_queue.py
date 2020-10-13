@@ -26,7 +26,7 @@ class TradeEmitterQueue(Messenger):
         self.symbol_hosts.clear()
         self.symbol_hosts_timeout = {}
 
-        self.on('30s', self.check_symbol_timeout)
+        self.on('1m', self.check_symbol_timeout)
         self.on('trade_symbol_timeout', self.symbol_timeout)
 
         self.check_symbol_timeout(None)
@@ -156,7 +156,7 @@ class TradeEmitterQueue(Messenger):
         return symbol_names
 
     def start(self):
-        self.sub(['30s', 'trade_symbol_timeout'])
+        self.sub(['1m', 'trade_symbol_timeout'])
 
 
 @click.command()
