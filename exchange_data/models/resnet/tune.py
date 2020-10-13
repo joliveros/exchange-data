@@ -122,9 +122,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             # group_by=trial.suggest_int('group_by', 1, 6),
             # round_decimals=trial.suggest_int('round_decimals', 3, 7),
             # depth=trial.suggest_int('depth', 71, 90),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.102),
-            learning_rate=trial.suggest_float('learning_rate', 0.0042,
-                                              0.018125),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.20),
+            learning_rate=trial.suggest_float('learning_rate', 0.0001, 0.1),
+            num_conv=trial.suggest_int('num_conv', 1, 4),
             # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
         )
         group_by = 4
@@ -167,7 +167,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
-                'round_decimals': 1,
+                'round_decimals': 3,
                 'sequence_length': self.sequence_length,
                 'symbol': self.symbol,
                 'train_df': train_df,
@@ -234,8 +234,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         tf.config.set_logical_device_configuration(
             physical_devices[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=250),
-             tf.config.LogicalDeviceConfiguration(memory_limit=250)])
+            [tf.config.LogicalDeviceConfiguration(memory_limit=300),
+             tf.config.LogicalDeviceConfiguration(memory_limit=300)])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
