@@ -2,7 +2,7 @@
 
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
-from cached_property import cached_property
+from cached_property import cached_property, cached_property_with_ttl
 from collections import Counter
 from datetime import timedelta, datetime
 from exchange_data.emitters import Messenger
@@ -22,8 +22,6 @@ class TradeEmitterQueue(Messenger):
 
         super().__init__(**kwargs)
 
-        self.symbols = self.get_symbols()
-
         self.remove_symbols_queue.clear()
         self.symbol_hosts.clear()
         self.symbol_hosts_timeout = {}
@@ -32,6 +30,10 @@ class TradeEmitterQueue(Messenger):
         self.on('trade_symbol_timeout', self.symbol_timeout)
 
         self.check_symbol_timeout(None)
+
+    @cached_property_with_ttl(ttl=120)
+    def symbols(self):
+        return self.get_symbols()
 
     @property
     def symbol_hosts(self):
