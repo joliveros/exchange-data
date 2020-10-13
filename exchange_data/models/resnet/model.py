@@ -122,7 +122,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2):
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
-    for i in range(0, 5):
+    for i in range(0, 4):
         conv = conv_block(filters, conv, i)
 
     gap = GlobalAveragePooling1D()(conv)
