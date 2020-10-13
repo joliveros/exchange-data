@@ -119,13 +119,9 @@ class TradeEmitter(Messenger):
         for symbol in self.remove_symbols_queue:
             self.remove_socket(symbol)
 
-        queue = self.symbols_queue
-
-        if len(queue) > 0:
-            self.add_next_trade_socket(queue)
-            self.add_next_trade_socket(queue)
-            self.add_next_trade_socket(queue)
-            self.add_next_trade_socket(queue)
+        if len(self.symbols_queue) > 0:
+            for i in range(0, 16):
+                self.add_next_trade_socket(self.symbols_queue)
 
     def add_next_trade_socket(self, queue):
         symbol = self.next_symbol(queue)
