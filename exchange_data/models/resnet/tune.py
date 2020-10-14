@@ -122,9 +122,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             # group_by=trial.suggest_int('group_by', 1, 6),
             # round_decimals=trial.suggest_int('round_decimals', 3, 7),
             # depth=trial.suggest_int('depth', 71, 90),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.20),
-            learning_rate=trial.suggest_float('learning_rate', 0.0001, 0.1),
-            num_conv=trial.suggest_int('num_conv', 1, 4),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.02, 1.034),
+            learning_rate=trial.suggest_float('learning_rate', 0.016, 0.02),
+            num_conv=trial.suggest_int('num_conv', 5, 8),
             # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
         )
         group_by = 4
