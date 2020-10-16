@@ -234,8 +234,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         tf.config.set_logical_device_configuration(
             physical_devices[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=300),
-             tf.config.LogicalDeviceConfiguration(memory_limit=300)])
+            [
+                tf.config.LogicalDeviceConfiguration(memory_limit=3000),
+                tf.config.LogicalDeviceConfiguration(memory_limit=3000),
+             ])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
