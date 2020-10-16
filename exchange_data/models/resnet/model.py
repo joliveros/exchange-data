@@ -26,7 +26,7 @@ def Model(
     depth,
     sequence_length,
     num_conv=2,
-    filters=2,
+    filters=1,
     inception_units=2,
     lstm_units=8,
     relu_alpha=0.01,
