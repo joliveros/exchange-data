@@ -125,6 +125,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             flat_ratio=trial.suggest_float('flat_ratio', 1.02, 1.034),
             learning_rate=trial.suggest_float('learning_rate', 0.016, 0.02),
             num_conv=trial.suggest_int('num_conv', 5, 8),
+            base_filter_size=trial.suggest_int('base_filter_size', 4, 24),
             # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
         )
         group_by = 4
