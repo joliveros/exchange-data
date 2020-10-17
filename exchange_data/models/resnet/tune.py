@@ -202,6 +202,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     def run_backtest(self):
         self.backtest.trial = self.trial
 
+        tf.keras.backend.clear_session()
+
         with tf.summary.create_file_writer(self.run_dir).as_default():
             trial = self.trial
             exported_model_path = self.exported_model_path
@@ -235,8 +237,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.config.set_logical_device_configuration(
             physical_devices[0],
             [
-                tf.config.LogicalDeviceConfiguration(memory_limit=3000),
-                tf.config.LogicalDeviceConfiguration(memory_limit=3000),
+                tf.config.LogicalDeviceConfiguration(memory_limit=2800),
+                tf.config.LogicalDeviceConfiguration(memory_limit=2800),
              ])
 
         logical_devices = tf.config.list_logical_devices('GPU')
