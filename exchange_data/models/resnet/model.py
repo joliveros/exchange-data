@@ -27,6 +27,7 @@ def Model(
     sequence_length,
     num_conv=2,
     filters=1,
+    base_filter_size=16,
     inception_units=2,
     lstm_units=8,
     relu_alpha=0.01,
@@ -39,14 +40,14 @@ def Model(
 
     inputs = Input(shape=input_shape)
 
-    filters = filters * 16
+    filters = filters * base_filter_size
 
     conv = TimeDistributed(ResNetTS(input_shape[1:], filters, num_categories,
                                     num_conv
                                     ))(inputs)
 
-    inception_units = inception_units * 16
-    lstm_units = lstm_units * 16
+    inception_units = inception_units * base_filter_size
+    lstm_units = lstm_units * base_filter_size
 
     alog.info(conv.shape)
 
