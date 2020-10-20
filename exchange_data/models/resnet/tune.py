@@ -119,14 +119,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            # group_by=trial.suggest_int('group_by', 1, 6),
-            # round_decimals=trial.suggest_int('round_decimals', 3, 7),
-            # depth=trial.suggest_int('depth', 71, 90),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.02, 1.034),
-            learning_rate=trial.suggest_float('learning_rate', 0.016, 0.02),
-            num_conv=trial.suggest_int('num_conv', 5, 8),
-            base_filter_size=trial.suggest_int('base_filter_size', 4, 24),
-            # relu_alpha=trial.suggest_float('relu_alpha', 0.18, 0.31),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.034),
+            learning_rate=trial.suggest_float('learning_rate', 0.000001, 0.01),
         )
         group_by = 4
 
@@ -164,14 +158,16 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 1,
+                'epochs': 2,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
                 'round_decimals': 3,
                 'sequence_length': self.sequence_length,
+                'base_filter_size': 16,
                 'symbol': self.symbol,
                 'train_df': train_df,
+                'num_conv': 7
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -238,13 +234,13 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.config.set_logical_device_configuration(
             physical_devices[0],
             [
-                tf.config.LogicalDeviceConfiguration(memory_limit=2800),
-                tf.config.LogicalDeviceConfiguration(memory_limit=2800),
+                tf.config.LogicalDeviceConfiguration(memory_limit=2300),
+                #tf.config.LogicalDeviceConfiguration(memory_limit=2000),
              ])
 
-        logical_devices = tf.config.list_logical_devices('GPU')
+        #logical_devices = tf.config.list_logical_devices('GPU')
 
-        assert len(logical_devices) == len(physical_devices) + 1
+        #assert len(logical_devices) == len(physical_devices) + 1
 
 @click.command()
 @click.option('--backtest-interval', '-b', default='15m', type=str)
