@@ -44,6 +44,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def __init__(self, volatility_intervals, session_limit,
                  macd_session_limit, backtest_interval,
+                 memory,
                  num_locks=2,
                  **kwargs):
 
@@ -55,7 +56,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
-
+        self.memory = memory
         self.hparams = None
         self.num_locks = num_locks
         self.current_lock_ix = 0
@@ -120,7 +121,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.034),
-            learning_rate=trial.suggest_float('learning_rate', 0.000001, 0.01),
+            learning_rate=trial.suggest_float('learning_rate', 0.019,
+                                              0.3),
         )
         group_by = 4
 
@@ -155,10 +157,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             alog.info(eval_df)
 
             params = {
-                'batch_size': 2,
+                'batch_size': 4,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 2,
+                'epochs': 1,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
@@ -167,7 +169,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'base_filter_size': 16,
                 'symbol': self.symbol,
                 'train_df': train_df,
-                'num_conv': 7
+                'num_conv': 6
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -234,8 +236,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.config.set_logical_device_configuration(
             physical_devices[0],
             [
-                tf.config.LogicalDeviceConfiguration(memory_limit=2300),
-                #tf.config.LogicalDeviceConfiguration(memory_limit=2000),
+                tf.config.LogicalDeviceConfiguration(memory_limit=self.memory),
              ])
 
         #logical_devices = tf.config.list_logical_devices('GPU')
@@ -248,10 +249,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--depth', '-d', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
-@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--num-locks', '-n', default=2, type=int)
+@click.option('--memory', '-m', default=1000, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
