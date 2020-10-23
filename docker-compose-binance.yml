@@ -6,17 +6,17 @@ networks:
 services:
     emit_depth_0:
         deploy:
-          replicas: 15
-          placement:
+          replicas: 4
+#          placement:
             # constraints: [node.hostname != ip-172-31-19-30]
-            max_replicas_per_node: 15
+            # max_replicas_per_node: 4
           update_config:
-            parallelism: 2 
+            parallelism: 2
             delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py"
+            ./exchange_data/emitters/binance/_depth_emitter.py -n 32"
         environment:
             - LOG_LEVEL=INFO
         networks:
