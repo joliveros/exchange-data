@@ -45,10 +45,11 @@ class NotifyingDepthCacheManager(DepthCacheManager):
 
 
 class DepthEmitter(Messenger):
-    def __init__(self, delay, num_locks=2, **kwargs):
+    def __init__(self, delay, num_symbol_take, num_locks=2, **kwargs):
         super().__init__(**kwargs)
 
         self.delay = timedelta(seconds=timeparse(delay))
+        self.num_symbol_take = num_symbol_take
         self.num_locks = num_locks
         self.last_lock_id = 0
         self.lock = None
@@ -73,10 +74,8 @@ class DepthEmitter(Messenger):
             self.remove_cache(symbol)
 
         if len(self.symbols_queue) > 0:
-            self.add_next_cache()
-            self.add_next_cache()
-            self.add_next_cache()
-            self.add_next_cache()
+            for i in range(0, self.num_symbol_take):
+                self.add_next_cache()
 
     def add_next_cache(self):
         symbol = self.symbols_queue.pop()
@@ -217,7 +216,7 @@ class DepthEmitter(Messenger):
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
-@click.option('--num-locks', '-n', type=int, default=4)
+@click.option('--num-symbol-take', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitter(**kwargs)
     emitter.start()
