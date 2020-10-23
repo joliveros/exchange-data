@@ -44,7 +44,9 @@ class TradeEmitterLock(RedLock):
 
 
 class TradeSocketManager(BinanceSocketManager):
-    def __init__(self, symbol, redis_client, callback, delay, **kwargs):
+    def __init__(self, symbol, redis_client, callback, delay,
+                 **kwargs):
+
         super().__init__(user_timeout=timeparse('5m'), **kwargs)
         self.symbol = symbol
         self.lock = TradeEmitterLock(symbol)
@@ -68,7 +70,6 @@ class TradeSocketManager(BinanceSocketManager):
 
         self.start()
 
-
     @property
     def symbol_hostname(self):
         return self._symbol_hostname(self.symbol)
@@ -90,9 +91,10 @@ class TradeSocketManager(BinanceSocketManager):
 
 
 class TradeEmitter(Messenger):
-    def __init__(self, delay, **kwargs):
+    def __init__(self, delay, num_take_symbols, **kwargs):
         super().__init__(**kwargs)
 
+        self.num_take_symbols = num_take_symbols
         self.delay = timedelta(seconds=timeparse(delay))
         self.last_lock_id = 0
         self.lock = None
@@ -120,7 +122,8 @@ class TradeEmitter(Messenger):
             self.remove_socket(symbol)
 
         if len(self.symbols_queue) > 0:
-            for i in range(0, 16):
+            alog.info(self.num_take_symbols)
+            for i in range(0, self.num_take_symbols):
                 self.add_next_trade_socket(self.symbols_queue)
 
     def add_next_trade_socket(self, queue):
@@ -252,6 +255,7 @@ class TradeEmitter(Messenger):
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
+@click.option('--num_take_symbols', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = TradeEmitter(**kwargs)
     emitter.start()
