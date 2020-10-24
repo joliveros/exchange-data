@@ -20,7 +20,7 @@ services:
             - ${HOME}/.exchange-data/models/:/models
         networks:
             - public
-        command: --model_config_file=/models/models.config --per_process_gpu_memory_fraction=0.02
+        command: --model_config_file=/models/models.config --per_process_gpu_memory_fraction=0.03
 
 secrets:
   DB:

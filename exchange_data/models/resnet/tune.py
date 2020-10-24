@@ -121,10 +121,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.034),
-            learning_rate=trial.suggest_float('learning_rate', 0.019,
-                                              0.3),
+            learning_rate=trial.suggest_float('learning_rate', 0.019, 0.3),
         )
-        group_by = 4
+
+        group_by = 1
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
@@ -164,7 +164,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
-                'round_decimals': 3,
+                'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
                 'base_filter_size': 16,
                 'symbol': self.symbol,
@@ -251,6 +251,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--round-decimals', '-D', default=3, type=int)
 @click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--memory', '-m', default=1000, type=int)
 @click.option('--session-limit', '-s', default=75, type=int)
