@@ -31,7 +31,7 @@ class TradeEmitterQueue(Messenger):
 
         self.check_symbol_timeout(None)
 
-    @cached_property_with_ttl(ttl=120)
+    @cached_property_with_ttl(ttl=60 * 10)
     def symbols(self):
         return self.get_symbols()
 
