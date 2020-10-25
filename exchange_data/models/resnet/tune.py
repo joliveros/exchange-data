@@ -121,7 +121,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.034),
-            learning_rate=trial.suggest_float('learning_rate', 0.019, 0.3),
+            learning_rate=trial.suggest_float('learning_rate', 0.01, 0.125),
         )
 
         group_by = 1

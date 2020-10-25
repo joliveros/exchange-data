@@ -18,7 +18,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_trade_emitter.py -n 32"
+            ./exchange_data/emitters/binance/_trade_emitter.py -n 12"
         environment:
             - LOG_LEVEL=INFO
         networks:
