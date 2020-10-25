@@ -102,7 +102,7 @@ class TradeEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        self.on('5s', self.check_queues)
+        self.on('30s', self.check_queues)
         self.check_queues()
 
     @property
@@ -250,7 +250,7 @@ class TradeEmitter(Messenger):
         )))
 
     def start(self):
-        self.sub(['2s', '5s', 'remove_symbol'])
+        self.sub(['30s', 'remove_symbol'])
 
 
 @click.command()
