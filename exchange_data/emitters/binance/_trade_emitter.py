@@ -102,18 +102,16 @@ class TradeEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        self.on('30s', self.check_queues)
+        self.on('1m', self.check_queues)
         self.check_queues()
 
     @property
     def remove_symbols_queue(self):
-        return Set(key='remove_trade_symbols_queue',
-            redis=self.redis_client)
+        return Set(key='remove_trade_symbols_queue', redis=self.redis_client)
 
     @property
     def symbols_queue(self):
-        return Set(key='trade_symbols_queue',
-            redis=self.redis_client)
+        return Set(key='trade_symbols_queue', redis=self.redis_client)
 
     def check_queues(self, timestamp=None):
         alog.info('### check queues ###')
@@ -123,8 +121,9 @@ class TradeEmitter(Messenger):
 
         if len(self.symbols_queue) > 0:
             for i in range(0, self.num_take_symbols):
-                self.add_next_trade_socket(self.symbols_queue)
-                time.sleep(1)
+                if len(self.symbols_queue) > 0:
+                    self.add_next_trade_socket(self.symbols_queue)
+                    time.sleep(1)
 
     def add_next_trade_socket(self, queue):
         symbol = self.next_symbol(queue)
@@ -141,8 +140,8 @@ class TradeEmitter(Messenger):
             return self.next_symbol(*args)
 
     def _next_symbol(self, queue):
-        with self.take_lock():
-            symbol = queue.pop()
+        # with self.take_lock():
+        symbol = queue.pop()
 
         return symbol
 
@@ -250,7 +249,7 @@ class TradeEmitter(Messenger):
         )))
 
     def start(self):
-        self.sub(['30s', 'remove_symbol'])
+        self.sub(['1m', 'remove_symbol'])
 
 
 @click.command()
