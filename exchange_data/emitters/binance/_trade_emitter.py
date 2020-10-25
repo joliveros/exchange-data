@@ -122,9 +122,9 @@ class TradeEmitter(Messenger):
             self.remove_socket(symbol)
 
         if len(self.symbols_queue) > 0:
-            alog.info(self.num_take_symbols)
             for i in range(0, self.num_take_symbols):
                 self.add_next_trade_socket(self.symbols_queue)
+                time.sleep(1)
 
     def add_next_trade_socket(self, queue):
         symbol = self.next_symbol(queue)

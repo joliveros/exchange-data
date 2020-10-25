@@ -53,9 +53,6 @@ class DepthEmitter(Messenger):
         self.num_locks = num_locks
         self.last_lock_id = 0
         self.lock = None
-        self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
-        self.remove_symbols_queue = Set(key='remove_symbols_queue',
-                                    redis=self.redis_client)
         self.caches = {}
         self.cache_queue = []
 
@@ -63,6 +60,15 @@ class DepthEmitter(Messenger):
 
         self.on('5s', self.check_queues)
         self.check_queues()
+
+    @property
+    def symbols_queue(self):
+        return Set(key='symbols_queue', redis=self.redis_client)
+
+    @property
+    def remove_symbols_queue(self):
+        return Set(key='remove_symbols_queue',
+            redis=self.redis_client)
 
     def check_queues(self, timestamp=None):
         self.purge()
