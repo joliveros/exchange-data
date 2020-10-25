@@ -58,7 +58,7 @@ class DepthEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        self.on('5s', self.check_queues)
+        self.on('1m', self.check_queues)
         self.check_queues()
 
     @property
@@ -82,6 +82,7 @@ class DepthEmitter(Messenger):
         if len(self.symbols_queue) > 0:
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
+                time.sleep(1)
 
     def add_next_cache(self):
         symbol = self.symbols_queue.pop()
@@ -217,7 +218,7 @@ class DepthEmitter(Messenger):
             )))
 
     def start(self):
-        self.sub(['5s', 'remove_symbol'])
+        self.sub(['1m', 'remove_symbol'])
 
 
 @click.command()
