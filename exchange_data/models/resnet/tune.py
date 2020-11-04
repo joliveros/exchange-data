@@ -124,7 +124,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             learning_rate=trial.suggest_float('learning_rate', 0.01, 0.125),
         )
 
-        group_by = 1
+        group_by = 4
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
@@ -169,7 +169,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'base_filter_size': 16,
                 'symbol': self.symbol,
                 'train_df': train_df,
-                'num_conv': 6
+                'num_conv': 3
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))

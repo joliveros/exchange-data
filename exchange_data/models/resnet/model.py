@@ -52,31 +52,31 @@ def Model(
     alog.info(conv.shape)
 
     # build the inception module
-    # convsecond_1 = Conv1D(inception_units, 1, padding='same')(conv)
-    # convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
-    # convsecond_1 = Conv1D(inception_units, 3, padding='same')(convsecond_1)
-    # convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
-    #
-    # alog.info(convsecond_1.shape)
-    #
-    # convsecond_2 = Conv1D(inception_units, 1, padding='same')(conv)
-    # convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
-    # convsecond_2 = Conv1D(inception_units, 5, padding='same')(convsecond_2)
-    # convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
-    #
-    # alog.info(convsecond_2.shape)
-    #
-    # convsecond_3 = tf.keras.layers.MaxPool1D(3, strides=1, padding='same')(
-    #     conv)
-    # convsecond_3 = Conv1D(inception_units, 1, padding='same')(convsecond_3)
-    # convsecond_3 = LeakyReLU(alpha=relu_alpha)(convsecond_3)
-    #
-    # alog.info(convsecond_3.shape)
-    #
-    # convsecond_output = tf.keras.layers.concatenate(
-    #     [convsecond_1, convsecond_2, convsecond_3], axis=2)
-    #
-    # alog.info(convsecond_output.shape)
+    convsecond_1 = Conv1D(inception_units, 1, padding='same')(conv)
+    convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
+    convsecond_1 = Conv1D(inception_units, 3, padding='same')(convsecond_1)
+    convsecond_1 = LeakyReLU(alpha=relu_alpha)(convsecond_1)
+
+    alog.info(convsecond_1.shape)
+
+    convsecond_2 = Conv1D(inception_units, 1, padding='same')(conv)
+    convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
+    convsecond_2 = Conv1D(inception_units, 5, padding='same')(convsecond_2)
+    convsecond_2 = LeakyReLU(alpha=relu_alpha)(convsecond_2)
+
+    alog.info(convsecond_2.shape)
+
+    convsecond_3 = tf.keras.layers.MaxPool1D(3, strides=1, padding='same')(
+        conv)
+    convsecond_3 = Conv1D(inception_units, 1, padding='same')(convsecond_3)
+    convsecond_3 = LeakyReLU(alpha=relu_alpha)(convsecond_3)
+
+    alog.info(convsecond_3.shape)
+
+    convsecond_output = tf.keras.layers.concatenate(
+        [convsecond_1, convsecond_2, convsecond_3], axis=2)
+
+    alog.info(convsecond_output.shape)
 
     # build the last LSTM layer
     # lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
@@ -93,7 +93,7 @@ def Model(
 
     lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False,
                     recurrent_activation='sigmoid')(
-        conv)
+        convsecond_output)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
