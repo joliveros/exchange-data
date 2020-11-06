@@ -54,8 +54,8 @@ class BinanceOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('depth', self.message)
-            self.on('30s', self.queue_frame('30s'))
-            self.on('30s', self.save_frame)
+            self.on('1m', self.queue_frame('1m'))
+            self.on('1m', self.save_frame)
 
     def frame_channel(self, symbol):
         return f'{symbol}_OrderBookFrame'
@@ -66,7 +66,7 @@ class BinanceOrderBookEmitter(
 
     def start(self, channels=[]):
         self.sub([
-            '30s',
+            '1m',
             'depth',
         ] + channels)
 
