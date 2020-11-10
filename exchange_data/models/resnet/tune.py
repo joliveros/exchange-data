@@ -120,7 +120,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 1.01, 1.034),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.02, 1.05),
             learning_rate=trial.suggest_float('learning_rate', 0.01, 0.125),
         )
 
