@@ -27,7 +27,7 @@ services:
             - DB
             - BINANCE_API_KEY
             - BINANCE_API_SECRET
-            -
+
     BRD:
         deploy:
           replicas: 1
