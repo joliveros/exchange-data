@@ -65,10 +65,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         self.split_gpu()
 
-        self.train_df = self.label_positive_change()
-
-        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
-
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
@@ -134,7 +130,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
-            _df = self.train_df.copy()
+            _df = self.train_df = self.label_positive_change().copy()
 
             alog.info(_df)
 
@@ -168,6 +164,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'sequence_length': self.sequence_length,
                 'base_filter_size': 16,
                 'symbol': self.symbol,
+                'dir_name': self.symbol,
                 'train_df': train_df,
                 'num_conv': 3
             }
@@ -199,6 +196,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         return re.match(r'.+\/(\d+)$', self.exported_model_path).group(1)
 
     def run_backtest(self):
+        self._kwargs.pop('offset_interval', None)
+
+        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+
         self.backtest.trial = self.trial
 
         tf.keras.backend.clear_session()
@@ -249,6 +250,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--depth', '-d', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
+@click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--round-decimals', '-D', default=3, type=int)

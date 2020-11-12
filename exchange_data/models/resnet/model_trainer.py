@@ -42,10 +42,11 @@ class ModelTrainer(object):
             sequence_length,
             seed=None,
             symbol=None,
+            dir_name=None,
             **kwargs
         ):
 
-        base_model_dir = f'{Path.home()}/.exchange-data/models/resnet'
+        base_model_dir = f'{Path.home()}/.exchange-data/models/{dir_name}'
         self.model_dir = f'{base_model_dir}/{directory}'
 
         model = Model(
