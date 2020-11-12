@@ -31,6 +31,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         sequence_length,
         symbol,
         window_size,
+        offset_interval=None,
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
@@ -45,6 +46,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             depth=0,
             **kwargs)
 
+        self.offset_interval = offset_interval
         self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
         self.max_volume_quantile = max_volume_quantile
         self.quantile = quantile
@@ -114,6 +116,12 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
             return twindow.intervals
         else:
+            if self.offset_interval:
+                offset_interval = timedelta(seconds=timeparse(self.offset_interval))
+
+                self.start_date = self.start_date - offset_interval
+                self.end_date = self.end_date - offset_interval
+
             return [(self.start_date, self.end_date)]
 
     def load_frames(self):
@@ -196,6 +204,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 @click.option('--depth', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='3h', type=str)
+@click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--round-decimals', '-D', default=4, type=int)
@@ -210,7 +219,7 @@ def main(**kwargs):
     # pd.set_option('display.max_rows', len(df) + 1)
 
     alog.info(df)
-    alog.info(alog.pformat(df.iloc[-1].orderbook_img.tolist()))
+    # alog.info(alog.pformat(df.iloc[-1].orderbook_img.tolist()))
 
 
 if __name__ == '__main__':
