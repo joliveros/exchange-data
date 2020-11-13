@@ -9,7 +9,7 @@ services:
 
     UNI:
         deploy:
-          replicas: 1
+          replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/root/.exchange-data
