@@ -104,6 +104,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
             self.study_db_path.unlink()
             shutil.rmtree(str(self.export_dir), ignore_errors=True)
+            shutil.rmtree(f'{Path.home()}/.exchange-data/models/{self.symbol}_params')
             Path(self.export_dir).mkdir()
             shutil.rmtree(self.base_model_dir, ignore_errors=True)
             Path(self.base_model_dir).mkdir()
