@@ -22,6 +22,14 @@ class ModelTrainer(object):
     def __init__(self, **kwargs):
         alog.info(alog.pformat(kwargs))
         self.kwargs = kwargs
+        symbol = kwargs.get('symbol')
+        dir_name = kwargs.get('dir_name')
+        directory = kwargs.get('directory')
+
+        self.export_dir = f'{Path.home()}/.exchange-data/models/{symbol}_export'
+
+        base_model_dir = f'{Path.home()}/.exchange-data/models/{dir_name}'
+        self.model_dir = f'{base_model_dir}/{directory}'
 
     def done(self):
         self.publish('resnet_trainer_done', '')
@@ -46,8 +54,6 @@ class ModelTrainer(object):
             **kwargs
         ):
 
-        base_model_dir = f'{Path.home()}/.exchange-data/models/{dir_name}'
-        self.model_dir = f'{base_model_dir}/{directory}'
 
         model = Model(
             depth=depth,
@@ -132,8 +138,7 @@ class ModelTrainer(object):
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
         if export_model:
-            export_dir = f'{Path.home()}/.exchange-data/models/' \
-                         f'{symbol}_export'
+            export_dir = f'{Path.home()}/.exchange-data/models/{symbol}_export'
 
             try:
                 os.mkdir(export_dir)
