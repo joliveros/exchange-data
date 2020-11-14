@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 
 networks:
   public:
@@ -21,6 +21,27 @@ services:
         networks:
             - public
         command: --model_config_file=/models/models.config --per_process_gpu_memory_fraction=0.03
+
+    RUNE:
+        deploy:
+            replicas: 4
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - ${HOME}/.exchange-data/:/root/.exchange-data
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/models/resnet/tune.py RUNEBNB -i 14d -b 14d -o 1d -w 3m -g 1m -s 100 -n 4 -m 250 -D 4"
+        environment:
+            - LOG_LEVEL=INFO
+            - NVIDIA_VISIBLE_DEVCIES=all
+        networks:
+            - public
+        depends_on:
+            - influxdb
+            - model_host
+            - redis
+        secrets:
+            - DB
 
 secrets:
   DB:

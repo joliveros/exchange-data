@@ -1,22 +1,12 @@
-FROM python:3.6-stretch
+FROM tensorflow/tensorflow:2.4.0rc0-gpu
 
-WORKDIR /src
-
-COPY .bashrc /root
-
-RUN apt-get update --fix-missing && \
-    apt-get install -y \
-    bzip2 \
-    ca-certificates \
-    curl \
-    git\
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgl1-mesa-glx \
-    && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		git \
+		vim \
+		curl \
+		wget \
+		libgl1-mesa-glx \
+	&& rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 
