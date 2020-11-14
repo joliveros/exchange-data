@@ -5,6 +5,7 @@ import shutil
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 
+from exchange_data import settings
 from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
@@ -25,13 +26,16 @@ logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 
 class StudyWrapper(object):
+    study_db_path: Path = None
+
     def __init__(self, symbol, **kwargs):
         self.symbol = symbol
-        study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
-        study_db_path = Path(study_db_path)
-        db_conn_str = f'sqlite:///{study_db_path}'
+        self.base_path = f'{Path.home()}/.exchange-data/models/'
+        self.study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
+        self.study_db_path = Path(self.study_db_path)
+        db_conn_str = f'sqlite:///{self.study_db_path}'
 
-        if not study_db_path.exists():
+        if not self.study_db_path.exists():
             self.study = optuna.create_study(
                 study_name=self.symbol, direction='maximize',
                 storage=db_conn_str)
@@ -42,8 +46,11 @@ class StudyWrapper(object):
 class SymbolTuner(MaxMinFrame, StudyWrapper):
     backtest = None
 
-    def __init__(self, volatility_intervals, session_limit,
-                 macd_session_limit, backtest_interval,
+    def __init__(self,
+                 volatility_intervals,
+                 session_limit,
+                 macd_session_limit,
+                 backtest_interval,
                  memory,
                  num_locks=2,
                  **kwargs):
@@ -68,7 +75,32 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
+        self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
+                             f'/{self.symbol}'
+
         self.study.optimize(self.run, n_trials=session_limit)
+
+        self.clear()
+
+    def clear(self):
+        try:
+            self._clear()
+        except RedLockError:
+            pass
+
+    def _clear(self):
+        with RedLock('clear_lock', [dict(
+                        host=settings.REDIS_HOST,
+                        db=0
+                    )],
+                     retry_delay=timeparse('15s'),
+                     retry_times=12, ttl=timeparse('1h') * 1000):
+
+            self.study_db_path.unlink()
+            shutil.rmtree(str(self.export_dir), ignore_errors=True)
+            Path(self.export_dir).mkdir()
+            shutil.rmtree(self.base_model_dir, ignore_errors=True)
+            Path(self.base_model_dir).mkdir()
 
     @property
     def export_dir(self):
@@ -99,8 +131,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
-            with RedLock(self.train_lock, retry_delay=timeparse('15s'),
-                         retry_times=12, ttl=timeparse('1h') * 1000):
+            with RedLock(self.train_lock, [dict(
+                    host=settings.REDIS_HOST,
+                    db=0
+                )], retry_delay=timeparse('15s'),
+                    retry_times=12, ttl=timeparse('1h') * 1000):
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
@@ -245,22 +280,22 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         #assert len(logical_devices) == len(physical_devices) + 1
 
 @click.command()
+@click.argument('symbol', type=str)
 @click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--depth', '-d', default=72, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
+@click.option('--macd-session-limit', default=200, type=int)
+@click.option('--memory', '-m', default=1000, type=int)
+@click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
-@click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--round-decimals', '-D', default=3, type=int)
-@click.option('--num-locks', '-n', default=2, type=int)
-@click.option('--memory', '-m', default=1000, type=int)
-@click.option('--session-limit', '-s', default=75, type=int)
-@click.option('--macd-session-limit', default=200, type=int)
+@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--session-limit', '-s', default=None, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)
-@click.argument('symbol', type=str)
 def main(**kwargs):
     SymbolTuner(**kwargs)
 
