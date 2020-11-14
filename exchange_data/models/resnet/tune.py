@@ -36,11 +36,17 @@ class StudyWrapper(object):
         db_conn_str = f'sqlite:///{self.study_db_path}'
 
         if not self.study_db_path.exists():
-            self.study = optuna.create_study(
-                study_name=self.symbol, direction='maximize',
-                storage=db_conn_str)
+            self.create_study(db_conn_str)
         else:
-            self.study = load_study(study_name=self.symbol, storage=db_conn_str)
+            try:
+                self.study = load_study(study_name=self.symbol, storage=db_conn_str)
+            except KeyError as e:
+                self.create_study(db_conn_str)
+
+    def create_study(self, db_conn_str):
+        self.study = optuna.create_study(
+            study_name=self.symbol, direction='maximize',
+            storage=db_conn_str)
 
 
 class SymbolTuner(MaxMinFrame, StudyWrapper):
