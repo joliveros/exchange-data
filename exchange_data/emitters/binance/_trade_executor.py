@@ -178,7 +178,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         quantity = self.client.get_asset_balance(self.asset_name)['free']
 
-        quantity = floor(Decimal(quantity) / Decimal(self.step_size))
+        quantity = floor(Decimal(quantity) / Decimal(self.step_size)) * \
+                    Decimal(self.step_size)
 
         quantity = Decimal(quantity)
 
@@ -206,7 +207,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             alog.info(self.quantity)
             alog.info(self.bid_price)
 
-            self.long()
+            self.buy()
 
         if self.order:
             price = Decimal(self.order['price'])
@@ -219,22 +220,26 @@ class TradeExecutor(MeasurementFrame, Messenger):
                 self.client.cancel_order(**params)
 
                 if self.position == Positions.Long:
-                    self.long()
+                    self.buy()
 
         if self.position == Positions.Flat and \
             self.asset_quantity > self.tick_size:
-            params = dict(
-                symbol=self.symbol,
-                side=SIDE_SELL,
-                type=ORDER_TYPE_MARKET,
-                quantity=self.asset_quantity,
-            )
+            self.sell()
 
-            alog.info(alog.pformat(params))
+    def sell(self):
+        params = dict(
+            symbol=self.symbol,
+            side=SIDE_SELL,
+            type=ORDER_TYPE_MARKET,
+            quantity=self.asset_quantity,
+        )
 
+        alog.info(alog.pformat(params))
+
+        if self.trading_enabled:
             self.client.create_order(**params)
 
-    def long(self):
+    def buy(self):
         if self.trading_enabled:
             response = self.client.create_order(
                 symbol=self.symbol,
