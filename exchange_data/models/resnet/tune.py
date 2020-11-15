@@ -1,52 +1,27 @@
 #!/usr/bin/env python
-import re
-import shutil
-
-from pytimeparse.timeparse import timeparse
-from redlock import RedLock, RedLockError
 
 from exchange_data import settings
 from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
-from optuna import Trial, load_study
+from exchange_data.models.resnet.study_wrapper import StudyWrapper
+from exchange_data.trading import Positions
+from optuna import Trial
 from pathlib import Path
+from pytimeparse.timeparse import timeparse
+from redlock import RedLock, RedLockError
 from tensorboard.plugins.hparams import api as hp
-import pandas as pd
+
 import alog
 import click
 import logging
-import optuna
+import pandas as pd
+import re
+import shutil
 import tensorflow as tf
 import time as t
 
-from exchange_data.trading import Positions
-
 logging.getLogger('tensorflow').setLevel(logging.INFO)
-
-
-class StudyWrapper(object):
-    study_db_path: Path = None
-
-    def __init__(self, symbol, **kwargs):
-        self.symbol = symbol
-        self.base_path = f'{Path.home()}/.exchange-data/models/'
-        self.study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
-        self.study_db_path = Path(self.study_db_path)
-        db_conn_str = f'sqlite:///{self.study_db_path}'
-
-        if not self.study_db_path.exists():
-            self.create_study(db_conn_str)
-        else:
-            try:
-                self.study = load_study(study_name=self.symbol, storage=db_conn_str)
-            except KeyError as e:
-                self.create_study(db_conn_str)
-
-    def create_study(self, db_conn_str):
-        self.study = optuna.create_study(
-            study_name=self.symbol, direction='maximize',
-            storage=db_conn_str)
 
 
 class SymbolTuner(MaxMinFrame, StudyWrapper):
@@ -57,6 +32,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                  session_limit,
                  macd_session_limit,
                  backtest_interval,
+                 min_capital,
                  memory,
                  num_locks=2,
                  **kwargs):
@@ -69,6 +45,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
+        self.clear()
+
+        self.min_capital = min_capital
         self.memory = memory
         self.hparams = None
         self.num_locks = num_locks
@@ -262,7 +241,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             except ValueError:
                 pass
 
-            if self.backtest.capital <= 0.99 or self.backtest.capital == 1.0:
+            if self.backtest.capital <= self.min_capital:
                 alog.info('## deleting trial ###')
                 alog.info(exported_model_path)
                 shutil.rmtree(self.run_dir)
@@ -295,6 +274,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--memory', '-m', default=1000, type=int)
+@click.option('--min-capital', default=1.0, type=float)
 @click.option('--num-locks', '-n', default=2, type=int)
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)

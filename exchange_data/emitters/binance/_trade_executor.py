@@ -9,7 +9,7 @@ from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
 from exchange_data.emitters.backtest import BackTest
-from exchange_data.models.resnet.tune import StudyWrapper
+from exchange_data.models.resnet.study_wrapper import StudyWrapper
 from exchange_data.ta_model.tune_macd import MacdParamFrame
 from exchange_data.trading import Positions
 from pytimeparse.timeparse import timeparse
