@@ -45,8 +45,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
-        self.clear()
-
         self.min_capital = min_capital
         self.memory = memory
         self.hparams = None
@@ -82,11 +80,21 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                      retry_times=12, ttl=timeparse('1h') * 1000):
 
             self.study_db_path.unlink()
-            shutil.rmtree(str(self.export_dir), ignore_errors=True)
-            shutil.rmtree(f'{Path.home()}/.exchange-data/models/{self.symbol}_params')
-            Path(self.export_dir).mkdir()
-            shutil.rmtree(self.base_model_dir, ignore_errors=True)
-            Path(self.base_model_dir).mkdir()
+            self.clear_dirs()
+
+    def clear_dirs(self):
+        shutil.rmtree(str(self.export_dir), ignore_errors=True)
+        Path(self.export_dir).mkdir()
+
+        shutil.rmtree(
+            f'{Path.home()}/.exchange-data/models/{self.symbol}_params',
+            ignore_errors=True)
+
+        base_dir = Path(self.base_model_dir)
+        shutil.rmtree(str(base_dir), ignore_errors=True)
+
+        if not base_dir.exists():
+            base_dir.mkdir()
 
     @property
     def export_dir(self):
