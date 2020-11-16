@@ -182,7 +182,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             alog.info(eval_df)
 
             params = {
-                'batch_size': 4,
+                'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
                 'epochs': 1,
