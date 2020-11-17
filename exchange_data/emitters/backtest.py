@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from exchange_data.data.labeled_orderbook_frame import LabeledOrderBookFrame
+
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.emitters.prediction_emitter import PredictionBase
 from optuna import Trial
 
-import alog
 import click
 
 
@@ -32,6 +31,7 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
         df.reset_index(drop=False, inplace=True)
 
         df = df.apply(self.prediction, axis=1)
+
         df['capital'] = self.capital
 
         df = df.apply(self.pnl, axis=1)
