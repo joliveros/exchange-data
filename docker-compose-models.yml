@@ -12,7 +12,7 @@ services:
             replicas: 1
         image: tensorflow/serving:latest-gpu
         environment:
-            - NVIDIA_VISIBLE_DEVCIES=all
+            - NVIDIA_VISIBLE_DEVICES=all
         ports:
             - 0.0.0.0:8500:8500
             - 0.0.0.0:8501:8501
@@ -24,16 +24,16 @@ services:
 
     RUNE:
         deploy:
-            replicas: 4
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/root/.exchange-data
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py RUNEBNB -i 14d -b 14d -o 4d -w 3m -g 1m -s 10 -n 4 -m 148 -D 4 --min-capital 1.2"
+            ./exchange_data/models/resnet/tune.py RUNEBNB -i 5d -b 3d -o 4d -w 3m -g 1m -s 3 -n 4 -m 148 -D 4 --min-capital 1.2"
         environment:
             - LOG_LEVEL=INFO
-            - NVIDIA_VISIBLE_DEVCIES=all
+            - NVIDIA_VISIBLE_DEVICES=all
         networks:
             - public
         depends_on:
