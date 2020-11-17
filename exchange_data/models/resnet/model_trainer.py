@@ -91,7 +91,7 @@ class ModelTrainer(object):
         def train_ds():
             return tf.data.Dataset.from_generator(
                 iterate_rows(train_df),
-                (tf.float32, tf.int32),
+                (tf.float16, tf.int8),
                 (tf.TensorShape([sequence_length, depth * 2, 1]),
                  tf.TensorShape([]))
             ) \
@@ -101,7 +101,7 @@ class ModelTrainer(object):
         def eval_ds():
             return tf.data.Dataset.from_generator(
                 iterate_rows(eval_df),
-                (tf.float32, tf.int32),
+                (tf.float16, tf.int8),
                 (tf.TensorShape([sequence_length, depth * 2, 1]),
                  tf.TensorShape([]))
             ) \
@@ -132,7 +132,7 @@ class ModelTrainer(object):
         def serving_input_receiver_fn():
             inputs = {
                 'input_1': tf.compat.v1.placeholder(
-                    tf.float32, [1, sequence_length, depth * 2, 1]
+                    tf.float16, [1, sequence_length, depth * 2, 1]
                 ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)

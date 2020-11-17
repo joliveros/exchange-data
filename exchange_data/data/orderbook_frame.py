@@ -179,11 +179,13 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                         time=timestamp,
                         best_ask=best_ask,
                         best_bid=best_bid,
-                        orderbook_img=np.asarray(list(orderbook_imgs.copy()))
+                        orderbook_img=np.asarray(list(orderbook_imgs.copy()),
+                                                 dtype=np.float16)
                     )
                     frames.append(frame)
 
         df = DataFrame(frames)
+        df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
 
         return df
 
