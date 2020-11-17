@@ -33,7 +33,8 @@ class PredictionBase(object):
         self.model_version = model_version
 
     def get_prediction(self):
-        frames = np.expand_dims(np.asarray(self.frames), axis=0)
+        frames = np.expand_dims(np.asarray(self.frames, dtype=np.float32),
+                                axis=0)
 
         data = json.dumps(dict(
             signature_name='serving_default',

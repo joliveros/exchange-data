@@ -132,7 +132,7 @@ class ModelTrainer(object):
         def serving_input_receiver_fn():
             inputs = {
                 'input_1': tf.compat.v1.placeholder(
-                    tf.float16, [1, sequence_length, depth * 2, 1]
+                    tf.float32, [1, sequence_length, depth * 2, 1]
                 ),
             }
             return tf.estimator.export.ServingInputReceiver(inputs, inputs)
