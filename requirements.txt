@@ -15,7 +15,6 @@ gym
 influxdb
 matplotlib
 mock
-numpy<1.19.0,>=1.16.0
 opencv-python
 optuna
 pandas==0.25.3
@@ -42,6 +41,6 @@ statsd
 stringcase
 tensorflow-datasets
 tensorflow-serving-api
-tf-nightly-gpu
+tensorflow-gpu==2.4.0rc2
 timestamp
 tqdm
