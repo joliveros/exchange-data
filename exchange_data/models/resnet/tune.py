@@ -145,11 +145,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         tf.keras.backend.clear_session()
 
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 1.02, 1.05),
-            learning_rate=trial.suggest_float('learning_rate', 0.01, 0.125),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.00, 1.1),
+            learning_rate=trial.suggest_float('learning_rate', 0.005, 0.2),
         )
 
-        group_by = 4
+        group_by = 1
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
