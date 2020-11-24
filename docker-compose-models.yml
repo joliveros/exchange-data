@@ -24,13 +24,13 @@ services:
 
     RUNE:
         deploy:
-            replicas: 4
+            replicas: 3
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/root/.exchange-data
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py RUNEBNB -i 8d -b 8d -o 12h -w 3m -g 1m -s 24 -n 4 -m 148 -D 4 --min-capital 1.0"
+            ./exchange_data/models/resnet/tune.py RUNEBNB -i 8d -b 8d -o 12h -w 3m -g 1m -s 24 -n 3 -m 148 -D 4 --min-capital 1.0"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
