@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 from binance.client import Client
-from binance.depthcache import DepthCacheManager, DepthCache
+from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property
 from datetime import timedelta
 from exchange_data import settings
 from exchange_data.emitters import Messenger
+from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.emitters.binance._depth_cache_manager import NotifyingDepthCacheManager
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
@@ -17,37 +19,15 @@ import click
 import json
 import numpy as np
 import os
+import random
 import signal
 import time
 
 
-class NotifyingDepthCacheManager(DepthCacheManager):
-    def __init__(self, symbol, redis_client, **kwargs):
-        super().__init__(symbol=symbol, **kwargs)
-        self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
-        self.symbol_hosts.add((symbol, self.symbol_hostname))
-
-    @property
-    def symbol_hostname(self):
-        return self._symbol_hostname(self._symbol)
-
-    @staticmethod
-    def _symbol_hostname(symbol):
-        return f'{symbol}_{settings.HOSTNAME}'
-
-    def close(self, **kwargs):
-        try:
-            self.symbol_hosts.remove((self._symbol, self.symbol_hostname))
-        except KeyError:
-            pass
-        kwargs['close_socket'] = True
-        super().close(**kwargs)
-
-
-class DepthEmitter(Messenger):
-    def __init__(self, delay, num_symbol_take, num_locks=2, **kwargs):
+class DepthEmitter(Messenger, BinanceUtils):
+    def __init__(self, interval, delay, num_symbol_take, num_locks=2, **kwargs):
         super().__init__(**kwargs)
-
+        self.interval = interval
         self.delay = timedelta(seconds=timeparse(delay))
         self.num_symbol_take = num_symbol_take
         self.num_locks = num_locks
@@ -58,8 +38,9 @@ class DepthEmitter(Messenger):
 
         alog.info('### initialized ###')
 
-        self.on('1m', self.check_queues)
+        self.on('check_queues', self.check_queues)
         self.check_queues()
+
 
     @property
     def symbols_queue(self):
@@ -74,7 +55,6 @@ class DepthEmitter(Messenger):
         self.purge()
 
         alog.info('### check queues ###')
-        caches = list(self.caches.keys())
 
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
@@ -82,14 +62,24 @@ class DepthEmitter(Messenger):
         if len(self.symbols_queue) > 0:
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
-                time.sleep(1)
+
+        self.emit('check_queues')
 
     def add_next_cache(self):
-        symbol = self.symbols_queue.pop()
+        try:
+            with self.take_lock():
+                queue_len = len(self.symbols_queue)
+                next_ix = random.randrange(0, queue_len - 1)
+                symbol = list(self.symbols_queue)[next_ix]
+                self.symbols_queue.remove(symbol)
 
-        if symbol:
-            alog.info(f'## take next {symbol} ##')
-            self.add_cache(symbol)
+                if symbol:
+                    alog.info(f'## take next {symbol} ##')
+                    self.add_cache(symbol)
+                    time.sleep(1)
+
+        except RedLockError:
+            pass
 
     def purge(self):
         caches: [NotifyingDepthCacheManager] = list(self.caches.values())
@@ -128,6 +118,18 @@ class DepthEmitter(Messenger):
     def client(self):
         return Client()
 
+    def take_lock(self):
+        lock_name = f'take_lock'
+
+        lock = RedLock(lock_name, [dict(
+            host=settings.REDIS_HOST,
+            db=0
+        )], retry_delay=1000, retry_times=60*60, ttl=timeparse('30s') * 1000)
+
+        alog.info(lock_name)
+
+        return lock
+
     def add_cache_lock(self, symbol):
         lock_name = f'add_cache_lock_{symbol}'
 
@@ -136,7 +138,7 @@ class DepthEmitter(Messenger):
         return RedLock(lock_name, [dict(
             host=settings.REDIS_HOST,
             db=0
-        )], retry_delay=200, retry_times=3, ttl=timeparse('3m') * 1000)
+        )], retry_delay=200, retry_times=1, ttl=timeparse('30s') * 1000)
 
     def add_cache(self, symbol):
         try:
@@ -145,9 +147,7 @@ class DepthEmitter(Messenger):
 
         except BinanceAPIException as e:
             alog.info(alog.pformat(vars(e)))
-
-            if e.status_code == 418:
-                time.sleep(30)
+            self.sleep_during_embargo(e)
 
         except RedLockError as e:
             alog.info(e)
@@ -161,24 +161,13 @@ class DepthEmitter(Messenger):
         self.caches[symbol] = NotifyingDepthCacheManager(
             callback=self.message,
             client=self.client,
-            limit=100,
+            limit=100000,
             redis_client=self.redis_client,
-            refresh_interval=0,
+            refresh_interval=timeparse('1h'),
             symbol=symbol,
         )
 
         alog.info(f'### cache added {symbol}###')
-
-    def get_symbols(self):
-        exchange_info = self.client.get_exchange_info()
-
-        symbols = [symbol for symbol in exchange_info['symbols']
-                   if symbol['status'] == 'TRADING']
-
-        symbol_names = [symbol['symbol'] for symbol in symbols if symbol[
-            'symbol']]
-
-        return symbol_names
 
     def exit(self):
         os.kill(os.getpid(), signal.SIGKILL)
@@ -218,11 +207,12 @@ class DepthEmitter(Messenger):
             )))
 
     def start(self):
-        self.sub(['1m', 'remove_symbol'])
+        self.sub([self.interval, 'remove_symbol'])
 
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
+@click.option('--interval', '-i', type=str, default='5m')
 @click.option('--num-symbol-take', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitter(**kwargs)

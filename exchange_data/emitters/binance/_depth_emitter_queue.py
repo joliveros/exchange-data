@@ -1,47 +1,49 @@
 #!/usr/bin/env python
-from collections import Counter
 
 from binance.client import Client
-from binance.depthcache import DepthCacheManager
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property, cached_property_with_ttl
-from datetime import timedelta, datetime
-
-from redlock import RedLock, RedLockError
-
-from exchange_data import settings
+from collections import Counter
+from datetime import timedelta
 from exchange_data.emitters import Messenger
+from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
-from redis_collections import List, Dict, Set
+from redis_collections import Set
 
 import alog
 import click
-import json
-import numpy as np
-import os
 import signal
-import time
 
 
-class DepthEmitterQueue(Messenger):
-    def __init__(self, timeout_interval, **kwargs):
+class DepthEmitterQueue(Messenger, BinanceUtils):
+    def __init__(self, check_interval, timeout_interval, **kwargs):
+
+        self.check_interval_str = check_interval
         self.timeout_seconds = timeparse(timeout_interval)
         self.timeout_interval = timedelta(seconds=self.timeout_seconds)
 
         super().__init__(**kwargs)
 
-        self.symbols_queue = Set(key='symbols_queue', redis=self.redis_client)
-        self.remove_symbols_queue = Set(key='remove_symbols_queue',
-                                        redis=self.redis_client)
-        self.symbol_hosts = Set(key='symbol_hosts', redis=self.redis_client)
         self.symbol_hosts.clear()
         self.symbol_hosts_timeout = {}
 
-        self.on('30s', self.check_symbol_timeout)
+        self.on(self.check_interval_str, self.check_symbol_timeout)
         self.on('symbol_timeout', self.symbol_timeout)
 
         self.check_symbol_timeout(None)
+
+    @property
+    def remove_symbols_queue(self):
+        return Set(key='remove_symbols_queue', redis=self.redis_client)
+
+    @property
+    def symbols_queue(self):
+        return Set(key='symbols_queue', redis=self.redis_client)
+
+    @property
+    def symbol_hosts(self):
+        return Set(key='symbol_hosts', redis=self.redis_client)
 
     @cached_property_with_ttl(ttl=60 * 10)
     def symbols(self):
@@ -140,7 +142,11 @@ class DepthEmitterQueue(Messenger):
         try:
             return self._get_symbols()
         except BinanceAPIException as e:
-            alog.info(e)
+            alog.info(e.message)
+
+            self.sleep_during_embargo(e)
+
+            return []
 
     def _get_symbols(self):
         exchange_info = self.client.get_exchange_info()
@@ -154,12 +160,13 @@ class DepthEmitterQueue(Messenger):
         return symbol_names
 
     def start(self):
-        self.sub(['30s', 'symbol_timeout'])
+        self.sub([self.check_interval_str, 'symbol_timeout'])
 
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='4s')
 @click.option('--timeout-interval', '-t', type=str, default='30s')
+@click.option('--check-interval', '-c', type=str, default='30s')
 @click.option('--num-locks', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = DepthEmitterQueue(**kwargs)
