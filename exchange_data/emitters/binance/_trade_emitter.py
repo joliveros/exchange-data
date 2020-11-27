@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import random
 
 import txaio
 from binance.client import Client
@@ -38,8 +39,8 @@ class TradeEmitterLock(RedLock):
         super().__init__(resource=lock_name,
                          connection_details=connection_details,
                          retry_delay=200,
-                         retry_times=3,
-                         ttl=timeparse('5m') * 1000,
+                         retry_times=1,
+                         ttl=timeparse('30s') * 1000,
                          **kwargs)
 
 
@@ -90,6 +91,10 @@ class TradeSocketManager(BinanceSocketManager):
         alog.info(f'### successfully closed socket {self.symbol}###')
 
 
+class QueueEmptyException(Exception):
+    pass
+
+
 class TradeEmitter(Messenger):
     def __init__(self, delay, num_take_symbols, **kwargs):
         super().__init__(**kwargs)
@@ -101,8 +106,7 @@ class TradeEmitter(Messenger):
         self.sockets = {}
 
         alog.info('### initialized ###')
-
-        self.on('1m', self.check_queues)
+        self.on('check_queues', self.check_queues)
         self.check_queues()
 
     @property
@@ -120,28 +124,38 @@ class TradeEmitter(Messenger):
             self.remove_socket(symbol)
 
         if len(self.symbols_queue) > 0:
-            for i in range(0, self.num_take_symbols):
-                if len(self.symbols_queue) > 0:
-                    self.add_next_trade_socket(self.symbols_queue)
-                    time.sleep(1)
+            while len(self.symbols_queue) > 0:
+                try:
+                    with self.take_lock():
+                        self.add_next_trade_socket()
+                except RedLockError():
+                    pass
 
-    def add_next_trade_socket(self, queue):
-        symbol = self.next_symbol(queue)
+        time.sleep(60)
 
-        if symbol:
-            alog.info(f'## take next {symbol} ##')
-            self.add_trade_socket(symbol)
+        self.emit('check_queues')
 
-    def next_symbol(self, *args):
+    def add_next_trade_socket(self):
         try:
-            return self._next_symbol(*args)
-        except RedLockError as e:
-            time.sleep(0.1)
-            return self.next_symbol(*args)
 
-    def _next_symbol(self, queue):
-        # with self.take_lock():
-        symbol = queue.pop()
+            symbol = self.next_symbol()
+
+            if symbol:
+                alog.info(f'## take next {symbol} ##')
+                self.add_trade_socket(symbol)
+
+        except QueueEmptyException:
+            pass
+
+    def next_symbol(self):
+        queue_ls = list(self.symbols_queue)
+
+        if len(queue_ls) == 0:
+            raise QueueEmptyException()
+
+        next_ix = random.randrange(0, len(queue_ls) - 1)
+        symbol = queue_ls[next_ix]
+        self.symbols_queue.remove(symbol)
 
         return symbol
 
@@ -200,6 +214,7 @@ class TradeEmitter(Messenger):
             alog.info(alog.pformat(vars(e)))
 
             if e.status_code == 418:
+                alog.info('### sleeping due to binance api error ###')
                 time.sleep(30)
 
         except RedLockError as e:

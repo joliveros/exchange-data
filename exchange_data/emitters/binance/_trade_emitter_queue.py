@@ -143,6 +143,7 @@ class TradeEmitterQueue(Messenger):
             return self._get_symbols()
         except BinanceAPIException as e:
             alog.info(e)
+            return []
 
     def _get_symbols(self):
         exchange_info = self.client.get_exchange_info()

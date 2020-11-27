@@ -88,6 +88,9 @@ class BinanceOrderBookEmitter(
             else:
                 frame_slice = frame
 
+            frame_slice = np.asarray(frame_slice, dtype=np.float32)
+            frame_slice = frame_slice.tolist()
+
             measurement = self.slice(symbol, depth, frame_slice)
 
             self.slices[self.channel_for_depth(symbol, depth)] = measurement
