@@ -25,8 +25,10 @@ import time
 
 
 class DepthEmitter(Messenger, BinanceUtils):
-    def __init__(self, interval, delay, num_symbol_take, num_locks=2, **kwargs):
+    def __init__(self, lock_hold, interval, delay, num_symbol_take,
+                 num_locks=2, **kwargs):
         super().__init__(**kwargs)
+        self.lock_hold = timeparse(lock_hold)
         self.interval = interval
         self.delay = timedelta(seconds=timeparse(delay))
         self.num_symbol_take = num_symbol_take
@@ -76,7 +78,7 @@ class DepthEmitter(Messenger, BinanceUtils):
                 if symbol:
                     alog.info(f'## take next {symbol} ##')
                     self.add_cache(symbol)
-                    time.sleep(1)
+                    time.sleep(self.lock_hold)
 
         except RedLockError:
             pass
@@ -165,6 +167,7 @@ class DepthEmitter(Messenger, BinanceUtils):
             redis_client=self.redis_client,
             refresh_interval=timeparse('1h'),
             symbol=symbol,
+            lock_hold=self.lock_hold
         )
 
         alog.info(f'### cache added {symbol}###')
@@ -212,6 +215,7 @@ class DepthEmitter(Messenger, BinanceUtils):
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
+@click.option('--lock-hold', '-l', type=str, default='3s')
 @click.option('--interval', '-i', type=str, default='5m')
 @click.option('--num-symbol-take', '-n', type=int, default=4)
 def main(**kwargs):
