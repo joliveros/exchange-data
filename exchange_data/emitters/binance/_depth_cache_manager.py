@@ -10,7 +10,8 @@ from exchange_data import settings
 
 
 class NotifyingDepthCacheManager(DepthCacheManager):
-    def __init__(self, symbol, redis_client, **kwargs):
+    def __init__(self, symbol, lock_hold, redis_client, **kwargs):
+        self.lock_hold = lock_hold
         super().__init__(symbol=symbol, **kwargs)
         self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
@@ -37,7 +38,7 @@ class NotifyingDepthCacheManager(DepthCacheManager):
     def _init_cache(self):
         with self.init_cache_lock():
             super()._init_cache()
-            time.sleep(3)
+            time.sleep(self.lock_hold)
 
     def close(self, **kwargs):
         try:
