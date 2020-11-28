@@ -40,7 +40,8 @@ class DepthEmitter(Messenger, BinanceUtils):
 
         alog.info('### initialized ###')
 
-        self.on('check_queues', self.check_queues)
+        self.on(self.interval, self.check_queues)
+
         self.check_queues()
 
 
@@ -64,10 +65,6 @@ class DepthEmitter(Messenger, BinanceUtils):
         if len(self.symbols_queue) > 0:
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
-
-        time.sleep(timeparse(self.interval))
-
-        self.emit('check_queues')
 
     def add_next_cache(self):
         try:
