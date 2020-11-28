@@ -1,15 +1,16 @@
-import time
-
-import alog
 from binance.depthcache import DepthCacheManager
+from binance.exceptions import BinanceAPIException
+from exchange_data import settings
+from exchange_data.emitters.binance import BinanceUtils
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock
 
-from exchange_data import settings
+import alog
+import time
 
 
-class NotifyingDepthCacheManager(DepthCacheManager):
+class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
     def __init__(self, symbol, lock_hold, redis_client, **kwargs):
         self.lock_hold = lock_hold
         super().__init__(symbol=symbol, **kwargs)
@@ -37,8 +38,12 @@ class NotifyingDepthCacheManager(DepthCacheManager):
 
     def _init_cache(self):
         with self.init_cache_lock():
-            super()._init_cache()
-            time.sleep(self.lock_hold)
+            try:
+                super()._init_cache()
+                time.sleep(self.lock_hold)
+            except BinanceAPIException as e:
+                self.sleep_during_embargo(e)
+
 
     def close(self, **kwargs):
         try:
