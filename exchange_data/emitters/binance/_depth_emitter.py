@@ -175,38 +175,35 @@ class DepthEmitter(Messenger, BinanceUtils):
         os.kill(os.getpid(), signal.SIGKILL)
 
     def message(self, depthCache: DepthCache):
-        if depthCache is None:
-            self.exit()
-            raise Exception()
+        if depthCache:
+            symbol = depthCache.symbol
+            asks = np.expand_dims(np.asarray(depthCache.get_asks()), axis=0)
+            bids = np.expand_dims(np.asarray(depthCache.get_bids()), axis=0)
+            ask_levels = asks.shape[1]
+            bid_levels = bids.shape[1]
 
-        symbol = depthCache.symbol
-        asks = np.expand_dims(np.asarray(depthCache.get_asks()), axis=0)
-        bids = np.expand_dims(np.asarray(depthCache.get_bids()), axis=0)
-        ask_levels = asks.shape[1]
-        bid_levels = bids.shape[1]
+            if ask_levels > bid_levels:
+                bids = np.resize(bids, asks.shape)
 
-        if ask_levels > bid_levels:
-            bids = np.resize(bids, asks.shape)
+            elif bid_levels > ask_levels:
+                asks = np.resize(asks, bids.shape)
 
-        elif bid_levels > ask_levels:
-            asks = np.resize(asks, bids.shape)
+            depth = np.concatenate((asks, bids))
 
-        depth = np.concatenate((asks, bids))
-
-        msg = dict(
-            symbol=symbol,
-            depth=depth.tolist()
-        )
-
-        if depthCache.last_publish_time is None or \
-            depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
-            depthCache.last_publish_time = depthCache.update_time
-
-            self.publish('depth', json.dumps(msg))
-            self.publish('symbol_timeout', json.dumps(dict(
+            msg = dict(
                 symbol=symbol,
-                symbol_host=NotifyingDepthCacheManager._symbol_hostname(symbol)
-            )))
+                depth=depth.tolist()
+            )
+
+            if depthCache.last_publish_time is None or \
+                depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
+                depthCache.last_publish_time = depthCache.update_time
+
+                self.publish('depth', json.dumps(msg))
+                self.publish('symbol_timeout', json.dumps(dict(
+                    symbol=symbol,
+                    symbol_host=NotifyingDepthCacheManager._symbol_hostname(symbol)
+                )))
 
     def start(self):
         self.sub([self.interval, 'remove_symbol'])
