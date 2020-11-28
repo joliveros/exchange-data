@@ -65,6 +65,8 @@ class DepthEmitter(Messenger, BinanceUtils):
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
 
+        time.sleep(timeparse(self.interval))
+
         self.emit('check_queues')
 
     def add_next_cache(self):
