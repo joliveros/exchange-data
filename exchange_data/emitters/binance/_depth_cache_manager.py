@@ -46,14 +46,15 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
                     time.sleep(self.lock_hold)
                 except BinanceAPIException as e:
                     self.sleep_during_embargo(e)
+
         except RedLockError as e:
             pass
-
 
     def close(self, **kwargs):
         try:
             self.symbol_hosts.remove((self._symbol, self.symbol_hostname))
         except KeyError:
             pass
+
         kwargs['close_socket'] = True
         super().close(**kwargs)
