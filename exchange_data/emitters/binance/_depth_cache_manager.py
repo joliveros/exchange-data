@@ -36,7 +36,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         return RedLock(lock_name, [dict(
             host=settings.REDIS_HOST,
             db=0
-        )], retry_delay=1000 * 60, retry_times=2, ttl=timeparse('5s') * 1000)
+        )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
 
     def _init_cache(self):
         try:

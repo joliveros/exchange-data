@@ -164,6 +164,7 @@ class DepthEmitter(Messenger, BinanceUtils):
             client=self.client,
             limit=100000,
             redis_client=self.redis_client,
+            refresh_interval=60*60*2,
             symbol=symbol,
             lock_hold=self.lock_hold
         )
