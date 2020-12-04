@@ -9,6 +9,8 @@ from redlock import RedLock, RedLockError
 import alog
 import time
 
+from exchange_data.utils import DateTimeUtils
+
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
     def __init__(self, symbol, lock_hold, redis_client, **kwargs):
@@ -16,7 +18,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         super().__init__(symbol=symbol, **kwargs)
         self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
-
+        self.created_at = DateTimeUtils.now()
 
     @property
     def symbol_hostname(self):
