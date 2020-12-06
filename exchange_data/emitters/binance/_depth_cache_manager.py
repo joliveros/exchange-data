@@ -38,17 +38,17 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             db=0
         )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
 
-    def _init_cache(self):
-        try:
-            with self.init_cache_lock():
-                try:
-                    super()._init_cache()
-                    time.sleep(self.lock_hold)
-                except BinanceAPIException as e:
-                    self.sleep_during_embargo(e)
-
-        except RedLockError as e:
-            pass
+    # def _init_cache(self):
+    #     try:
+    #         with self.init_cache_lock():
+    #             try:
+    #                 super()._init_cache()
+    #                 time.sleep(self.lock_hold)
+    #             except BinanceAPIException as e:
+    #                 self.sleep_during_embargo(e)
+    #
+    #     except RedLockError as e:
+    #         pass
 
     def close(self, **kwargs):
         try:

@@ -27,6 +27,7 @@ pytest-cov
 pytest-mock
 pytest-mypy
 pytest-vcr
+python-redis-cache
 pytimeparse
 pytz
 redis
@@ -40,7 +41,7 @@ sortedcontainers
 statsd
 stringcase
 tensorflow-datasets
-tensorflow-serving-api
 tensorflow-gpu==2.4.0rc2
+tensorflow-serving-api
 timestamp
 tqdm

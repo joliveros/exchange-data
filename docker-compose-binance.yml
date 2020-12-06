@@ -6,7 +6,7 @@ networks:
 services:
     emit_depth_0:
         deploy:
-          replicas: 3
+          replicas: 6
 #          placement:
             # constraints: [node.hostname != ip-172-31-19-30]
             # max_replicas_per_node: 4
@@ -16,7 +16,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py -n 5 -l 5s -i 30s"
+            ./exchange_data/emitters/binance/_depth_emitter.py -n 7 -l 1s -i 30s"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -57,6 +57,7 @@ services:
         depends_on:
             - emit_time
             - redis
+            - influxdb
         networks:
             - public
 
@@ -77,6 +78,7 @@ services:
         depends_on:
             - emit_time
             - redis
+            - influxdb
         networks:
             - public
 
