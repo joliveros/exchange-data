@@ -7,7 +7,7 @@ from binance.exceptions import BinanceAPIException
 from datetime import timedelta
 
 from requests import ConnectTimeout
-from requests.exceptions import ProxyError
+from requests.exceptions import ProxyError, ReadTimeout
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -181,7 +181,7 @@ class DepthEmitter(Messenger, BinanceUtils):
       alog.info(alog.pformat(vars(e)))
       self.sleep_during_embargo(e)
 
-    except (ConnectTimeout, ConnectionError, ProxyError) as e:
+    except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
       alog.info(e)
       self.symbols_queue.add(symbol)
 
