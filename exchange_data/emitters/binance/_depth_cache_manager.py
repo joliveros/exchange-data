@@ -13,8 +13,9 @@ from exchange_data.utils import DateTimeUtils
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
-    def __init__(self, symbol, lock_hold, redis_client, **kwargs):
+    def __init__(self, symbol, lock_hold, redis_client, init_retry=3, **kwargs):
         self.lock_hold = lock_hold
+        self.init_retry = init_retry
         super().__init__(symbol=symbol, **kwargs)
         self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
@@ -38,17 +39,14 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             db=0
         )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
 
-    # def _init_cache(self):
-    #     try:
-    #         with self.init_cache_lock():
-    #             try:
-    #                 super()._init_cache()
-    #                 time.sleep(self.lock_hold)
-    #             except BinanceAPIException as e:
-    #                 self.sleep_during_embargo(e)
-    #
-    #     except RedLockError as e:
-    #         pass
+    def _init_cache(self):
+        try:
+          if self.init_retry < 0:
+            raise Exception('Exceeded retries')
+          self.init_retry -= 1
+          super()._init_cache()
+        except Exception as e:
+            self._init_cache()
 
     def close(self, **kwargs):
         try:
