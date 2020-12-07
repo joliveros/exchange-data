@@ -2,14 +2,13 @@ from binance.depthcache import DepthCacheManager
 from binance.exceptions import BinanceAPIException
 from exchange_data import settings
 from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
 
 import alog
 import time
-
-from exchange_data.utils import DateTimeUtils
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
