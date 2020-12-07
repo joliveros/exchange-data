@@ -39,15 +39,6 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             db=0
         )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
 
-    def _init_cache(self):
-        try:
-          if self.init_retry < 0:
-            raise Exception('Exceeded retries')
-          self.init_retry -= 1
-          super()._init_cache()
-        except Exception as e:
-            self._init_cache()
-
     def close(self, **kwargs):
         try:
             self.symbol_hosts.remove((self._symbol, self.symbol_hostname))
