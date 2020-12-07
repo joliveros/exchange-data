@@ -6,8 +6,7 @@ from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
 from datetime import timedelta
 
-from requests import ConnectTimeout
-from requests.exceptions import ProxyError, ReadTimeout
+from requests.exceptions import ProxyError, ReadTimeout, ConnectTimeout
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
