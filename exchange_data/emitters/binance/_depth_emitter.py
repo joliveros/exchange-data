@@ -6,7 +6,9 @@ from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
 from datetime import timedelta
 
+from requests.adapters import HTTPAdapter
 from requests.exceptions import ProxyError, ReadTimeout, ConnectTimeout
+from urllib3 import Retry
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -50,6 +52,13 @@ class ProxiedClient(Client, ProxiesBase):
 
   def _init_session(self):
     session = requests.session()
+
+    retries = Retry(total=24,
+                    backoff_factor=0.1,
+                    status_forcelist=[500, 502, 503, 504])
+
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+
     session.proxies.update(self.proxies)
     session.headers.update({'Accept': 'application/json',
                             'User-Agent': 'binance/python',
