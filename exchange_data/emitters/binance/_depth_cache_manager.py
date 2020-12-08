@@ -1,5 +1,8 @@
 from binance.depthcache import DepthCacheManager
 from binance.exceptions import BinanceAPIException
+from requests import ConnectTimeout, ReadTimeout
+from requests.exceptions import ProxyError
+
 from exchange_data import settings
 from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.utils import DateTimeUtils
@@ -12,7 +15,8 @@ import time
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
-    def __init__(self, symbol, lock_hold, redis_client, init_retry=3, **kwargs):
+    def __init__(self, symbol, lock_hold, redis_client, init
+        _retry=3, **kwargs):
         self.lock_hold = lock_hold
         self.init_retry = init_retry
         super().__init__(symbol=symbol, **kwargs)
@@ -37,6 +41,12 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             host=settings.REDIS_HOST,
             db=0
         )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
+
+    def _init_cache(self):
+        try:
+            super()._init_cache()
+        except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
+            pass
 
     def close(self, **kwargs):
         try:
