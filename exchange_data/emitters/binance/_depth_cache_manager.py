@@ -15,8 +15,7 @@ import time
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
-    def __init__(self, symbol, lock_hold, redis_client, init
-        _retry=3, **kwargs):
+    def __init__(self, symbol, lock_hold, redis_client, init_retry=3, **kwargs):
         self.lock_hold = lock_hold
         self.init_retry = init_retry
         super().__init__(symbol=symbol, **kwargs)
