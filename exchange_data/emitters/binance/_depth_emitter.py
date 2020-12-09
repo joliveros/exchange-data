@@ -112,7 +112,10 @@ class DepthEmitter(Messenger, BinanceUtils):
             queue_len = len(self.symbols_queue)
 
             if queue_len > 0:
-                next_ix = random.randrange(0, queue_len - 1)
+                if queue_len == 1:
+                    next_ix = 0
+                else:
+                    next_ix = random.randrange(0, queue_len - 1)
                 symbol = list(self.symbols_queue)[next_ix]
                 self.symbols_queue.remove(symbol)
 
