@@ -1,79 +1,49 @@
-    version: '3.8'
+version: '3.8'
 networks:
-    public:
-        name: public
-        external: true
+  public:
+    name: public
+    external: true
 services:
-    volatility_change_emitter:
-        deploy:
-            labels:
-                - "swarm.cronjob.enable=true"
-                - "swarm.cronjob.schedule=*/15 * * * *"
-                - "swarm.cronjob.skip-running=false"
-            replicas: 0
-            placement:
-               constraints: [node.hostname != ip-172-31-19-30]
-            restart_policy:
-                condition: none
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - redis
-            - influxdb
-
-    proxies:
-        deploy:
-            labels:
-                - "swarm.cronjob.enable=true"
-                - "swarm.cronjob.schedule=0 */1 * * *"
-                - "swarm.cronjob.skip-running=false"
-            replicas: 0
-            restart_policy:
-                condition: none
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 0.7 -t 5"
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - redis
-
-#    macd_param_tuner:
-#        deploy:
-#            resources:
-#                limits:
-#                    cpus: '0.6'
-#            mode: replicated
-#            labels:
-#                - "swarm.cronjob.enable=true"
-#                - "swarm.cronjob.schedule=0 */2 * * *"
-#                - "swarm.cronjob.skip-running=false"
-#                - "swarm.cronjob.replicas=2"
-#            replicas: 0
-#            placement:
-#               constraints: [node.hostname == ip-172-31-19-30]
-#            restart_policy:
-#                condition: none
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/ta_model/tune_symbols.py -s 100 -i 4h"
-#        env_file:
-#            - ./.env.prod
-#        networks:
-#            - public
-#        depends_on:
-#            - redis
-#            - influxdb
-
+  volatility_change_emitter:
+    deploy:
+      labels:
+        - swarm.cronjob.enable=true
+        - swarm.cronjob.schedule=*/15 * * * *
+        - swarm.cronjob.skip-running=false
+      replicas: 0
+      placement:
+        constraints:
+          - node.hostname != ip-172-31-19-30
+      restart_policy:
+        condition: none
+    image: 'registry.rubercubic.com:5001/exchange-data:latest'
+    command: >-
+      bash -c "source ~/.bashrc &&
+      ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
+    env_file:
+      - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
+      - influxdb
+  proxies:
+    deploy:
+      labels:
+        - swarm.cronjob.enable=true
+        - swarm.cronjob.schedule=0 */1 * * *
+        - swarm.cronjob.skip-running=false
+      replicas: 0
+      restart_policy:
+        condition: none
+    image: 'registry.rubercubic.com:5001/exchange-data:latest'
+    command: bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 0.7 -t 5"
+    env_file:
+      - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
 secrets:
-    DB:
-        external: true
+  DB:
+    external: true

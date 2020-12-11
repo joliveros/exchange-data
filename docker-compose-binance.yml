@@ -6,7 +6,7 @@ networks:
 services:
     emit_depth_0:
         deploy:
-          replicas: 36
+          replicas: 0
 #          placement:
             # constraints: [node.hostname != ip-172-31-19-30]
             # max_replicas_per_node: 4
