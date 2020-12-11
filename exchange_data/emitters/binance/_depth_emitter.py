@@ -24,9 +24,13 @@ import signal
 
 
 class DepthEmitter(Messenger, BinanceUtils):
+    create_at = None
+
     def __init__(self, lock_hold, interval, delay, num_symbol_take,
+                 max_life,
                  num_locks=2, **kwargs):
         super().__init__(**kwargs)
+        self.max_life = timeparse(max_life)
         self.lock_hold = timeparse(lock_hold)
         self.interval = interval
         self.delay = timedelta(seconds=timeparse(delay))
@@ -36,12 +40,17 @@ class DepthEmitter(Messenger, BinanceUtils):
         self.lock = None
         self.caches = {}
         self.cache_queue = []
+        self.create_at = DateTimeUtils.now()
 
         alog.info('### initialized ###')
 
         self.on(self.interval, self.check_queues)
 
         self.check_queues()
+
+    @property
+    def symbol_hosts(self):
+        return Set(key='symbol_hosts', redis=self.redis_client)
 
     @property
     def symbols_queue(self):
@@ -53,6 +62,11 @@ class DepthEmitter(Messenger, BinanceUtils):
                    redis=self.redis_client)
 
     def check_queues(self, timestamp=None):
+        if (DateTimeUtils.now() - self.create_at).total_seconds() > \
+           self.max_life:
+            self.requeue_symbols()
+            self.exit()
+
         self.purge()
 
         alog.info('### check queues ###')
@@ -63,6 +77,14 @@ class DepthEmitter(Messenger, BinanceUtils):
         if len(self.symbols_queue) > 0:
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
+
+    def requeue_symbols(self):
+        _symbol_hosts = set([s for s in self.symbol_hosts])
+        for symbol, cache in self.caches.items():
+            self.symbols_queue.add(symbol)
+            self.symbol_hosts.remove((symbol,
+                                      NotifyingDepthCacheManager._symbol_hostname(
+                                          symbol)))
 
     def add_next_cache(self):
         try:
@@ -90,8 +112,8 @@ class DepthEmitter(Messenger, BinanceUtils):
             _cache: DepthCache = cache._depth_cache
 
             if _cache.last_publish_time:
-                if _cache.last_publish_time < DateTimeUtils.now() - timedelta(
-                    seconds=60):
+                if _cache.last_publish_time < DateTimeUtils.now() \
+                   - timedelta(seconds=60):
                     self.remove_cache(cache.symbol_hostname)
 
     @property
@@ -207,6 +229,7 @@ class DepthEmitter(Messenger, BinanceUtils):
 
 @click.command()
 @click.option('--delay', '-d', type=str, default='15s')
+@click.option('--max-life', '-m', type=str, default='2h')
 @click.option('--lock-hold', '-l', type=str, default='3s')
 @click.option('--interval', '-i', type=str, default='5m')
 @click.option('--num-symbol-take', '-n', type=int, default=4)
