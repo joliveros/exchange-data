@@ -47,7 +47,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         try:
             super()._init_cache()
         except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
-            pass
+            raise e
 
     def close(self, **kwargs):
         try:
