@@ -6,7 +6,7 @@ networks:
 services:
     emit_depth_0:
         deploy:
-          replicas: 0
+          replicas: 36
 #          placement:
             # constraints: [node.hostname != ip-172-31-19-30]
             # max_replicas_per_node: 4
@@ -60,50 +60,6 @@ services:
             - influxdb
         networks:
             - public
-
-    emit_and_record_depths_40:
-        deploy:
-            replicas: 1
-            #placement:
-              # constraints: [node.hostname == ip-172-31-19-30]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/emit_and_record_depths.py -d 40"
-        env_file:
-            - ./.env.prod
-        secrets:
-            - DB
-            - ROLLBAR_API_KEY
-        depends_on:
-            - emit_time
-            - redis
-            - influxdb
-        networks:
-            - public
-
-#    emit_bitmex_account:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/emitters/bitmex/_account_emitter.py"
-#        environment:
-#            - LOG_LEVEL=INFO
-#        env_file:
-#            - ./.env.prod
-#        secrets:
-#            - BITMEX_API_KEY
-#            - BITMEX_API_SECRET
-#            - DB
-#            - ROLLBAR_API_KEY
-#        networks:
-#            - public
-#        depends_on:
-#            - redis
-#            - influxdb
-#
 
     emit_trading_window:
         deploy:
@@ -179,7 +135,6 @@ services:
 #            - BITMEX_API_SECRET
 #            - DB
 #
-
 
 secrets:
     BITMEX_API_KEY:
