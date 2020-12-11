@@ -2,7 +2,7 @@
 import re
 
 from exchange_data import settings
-from exchange_data.emitters.binance._depth_emitter import ProxiedClient
+from exchange_data.emitters.binance.proxied_client import ProxiedClient
 from redis import Redis
 from redis_cache import RedisCache
 from redis_collections import Set

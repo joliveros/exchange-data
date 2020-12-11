@@ -1,4 +1,4 @@
-version: '3.8'
+    version: '3.8'
 networks:
     public:
         name: public
@@ -38,8 +38,7 @@ services:
                 condition: none
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/proxies.py"
+            bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 0.7 -t 5"
         env_file:
             - ./.env.prod
         networks:

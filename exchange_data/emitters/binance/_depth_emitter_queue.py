@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import timedelta
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
-from exchange_data.emitters.binance._depth_emitter import ProxiedClient
+from exchange_data.emitters.binance.proxied_client import ProxiedClient
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
