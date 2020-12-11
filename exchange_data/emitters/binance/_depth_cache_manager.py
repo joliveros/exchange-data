@@ -1,25 +1,27 @@
 from binance.depthcache import DepthCacheManager
-from binance.exceptions import BinanceAPIException
+from exchange_data import settings
+from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.emitters.binance.proxied_client import ProxiedClient
+from exchange_data.utils import DateTimeUtils
+from pytimeparse.timeparse import timeparse
+from redis import Redis
+from redis_collections import Set
+from redlock import RedLock
 from requests import ConnectTimeout, ReadTimeout
 from requests.exceptions import ProxyError
 
-from exchange_data import settings
-from exchange_data.emitters.binance import BinanceUtils
-from exchange_data.utils import DateTimeUtils
-from pytimeparse.timeparse import timeparse
-from redis_collections import Set
-from redlock import RedLock, RedLockError
-
 import alog
-import time
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
-    def __init__(self, symbol, lock_hold, redis_client, init_retry=3, **kwargs):
+    _symbol = None
+
+    def __init__(self, symbol, lock_hold, init_retry=3, **kwargs):
         self.lock_hold = lock_hold
         self.init_retry = init_retry
-        super().__init__(symbol=symbol, **kwargs)
-        self.symbol_hosts = Set(key='symbol_hosts', redis=redis_client)
+        super().__init__(symbol=symbol, client=ProxiedClient(), **kwargs)
+        self.redis_client = Redis(host=settings.REDIS_HOST)
+        self.symbol_hosts = Set(key='symbol_hosts', redis=self.redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.created_at = DateTimeUtils.now()
 
@@ -53,5 +55,10 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         except KeyError:
             pass
 
+        self.redis_client.close()
+
         kwargs['close_socket'] = True
         super().close(**kwargs)
+
+    def __del__(self):
+        alog.info(f'### delete cache ###')

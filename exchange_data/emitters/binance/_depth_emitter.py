@@ -1,25 +1,18 @@
 #!/usr/bin/env python
 
-import requests
-from binance.client import Client
 from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
 from datetime import timedelta
-
-from requests.adapters import HTTPAdapter
-from requests.exceptions import ProxyError, ReadTimeout, ConnectTimeout
-from urllib3 import Retry
-
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.emitters.binance._depth_cache_manager import \
     NotifyingDepthCacheManager
-from exchange_data.proxies_base import ProxiesBase
 from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
+from requests.exceptions import ProxyError, ReadTimeout, ConnectTimeout
 
 import alog
 import click
@@ -28,42 +21,6 @@ import numpy as np
 import os
 import random
 import signal
-
-
-class ProxiedClient(Client, ProxiesBase):
-    _proxies = None
-
-    def __init__(self, proxies=None, **kwargs):
-        self._proxies = proxies
-        ProxiesBase.__init__(self, **kwargs)
-        super().__init__(**kwargs)
-
-    @property
-    def proxies(self):
-        if self._proxies:
-            return self._proxies
-        else:
-            proxy = self.valid_proxies.random_sample()[0]
-
-            return dict(
-                http=proxy,
-                https=proxy
-            )
-
-    def _init_session(self):
-        session = requests.session()
-
-        retries = Retry(total=24,
-                        backoff_factor=0.1,
-                        status_forcelist=[500, 502, 503, 504])
-
-        session.mount('http://', HTTPAdapter(max_retries=retries))
-
-        session.proxies.update(self.proxies)
-        session.headers.update({'Accept': 'application/json',
-                                'User-Agent': 'binance/python',
-                                'X-MBX-APIKEY': self.API_KEY})
-        return session
 
 
 class DepthEmitter(Messenger, BinanceUtils):
@@ -159,10 +116,6 @@ class DepthEmitter(Messenger, BinanceUtils):
                     self.caches[_cache._symbol].close()
                     del self.caches[_cache._symbol]
 
-    @property
-    def client(self):
-        return ProxiedClient()
-
     def take_lock(self):
         lock_name = f'take_lock'
 
@@ -205,9 +158,7 @@ class DepthEmitter(Messenger, BinanceUtils):
 
         self.caches[symbol] = NotifyingDepthCacheManager(
             callback=self.message,
-            client=self.client,
             limit=100000,
-            redis_client=self.redis_client,
             refresh_interval=60 * 60 * 2,
             symbol=symbol,
             lock_hold=self.lock_hold
