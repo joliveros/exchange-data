@@ -7,14 +7,14 @@ from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_collections import Set
 from redlock import RedLock
-from requests import ConnectTimeout, ReadTimeout
-from requests.exceptions import ProxyError
+from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout
 
 import alog
 
 
 class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
     _symbol = None
+    last_publish_time = None
 
     def __init__(self, symbol, lock_hold, init_retry=3, **kwargs):
         self.lock_hold = lock_hold
@@ -23,6 +23,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self.redis_client = Redis(host=settings.REDIS_HOST)
         self.symbol_hosts = Set(key='symbol_hosts', redis=self.redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
+        self.last_publish_time = None
         self.created_at = DateTimeUtils.now()
 
     @property

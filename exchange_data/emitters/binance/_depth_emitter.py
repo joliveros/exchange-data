@@ -110,9 +110,10 @@ class DepthEmitter(Messenger, BinanceUtils):
 
         for cache in caches:
             _cache: DepthCache = cache._depth_cache
+            dcm = self.caches[_cache.symbol]
 
-            if _cache.last_publish_time:
-                if _cache.last_publish_time < DateTimeUtils.now() \
+            if dcm.last_publish_time:
+                if dcm.last_publish_time < DateTimeUtils.now() \
                    - timedelta(seconds=60):
                     self.remove_cache(cache.symbol_hostname)
 
@@ -212,16 +213,18 @@ class DepthEmitter(Messenger, BinanceUtils):
                 depth=depth.tolist()
             )
 
-            if depthCache.last_publish_time is None or \
-                depthCache.last_publish_time < DateTimeUtils.now() - self.delay:
-                depthCache.last_publish_time = depthCache.update_time
+            if depthCache.symbol in self.caches:
+                dcm = self.caches[depthCache.symbol]
+                if dcm.last_publish_time is None or \
+                    dcm.last_publish_time < DateTimeUtils.now() - self.delay:
+                    dcm.last_publish_time = DateTimeUtils.now()
 
-                self.publish('depth', json.dumps(msg))
-                self.publish('symbol_timeout', json.dumps(dict(
-                    symbol=symbol,
-                    symbol_host=NotifyingDepthCacheManager._symbol_hostname(
-                        symbol)
-                )))
+                    self.publish('depth', json.dumps(msg))
+                    self.publish('symbol_timeout', json.dumps(dict(
+                        symbol=symbol,
+                        symbol_host=NotifyingDepthCacheManager._symbol_hostname(
+                            symbol)
+                    )))
 
     def start(self):
         self.sub([self.interval, 'remove_symbol'])
