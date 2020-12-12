@@ -1,3 +1,4 @@
+#git+https://github.com/joliveros/python-binance.git#egg=python-binance
 alog
 bitmex
 bitmex-websocket==0.2.78
@@ -8,7 +9,6 @@ docker
 flake8
 gax-google-logging-v2
 git+https://github.com/joliveros/gdax-python.git#egg=gdax
-git+https://github.com/joliveros/python-binance.git#egg=python-binance
 git+https://github.com/joliveros/sec.git#egg=sec
 git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
 gym
@@ -27,6 +27,7 @@ pytest-cov
 pytest-mock
 pytest-mypy
 pytest-vcr
+python-binance
 python-redis-cache
 pytimeparse
 pytz
