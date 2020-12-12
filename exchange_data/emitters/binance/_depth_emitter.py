@@ -61,9 +61,15 @@ class DepthEmitter(Messenger, BinanceUtils):
         return Set(key='remove_symbols_queue',
                    redis=self.redis_client)
 
+    @property
+    def time_since_created(self):
+        return (DateTimeUtils.now() - self.create_at).total_seconds()
+
     def check_queues(self, timestamp=None):
-        if (DateTimeUtils.now() - self.create_at).total_seconds() > \
-           self.max_life:
+        alog.info((self.time_since_created, self.max_life))
+
+        if self.time_since_created > self.max_life:
+
             self.requeue_symbols()
             self.exit()
 
@@ -79,7 +85,10 @@ class DepthEmitter(Messenger, BinanceUtils):
                 self.add_next_cache()
 
     def requeue_symbols(self):
+        alog.info('## requeue symbols ##')
+
         _symbol_hosts = set([s for s in self.symbol_hosts])
+
         for symbol, cache in self.caches.items():
             self.symbols_queue.add(symbol)
             self.symbol_hosts.remove((symbol,
@@ -96,7 +105,11 @@ class DepthEmitter(Messenger, BinanceUtils):
                 else:
                     next_ix = random.randrange(0, queue_len - 1)
                 symbol = list(self.symbols_queue)[next_ix]
-                self.symbols_queue.remove(symbol)
+
+                try:
+                    self.symbols_queue.remove(symbol)
+                except KeyError as e:
+                    pass
 
                 if symbol:
                     alog.info(f'## take next {symbol} ##')
