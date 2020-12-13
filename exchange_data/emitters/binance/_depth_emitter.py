@@ -53,6 +53,18 @@ class DepthEmitter(Messenger, BinanceUtils):
         return Set(key='symbol_hosts', redis=self.redis_client)
 
     @property
+    def max_caches(self):
+        hosts = set()
+
+        for symbol, symbol_host in self.symbol_hosts:
+            hosts.add(symbol_host.split('_')[-1])
+
+        if len(hosts) == 0:
+            return 0
+        else:
+            return int(len(self.symbols) / len(hosts))
+
+    @property
     def symbols_queue(self):
         return Set(key='symbols_queue', redis=self.redis_client)
 
@@ -74,9 +86,22 @@ class DepthEmitter(Messenger, BinanceUtils):
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
 
-        if len(self.symbols_queue) > 0:
+        alog.info((len(self.caches), self.max_caches))
+
+        if len(self.symbols_queue) > 0 and self.should_take:
             for i in range(0, self.num_symbol_take):
                 self.add_next_cache()
+
+    @property
+    def should_take(self):
+        should_take = False
+
+        if self.max_caches > 0 and len(self.caches) < self.max_caches:
+            should_take = True
+        elif self.max_caches == 0:
+            should_take = True
+
+        return should_take
 
     def requeue_symbols(self):
         _symbol_hosts = set([s for s in self.symbol_hosts])
