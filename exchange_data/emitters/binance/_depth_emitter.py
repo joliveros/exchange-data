@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import gc
 
 from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
@@ -91,6 +92,8 @@ class DepthEmitter(Messenger, BinanceUtils):
 
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
+
+        gc.collect()
 
         alog.info((len(self.caches), self.max_caches))
 
