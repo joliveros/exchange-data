@@ -21,10 +21,13 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self.init_retry = init_retry
         super().__init__(symbol=symbol, client=ProxiedClient(), **kwargs)
         self.redis_client = Redis(host=settings.REDIS_HOST)
-        self.symbol_hosts = Set(key='symbol_hosts', redis=self.redis_client)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.last_publish_time = None
         self.created_at = DateTimeUtils.now()
+
+    @property
+    def symbol_hosts(self):
+        return Set(key='symbol_hosts', redis=self.redis_client)
 
     @property
     def symbol_hostname(self):

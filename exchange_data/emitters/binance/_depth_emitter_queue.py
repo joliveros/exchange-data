@@ -17,6 +17,7 @@ import click
 import signal
 
 
+
 class DepthEmitterQueue(Messenger, BinanceUtils):
     def __init__(self, check_interval, timeout_interval, **kwargs):
 
@@ -45,10 +46,6 @@ class DepthEmitterQueue(Messenger, BinanceUtils):
     @property
     def symbol_hosts(self):
         return Set(key='symbol_hosts', redis=self.redis_client)
-
-    @cached_property_with_ttl(ttl=60 * 10)
-    def symbols(self):
-        return self.get_symbols()
 
     def symbol_timeout(self, data):
         symbol = data['symbol']
@@ -134,31 +131,6 @@ class DepthEmitterQueue(Messenger, BinanceUtils):
         for symbol in self.symbols:
             if symbol not in symbol_hosts:
                 self.symbols_queue.add(symbol)
-
-    @cached_property
-    def client(self):
-        return ProxiedClient()
-
-    def get_symbols(self):
-        try:
-            return self._get_symbols()
-        except BinanceAPIException as e:
-            alog.info(e.message)
-
-            self.sleep_during_embargo(e)
-
-            return []
-
-    def _get_symbols(self):
-        exchange_info = self.client.get_exchange_info()
-
-        symbols = [symbol for symbol in exchange_info['symbols']
-                   if symbol['status'] == 'TRADING']
-
-        symbol_names = [symbol['symbol'] for symbol in symbols if symbol[
-            'symbol']]
-
-        return symbol_names
 
     def start(self):
         self.sub([self.check_interval_str, 'symbol_timeout'])
