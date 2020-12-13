@@ -49,9 +49,12 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
 
     def _init_cache(self):
         try:
-            super()._init_cache()
+            if self.init_retry > 0:
+                alog.info(f'## init retry {self.init_retry}')
+                self.init_retry -= 1
+                return super()._init_cache()
         except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
-            raise e
+            return self._init_cache()
 
     def close(self, **kwargs):
         try:
