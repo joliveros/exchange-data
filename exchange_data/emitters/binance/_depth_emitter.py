@@ -82,8 +82,7 @@ class DepthEmitter(Messenger, BinanceUtils):
         alog.info((self.time_since_created, self.max_life))
 
         if self.time_since_created > self.max_life:
-
-            self.requeue_symbols()
+            # self.requeue_symbols()
             self.exit()
 
         self.purge()
@@ -93,7 +92,9 @@ class DepthEmitter(Messenger, BinanceUtils):
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
 
+        alog.info('started gc')
         gc.collect()
+        alog.info('end gc')
 
         alog.info((len(self.caches), self.max_caches))
 
@@ -124,6 +125,7 @@ class DepthEmitter(Messenger, BinanceUtils):
                                           symbol)))
 
     def add_next_cache(self):
+        alog.info('attempt add next cache')
         try:
             queue_len = len(self.symbols_queue)
 
@@ -143,8 +145,8 @@ class DepthEmitter(Messenger, BinanceUtils):
                     alog.info(f'## take next {symbol} ##')
                     self.add_cache(symbol)
 
-        except RedLockError:
-            pass
+        except RedLockError as e:
+            alog.info(e)
 
     def purge(self):
         caches: [NotifyingDepthCacheManager] = list(self.caches.values())
@@ -152,6 +154,8 @@ class DepthEmitter(Messenger, BinanceUtils):
         for cache in caches:
             _cache: DepthCache = cache._depth_cache
             dcm = self.caches[_cache.symbol]
+
+            alog.info(f'last publish time {dcm._symbol} {dcm.last_publish_time}')
 
             if dcm.last_publish_time:
                 if dcm.last_publish_time < DateTimeUtils.now() \
@@ -163,6 +167,8 @@ class DepthEmitter(Messenger, BinanceUtils):
         return [s.symbol_hostname for s in self.caches.values()]
 
     def remove_cache(self, symbol_host):
+        alog.info(f'## attempt to remove cache {symbol_host}')
+
         if '_' not in symbol_host:
             raise Exception('Not as symbol-hostname')
 
