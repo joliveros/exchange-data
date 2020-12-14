@@ -64,7 +64,7 @@ class DepthEmitter(Messenger, BinanceUtils):
         if len(hosts) == 0:
             return 0
         else:
-            return int(len(self.symbols) / len(hosts))
+            return int((len(self.symbols) / len(hosts)) * 1.1)
 
     @property
     def symbols_queue(self):
@@ -84,6 +84,7 @@ class DepthEmitter(Messenger, BinanceUtils):
 
         if self.time_since_created > self.max_life:
             # self.requeue_symbols()
+            raise Exception()
             self.exit()
 
         self.purge()
