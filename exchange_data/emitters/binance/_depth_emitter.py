@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import gc
+import threading
 
 from binance.depthcache import DepthCache
 from binance.exceptions import BinanceAPIException
@@ -88,6 +89,8 @@ class DepthEmitter(Messenger, BinanceUtils):
         self.purge()
 
         alog.info('### check queues ###')
+
+        alog.info(f'num threads {len(threading.enumerate())}')
 
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
@@ -226,13 +229,15 @@ class DepthEmitter(Messenger, BinanceUtils):
             self.remove_cache(NotifyingDepthCacheManager._symbol_hostname(
                 symbol))
 
-        self.caches[symbol] = NotifyingDepthCacheManager(
+        dcm = NotifyingDepthCacheManager(
             callback=self.message,
             limit=100000,
             refresh_interval=60 * 60 * 2,
             symbol=symbol,
             lock_hold=self.lock_hold
         )
+
+        self.caches[symbol] = dcm
 
         alog.info(f'### cache added {symbol}###')
 
