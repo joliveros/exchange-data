@@ -89,7 +89,6 @@ class DepthEmitter(Messenger, BinanceUtils):
         self.purge()
 
         alog.info('### check queues ###')
-
         alog.info(f'num threads {len(threading.enumerate())}')
 
         for symbol in self.remove_symbols_queue:
@@ -170,8 +169,6 @@ class DepthEmitter(Messenger, BinanceUtils):
         return [s.symbol_hostname for s in self.caches.values()]
 
     def remove_cache(self, symbol_host):
-        alog.info(f'## attempt to remove cache {symbol_host}')
-
         if '_' not in symbol_host:
             raise Exception('Not as symbol-hostname')
 
