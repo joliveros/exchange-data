@@ -18,7 +18,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
     _symbol = None
     last_publish_time = None
 
-    def __init__(self, symbol, lock_hold, init_retry=3, **kwargs):
+    def __init__(self, symbol, lock_hold, init_retry=2, **kwargs):
         self.lock_hold = lock_hold
         self._init_retry = init_retry
         self.init_retry = init_retry
@@ -54,9 +54,9 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
     def get_orderbook(self, **kwargs):
         try:
             if self.init_retry > 0:
-                alog.info(f'## init retry {self.init_retry}')
+                alog.info(f'## init retry {self._symbol} {self.init_retry}')
                 self.init_retry -= 1
-                res =  self._client.get_order_book(**kwargs)
+                res = self._client.get_order_book(**kwargs)
                 self.init_retry = self._init_retry
                 return res
             else:
@@ -69,10 +69,14 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
 
         :return:
         """
+
+        try:
+            res = self.get_orderbook(symbol=self._symbol, limit=self._limit)
+        except Exception as e:
+            return
+
         self._last_update_id = None
         self._depth_message_buffer = []
-
-        res = self.get_orderbook(symbol=self._symbol, limit=self._limit)
 
         # process bid and asks from the order book
         for bid in res['bids']:
@@ -93,6 +97,13 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
 
         # clear the depth buffer
         self._depth_message_buffer = []
+
+    def _depth_event(self, msg):
+        try:
+            super()._depth_event(msg)
+        except Exception as e:
+            alog.info(e)
+            self.close()
 
     def close(self, **kwargs):
         try:

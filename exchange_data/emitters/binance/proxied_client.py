@@ -9,7 +9,7 @@ from exchange_data.proxies_base import ProxiesBase
 class ProxiedClient(Client, ProxiesBase):
     _proxies = None
 
-    def __init__(self, proxies=None, **kwargs):
+    def __init__(self, proxies=None, retries=10, **kwargs):
         self._proxies = proxies
         ProxiesBase.__init__(self, **kwargs)
         super().__init__(**kwargs)
@@ -40,3 +40,4 @@ class ProxiedClient(Client, ProxiesBase):
                                 'User-Agent': 'binance/python',
                                 'X-MBX-APIKEY': self.API_KEY})
         return session
+
