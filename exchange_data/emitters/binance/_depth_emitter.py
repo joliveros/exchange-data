@@ -64,7 +64,7 @@ class DepthEmitter(Messenger, BinanceUtils):
         if len(hosts) == 0:
             return 0
         else:
-            return int((len(self.symbols) / len(hosts)) * 10.1)
+            return int((len(self.symbols) / len(hosts)) * 1.1)
 
     @property
     def symbols_queue(self):
