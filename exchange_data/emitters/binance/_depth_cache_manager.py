@@ -23,7 +23,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self._init_retry = init_retry
         self.init_retry = init_retry
         DepthCacheManager.__init__(self, symbol=symbol, client=ProxiedClient(), **kwargs)
-        BinanceUtils.__init__(self, symbol=symbol, client=ProxiedClient(), **kwargs)
+        BinanceUtils.__init__(self)
         self.redis_client = Redis(host=settings.REDIS_HOST)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.last_publish_time = None
