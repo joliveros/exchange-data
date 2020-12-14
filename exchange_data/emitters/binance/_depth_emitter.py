@@ -75,22 +75,10 @@ class DepthEmitter(Messenger, BinanceUtils):
         return Set(key='remove_symbols_queue',
                    redis=self.redis_client)
 
-    @property
-    def time_since_created(self):
-        return (DateTimeUtils.now() - self.create_at).total_seconds()
-
     def check_queues(self, timestamp=None):
-        alog.info((self.time_since_created, self.max_life))
-
-        if self.time_since_created > self.max_life:
-            # self.requeue_symbols()
-            raise Exception()
-            self.exit()
-
         self.purge()
 
         alog.info('### check queues ###')
-        alog.info(f'num threads {len(threading.enumerate())}')
 
         for symbol in self.remove_symbols_queue:
             self.remove_cache(symbol)
