@@ -23,12 +23,8 @@ class BinanceUtils(object):
     def get_symbols(self):
         try:
             return self._get_symbols()
-        except BinanceAPIException as e:
-            alog.info(e.message)
-
-            self.sleep_during_embargo(e)
-
-            return []
+        except Exception as e:
+            return self.get_symbols()
 
     def _get_symbols(self):
         exchange_info = self.client.get_exchange_info()
