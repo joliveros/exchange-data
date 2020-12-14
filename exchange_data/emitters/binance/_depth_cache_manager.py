@@ -18,6 +18,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
 
     def __init__(self, symbol, lock_hold, init_retry=3, **kwargs):
         self.lock_hold = lock_hold
+        self._init_retry = init_retry
         self.init_retry = init_retry
         super().__init__(symbol=symbol, client=ProxiedClient(), **kwargs)
         self.redis_client = Redis(host=settings.REDIS_HOST)
@@ -52,7 +53,8 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             if self.init_retry > 0:
                 alog.info(f'## init retry {self.init_retry}')
                 self.init_retry -= 1
-                return super()._init_cache()
+                super()._init_cache()
+                self.init_retry = self._init_retry
         except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
             return self._init_cache()
 
@@ -66,6 +68,7 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
 
         kwargs['close_socket'] = True
         super().close(**kwargs)
+        alog.info(f'## closed {self._symbol} ##')
 
     def __del__(self):
         alog.info(f'### delete cache ###')
