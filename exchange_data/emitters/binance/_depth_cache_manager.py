@@ -1,3 +1,5 @@
+import time
+
 from binance.depthcache import DepthCacheManager
 from exchange_data import settings
 from exchange_data.emitters.binance import BinanceUtils
@@ -20,7 +22,8 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self.lock_hold = lock_hold
         self._init_retry = init_retry
         self.init_retry = init_retry
-        super().__init__(symbol=symbol, client=ProxiedClient(), **kwargs)
+        DepthCacheManager.__init__(self, symbol=symbol, client=ProxiedClient(), **kwargs)
+        BinanceUtils.__init__(self, symbol=symbol, client=ProxiedClient(), **kwargs)
         self.redis_client = Redis(host=settings.REDIS_HOST)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.last_publish_time = None
@@ -48,15 +51,48 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
             db=0
         )], retry_delay=1000 * 1, retry_times=24, ttl=timeparse('10s') * 1000)
 
-    def _init_cache(self):
+    def get_orderbook(self, **kwargs):
         try:
             if self.init_retry > 0:
                 alog.info(f'## init retry {self.init_retry}')
                 self.init_retry -= 1
-                super()._init_cache()
+                res =  self._client.get_order_book(**kwargs)
                 self.init_retry = self._init_retry
+                return res
+            else:
+                raise Exception()
         except (ConnectTimeout, ConnectionError, ProxyError, ReadTimeout) as e:
-            return self._init_cache()
+            return self.get_orderbook(**kwargs)
+
+    def _init_cache(self):
+        """Initialise the depth cache calling REST endpoint
+
+        :return:
+        """
+        self._last_update_id = None
+        self._depth_message_buffer = []
+
+        res = self.get_orderbook(symbol=self._symbol, limit=self._limit)
+
+        # process bid and asks from the order book
+        for bid in res['bids']:
+            self._depth_cache.add_bid(bid)
+        for ask in res['asks']:
+            self._depth_cache.add_ask(ask)
+
+        # set first update id
+        self._last_update_id = res['lastUpdateId']
+
+        # set a time to refresh the depth cache
+        if self._refresh_interval:
+            self._refresh_time = int(time.time()) + self._refresh_interval
+
+        # Apply any updates from the websocket
+        for msg in self._depth_message_buffer:
+            self._process_depth_message(msg, buffer=True)
+
+        # clear the depth buffer
+        self._depth_message_buffer = []
 
     def close(self, **kwargs):
         try:
