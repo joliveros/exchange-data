@@ -22,12 +22,13 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self.lock_hold = lock_hold
         self._init_retry = init_retry
         self.init_retry = init_retry
-        DepthCacheManager.__init__(self, symbol=symbol, client=ProxiedClient(), **kwargs)
-        BinanceUtils.__init__(self)
+        super().__init__(symbol=symbol, client=ProxiedClient(), **kwargs)
         self.redis_client = Redis(host=settings.REDIS_HOST)
         self.symbol_hosts.add((symbol, self.symbol_hostname))
         self.last_publish_time = None
         self.created_at = DateTimeUtils.now()
+
+        self.close()
 
     @property
     def symbol_hosts(self):
@@ -114,7 +115,9 @@ class NotifyingDepthCacheManager(DepthCacheManager, BinanceUtils):
         self.redis_client.close()
 
         kwargs['close_socket'] = True
+
         super().close(**kwargs)
+
         alog.info(f'## closed {self._symbol} ##')
 
     def __del__(self):
