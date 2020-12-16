@@ -27,6 +27,7 @@ import signal
 
 class DepthEmitter(Messenger, BinanceUtils):
     create_at = None
+    last_queue_check = None
 
     def __init__(self, lock_hold, interval, delay, num_symbol_take,
                  max_life,
@@ -64,7 +65,7 @@ class DepthEmitter(Messenger, BinanceUtils):
         if len(hosts) == 0:
             return 0
         else:
-            return int((len(self.symbols) / len(hosts)) * 1.1)
+            return int((len(self.symbols) / len(hosts)) * 1.25)
 
     @property
     def symbols_queue(self):
@@ -76,6 +77,14 @@ class DepthEmitter(Messenger, BinanceUtils):
                    redis=self.redis_client)
 
     def check_queues(self, timestamp=None):
+        # if not self.last_queue_check:
+        #     self.last_queue_check = DateTimeUtils.now()
+        #
+        # diff = (self.last_queue_check - DateTimeUtils.now()).total_seconds()
+        #
+        # if diff > timeparse('30s'):
+        #     self.last_queue_check = DateTimeUtils.now()
+
         self.purge()
 
         alog.info('### check queues ###')
