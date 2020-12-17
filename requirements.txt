@@ -1,4 +1,3 @@
-#git+https://github.com/joliveros/python-binance.git#egg=python-binance
 alog
 bitmex
 bitmex-websocket==0.2.78
@@ -46,3 +45,4 @@ tensorflow-gpu==2.4.0rc2
 tensorflow-serving-api
 timestamp
 tqdm
+unicorn-binance-websocket-api
