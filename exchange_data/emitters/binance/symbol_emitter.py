@@ -1,31 +1,22 @@
 #!/usr/bin/env python
+import json
 
-import gc
-
-from binance.depthcache import DepthCache
-from binance.exceptions import BinanceAPIException
-from datetime import timedelta
-
-from unicorn_binance_websocket_api import BinanceWebSocketApiManager
+import alog
+from pytimeparse.timeparse import timeparse
+from redlock import RedLock
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
-from exchange_data.emitters.binance._depth_cache_manager import \
-    NotifyingDepthCacheManager
-from exchange_data.utils import DateTimeUtils
-from pytimeparse.timeparse import timeparse
-from redis_collections import Set
-from redlock import RedLock, RedLockError
-from requests.exceptions import ProxyError, ReadTimeout, ConnectTimeout
+from redis import Redis
+from redis_cache import RedisCache
+from unicorn_binance_websocket_api import BinanceWebSocketApiManager
 
-import alog
 import click
-import json
-import numpy as np
-import os
-import random
 import signal
+
+
+cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 
 class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
@@ -34,41 +25,48 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
     def __init__(
         self,
-        lock_hold,
-        interval,
-        delay,
-        num_symbol_take,
-        num_locks=2,
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
-        self.lock_hold = timeparse(lock_hold)
-        self.interval = interval
-        self.delay = timedelta(seconds=timeparse(delay))
-        self.num_symbol_take = num_symbol_take
-        self.num_locks = num_locks
-        self.last_lock_id = 0
-        self.lock = None
-        self.caches = {}
-        self.cache_queue = []
-        self.create_at = DateTimeUtils.now()
 
-        alog.info('### initialized ###')
+        alog.info(alog.pformat(self.symbols))
+
+        raise Exception()
 
         self.create_stream(['depth'], self.symbols)
 
         while True:
             data = self.pop_stream_data_from_stream_buffer()
+
             if data:
                 self.publish('depth', data)
+
+    @property
+    def symbols(self):
+        return json.loads(SymbolEmitter._symbols())
+
+    @staticmethod
+    @cache.cache(ttl=timeparse('1h'))
+    def _symbols():
+        symbols = BinanceUtils().get_symbols()
+        return json.dumps(symbols)
+
+    def task_index_lock(self):
+        lock_name = f'task_index_lock'
+
+        lock = RedLock(lock_name, [dict(
+            host=settings.REDIS_HOST,
+            db=0
+        )], retry_delay=300, retry_times=3, ttl=timeparse('30s') * 1000)
+
+        alog.info(lock_name)
+
+        return lock
+
 
 
 
 @click.command()
-@click.option('--delay', '-d', type=str, default='15s')
-@click.option('--lock-hold', '-l', type=str, default='3s')
-@click.option('--interval', '-i', type=str, default='5m')
-@click.option('--num-symbol-take', '-n', type=int, default=4)
 def main(**kwargs):
     emitter = SymbolEmitter(**kwargs)
 
