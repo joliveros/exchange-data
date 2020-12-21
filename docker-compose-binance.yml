@@ -4,35 +4,16 @@ networks:
         name: public
         external: true
 services:
-    emit_depth_0:
+    symbol_emitter:
         deploy:
-          replicas: 36
-#          placement:
-            # constraints: [node.hostname != ip-172-31-19-30]
-            # max_replicas_per_node: 4
+          replicas: 1
           update_config:
             parallelism: 2
             delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter.py -n 24 -l 1s -i 30s -m 90m"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-
-    emit_depth_queue:
-        deploy:
-            replicas: 1
-            #placement:
-              #constraints: [node.hostname == ip-172-31-19-30]
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_depth_emitter_queue.py -t 1m"
+            ./exchange_data/emitters/binance/symbol_emitter.py"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -42,7 +23,7 @@ services:
 
     emit_and_record_depths:
         deploy:
-            replicas: 1
+            replicas: 0
             #placement:
               #constraints: [node.hostname == ip-172-31-19-30]
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -60,81 +41,6 @@ services:
             - influxdb
         networks:
             - public
-
-    emit_trading_window:
-        deploy:
-            replicas: 0
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/trading_window_emitter.py -i 3h -s $SYMBOL"
-        environment:
-            - LOG_LEVEL=INFO
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - redis
-            - influxdb
-        secrets:
-            - DB
-
-    emit_prediction_btc:
-        deploy:
-            replicas: 0
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/prediction_emitter.py $SYMBOL -v 1e4"
-        environment:
-            - LOG_LEVEL=INFO
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - resnet_server
-            - redis
-            - influxdb
-        secrets:
-            - DB
-
-#    virtual_executor:
-#        deploy:
-#            replicas: 1
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/trading/virtual_trade_executor.py XBTUSD -l 1.0 -c 1.0"
-#        environment:
-#            - CUDA_VISIBLE_DEVICES=-1
-#        depends_on:
-#            - redis
-#        networks:
-#            - public
-#        secrets:
-#            - DB
-#
-#    trade_executor:
-#        deploy:
-#            replicas: 0
-#        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-#        command: >-
-#            bash -c "source ~/.bashrc &&
-#            ./exchange_data/trading/_trade_executor.py XBTUSD -p 0 -l 1"
-#        environment:
-#            - CUDA_VISIBLE_DEVICES=-1
-#        depends_on:
-#            - redis
-#            - influxdb
-#        networks:
-#            - public
-#        secrets:
-#            - BITMEX_API_KEY
-#            - BITMEX_API_SECRET
-#            - DB
-#
 
 secrets:
     BITMEX_API_KEY:
