@@ -1,54 +1,70 @@
 #!/usr/bin/env python
+import time
+
 import alog
-from binance.client import Client
-from bitmex import bitmex
-from exchange_data.channels import BitmexChannels
-from exchange_data.emitters import Messenger
+from pytimeparse.timeparse import timeparse
+from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout
+from urllib3.exceptions import ConnectTimeoutError
+
+from exchange_data.emitters import Messenger, TimeEmitter
 
 import click
 import json
 import signal
 
+from exchange_data.emitters.binance import ProxiedClient
+from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
+
 
 class FullOrderBookEmitter(Messenger):
 
-    def __init__(self, symbol: str, interval: str = '1m', **kwargs):
+    def __init__(self, interval: str = '1m', **kwargs):
         super().__init__(**kwargs)
-        self.symbol = symbol
-        self.bitmex = bitmex(test=False)
-        self.interval = interval
-        self.channel = self.generate_channel_name(interval, self.symbol)
-        self.client = Client()
+        self.interval = timeparse(interval)
 
-        self.on(self.interval, self.publish_orderbook)
+        while True:
+            for symbol in self.symbols:
+                self.publish_orderbook(symbol)
+                time.sleep(self.interval)
 
-    @staticmethod
-    def generate_channel_name(interval: str, symbol: str):
-        return f'{symbol}_OrderBookL2_{interval}'
+    @property
+    def client(self):
+        return ProxiedClient()
 
-    def publish_orderbook(self, timestamp):
-        depth = self.client.get_order_book(symbol=self.symbol)
+    @property
+    def symbols(self):
+        return json.loads(SymbolEmitter._symbols())
+
+    def publish_orderbook(self, *args):
+        try:
+            self._publish_orderbook(*args)
+        except (ProxyError, ConnectTimeout, ReadTimeout) as e:
+            alog.info(e)
+            self.publish_orderbook(*args)
+
+    def _publish_orderbook(self, symbol):
+        alog.info(f'## get orderbook for {symbol} ##')
+        timestamp = TimeEmitter.timestamp()
+        depth = self.client.get_order_book(symbol=symbol, limit=5000)
 
         data = dict(
             a=depth['asks'],
             b=depth['bids'],
-            E=timestamp
+            E=timestamp,
+            s=symbol,
         )
 
-        msg = self.channel, json.dumps(data)
+        alog.info(len(data['a']) + len(data['b']))
+
+        msg = 'depth_reset', json.dumps(dict(data=data))
 
         self.publish(*msg)
 
-    def start(self):
-        self.sub([self.interval])
-
 
 @click.command()
-@click.argument('symbol', type=str)
 @click.option('--interval', '-i', type=str, default='1m')
 def main(**kwargs):
     emitter = FullOrderBookEmitter(**kwargs)
-    emitter.start()
 
 
 if __name__ == '__main__':
