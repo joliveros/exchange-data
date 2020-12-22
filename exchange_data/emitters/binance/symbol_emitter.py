@@ -1,18 +1,18 @@
 #!/usr/bin/env python
-import json
-
-import alog
-from pytimeparse.timeparse import timeparse
-from redlock import RedLock
+import time
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
+from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
+from redis_collections import Set
+from redlock import RedLock
 from unicorn_binance_websocket_api import BinanceWebSocketApiManager
-
+import alog
 import click
+import json
 import signal
 
 
@@ -21,6 +21,8 @@ cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     create_at = None
+    depth_symbols = set()
+    last_lock_ix = 0
     last_queue_check = None
 
     def __init__(
@@ -29,11 +31,13 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     ):
         super().__init__(exchange="binance.com", **kwargs)
 
-        alog.info(alog.pformat(self.symbols))
+        self.queued_symbols = Set(key='queued_symbols', redis=self.redis_client)
 
-        raise Exception()
+        self.queued_symbols.update(self.symbols)
 
-        self.create_stream(['depth'], self.symbols)
+        self.take_symbols()
+
+        self.create_stream(['depth'], self.depth_symbols)
 
         while True:
             data = self.pop_stream_data_from_stream_buffer()
@@ -51,24 +55,41 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         symbols = BinanceUtils().get_symbols()
         return json.dumps(symbols)
 
-    def task_index_lock(self):
-        lock_name = f'task_index_lock'
+    def symbol_take_lock(self):
+        lock_name = f'symbol_take_lock'
 
         lock = RedLock(lock_name, [dict(
             host=settings.REDIS_HOST,
             db=0
-        )], retry_delay=300, retry_times=3, ttl=timeparse('30s') * 1000)
+        )], retry_delay=300, retry_times=100, ttl=timeparse('30s') * 1000)
 
         alog.info(lock_name)
 
         return lock
 
+    def take_symbols(self):
+        while len(self.queued_symbols) > 0:
+            queued_symbols = len(self.queued_symbols)
+            take_count = 10
 
+            if queued_symbols < take_count:
+                take_count = queued_symbols
+
+            for i in range(0, take_count):
+                try:
+                    symbol = self.queued_symbols.pop()
+                    self.depth_symbols.add(symbol)
+                except KeyError as e:
+                    break
+
+            time.sleep(2)
+
+        alog.info(len(self.depth_symbols))
 
 
 @click.command()
 def main(**kwargs):
-    emitter = SymbolEmitter(**kwargs)
+    SymbolEmitter(**kwargs)
 
 
 if __name__ == '__main__':

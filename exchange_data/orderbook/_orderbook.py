@@ -1,8 +1,11 @@
+import json
+from functools import lru_cache
+
 import alog
 
 from ._ordertree import OrderTree
 from collections import deque  # a faster insert/pop queue
-from exchange_data import Buffer
+from exchange_data import Buffer, Measurement
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, Trade, \
     TradeSummary, TradeParty
 from exchange_data.orderbook.exceptions import OrderExistsException, \
@@ -11,6 +14,7 @@ from typing import Callable
 
 import datetime
 import time
+import numpy as np
 
 
 class OrderBook(object):
@@ -317,6 +321,65 @@ class OrderBook(object):
 
     def get_worst_ask(self):
         return self.asks.max_price()
+
+    def gen_bid_side(self):
+        bid_levels = list(self.bids.price_tree.items())
+        price = np.array(
+            [level[0] for level in bid_levels]
+        )
+
+        volume = np.array(
+            [level[1].volume for level in bid_levels]
+        ) * -1
+
+        return np.vstack((price, volume))
+
+    def gen_ask_side(self):
+        bid_levels = list(self.asks.price_tree.items())
+        price = np.array(
+            [level[0] for level in bid_levels]
+        )
+
+        volume = np.array(
+            [level[1].volume for level in bid_levels]
+        )
+
+        return np.vstack((price, volume))
+
+    def generate_frame(self) -> np.ndarray:
+        bid_side = np.flip(self.gen_bid_side(), axis=1)
+        ask_side = self.gen_ask_side()
+
+        bid_side_shape = bid_side.shape
+        ask_side_shape = ask_side.shape
+
+        if bid_side_shape[-1] > ask_side_shape[-1]:
+            new_ask_side = np.zeros(bid_side_shape)
+            new_ask_side[:ask_side_shape[0], :ask_side_shape[1]] = ask_side
+            ask_side = new_ask_side
+        elif ask_side_shape[-1] > bid_side_shape[-1]:
+            new_bid_side = np.zeros(ask_side_shape)
+            new_bid_side[:bid_side_shape[0], :bid_side_shape[1]] = bid_side
+            bid_side = new_bid_side
+
+        frame = np.array((ask_side, bid_side))
+
+        return frame
+
+    @property
+    def frame_channel(self):
+        return f'{self.symbol}_OrderBookFrame'
+
+    def measurement(self, ):
+        fields = dict(
+            best_ask=self.get_best_ask(),
+            best_bid=self.get_best_bid(),
+            data=json.dumps(self.generate_frame().tolist()),
+        )
+
+        return vars(Measurement(measurement=self.frame_channel,
+                           tags={'symbol': self.symbol},
+                           time=self.last_timestamp, fields=fields))
 
     def print(self, depth: int = 0, trades: bool = False):
         bid_levels = list(self.bids.price_tree.items(reverse=True))

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import enum
 
 from bitmex import bitmex
 
@@ -23,7 +24,12 @@ class OrderBookL2Emitter(Messenger):
 
     @staticmethod
     def generate_channel_name(interval: str, symbol: BitmexChannels):
-        return f'{symbol.value}_OrderBookL2_{interval}'
+        _symbol = symbol
+        if issubclass(type(symbol), enum.Enum):
+            _symbol = symbol.value
+
+        return f'{symbol}_OrderBookL2_{interval}'
+
 
     def publish_orderbook(self, timestamp):
         data = self.bitmex.OrderBook.OrderBook_getL2(
