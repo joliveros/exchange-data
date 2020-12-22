@@ -63,7 +63,7 @@ class TestBitmexOrderBookEmitter(object):
     def test_save_frame(self, write_points_mock, orderbook_emitter):
         orderbook_emitter.depths = [1]
 
-        orderbook_emitter.save_frame(self.timestamp)
+        orderbook_emitter.save_measurements(self.timestamp)
 
         write_points_mock.called_once()
 

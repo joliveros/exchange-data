@@ -22,23 +22,16 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
         self.on(self.symbol, self.message)
 
     def message(self, raw_message):
-        alog.info(raw_message)
         asks = raw_message['a']
         bids = raw_message['b']
         timestamp = DateTimeUtils.parse_db_timestamp(raw_message['E'])
 
-        levels = [(float(price), float(quantity), OrderBookSide.ASK) for price,
-                                                                      quantity in
-                  asks]
-        levels += [(float(price), float(quantity), OrderBookSide.BID) for
-                   price,
-                                                                      quantity in
-                  bids]
+        levels = [(float(price), float(quantity), OrderBookSide.ASK)
+                  for price, quantity in asks]
+        levels += [(float(price), float(quantity), OrderBookSide.BID)
+                   for price, quantity in bids]
 
         for price, quantity, side in levels:
-            price = float(price)
-            quantity = float(quantity)
-
             if quantity == 0.0:
                 self.remove_price(price, side, timestamp)
             else:
@@ -61,13 +54,9 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
             pass
 
     def update_price(self, price, quantity, side, timestamp):
-        alog.info(price)
         try:
             current_price = self.get_price(price)
             current_quantity = current_price.volume
-
-            alog.info(current_price)
-            alog.info(current_quantity)
 
             if current_quantity < quantity:
                 diff = quantity - current_quantity
