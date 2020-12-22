@@ -43,6 +43,26 @@ services:
         networks:
             - public
 
+    full_orderbook_emitter:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py -i 2s"
+        env_file:
+            - ./.env.prod
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+            - influxdb
+        networks:
+            - public
+
+
 secrets:
     BITMEX_API_KEY:
         external: true
