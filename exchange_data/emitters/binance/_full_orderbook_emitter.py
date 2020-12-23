@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import concurrent
 import time
 
 import alog
@@ -19,14 +20,10 @@ from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
 
 class FullOrderBookEmitter(Messenger):
 
-    def __init__(self, interval: str = '1m', **kwargs):
+    def __init__(self, symbol, **kwargs):
         super().__init__(**kwargs)
-        self.interval = timeparse(interval)
 
-        while True:
-            for symbol in self.symbols:
-                self.publish_orderbook(symbol)
-                time.sleep(self.interval)
+        self.publish_orderbook(symbol)
 
     @property
     def client(self):
@@ -63,9 +60,16 @@ class FullOrderBookEmitter(Messenger):
 
 
 @click.command()
-@click.option('--interval', '-i', type=str, default='1m')
 def main(**kwargs):
-    emitter = FullOrderBookEmitter(**kwargs)
+    def emit_orderbook(symbol):
+        FullOrderBookEmitter(symbol, **kwargs)
+
+    symbols = json.loads(SymbolEmitter._symbols())
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        while len(symbols) > 0:
+            symbol = symbols.pop()
+            executor.submit(emit_orderbook, symbol)
 
 
 if __name__ == '__main__':
