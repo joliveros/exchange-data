@@ -16,6 +16,8 @@ import datetime
 import time
 import numpy as np
 
+from ..emitters import TimeEmitter
+
 
 class OrderBook(object):
     asks: OrderTree
@@ -27,7 +29,7 @@ class OrderBook(object):
         self.bids = OrderTree()
         self.asks = OrderTree()
         self.last_tick = None
-        self.last_timestamp = 0
+        self.last_timestamp = TimeEmitter.timestamp()
         self.tick_size = tick_size
         self.time = 0
         self._next_order_id = 0
@@ -336,9 +338,16 @@ class OrderBook(object):
 
     def gen_ask_side(self):
         bid_levels = list(self.asks.price_tree.items())
+
         price = np.array(
             [level[0] for level in bid_levels]
         )
+
+        u, c = np.unique(price, return_counts=True)
+        dup = u[c > 1]
+
+        if len(dup) > 0:
+            raise Exception()
 
         volume = np.array(
             [level[1].volume for level in bid_levels]
@@ -370,7 +379,7 @@ class OrderBook(object):
     def frame_channel(self):
         return f'{self.symbol}_OrderBookFrame'
 
-    def measurement(self, ):
+    def measurement(self):
         fields = dict(
             best_ask=self.get_best_ask(),
             best_bid=self.get_best_bid(),

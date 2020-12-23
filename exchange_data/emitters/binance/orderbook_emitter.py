@@ -43,6 +43,7 @@ class BitmexOrderBookEmitter(
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements)
             self.on('depth', self.message)
+            self.on('depth_reset', self.depth_reset)
 
     def temp(self, timestamp):
         if 'BNBBTC' in self.orderbooks:
@@ -61,10 +62,19 @@ class BitmexOrderBookEmitter(
 
             self.orderbooks[symbol].message(data)
 
+    def depth_reset(self, data):
+        alog.info('### depth reset ###')
+        data = data['data']
+        symbol = data['s']
+        self.orderbooks[symbol] = BinanceOrderBook(symbol)
+
+        self.orderbooks[symbol].message(data)
+
     def start(self, channels=[]):
         self.sub([
             '1m',
             'depth',
+            'depth_reset'
         ] + channels)
 
     def exit(self, *args):
