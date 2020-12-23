@@ -148,29 +148,27 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
             if orderbook_img is not None:
                 orderbook_img = np.asarray(json.loads(orderbook_img))
+                orderbook_img[0][0] = orderbook_img[0][0].round(self.round_decimals)
+                orderbook_img[1][0] = orderbook_img[1][0].round(self.round_decimals)
 
-                orderbook_img = orderbook_img.round(self.round_decimals)
+                left = orderbook_img[0].swapaxes(1, 0)
+                right = orderbook_img[1].swapaxes(1, 0)
 
-                left = orderbook_img[0]
-                right = orderbook_img[1]
+                left = np.sort(self.group_price_levels(left), axis=0)
+                right = np.sort(self.group_price_levels(right), axis=0)
 
-                left = np.sort(self.group_price_levels(left), axis=1)
-                right = np.sort(self.group_price_levels(right), axis=1)
+                orderbook_img = np.zeros(max_shape)
 
-                orderbook_img[0, :left.shape[0]] = left
-                orderbook_img[1, :right.shape[0]] = right
+                left_len = left.shape[0]
+                if left_len > self.output_depth:
+                    left_len = self.output_depth
 
-                orderbook_img_max = np.zeros(max_shape)
-                shape = orderbook_img.shape
+                right_len = right.shape[0]
+                if right_len > self.output_depth:
+                    right_len = self.output_depth
 
-                if shape[1] < max_shape[1]:
-                    orderbook_img_max[
-                        :shape[0], :shape[1], :shape[2]
-                    ] = orderbook_img
-                else:
-                    orderbook_img_max = orderbook_img[:, :self.output_depth, :]
-
-                orderbook_img = orderbook_img_max
+                orderbook_img[0, :left_len, :2] = left[:left_len, :2]
+                orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
 
                 orderbook_imgs.append(orderbook_img)
 
@@ -198,7 +196,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
             vol += price_vol[1]
             groups[price] = vol
 
-        return np.array([[p, v] for p, v in list(groups.items())])
+        return np.array([[p, v] for p, v in groups.items()])
 
 
 @click.command()
