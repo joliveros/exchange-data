@@ -263,15 +263,16 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     def split_gpu(self):
         physical_devices = tf.config.list_physical_devices('GPU')
 
-        tf.config.set_logical_device_configuration(
-            physical_devices[0],
-            [
-                tf.config.LogicalDeviceConfiguration(memory_limit=self.memory),
-             ])
+        if len(physical_devices) > 0:
+            tf.config.set_logical_device_configuration(
+                physical_devices[0],
+                [
+                    tf.config.LogicalDeviceConfiguration(memory_limit=self.memory),
+                 ])
 
-        #logical_devices = tf.config.list_logical_devices('GPU')
+            #logical_devices = tf.config.list_logical_devices('GPU')
 
-        #assert len(logical_devices) == len(physical_devices) + 1
+            #assert len(logical_devices) == len(physical_devices) + 1
 
 @click.command()
 @click.argument('symbol', type=str)
