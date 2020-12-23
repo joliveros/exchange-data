@@ -45,30 +45,29 @@ services:
     depends_on:
       - redis
 
-    full_orderbook_emitter:
-        deploy:
-          labels:
-            - swarm.cronjob.enable=true
-            - swarm.cronjob.schedule=0 */2 * * *
-            - swarm.cronjob.skip-running=false
-          replicas: 0
-          restart_policy:
-            condition: none
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_full_orderbook_emitter.py"
-        env_file:
-            - ./.env.prod
-        secrets:
-            - DB
-            - ROLLBAR_API_KEY
-        depends_on:
-            - emit_time
-            - redis
-            - influxdb
-        networks:
-            - public
+  full_orderbook_emitter:
+    deploy:
+      labels:
+        - swarm.cronjob.enable=true
+        - swarm.cronjob.schedule=0 */2 * * *
+        - swarm.cronjob.skip-running=false
+      replicas: 0
+      restart_policy:
+         condition: none
+    image: 'registry.rubercubic.com:5001/exchange-data:latest'
+    command: >-
+      bash -c "source ~/.bashrc &&
+      ./exchange_data/emitters/binance/_full_orderbook_emitter.py"
+    env_file:
+      - ./.env.prod
+    secrets:
+      - DB
+    depends_on:
+      - emit_time
+      - redis
+      - influxdb
+    networks:
+      - public
 
 
 secrets:
