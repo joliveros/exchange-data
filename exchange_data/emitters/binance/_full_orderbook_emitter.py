@@ -3,7 +3,8 @@ import time
 
 import alog
 from pytimeparse.timeparse import timeparse
-from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout
+from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout, \
+    SSLError
 from urllib3.exceptions import ConnectTimeoutError
 
 from exchange_data.emitters import Messenger, TimeEmitter
@@ -38,7 +39,7 @@ class FullOrderBookEmitter(Messenger):
     def publish_orderbook(self, *args):
         try:
             self._publish_orderbook(*args)
-        except (ProxyError, ConnectTimeout, ReadTimeout) as e:
+        except (ProxyError, ConnectTimeout, ReadTimeout, SSLError) as e:
             alog.info(e)
             self.publish_orderbook(*args)
 
