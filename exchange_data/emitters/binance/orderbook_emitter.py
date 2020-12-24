@@ -31,7 +31,7 @@ class BitmexOrderBookEmitter(
 
         super().__init__(
             database_name=database_name,
-            database_batch_size=100,
+            database_batch_size=10,
             **kwargs
         )
 
@@ -83,6 +83,8 @@ class BitmexOrderBookEmitter(
 
     def save_measurements(self, timestamp):
         for symbol, book in self.orderbooks.items():
+            if symbol == 'ZILBNB':
+                alog.info(alog.pformat(book.measurement()))
             self.write_points([book.measurement()], time_precision='ms')
 
 

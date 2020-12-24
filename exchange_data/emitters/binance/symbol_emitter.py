@@ -55,18 +55,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         symbols = BinanceUtils().get_symbols()
         return json.dumps(symbols)
 
-    def symbol_take_lock(self):
-        lock_name = f'symbol_take_lock'
-
-        lock = RedLock(lock_name, [dict(
-            host=settings.REDIS_HOST,
-            db=0
-        )], retry_delay=300, retry_times=100, ttl=timeparse('30s') * 1000)
-
-        alog.info(lock_name)
-
-        return lock
-
     def take_symbols(self):
         while len(self.queued_symbols) > 0:
             queued_symbols = len(self.queued_symbols)
