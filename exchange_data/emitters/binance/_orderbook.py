@@ -1,14 +1,7 @@
-from exchange_data.bitmex_orderbook._action import Action
-from exchange_data.emitters import TimeEmitter
+
 from exchange_data.utils import EventEmitterBase, DateTimeUtils
-from exchange_data.bitmex_orderbook import ActionType, BitmexOrder
-from exchange_data.bitmex_orderbook._instrument_info import InstrumentInfo
-from exchange_data.channels import BitmexChannels
 from exchange_data.orderbook import OrderBook, OrderType, OrderBookSide, Order
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
-from typing import Optional, Any, List
-
-import alog
 
 
 
@@ -39,16 +32,17 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
 
     def remove_price(self, price, side, timestamp):
         try:
-            current_quantity = self.get_volume(price)
+            price_list, s = self.get_price(price)
 
-            if current_quantity > 0.0:
-                self.process_order(Order(
-                    order_type=OrderType.MARKET,
-                    price=price,
-                    quantity=current_quantity,
-                    side=side,
-                    timestamp=timestamp
-                ))
+            if s == OrderBookSide.ASK:
+                self.asks.remove_order_by_id(price_list.head_order.uid)
+            else:
+                self.bids.remove_order_by_id(price_list.head_order.uid)
+
+            remaining_vol = self.get_volume(price)
+
+            if remaining_vol > 0.0:
+                self.remove_price(price, side, timestamp)
 
         except PriceDoesNotExistException as e:
             pass
