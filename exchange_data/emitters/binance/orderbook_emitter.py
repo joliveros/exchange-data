@@ -42,7 +42,7 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements)
-            # self.on('2s', self.temp)
+            self.on('2s', self.temp)
             self.on('depth', self.message)
             self.on('depth_reset', self.depth_reset)
 
