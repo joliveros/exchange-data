@@ -1,4 +1,7 @@
 import time
+
+import alog
+
 from exchange_data.orderbook._orderlist import OrderList
 from exchange_data.utils import NoValue
 
@@ -96,6 +99,7 @@ class BuyOrder(Order):
                  price: float = None,
                  order_type: OrderType = OrderType.LIMIT
                  ):
+
         super().__init__(
             order_type=order_type,
             price=price,

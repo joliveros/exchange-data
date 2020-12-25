@@ -78,10 +78,16 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
                 ))
 
         except PriceDoesNotExistException as e:
-            self.process_order(Order(
+            order = Order(
                 order_type=OrderType.LIMIT,
                 price=price,
                 quantity=quantity,
                 side=side,
                 timestamp=timestamp
-            ))
+            )
+
+            if side == OrderBookSide.BID:
+                self.bids.insert_order(order)
+            else:
+                self.asks.insert_order(order)
+

@@ -42,13 +42,15 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements)
+            self.on('2s', self.temp)
             self.on('depth', self.message)
             self.on('depth_reset', self.depth_reset)
 
     def temp(self, timestamp):
-        if 'BNBBTC' in self.orderbooks:
-            # alog.info(self.orderbooks['BNBBTC'].print(depth=10, trades=False))
-            orderbook: BinanceOrderBook = self.orderbooks['BNBBTC']
+        symbol = 'ZILBNB'
+        if symbol in self.orderbooks:
+            alog.info(self.orderbooks[symbol].print(depth=10, trades=False))
+            orderbook: BinanceOrderBook = self.orderbooks[symbol]
 
             alog.info(orderbook.generate_frame())
 
@@ -73,6 +75,7 @@ class BitmexOrderBookEmitter(
     def start(self, channels=[]):
         self.sub([
             '1m',
+            '2s',
             'depth',
             'depth_reset'
         ] + channels)
