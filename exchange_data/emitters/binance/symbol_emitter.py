@@ -45,8 +45,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
             if data:
                 self.publish('depth', data)
 
-            time.sleep(1)
-
     @property
     def symbols(self):
         return json.loads(SymbolEmitter._symbols())
