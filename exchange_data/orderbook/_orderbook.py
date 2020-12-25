@@ -168,8 +168,11 @@ class OrderBook(object):
             head_price = _order_list.head_order.price
 
             if head_price != order.price:
-                order.price = head_price
-                # raise PriceDoesNotExistException()
+                if order.type == OrderType.LIMIT:
+                    raise PriceDoesNotExistException()
+                else:
+                    order.price = head_price
+
 
             if quantity < head_order.quantity:
                 traded_quantity = quantity

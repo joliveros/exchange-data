@@ -1,3 +1,5 @@
+import alog
+
 from .fixtures import orderbook, orders
 from exchange_data.orderbook import OrderBook, BuyOrder, SellOrder, \
     OrderList, TradeSummary, Trade
@@ -50,3 +52,17 @@ class TestLimitOrders(object):
         max_price_list: OrderList = orderbook.bids.max_price_list()
 
         assert max_price_list.head_order.uid == 5
+
+    def test_limit_order_new_level(self, orderbook: OrderBook):
+        price = 79.999
+        alog.info(orderbook.print(25))
+
+        crossing_limit_order = BuyOrder(10, price)
+
+        trade_summary = orderbook.process_order(crossing_limit_order)
+
+        alog.info(trade_summary)
+
+        alog.info(orderbook.get_price(price))
+
+        alog.info(orderbook.print(25))
