@@ -295,9 +295,9 @@ class OrderBook(object):
 
     def get_price(self, price: float):
         if self.bids.price_exists(price):
-            return self.bids.get_price_list(price)
+            return self.bids.get_price_list(price), OrderBookSide.BID
         elif self.asks.price_exists(price):
-            return self.asks.get_price_list(price)
+            return self.asks.get_price_list(price), OrderBookSide.ASK
         else:
             raise PriceDoesNotExistException()
 

@@ -55,27 +55,13 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
 
     def update_price(self, price, quantity, side, timestamp):
         try:
-            current_price = self.get_price(price)
-            current_quantity = current_price.volume
-
-            if current_quantity < quantity:
-                diff = quantity - current_quantity
-                self.process_order(Order(
-                    order_type=OrderType.LIMIT,
-                    price=price,
-                    quantity=diff,
-                    side=side,
-                    timestamp=timestamp
-                ))
-            elif current_quantity > quantity:
-                diff = current_quantity - quantity
-                self.process_order(Order(
-                    order_type=OrderType.MARKET,
-                    price=price,
-                    quantity=diff,
-                    side=side,
-                    timestamp=timestamp
-                ))
+            self.process_order(Order(
+                order_type=OrderType.LIMIT,
+                price=price,
+                quantity=quantity,
+                side=side,
+                timestamp=timestamp
+            ))
 
         except PriceDoesNotExistException as e:
             order = Order(
