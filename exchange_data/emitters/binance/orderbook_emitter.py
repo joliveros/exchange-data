@@ -52,8 +52,6 @@ class BitmexOrderBookEmitter(
             alog.info(self.orderbooks[symbol].print(depth=10, trades=False))
             orderbook: BinanceOrderBook = self.orderbooks[symbol]
 
-            alog.info(orderbook.generate_frame())
-
     def message(self, data):
         if 'data' in data:
             data = data['data']
