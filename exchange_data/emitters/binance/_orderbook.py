@@ -1,3 +1,4 @@
+import alog
 
 from exchange_data.utils import EventEmitterBase, DateTimeUtils
 from exchange_data.orderbook import OrderBook, OrderType, OrderBookSide, Order
@@ -49,13 +50,21 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
 
     def update_price(self, price, quantity, side, timestamp):
         try:
-            self.process_order(Order(
-                order_type=OrderType.LIMIT,
-                price=price,
-                quantity=quantity,
-                side=side,
-                timestamp=timestamp
-            ))
+            current_quantity = self.get_volume(price)
+        except PriceDoesNotExistException as e:
+            current_quantity = 0.0
+
+        try:
+            if current_quantity != quantity:
+                self.remove_price(price, side, timestamp)
+
+                self.process_order(Order(
+                    order_type=OrderType.LIMIT,
+                    price=price,
+                    quantity=quantity,
+                    side=side,
+                    timestamp=timestamp
+                ))
 
         except PriceDoesNotExistException as e:
             order = Order(
