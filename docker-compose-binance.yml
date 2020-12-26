@@ -26,7 +26,7 @@ services:
 
     orderbook_emitter:
         deploy:
-            replicas: 1
+            replicas: 8
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
