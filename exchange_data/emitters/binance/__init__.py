@@ -55,8 +55,10 @@ class BinanceUtils(object):
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
 
-    def take_symbols(self):
-        while len(self.queued_symbols) > 0:
+    def take_symbols(self, workers=8):
+        max_symbols = int(len(self.symbols) / workers) + 1
+
+        while len(self.queued_symbols) > 0 and len(self.depth_symbols) < max_symbols:
             queued_symbols = len(self.queued_symbols)
             take_count = 10
 
