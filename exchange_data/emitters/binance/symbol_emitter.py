@@ -31,8 +31,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     ):
         super().__init__(exchange="binance.com", **kwargs)
 
-        self.queued_symbols = Set(key='queued_symbols', redis=self.redis_client)
-
         self.queued_symbols.update(self.symbols)
 
         self.take_symbols()
@@ -54,25 +52,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     def _symbols():
         symbols = BinanceUtils().get_symbols()
         return json.dumps(symbols)
-
-    def take_symbols(self):
-        while len(self.queued_symbols) > 0:
-            queued_symbols = len(self.queued_symbols)
-            take_count = 10
-
-            if queued_symbols < take_count:
-                take_count = queued_symbols
-
-            for i in range(0, take_count):
-                try:
-                    symbol = self.queued_symbols.pop()
-                    self.depth_symbols.add(symbol)
-                except KeyError as e:
-                    break
-
-            time.sleep(2)
-
-        alog.info(len(self.depth_symbols))
 
 
 @click.command()

@@ -2,6 +2,7 @@
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
+from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.emitters.binance._orderbook import BinanceOrderBook
 from exchange_data.utils import DateTimeUtils
 
@@ -12,11 +13,13 @@ import sys
 
 class BitmexOrderBookEmitter(
     Messenger,
+    BinanceUtils,
     Database,
     SignalInterceptor,
     DateTimeUtils,
 ):
     orderbooks = {}
+    depth_symbols = set()
 
     def __init__(
         self,
@@ -42,9 +45,15 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements)
-            self.on('2s', self.temp)
+            # self.on('2s', self.temp)
             self.on('depth', self.message)
             self.on('depth_reset', self.depth_reset)
+
+        self.queued_symbols.update(self.symbols)
+        self.take_symbols()
+
+        for symbol in self.depth_symbols:
+            self.orderbooks[symbol] = BinanceOrderBook(symbol)
 
     def temp(self, timestamp):
         symbol = 'ZILBNB'
@@ -54,13 +63,11 @@ class BitmexOrderBookEmitter(
 
     def message(self, data):
         if 'data' in data:
-            data = data['data']
             symbol = data['s']
 
-            if symbol not in self.orderbooks:
-                self.orderbooks[symbol] = BinanceOrderBook(symbol)
-
-            self.orderbooks[symbol].message(data)
+            if symbol in self.orderbooks:
+                data = data['data']
+                self.orderbooks[symbol].message(data)
 
     def depth_reset(self, data):
         alog.info('### depth reset ###')
