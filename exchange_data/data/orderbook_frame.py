@@ -167,6 +167,9 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                 if right_len > self.output_depth:
                     right_len = self.output_depth
 
+                alog.info(orderbook_img.shape)
+                alog.info((left.shape, right.shape))
+
                 orderbook_img[0, :left_len, :2] = left[:left_len, :2]
                 orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
 
