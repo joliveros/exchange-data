@@ -43,17 +43,19 @@ class BitmexOrderBookEmitter(
         self.frame_slice = None
         self.queued_frames = []
 
-        if self.subscriptions_enabled:
-            self.on('1m', self.save_measurements)
-            # self.on('2s', self.temp)
-            self.on('depth', self.message)
-            self.on('depth_reset', self.depth_reset)
-
         self.queued_symbols.update(self.symbols)
         self.take_symbols()
 
         for symbol in self.depth_symbols:
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
+
+        if self.subscriptions_enabled:
+            self.on('1m', self.save_measurements)
+            # self.on('2s', self.temp)
+
+            for symbol in self.depth_symbols:
+                self.on(f'{symbol}_depth', self.message)
+                self.on(f'{symbol}_depth_reset', self.depth_reset)
 
     def temp(self, timestamp):
         symbol = 'ZILBNB'
@@ -64,10 +66,8 @@ class BitmexOrderBookEmitter(
     def message(self, data):
         if 'data' in data:
             symbol = data['data']['s']
-
-            if symbol in self.orderbooks:
-                data = data['data']
-                self.orderbooks[symbol].message(data)
+            data = data['data']
+            self.orderbooks[symbol].message(data)
 
     def depth_reset(self, data):
         alog.info('### depth reset ###')
@@ -78,12 +78,12 @@ class BitmexOrderBookEmitter(
         self.orderbooks[symbol].message(data)
 
     def start(self, channels=[]):
+        depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
+        depth_reset_channels = [f'{symbol}_depth_reset' for symbol in self.depth_symbols]
         self.sub([
             '1m',
             '2s',
-            'depth',
-            'depth_reset'
-        ] + channels)
+        ] + channels + depth_channels + depth_reset_channels)
 
     def exit(self, *args):
         self.stop()
