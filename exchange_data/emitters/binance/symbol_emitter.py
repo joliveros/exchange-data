@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import time
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -7,8 +6,6 @@ from exchange_data.emitters.binance import BinanceUtils
 from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
-from redis_collections import Set
-from redlock import RedLock
 from unicorn_binance_websocket_api import BinanceWebSocketApiManager
 import alog
 import click
@@ -38,10 +35,18 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         self.create_stream(['depth'], self.depth_symbols)
 
         while True:
-            data = self.pop_stream_data_from_stream_buffer()
+            data_str = self.pop_stream_data_from_stream_buffer()
+            data = None
+            try:
+                data = json.loads(data_str)
+            except TypeError as e:
+                pass
 
             if data:
-                self.publish('depth', data)
+                if 'data' in data:
+                    if 's' in data['data']:
+                        symbol = data['data']["s"]
+                        self.publish(f'{symbol}_depth', data_str)
 
     @property
     def symbols(self):
