@@ -17,6 +17,7 @@ import time
 import numpy as np
 
 from ..emitters import TimeEmitter
+from ..utils import DateTimeUtils
 
 
 class OrderBook(object):
@@ -391,7 +392,7 @@ class OrderBook(object):
 
         return vars(Measurement(measurement=self.frame_channel,
                            tags={'symbol': self.symbol},
-                           time=self.last_timestamp, fields=fields))
+                           time=DateTimeUtils.now(), fields=fields))
 
     def print(self, depth: int = 0, trades: bool = False):
         bid_levels = list(self.bids.price_tree.items(reverse=True))
