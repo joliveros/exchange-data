@@ -70,6 +70,6 @@ class BinanceUtils(object):
                 except KeyError as e:
                     break
 
-            # time.sleep(2)
+            time.sleep(2)
 
         alog.info(len(self.depth_symbols))
