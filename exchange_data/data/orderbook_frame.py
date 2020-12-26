@@ -167,23 +167,21 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                 if right_len > self.output_depth:
                     right_len = self.output_depth
 
-                alog.info(orderbook_img.shape)
-                alog.info((left.shape, right.shape))
+                if left.shape != (0,) and right.shape != (0,):
+                    orderbook_img[0, :left_len, :2] = left[:left_len, :2]
+                    orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
 
-                orderbook_img[0, :left_len, :2] = left[:left_len, :2]
-                orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
+                    orderbook_imgs.append(orderbook_img)
 
-                orderbook_imgs.append(orderbook_img)
-
-                if len(orderbook_imgs) == self.sequence_length:
-                    frame = dict(
-                        time=timestamp,
-                        best_ask=best_ask,
-                        best_bid=best_bid,
-                        orderbook_img=np.asarray(list(orderbook_imgs.copy()),
-                                                 dtype=np.float16)
-                    )
-                    frames.append(frame)
+                    if len(orderbook_imgs) == self.sequence_length:
+                        frame = dict(
+                            time=timestamp,
+                            best_ask=best_ask,
+                            best_bid=best_bid,
+                            orderbook_img=np.asarray(list(orderbook_imgs.copy()),
+                                                     dtype=np.float16)
+                        )
+                        frames.append(frame)
 
         df = DataFrame(frames)
         df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
