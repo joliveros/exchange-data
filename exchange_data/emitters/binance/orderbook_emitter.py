@@ -63,7 +63,7 @@ class BitmexOrderBookEmitter(
 
     def message(self, data):
         if 'data' in data:
-            symbol = data['s']
+            symbol = data['data']['s']
 
             if symbol in self.orderbooks:
                 data = data['data']
