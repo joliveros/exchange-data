@@ -84,8 +84,6 @@ class BinanceUtils(object):
                 except KeyError as e:
                     break
 
-            self.queued_symbols.sync()
-
             time.sleep(2)
 
         alog.info(len(self.depth_symbols))
