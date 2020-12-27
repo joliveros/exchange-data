@@ -118,7 +118,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         else:
             if self.offset_interval:
                 offset_interval = timedelta(seconds=timeparse(self.offset_interval))
-
                 self.start_date = self.start_date - offset_interval
                 self.end_date = self.end_date - offset_interval
 
