@@ -7,7 +7,7 @@ networks:
 
 services:
   docker-stats:
-    image: influxdb-docker-stats
+    image: liveify/influxdb-docker-stats
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
