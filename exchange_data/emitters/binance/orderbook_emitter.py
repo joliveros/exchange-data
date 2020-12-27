@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from functools import cached_property
+
+from redis_collections import Set
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -56,6 +59,10 @@ class BitmexOrderBookEmitter(
             for symbol in self.depth_symbols:
                 self.on(f'{symbol}_depth', self.message)
                 self.on(f'{symbol}_depth_reset', self.depth_reset)
+
+    @cached_property
+    def queued_symbols(self):
+        return Set(key='orderbook_queued_symbols', redis=self.redis_client)
 
     def temp(self, timestamp):
         symbol = 'ZILBNB'
