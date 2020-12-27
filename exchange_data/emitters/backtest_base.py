@@ -21,6 +21,7 @@ class BackTestBase(object):
         self.print_all_rows = print_all_rows
         self.trial = None
         self.group_by_min = group_by_min
+
         self.should_plot = plot
         self.entry_price = 0.0
         self.trading_fee = (0.075 / 100)
