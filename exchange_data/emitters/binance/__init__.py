@@ -3,7 +3,7 @@ from binance.exceptions import BinanceAPIException
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
 from pytimeparse.timeparse import timeparse
-from redis_collections import Set
+from redis_collections import SyncableSet
 from redlock import RedLock, RedLockError
 
 from exchange_data import settings
@@ -22,7 +22,7 @@ class BinanceUtils(object):
 
     @cached_property
     def queued_symbols(self):
-        return Set(key='queued_symbols', redis=self.redis_client)
+        return SyncableSet(key='queued_symbols', redis=self.redis_client)
 
     @cached_property_with_ttl(ttl=60 * 10)
     def symbols(self):
@@ -83,6 +83,8 @@ class BinanceUtils(object):
                     self.depth_symbols.add(symbol)
                 except KeyError as e:
                     break
+
+            self.queued_symbols.sync()
 
             time.sleep(2)
 
