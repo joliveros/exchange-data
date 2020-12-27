@@ -20,7 +20,7 @@ class BinanceUtils(object):
     def client(self):
         return ProxiedClient()
 
-    @property
+    @cached_property
     def queued_symbols(self):
         return Set(key='queued_symbols', redis=self.redis_client)
 
