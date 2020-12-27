@@ -6,13 +6,9 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      - INFLUXDB_URL: /run/secrets/DB
+      - INFLUXDB_URL: "${DB}"
     deploy:
       placement:
         constraints:
           - node.role == manager
-
-secrets:
-    DB:
-        external: true
 
