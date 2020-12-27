@@ -11,11 +11,13 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      - INFLUXDB_URL="${DB}"
+      - INFLUXDB_URL="${LOGGING_DB}"
     deploy:
       placement:
         constraints:
           - node.role == manager
+    depends_on:
+      - influxdb
     networks:
         - public
 
