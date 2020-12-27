@@ -30,7 +30,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         self.queued_symbols.update(self.symbols)
 
-        self.take_symbols()
+        self.take_symbols(prefix='symbol_emitter')
 
         self.create_stream(['depth'], self.depth_symbols)
 

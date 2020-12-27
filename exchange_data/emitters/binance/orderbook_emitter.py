@@ -44,7 +44,7 @@ class BitmexOrderBookEmitter(
         self.queued_frames = []
 
         self.queued_symbols.update(self.symbols)
-        self.take_symbols()
+        self.take_symbols(prefix='orderbook')
 
         for symbol in self.depth_symbols:
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
