@@ -30,7 +30,7 @@ services:
             - ${HOME}/.exchange-data/:/root/.exchange-data
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ZILBNB -i 3d -b 3d -w 3m -g 1m -n 3 -m 148 -D 5 --min-capital 1.0"
+            ./exchange_data/models/resnet/tune.py ZILBNB -i 3d -b 3d -o 0h -w 3m -g 1m -n 3 -m 148 -D 5 --min-capital 1.0"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
