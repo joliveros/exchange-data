@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from functools import cached_property
-
+from cached_property import cached_property
 from redis_collections import Set
 
 from exchange_data import Database
