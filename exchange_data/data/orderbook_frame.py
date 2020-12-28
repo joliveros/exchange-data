@@ -89,6 +89,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         orderbook_img = np.sort(orderbook_img, axis=2)
 
         orderbook_img = np.delete(orderbook_img, 0, axis=3)
+        orderbook_img = np.absolute(orderbook_img)
 
         if self.quantile == 0.0:
             self.quantile = np.quantile(orderbook_img,
@@ -173,12 +174,18 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                     orderbook_imgs.append(orderbook_img)
 
                     if len(orderbook_imgs) == self.sequence_length:
+                        _orderbook_imgs = np.asarray(list(
+                            orderbook_imgs.copy()))
+
+                        _orderbook_imgs[_orderbook_imgs == np.inf] = 0.0
+                        _orderbook_imgs[_orderbook_imgs == -np.inf] = 0.0
+
                         frame = dict(
                             time=timestamp,
                             best_ask=best_ask,
                             best_bid=best_bid,
-                            orderbook_img=np.asarray(list(orderbook_imgs.copy()),
-                                                     dtype=np.float16)
+                            orderbook_img=_orderbook_imgs,
+                            dtype=np.float16
                         )
                         frames.append(frame)
 
@@ -218,8 +225,7 @@ def main(**kwargs):
 
     # pd.set_option('display.max_rows', len(df) + 1)
 
-    alog.info(df)
-    # alog.info(alog.pformat(df.iloc[-1].orderbook_img.tolist()))
+    alog.info(alog.pformat(df.iloc[-1].orderbook_img[-1].tolist()))
 
 
 if __name__ == '__main__':
