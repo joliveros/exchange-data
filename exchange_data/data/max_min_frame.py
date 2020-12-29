@@ -81,6 +81,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--plot', '-p', is_flag=True)
+@click.option('--round-decimals', '-D', default=3, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--tick', is_flag=True)
 @click.option('--volatility-intervals', '-v', is_flag=True)
