@@ -63,6 +63,7 @@ class BinanceUtils(object):
             with self.take_lock(prefix):
                 self._take_symbols(*args, **kwargs)
         except RedLockError as e:
+            alog.info(e)
             self.take_symbols(*args, prefix=prefix, **kwargs)
 
     def _take_symbols(self, *args, workers=8, **kwargs):
