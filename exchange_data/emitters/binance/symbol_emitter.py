@@ -33,6 +33,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         self.take_symbols(prefix='symbol_emitter')
 
+        alog.info(self.depth_symbols)
+
         self.create_stream(['depth'], self.depth_symbols)
 
         while True:
