@@ -29,6 +29,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         super().__init__(exchange="binance.com", **kwargs)
 
         self.queued_symbols.update(self.symbols)
+        self.queued_symbols.sync()
 
         self.take_symbols(prefix='symbol_emitter')
 
