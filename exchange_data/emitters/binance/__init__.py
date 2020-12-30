@@ -80,13 +80,13 @@ class BinanceUtils(object):
             for i in range(0, take_count):
                 try:
                     symbol = self.queued_symbols.pop()
-                    self.queued_symbols.update(self.queued_symbols)
+                    self.queued_symbols.sync()
 
                     self.depth_symbols.add(symbol)
                 except KeyError as e:
                     break
 
-            self.queued_symbols.update(self.queued_symbols)
+            self.queued_symbols.sync()
 
             time.sleep(2)
 
