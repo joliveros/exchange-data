@@ -69,7 +69,8 @@ class BinanceUtils(object):
         alog.info('### take symbols ##')
         max_symbols = int(len(self.symbols) / workers) + 1
 
-        while len(self.queued_symbols) > 0 and len(self.depth_symbols) < max_symbols:
+        while len(self.queued_symbols) > 0 and \
+            len(self.depth_symbols) < max_symbols:
             queued_symbols = len(self.queued_symbols)
             take_count = 40
 
@@ -97,7 +98,7 @@ class BinanceUtils(object):
                 host=settings.REDIS_HOST,
                 db=0
             )],
-            retry_delay=300,
+            retry_delay=2000,
             retry_times=60 * 60,
             ttl=timeparse('30s') * 1000
         )
