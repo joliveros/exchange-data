@@ -71,7 +71,7 @@ class BinanceUtils(object):
 
         while len(self.queued_symbols) > 0 and len(self.depth_symbols) < max_symbols:
             queued_symbols = len(self.queued_symbols)
-            take_count = 10
+            take_count = 40
 
             if queued_symbols < take_count:
                 take_count = queued_symbols
