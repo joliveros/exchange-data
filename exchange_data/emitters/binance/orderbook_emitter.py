@@ -46,6 +46,7 @@ class BitmexOrderBookEmitter(
         self.queued_frames = []
 
         self.queued_symbols.update(self.symbols)
+        self.queued_symbols.sync()
         self.take_symbols(prefix='orderbook')
 
         for symbol in self.depth_symbols:
