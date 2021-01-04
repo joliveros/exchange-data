@@ -59,7 +59,7 @@ class BitmexOrderBookEmitter(
                 self.on(f'{symbol}_depth', self.message)
                 self.on(f'{symbol}_depth_reset', self.depth_reset)
 
-    @cached_property
+    @property
     def queued_symbols(self):
         return SyncableSet(key='orderbook_queued_symbols', redis=self.redis_client)
 
