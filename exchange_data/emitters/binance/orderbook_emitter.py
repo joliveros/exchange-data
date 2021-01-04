@@ -45,8 +45,10 @@ class BitmexOrderBookEmitter(
         self.frame_slice = None
         self.queued_frames = []
 
-        self.queued_symbols.update(self.symbols)
+        self.queued_symbols.update(set(self.symbols))
+
         self.queued_symbols.sync()
+
         self.take_symbols(prefix='orderbook')
 
         for symbol in self.depth_symbols:
@@ -60,7 +62,7 @@ class BitmexOrderBookEmitter(
                 self.on(f'{symbol}_depth', self.message)
                 self.on(f'{symbol}_depth_reset', self.depth_reset)
 
-    @property
+    @cached_property
     def queued_symbols(self):
         return SyncableSet(key='orderbook_queued_symbols', redis=self.redis_client)
 
