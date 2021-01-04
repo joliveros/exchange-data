@@ -30,6 +30,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     def __init__(self,
                  volatility_intervals,
                  session_limit,
+                 clear_runs,
                  macd_session_limit,
                  backtest_interval,
                  min_capital,
@@ -45,6 +46,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
+        self.clear_runs = clear_runs
         self.min_capital = min_capital
         self.memory = memory
         self.hparams = None
@@ -64,8 +66,13 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         self.study.optimize(self.run, n_trials=session_limit)
 
         self.clear()
+    
+    @property
+    def best_model_dir(self):
+        return f'{self.base_model_dir}/best_model'
 
     def clear(self):
+        alog.info('### clear runs ###')
         try:
             self._clear()
         except RedLockError:
@@ -121,6 +128,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def run(self, *args):
         retry_relay = 10
+
+        if self.run_count > self.clear_runs:
+            self.clear()
 
         try:
             if self.run_count > 1:
@@ -245,16 +255,12 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 if trial.study.best_trial.value > self.backtest.capital:
                     alog.info('## deleting trial ###')
                     alog.info(exported_model_path)
-                    shutil.rmtree(exported_model_path, ignore_errors=True)
+                    self.clear_dirs()
+                else:
+                    shutil.rmtree(self.best_model_dir, ignore_errors=True)
+                    shutil.copytree(exported_model_path, self.best_model_dir)
             except ValueError:
                 pass
-
-            if self.backtest.capital <= self.min_capital:
-                alog.info('## deleting trial ###')
-                alog.info(exported_model_path)
-                shutil.rmtree(self.run_dir)
-                shutil.rmtree(self.model_dir)
-                shutil.rmtree(exported_model_path, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
                 return 0.0
@@ -279,6 +285,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--depth', '-d', default=72, type=int)
+@click.option('--clear-runs', '-c', default=2, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--macd-session-limit', default=200, type=int)
