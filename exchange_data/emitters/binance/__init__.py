@@ -20,7 +20,7 @@ class BinanceUtils(object):
     def client(self):
         return ProxiedClient()
 
-    @cached_property
+    @property
     def queued_symbols(self):
         return SyncableSet(key='queued_symbols', redis=self.redis_client)
 
@@ -73,7 +73,7 @@ class BinanceUtils(object):
         while len(self.queued_symbols) > 0 and \
             len(self.depth_symbols) < max_symbols:
             queued_symbols = len(self.queued_symbols)
-            take_count = 40
+            take_count = 4
 
             if queued_symbols < take_count:
                 take_count = queued_symbols
@@ -88,8 +88,6 @@ class BinanceUtils(object):
                     break
 
             self.queued_symbols.sync()
-
-            time.sleep(2)
 
         alog.info(len(self.depth_symbols))
 
