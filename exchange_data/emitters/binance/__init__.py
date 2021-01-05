@@ -83,11 +83,17 @@ class BinanceUtils(object):
                     symbol = self.queued_symbols.pop()
                     self.queued_symbols.sync()
 
+                    if symbol in self.queued_symbols:
+                        self.queued_symbols.remove(symbol)
+                        self.queued_symbols.sync()
+
                     self.depth_symbols.add(symbol)
                 except KeyError as e:
                     break
 
             self.queued_symbols.sync()
+
+            time.sleep(1)
 
         alog.info(len(self.depth_symbols))
 
