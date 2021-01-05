@@ -131,9 +131,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     def run(self, *args):
         retry_relay = 10
 
-        if self.run_count > self.clear_runs:
-            self.clear()
-
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
