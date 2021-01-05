@@ -29,7 +29,8 @@ class TradeJob(object):
 class PredictionBase(object):
     frames = []
 
-    def __init__(self, model_version=None, **kwargs):
+    def __init__(self, model_version=None, best_exported_model=False, **kwargs):
+        self.best_exported_model = best_exported_model
         self.model_version = model_version
 
     def get_prediction(self):
@@ -49,12 +50,18 @@ class PredictionBase(object):
         data = gzip.compress(bytes(data, encoding='utf8'))
         url = None
 
+        model_name = self.symbol
+        if self.best_exported_model:
+            model_name = f'best_{self.symbol}'
+
         if self.model_version:
-            url = f'http://{settings.MODEL_HOST}:8501/v1/models/{self.symbol}' \
+            url = f'http://{settings.MODEL_HOST}:8501/v1/models/{model_name}' \
                   f'/versions/{self.model_version}:predict'
         else:
             url = f'http://{settings.MODEL_HOST}:8501/v1/models/' \
-                  f'{self.symbol}:predict'
+                  f'{model_name}:predict'
+
+        alog.info(url)
 
         json_response = requests.post(
             url,

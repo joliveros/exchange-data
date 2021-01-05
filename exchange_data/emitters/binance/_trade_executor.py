@@ -286,6 +286,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     @cached_property_with_ttl(ttl=48)
     def position(self) -> Positions:
         df = BackTest(
+            best_exported_model=True,
             database_name=self.database_name,
             depth=self.depth,
             interval='2m',
