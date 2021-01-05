@@ -251,11 +251,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             alog.info(test_df)
 
             try:
-                if trial.study.best_trial.value > self.backtest.capital:
-                    alog.info('## deleting trial ###')
-                    alog.info(exported_model_path)
-                    self.clear_dirs()
-                else:
+                if trial.study.best_trial.value < self.backtest.capital:
                     shutil.rmtree(self.best_model_dir, ignore_errors=True)
                     shutil.copytree(exported_model_path, self.best_model_dir)
             except ValueError:
