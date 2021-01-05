@@ -29,6 +29,14 @@ def main(**kwargs):
         config.model_version_policy.all.CopyFrom(
             FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
 
+        config = server_config.model_config_list.config.add()
+        config.name = symbol
+        config.base_path = f'/exported_models/{symbol}'
+        config.model_platform = 'tensorflow'
+
+        config.model_version_policy.all.CopyFrom(
+            FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
+
     config_file = Path.home() / Path('.exchange-data/models/models.config')
 
     if config_file.exists():

@@ -66,10 +66,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         self.study.optimize(self.run, n_trials=session_limit)
 
         self.clear()
-    
+
     @property
     def best_model_dir(self):
-        return f'{self.base_model_dir}/best_model'
+        return f'{Path.home()}/.exchange-data/exported_models/{self.symbol}'
 
     def clear(self):
         alog.info('### clear runs ###')
