@@ -60,6 +60,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
+        Path(self.best_model_dir).mkdir(exist_ok=True)
+
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
