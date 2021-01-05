@@ -30,8 +30,8 @@ def main(**kwargs):
             FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
 
         config = server_config.model_config_list.config.add()
-        config.name = symbol
-        config.base_path = f'/exported_models/{symbol}'
+        config.name = f'best_{symbol}'
+        config.base_path = f'/best_exported_models/{symbol}'
         config.model_platform = 'tensorflow'
 
         config.model_version_policy.all.CopyFrom(

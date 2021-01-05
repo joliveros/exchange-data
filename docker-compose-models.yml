@@ -18,6 +18,7 @@ services:
             - 0.0.0.0:8501:8501
         volumes:
             - ${HOME}/.exchange-data/models/:/models
+            - ${HOME}/.exchange-data/best_exported_models/:/best_exported_models
         networks:
             - public
         command: --model_config_file=/models/models.config --per_process_gpu_memory_fraction=0.03

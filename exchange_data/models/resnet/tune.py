@@ -69,7 +69,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     @property
     def best_model_dir(self):
-        return f'{Path.home()}/.exchange-data/exported_models/{self.symbol}'
+        return f'{Path.home()}/.exchange-data/best_exported_models/{self.symbol}'
 
     def clear(self):
         alog.info('### clear runs ###')
