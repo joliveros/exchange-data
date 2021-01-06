@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -29,7 +30,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         super().__init__(exchange="binance.com", **kwargs)
 
         self.queued_symbols.update(self.symbols)
-        self.queued_symbols.sync()
+
+        time.sleep(5)
 
         self.take_symbols(prefix='symbol_emitter')
 
