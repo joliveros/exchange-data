@@ -68,7 +68,8 @@ class BinanceUtils(object):
 
     def _take_symbols(self, *args, workers=8, **kwargs):
         alog.info('### take symbols ##')
-        max_symbols = int(len(self.symbols) / workers) + 1
+        alog.info(self.symbols)
+        max_symbols = int((len(self.symbols) / workers) * 1.10)
 
         while len(self.queued_symbols) > 0 and \
             len(self.depth_symbols) < max_symbols:
