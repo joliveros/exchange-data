@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import time
+
 from cached_property import cached_property
 from redis_collections import Set, SyncableSet
 
@@ -47,7 +49,7 @@ class BitmexOrderBookEmitter(
 
         self.queued_symbols.update(set(self.symbols))
 
-        self.queued_symbols.sync()
+        time.sleep(5)
 
         self.take_symbols(prefix='orderbook')
 
