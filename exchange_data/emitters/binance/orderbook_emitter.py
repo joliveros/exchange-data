@@ -2,7 +2,7 @@
 import time
 
 from cached_property import cached_property
-from redis_collections import Set, SyncableSet
+from redis_collections import Set
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -66,7 +66,7 @@ class BitmexOrderBookEmitter(
 
     @cached_property
     def queued_symbols(self):
-        return SyncableSet(key='orderbook_queued_symbols', redis=self.redis_client)
+        return Set(key='orderbook_queued_symbols', redis=self.redis_client)
 
     def temp(self, timestamp):
         symbol = 'ZILBNB'
