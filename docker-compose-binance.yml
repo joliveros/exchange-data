@@ -27,6 +27,9 @@ services:
     orderbook_emitter:
         deploy:
             replicas: 8
+            update_config:
+                parallelism: 2
+                delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&

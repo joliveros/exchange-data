@@ -25,7 +25,7 @@ services:
 
     ZILBNB:
         deploy:
-            replicas: 3
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/root/.exchange-data
