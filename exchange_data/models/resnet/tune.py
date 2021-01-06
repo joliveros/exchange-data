@@ -150,7 +150,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def _run(self, trial: Trial):
         self.trial = trial
-
+        alog.info(f'### trial number {trial.number} ###')
         if self.clear_runs > trial.number:
             self.clear()
 
