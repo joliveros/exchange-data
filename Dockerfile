@@ -2,11 +2,11 @@ FROM registry.rubercubic.com:5001/exchange-data:base
 
 ENV NAME exchange-data
 
-USER root
-
-WORKDIR /src
+WORKDIR /home/joliveros/src
 
 COPY . .
+
+USER joliveros
 
 RUN pip install -r requirements.txt
 
