@@ -8,9 +8,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		libgl1-mesa-glx \
 	&& rm -rf /var/lib/apt/lists/*
 
-WORKDIR /src
+ARG USER=joliveros
+ARG UID=1000
+ARG GID=1000
+ARG PW=docker
+
+# Option1: Using unencrypted password/ specifying password
+RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | \
+      chpasswd
+
+WORKDIR /home/${USER}/src
+
+USER root
 
 COPY . .
+
+RUN chown -R $USER:$USER /home/${USER}/src
+
+# Setup default user, when enter docker container
+USER ${UID}:${GID}
 
 RUN pip install --upgrade pip
 
