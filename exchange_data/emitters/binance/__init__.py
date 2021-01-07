@@ -60,8 +60,9 @@ class BinanceUtils(object):
 
     def take_symbols(self, *args, prefix='', **kwargs):
         try:
-            with self.take_lock(prefix):
-                self._take_symbols(*args, **kwargs)
+            while len(self.queued_symbols) > 0:
+                with self.take_lock(prefix):
+                    self._take_symbols(*args, **kwargs)
         except RedLockError as e:
             alog.info(e)
             self.take_symbols(*args, prefix=prefix, **kwargs)
@@ -69,29 +70,24 @@ class BinanceUtils(object):
     def _take_symbols(self, *args, workers=8, **kwargs):
         alog.info('### take symbols ##')
         alog.info(self.symbols)
-        max_symbols = int((len(self.symbols) / workers) * 1.10)
 
-        while len(self.queued_symbols) > 0 and \
-            len(self.depth_symbols) < max_symbols:
-            queued_symbols = len(self.queued_symbols)
-            take_count = 4
+        queued_symbols = len(self.queued_symbols)
+        take_count = 40
 
-            if queued_symbols < take_count:
-                take_count = queued_symbols
+        if queued_symbols < take_count:
+            take_count = queued_symbols
 
-            for i in range(0, take_count):
-                try:
-                    symbol = self.queued_symbols.pop()
-                    alog.info(f'### taking symbol {symbol} ###')
+        for i in range(0, take_count):
+            try:
+                symbol = self.queued_symbols.pop()
+                alog.info(f'### taking symbol {symbol} ###')
 
-                    if symbol in self.queued_symbols:
-                        self.queued_symbols.remove(symbol)
+                if symbol in self.queued_symbols:
+                    self.queued_symbols.remove(symbol)
 
-                    self.depth_symbols.add(symbol)
-                except KeyError as e:
-                    break
-
-            time.sleep(1)
+                self.depth_symbols.add(symbol)
+            except KeyError as e:
+                break
 
         alog.info(len(self.depth_symbols))
 
