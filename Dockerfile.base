@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ARG USER=joliveros
 ARG UID=1000
 ARG GID=1000
-ARG PW=docker
+ARG PW=mkiv
 
 # Option1: Using unencrypted password/ specifying password
 RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | \
