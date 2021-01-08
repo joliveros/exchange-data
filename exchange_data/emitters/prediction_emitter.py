@@ -54,7 +54,7 @@ class PredictionBase(object):
         if self.best_exported_model:
             model_name = f'best_{self.symbol}'
 
-        if self.model_version:
+        if self.model_version and 'best_' not in model_name:
             url = f'http://{settings.MODEL_HOST}:8501/v1/models/{model_name}' \
                   f'/versions/{self.model_version}:predict'
         else:

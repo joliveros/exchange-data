@@ -164,7 +164,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             learning_rate=trial.suggest_float('learning_rate', 0.005, 0.2),
         )
 
-        group_by = 2
+        group_by = 5
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
