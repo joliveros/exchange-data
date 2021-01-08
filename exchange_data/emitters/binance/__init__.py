@@ -63,6 +63,7 @@ class BinanceUtils(object):
             while len(self.queued_symbols) > 0:
                 with self.take_lock(prefix):
                     self._take_symbols(*args, **kwargs)
+                time.sleep(2)
         except RedLockError as e:
             alog.info(e)
             self.take_symbols(*args, prefix=prefix, **kwargs)

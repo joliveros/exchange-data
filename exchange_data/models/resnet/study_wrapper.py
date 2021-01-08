@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import alog
 import optuna
 from optuna import load_study
 
@@ -11,6 +12,7 @@ class StudyWrapper(object):
         self.symbol = symbol
         self.base_path = f'{Path.home()}/.exchange-data/models/'
         self.study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
+        alog.info(self.study_db_path)
         self.study_db_path = Path(self.study_db_path)
         db_conn_str = f'sqlite:///{self.study_db_path}'
 

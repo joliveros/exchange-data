@@ -71,7 +71,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     @property
     def best_model_dir(self):
-        return f'{Path.home()}/.exchange-data/best_exported_models/{self.symbol}'
+        return f'{Path.home()}/.exchange-data/best_exported_models/' \
+               f'{self.symbol}/1'
 
     def clear(self):
         alog.info('### clear runs ###')
@@ -150,8 +151,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def _run(self, trial: Trial):
         self.trial = trial
+
         alog.info(f'### trial number {trial.number} ###')
-        if self.clear_runs > trial.number:
+
+        if self.clear_runs < trial.number:
             self.clear()
 
         tf.keras.backend.clear_session()
