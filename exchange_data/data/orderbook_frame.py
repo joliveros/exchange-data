@@ -78,15 +78,16 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         orderbook_img = df.orderbook_img.to_numpy().tolist()
 
         df.drop(['orderbook_img'], axis=1)
+
         orderbook_img = np.asarray(orderbook_img)
+
+        orderbook_img = np.sort(orderbook_img, axis=3)
 
         orderbook_img = np.concatenate((
             orderbook_img[:, :, 0],
             orderbook_img[:, :, 1]),
             axis=2
         )
-
-        orderbook_img = np.sort(orderbook_img, axis=2)
 
         orderbook_img = np.delete(orderbook_img, 0, axis=3)
         orderbook_img = np.absolute(orderbook_img)
