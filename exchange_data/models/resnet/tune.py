@@ -266,9 +266,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             if self.min_capital > self.backtest.capital:
                 shutil.rmtree(self.run_dir, ignore_errors=True)
                 shutil.rmtree(self.model_dir, ignore_errors=True)
+                shutil.rmtree(self.export_dir, ignore_errors=True)
 
             if self.backtest.capital == 1.0:
                 return 0.0
+
             return self.backtest.capital
 
     def split_gpu(self):
