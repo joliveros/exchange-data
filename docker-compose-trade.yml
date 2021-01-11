@@ -28,14 +28,14 @@ services:
             - BINANCE_API_KEY
             - BINANCE_API_SECRET
 
-    ZIL:
+    NEO:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-            bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m ZIL -e"
+            bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 4m NEO -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
