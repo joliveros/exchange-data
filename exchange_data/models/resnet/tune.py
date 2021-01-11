@@ -60,7 +60,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         kwargs['interval'] = backtest_interval
         kwargs['window_size'] = '1h'
 
-        Path(self.best_model_dir).mkdir(exist_ok=True)
+        Path(self.best_model_dir).mkdir(parents=True, exist_ok=True)
 
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
@@ -164,7 +164,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             learning_rate=trial.suggest_float('learning_rate', 0.005, 0.2),
         )
 
-        group_by = 5
+        group_by = 4
 
         self.group_by_min = group_by
         self.group_by = f'{group_by}m'
