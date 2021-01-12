@@ -17,6 +17,8 @@ class TimeEmitter(Messenger, DateTimeUtils):
         super().__init__(**kwargs)
         self.minute_counter = 0
         self.four_minute_counter = 0
+        self.three_minute_counter = 0
+        self.two_minute_counter = 0
         self.two_second_counter = 0
         self.five_second_counter = 0
         self.should_stop = False
@@ -38,10 +40,12 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 t = self.timestamp_str()
                 self.publish(TimeChannels.Tick.value, t)
 
-                self.two_second_counter += 1
-                self.minute_counter += 1
-                self.four_minute_counter += 1
                 self.five_second_counter += 1
+                self.four_minute_counter += 1
+                self.minute_counter += 1
+                self.three_minute_counter += 1
+                self.two_minute_counter += 1
+                self.two_second_counter += 1
 
                 if self.two_second_counter % 2 == 0:
                     self.two_second_counter = 0
@@ -50,6 +54,14 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 if self.minute_counter % 60 == 0:
                     self.publish('1m', t)
                     self.minute_counter = 0
+
+                if self.two_minute_counter % (60 * 2) == 0:
+                    self.publish('2m', t)
+                    self.three_minute_counter = 0
+
+                if self.three_minute_counter % (60 * 3) == 0:
+                    self.publish('3m', t)
+                    self.three_minute_counter = 0
 
                 if self.four_minute_counter % 240 == 0:
                     self.publish('4m', t)
