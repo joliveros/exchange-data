@@ -196,6 +196,12 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return None
 
     def trade(self, timestamp=None):
+        try:
+            self._trial_params_val = self._trial_params()
+        except Exception as e:
+            if not self.trial_params:
+                raise Exception()
+
         alog.info('### trade ###')
         alog.info(self.position)
         alog.info(self.quantity)
@@ -249,11 +255,16 @@ class TradeExecutor(MeasurementFrame, Messenger):
             )
             alog.info(alog.pformat(response))
 
-    @cached_property_with_ttl(ttl=timeparse('30s'))
-    def trial_params(self):
+    def _trial_params(self):
         study = StudyWrapper(self.symbol)
 
         return vars(study.study.best_trial)
+
+    @property
+    def trial_params(self):
+        if not self._trial_params_val:
+            self._trial_params_val = self._trial_params()
+        return self._trial_params_val
 
     @property
     def quantile(self):
