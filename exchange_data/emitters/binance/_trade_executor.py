@@ -45,6 +45,7 @@ class MacdParams(object):
 
 
 class TradeExecutor(MeasurementFrame, Messenger):
+    _trial_params_val = None
     measurements = []
     current_position = Positions.Flat
     symbol = None
