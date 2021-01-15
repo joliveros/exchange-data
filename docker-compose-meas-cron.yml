@@ -27,6 +27,25 @@ services:
     depends_on:
       - redis
       - influxdb
+  tf_serving_config:
+    deploy:
+      labels:
+        - swarm.cronjob.enable=true
+        - swarm.cronjob.schedule=* * * * *
+        - swarm.cronjob.skip-running=false
+      replicas: 0
+      restart_policy:
+        condition: none
+    image: 'registry.rubercubic.com:5001/exchange-data:latest'
+    command: bash -c "source ~/.bashrc && ./tfserving/config.py"
+    volumes:
+      - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+    env_file:
+      - ./.env.prod
+    networks:
+      - public
+    depends_on:
+      - redis
   proxies:
     deploy:
       labels:

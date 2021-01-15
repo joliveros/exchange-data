@@ -6,8 +6,7 @@ networks:
     external: true
 
 services:
-
-    model_host:
+    model_serving:
         deploy:
             replicas: 1
         image: tensorflow/serving:latest-gpu
