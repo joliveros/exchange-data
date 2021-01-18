@@ -28,6 +28,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     backtest = None
 
     def __init__(self,
+                 group_by_min,
                  volatility_intervals,
                  session_limit,
                  clear_runs,
@@ -46,6 +47,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
+        self.group_by_min = group_by_min
         self.clear_runs = clear_runs
         self.min_capital = min_capital
         self.memory = memory
@@ -161,11 +163,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             flat_ratio=trial.suggest_float('flat_ratio', 1.00, 1.1),
             learning_rate=trial.suggest_float('learning_rate', 0.005, 0.2),
         )
-
-        group_by = 2
-
-        self.group_by_min = group_by
-        self.group_by = f'{group_by}m'
 
         self.hparams = hparams
         self._kwargs['group_by'] = self.group_by
@@ -291,6 +288,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--depth', '-d', default=72, type=int)
 @click.option('--clear-runs', '-c', default=2, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
+@click.option('--group-by-min', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--memory', '-m', default=1000, type=int)
