@@ -19,12 +19,29 @@ class EDModelServerConfig(object):
         self.base_path = f'/models/{path}'
 
         if base_path:
-            self.base_path = f'{base_path}/{path}'
+            self.base_path = f'/{base_path}/{path}'
+
+        self.base_path = '/root' + str(self.base_path)
 
         self.model_platform = 'tensorflow'
 
         self.model_version_policy.all.CopyFrom(
             FileSystemStoragePathSourceConfig.ServableVersionPolicy.All())
+
+
+def config_for_model_dirs(exported_model_dirs, exp_dir, server_config, kwargs):
+    exported_models = [
+        (p.name, p.name.split('_')[0]) for p in exported_model_dirs
+    ]
+
+    exported_models = [(path, symbol) for path, symbol in exported_models
+                        if len(os.listdir(Path().home() / exp_dir / path)) > 0]
+
+    for path, symbol in exported_models:
+        config = server_config.model_config_list.config.add()
+
+        EDModelServerConfig.__init__(config, symbol, path, exp_dir,
+                                     **kwargs)
 
 
 @click.command()
@@ -33,25 +50,22 @@ def main(**kwargs):
     models_dir = Path().home() / '.exchange-data/models'
     exported_model_dirs = list(models_dir.rglob('*_export'))
     best_model_dir = '.exchange-data/best_exported_models'
+    best_model_dirs = list((Path().home() / best_model_dir).rglob(
+        '*_export'))
 
     server_config: ModelServerConfig = ModelServerConfig()
 
-    for exp_dir in [base_dir, best_model_dir]:
-        exported_models = [
-            (p.name, p.name.split('_')[0]) for p in exported_model_dirs
-        ]
+    config_for_model_dirs(exported_model_dirs, base_dir, server_config, kwargs)
 
-        exported_models = [(path, symbol) for path, symbol in exported_models
-                            if len(os.listdir(Path().home()/ exp_dir / path)) > 0]
+    config_for_model_dirs(best_model_dirs, best_model_dir, server_config,
+                          kwargs)
 
-        for path, symbol in exported_models:
-            config = server_config.model_config_list.config.add()
+    base_config_dir = Path().home() / Path('.exchange-data/models/')
+    base_config_dir.mkdir(exist_ok=True, parents=True)
 
-            EDModelServerConfig.__init__(config, symbol, path, exp_dir,
-                                         **kwargs)
+    config_file = base_config_dir / 'models.config'
 
-    config_file = Path.home() / Path(
-        '.exchange-data/models/models.config')
+    alog.info(config_file)
 
     if config_file.exists():
         config_file.unlink()

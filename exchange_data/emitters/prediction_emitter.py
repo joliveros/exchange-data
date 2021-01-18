@@ -69,7 +69,10 @@ class PredictionBase(object):
 
         data = json.loads(json_response.text)
 
-        predictions = data['predictions']
+        if 'predictions' in data:
+            predictions = data['predictions']
+        else:
+            raise Exception(json_response.text)
 
         max_index = np.argmax(predictions[0])
 
