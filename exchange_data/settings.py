@@ -47,6 +47,7 @@ CERT_FILE = './ca.pem'
 REDIS_HOST = environ.get('REDIS_HOST') or 'redis'
 
 MODEL_HOST = environ.get('MODEL_HOST') or 'model_serving'
+
 WS_HOST = environ.get('WS_HOST') or 'proxy'
 
 TICK_INTERVAL = '1s'
