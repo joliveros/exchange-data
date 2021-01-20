@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import logging
+
 from math import floor
 
 from binance.client import Client
@@ -56,6 +58,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         symbol,
         trading_enabled,
         depth,
+        log_requests,
         tick=False,
         fee=0.0075,
         model_version=None,
@@ -77,12 +80,21 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self._model_version = None
         self.model_version = model_version
 
+        if log_requests:
+            self.log_requests()
+
         if tick:
             alog.info(self.position)
             self.trade()
             sys.exit(0)
 
         self.on(tick_interval, self.trade)
+
+    def log_requests(self):
+        loggers = [logging.getLogger(name) for name in
+                   logging.root.manager.loggerDict]
+        logger = [logger for logger in loggers if logger.name == 'urllib3'][0]
+        logger.setLevel(logging.DEBUG)
 
     @cached_property_with_ttl(ttl=timeparse('1h'))
     def client(self):
@@ -128,7 +140,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def precision(self):
         return self.symbol_info['quoteAssetPrecision']
 
-    @property
+    @cached_property_with_ttl(ttl=timeparse('4s'))
     def bid_price(self):
         getcontext().prec = self.precision
 
@@ -203,7 +215,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             if not self.trial_params:
                 raise Exception()
 
-        alog.info('### trade ###')
+        alog.info('### prediction ###')
         alog.info(self.position)
         alog.info(self.quantity)
 
@@ -334,9 +346,9 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def account_data(self):
 
         data = dict(
-            account_status=self.client.get_account_status(),
+            # account_status=self.client.get_account_status(),
             balance=self.client.get_asset_balance(self.base_asset),
-            account_assets=self.client.get_sub_account_assets()
+            # account_assets=self.client.get_sub_account_assets()
             # trades=self.client.get_my_trades(symbol=self.symbol)
             # dust_log=self.client.get_dust_log(),
             # trade_fee=self.client.get_trade_fee(symbol=self.symbol)
@@ -369,6 +381,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--depth', default=72, type=int)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
+@click.option('--log-requests', '-l', is_flag=True)
 @click.option('--tick', is_flag=True)
 @click.argument('symbol', type=str)
 def main(**kwargs):
