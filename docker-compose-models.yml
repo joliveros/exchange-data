@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ZENBNB -i 7d -b 7d -o 1d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
+            ./exchange_data/models/resnet/tune.py ZENBNB -i 7d -b 7d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
@@ -50,7 +50,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ENJBNB -i 7d -b 7d -o 1d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
+            ./exchange_data/models/resnet/tune.py ENJBNB -i 7d -b 7d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
