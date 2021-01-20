@@ -84,14 +84,14 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         self.on(tick_interval, self.trade)
 
-    @cached_property_with_ttl(ttl=15)
+    @cached_property_with_ttl(ttl=timeparse('1h'))
     def client(self):
         return Client(
             api_key=settings.BINANCE_API_KEY,
             api_secret=settings.BINANCE_API_SECRET,
         )
 
-    @cached_property_with_ttl(ttl=timeparse('10m'))
+    @cached_property_with_ttl(ttl=timeparse('1h'))
     def exchange_info(self):
         return self.client.get_exchange_info()
 
@@ -205,33 +205,39 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         alog.info('### trade ###')
         alog.info(self.position)
-        alog.info(self.quantity)
 
-        if len(self.orders) == 0 and self.quantity > 0  and self.position == \
-            Positions.Long and self.asset_quantity < self.min_quantity:
-            # add limit orders
-
+        if self.position != self.current_position:
+            alog.info('## attempt trade ##')
             alog.info(self.quantity)
-            alog.info(self.bid_price)
+            if len(self.orders) == 0 and self.quantity > 0  and self.position == \
+                Positions.Long and self.asset_quantity < self.min_quantity:
+                # add limit orders
 
-            self.buy()
+                alog.info(self.quantity)
+                alog.info(self.bid_price)
 
-        if self.order:
-            price = Decimal(self.order['price'])
-            if price != self.bid_price:
-                params = dict(symbol=self.order['symbol'],
-                             orderId=self.order['orderId'])
+                self.buy()
 
-                alog.info(alog.pformat(params))
+            if self.order:
+                price = Decimal(self.order['price'])
+                if price != self.bid_price:
+                    params = dict(symbol=self.order['symbol'],
+                                 orderId=self.order['orderId'])
 
-                self.client.cancel_order(**params)
+                    alog.info(alog.pformat(params))
+                    alog.infd('cancel order')
 
-                if self.position == Positions.Long:
-                    self.buy()
+                    self.client.cancel_order(**params)
 
-        if self.position == Positions.Flat and \
-            self.asset_quantity > self.tick_size:
-            self.sell()
+                    if self.position == Positions.Long:
+                        self.buy()
+
+            if self.position == Positions.Flat and \
+                self.asset_quantity > self.tick_size:
+                alog.info('### sell ###')
+                self.sell()
+
+            self.current_position = self.position
 
     def sell(self):
         params = dict(
@@ -341,7 +347,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def balance(self):
         return float(self.account_data['balance']['free'])
 
-    @cached_property_with_ttl(ttl=2)
+    @cached_property_with_ttl(ttl=timeparse('10s'))
     def orders(self):
         orders = self.client.get_all_orders(symbol=self.symbol)
 
