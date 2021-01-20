@@ -205,10 +205,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         alog.info('### trade ###')
         alog.info(self.position)
+        alog.info(self.quantity)
 
-        if self.position != self.current_position:
+        if self.position != self.current_position or self.quantity > 0.0:
             alog.info('## attempt trade ##')
-            alog.info(self.quantity)
+
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
                 Positions.Long and self.asset_quantity < self.min_quantity:
                 # add limit orders
