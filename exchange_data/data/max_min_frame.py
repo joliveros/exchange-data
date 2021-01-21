@@ -3,6 +3,7 @@
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.trading import Positions
+from plotly import graph_objects as go
 
 import alog
 import click
@@ -54,6 +55,52 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         return df
 
+    def plot(self):
+        df = self.ohlc
+        df.reset_index(drop=False, inplace=True)
+
+        alog.info(df)
+
+        fig = go.Figure()
+
+        fig.update_layout(
+            yaxis4=dict(
+                anchor="free",
+                overlaying="y",
+                side="left",
+                position=0.001
+            ),
+            yaxis2=dict(
+                anchor="free",
+                overlaying="y",
+                side="right",
+                position=0.001
+            ),
+            yaxis3=dict(
+                anchor="free",
+                overlaying="y",
+                side="right",
+                position=0.001
+            ),
+        )
+        fig.add_trace(go.Candlestick(x=df['time'],
+                                     open=df['open'],
+                                     high=df['high'],
+                                     low=df['low'],
+                                     close=df['close'], yaxis='y4'))
+
+        df = self.label_position().copy()
+
+        df['position'] = df['position'].replace([Positions.Long], 1)
+        df['position'] = df['position'].replace([Positions.Flat], 0)
+
+        alog.info(df)
+
+        fig.add_trace(go.Scatter(x=df.index, y=df['position'], mode='lines'))
+
+        fig.show()
+
+
     def label_positive_change(
         self,
         **kwargs
@@ -88,6 +135,8 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
+    df = MaxMinFrame(**kwargs)
+    return
     df = MaxMinFrame(**kwargs).label_positive_change()
 
     # pd.set_option('display.max_rows', len(df) + 1)
