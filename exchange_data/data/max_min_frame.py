@@ -25,11 +25,11 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         alog.info(df)
 
         df['min'] = \
-            df.close[(df.close.shift(1) > df.close) & (
-                df.close.shift(-1) > df.close)]
+            df.close[(df.low.shift(1) > df.low) & (
+                df.low.shift(-1) > df.low)]
         df['max'] = \
-            df.close[(df.close.shift(1) < df.close) & (
-                df.close.shift(-1) < df.close)]
+            df.close[(df.high.shift(1) < df.high) & (
+                df.high.shift(-1) < df.high)]
 
         df['position'] = Positions.Flat
 
