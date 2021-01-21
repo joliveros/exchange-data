@@ -87,11 +87,11 @@ def Model(
     #                 recurrent_activation='sigmoid')(
     #     lstm_out)
     #
-    lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
-                    recurrent_activation='sigmoid')(convsecond_output)
+    # lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
+    #                 recurrent_activation='sigmoid')(convsecond_output)
 
     lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False,
-                    recurrent_activation='sigmoid')(lstm_out)
+                    recurrent_activation='sigmoid')(convsecond_output)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
