@@ -7,14 +7,14 @@ networks:
 
 services:
 
-    HBAR:
+    OGN:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 2m HBAR -e"
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 2m OGN -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
