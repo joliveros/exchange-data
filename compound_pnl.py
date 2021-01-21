@@ -24,6 +24,8 @@ class CompoundPnl(object):
 
             self.capital -= capital
 
+            alog.info(capital)
+
             self.capital += capital * (1 + rate)
 
         alog.info(f'### {int(self.steps)} steps, capital: {self.capital}')
