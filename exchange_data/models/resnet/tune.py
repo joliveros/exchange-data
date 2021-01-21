@@ -205,7 +205,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
                 'train_df': train_df,
-                'num_conv': 4
+                'num_conv': 3
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
