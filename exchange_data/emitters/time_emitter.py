@@ -17,6 +17,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
         super().__init__(**kwargs)
         self.minute_counter = 0
         self.four_minute_counter = 0
+        self.five_minute_counter = 0
         self.three_minute_counter = 0
         self.two_minute_counter = 0
         self.two_second_counter = 0
@@ -42,6 +43,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
 
                 self.five_second_counter += 1
                 self.four_minute_counter += 1
+                self.five_minute_counter += 1
                 self.minute_counter += 1
                 self.three_minute_counter += 1
                 self.two_minute_counter += 1
@@ -66,6 +68,10 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 if self.four_minute_counter % 240 == 0:
                     self.publish('4m', t)
                     self.four_minute_counter = 0
+
+                if self.five_minute_counter % 300 == 0:
+                    self.publish('5m', t)
+                    self.five_minute_counter = 0
 
                 if self.minute_counter % 30 == 0:
                     self.publish('30s', t)
