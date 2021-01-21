@@ -21,7 +21,7 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.1 --model_config_file_poll_wait_seconds=30
 
-    ZEN:
+    HBAR:
         deploy:
             replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ZENBNB -i 7d -b 7d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
+            ./exchange_data/models/resnet/tune.py HBARBNB -i 5d -b 5d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 5 --min-capital 1.0 -c 20"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
@@ -50,7 +50,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ENJBNB -i 7d -b 7d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 40"
+            ./exchange_data/models/resnet/tune.py ENJBNB -i 5d -b 5d -o 0d -w 3m -g 2m --group-by-min 5 -n 3 -m 172 -D 4 --min-capital 1.0 -c 20"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
