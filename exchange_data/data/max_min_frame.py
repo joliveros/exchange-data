@@ -50,7 +50,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
             else:
                 position = Positions.Flat
 
-            df.loc[pd.DatetimeIndex(df.index) >= d, 'position'] = \
+            df.loc[pd.DatetimeIndex(df.index) > d, 'position'] = \
                 position
 
         return df
