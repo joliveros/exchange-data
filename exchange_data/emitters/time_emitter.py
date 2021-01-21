@@ -21,6 +21,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
         self.three_minute_counter = 0
         self.two_minute_counter = 0
         self.two_second_counter = 0
+        self.fifteen_second_counter = 0
         self.five_second_counter = 0
         self.should_stop = False
         self.last_dt = self.now().replace(microsecond=0)
@@ -48,10 +49,15 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 self.three_minute_counter += 1
                 self.two_minute_counter += 1
                 self.two_second_counter += 1
+                self.fifteen_second_counter += 1
 
                 if self.two_second_counter % 2 == 0:
                     self.two_second_counter = 0
                     self.publish('2s', t)
+
+                if self.fifteen_second_counter % 15 == 0:
+                    self.fifteen_second_counter = 0
+                    self.publish('15s', t)
 
                 if self.minute_counter % 60 == 0:
                     self.publish('1m', t)

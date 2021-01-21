@@ -38,7 +38,7 @@ class BitmexOrderBookEmitter(
 
         super().__init__(
             database_name=database_name,
-            database_batch_size=1,
+            database_batch_size=12,
             **kwargs
         )
 
@@ -57,7 +57,7 @@ class BitmexOrderBookEmitter(
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
 
         if self.subscriptions_enabled:
-            self.on('1m', self.save_measurements)
+            self.on('15s', self.save_measurements)
             # self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
@@ -92,7 +92,7 @@ class BitmexOrderBookEmitter(
         depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
         depth_reset_channels = [f'{symbol}_depth_reset' for symbol in self.depth_symbols]
         self.sub([
-            '1m',
+            '15s',
             '2s',
         ] + channels + depth_channels + depth_reset_channels)
 
