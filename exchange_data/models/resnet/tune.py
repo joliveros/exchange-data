@@ -172,8 +172,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.87, 0.889),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.22, 1.295),
+                'positive_change_quantile', 0.7, 0.9),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.0, 1.295),
             learning_rate=trial.suggest_float('learning_rate', 0.017, 0.0187),
             # num_conv=trial.suggest_int('num_conv', 3, 8),
             # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
