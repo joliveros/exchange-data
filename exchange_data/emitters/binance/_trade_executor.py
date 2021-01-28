@@ -219,10 +219,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
         alog.info(self.quantity)
 
         can_trade = True
+
         if self.position != self.current_position:
             can_trade = True
 
-        if can_trade and self.quantity > 0.0:
+        if can_trade:
             alog.info('## attempt trade ##')
 
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
