@@ -84,7 +84,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             self.log_requests()
 
         if tick:
-            alog.info(self.position)
             self.trade()
             sys.exit(0)
 
@@ -185,7 +184,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         return quantity
 
-    @property
+    @cached_property_with_ttl(ttl=2)
     def asset_quantity(self):
         getcontext().prec = self.precision
 
@@ -198,7 +197,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         return quantity
 
-    @cached_property_with_ttl(ttl=1)
+    @cached_property_with_ttl(ttl=2)
     def order(self):
         orders = self.orders
 
@@ -219,7 +218,11 @@ class TradeExecutor(MeasurementFrame, Messenger):
         alog.info(self.position)
         alog.info(self.quantity)
 
-        if self.position != self.current_position or self.quantity > 0.0:
+        can_trade = True
+        if self.position != self.current_position:
+            can_trade = True
+
+        if can_trade and self.quantity > 0.0:
             alog.info('## attempt trade ##')
 
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
@@ -284,6 +287,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def trial_params(self):
         if not self._trial_params_val:
             self._trial_params_val = self._trial_params()
+
         return self._trial_params_val
 
     @property
@@ -314,16 +318,17 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def model_version(self, value):
         self._model_version = value
 
-    @cached_property_with_ttl(ttl=48)
+    @cached_property_with_ttl(ttl=30)
     def position(self) -> Positions:
         df = BackTest(
             best_exported_model=True,
             database_name=self.database_name,
             depth=self.depth,
-            interval='2m',
+            interval='1m',
             model_version=self.model_version,
             quantile=self.quantile,
             sequence_length=48,
+            group_by=self.group_by,
             symbol=self.symbol,
             window_size='3m',
             **self.model_params
@@ -342,9 +347,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
         return params
 
-    @property
+    @cached_property_with_ttl(ttl=3)
     def account_data(self):
-
         data = dict(
             # account_status=self.client.get_account_status(),
             balance=self.client.get_asset_balance(self.base_asset),
@@ -378,11 +382,12 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--base-asset', '-b', default='BNB', type=str)
 @click.option('--tick-interval', '-t', default='1m', type=str)
 @click.option('--interval', '-i', default='2m', type=str)
-@click.option('--depth', default=72, type=int)
+@click.option('--depth', default=76, type=int)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--log-requests', '-l', is_flag=True)
 @click.option('--tick', is_flag=True)
+@click.option('--group-by', '-g', default='30s', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)

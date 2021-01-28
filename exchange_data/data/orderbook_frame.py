@@ -129,13 +129,13 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         frames = []
 
         self.start_date = self.start_date - timedelta(seconds=timeparse(
-            self.group_by) * self.sequence_length * 2)
+            self.group_by) * self.sequence_length)
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
             depth=self.depth,
             end_date=self.end_date,
-            groupby=self.group_by,
+            group_by=self.group_by,
             start_date=self.start_date,
             symbol=self.symbol,
             window_size=self.window_size
@@ -191,6 +191,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                         frames.append(frame)
 
         df = DataFrame(frames)
+
         df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
 
         return df

@@ -9,12 +9,12 @@ import click
 
 
 class OrderBookLevelStreamer(BitmexStreamer):
-    def __init__(self, symbol, depth=40, groupby='2s',
+    def __init__(self, symbol, depth=40, group_by='2s',
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(group_by=group_by, **kwargs)
         self.symbol = symbol
         self.depth = depth
-        self.groupby = groupby
+        self.group_by = group_by
         self.last_timestamp = self.start_date
         self.channel_name = self.gen_channel_name()
         self.current_query = self.get_orderbook_frames()
@@ -34,7 +34,7 @@ class OrderBookLevelStreamer(BitmexStreamer):
 
         query = f'SELECT first(*) AS data FROM {self.channel_name} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY ' \
-                f'time({self.groupby});'
+                f'time({self.group_by});'
 
         return self.query(query)
 
@@ -47,9 +47,12 @@ class OrderBookLevelStreamer(BitmexStreamer):
             if self.last_timestamp != timestamp:
                 best_bid = data['data_best_bid']
                 best_ask = data['data_best_ask']
+
                 levels = data['data_data']
                 self.last_timestamp = timestamp
-                yield timestamp, best_ask, best_bid, levels
+
+                if best_ask and best_bid and levels:
+                    yield timestamp, best_ask, best_bid, levels
 
             self.last_timestamp = timestamp
 
@@ -59,6 +62,7 @@ class OrderBookLevelStreamer(BitmexStreamer):
                 return next(self.current_query)
             except StopIteration as e:
                 self._set_next_window()
+
                 if self.end_date > self.stop_date:
                     raise StopIteration()
                 self.current_query = self.get_orderbook_frames()

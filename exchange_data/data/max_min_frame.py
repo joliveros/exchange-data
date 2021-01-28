@@ -8,12 +8,15 @@ from plotly import graph_objects as go
 import alog
 import click
 import pandas as pd
+import numpy as np
 
 pd.options.plotting.backend = 'plotly'
 
 
 class MaxMinFrame(OrderBookFrame, BackTestBase):
-    def __init__(self, symbol, **kwargs):
+    def __init__(self, symbol, positive_change_quantile=0.9, **kwargs):
+        self.positive_change_quantile = positive_change_quantile
+
         super().__init__(symbol=symbol, **kwargs)
         BackTestBase.__init__(self, symbol=symbol, **kwargs)
 
@@ -22,36 +25,25 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df.reset_index(drop=False, inplace=True)
 
-        alog.info(df)
-
-        df['min'] = \
-            df.close[(df.low.shift(1) > df.low) & (
-                df.low.shift(-1) > df.low)]
-        df['max'] = \
-            df.close[(df.high.shift(1) < df.high) & (
-                df.high.shift(-1) < df.high)]
-
         df['position'] = Positions.Flat
 
-        min = list(df[['time', 'min']].dropna(how='any').itertuples())
-        min = [(r.time, 'min') for r in min]
+        # df['position'][df.open - df.close < 0] = Positions.Long
 
-        max = list(df[['time', 'max']].dropna(how='any').itertuples())
-        max = [(r.time, 'max') for r in max]
+        df['change'] = df.close - df.open
+        df['change'][df['change'] < 0.0] = 0.0
+        df['change'] = df['change'].fillna(0.0)
 
-        minmax_pairs = sorted(min + max)
+        change = df['change'].to_numpy()
+
+        change_quantile = np.quantile(change, self.positive_change_quantile)
+
+        df['position'][df['change'] >= change_quantile] = Positions.Long
+
+        df = df.drop(['change'], axis=1)
 
         df = df.set_index('time')
 
-        for d, val in minmax_pairs:
-
-            if val == 'min':
-                position = Positions.Long
-            else:
-                position = Positions.Flat
-
-            df.loc[pd.DatetimeIndex(df.index) > d, 'position'] = \
-                position
+        alog.info(df)
 
         return df
 
@@ -127,6 +119,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--group-by-min', '-G', default=5, type=int)
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
+@click.option('--positive-change-quantile', '-q', default=0.50, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--round-decimals', '-D', default=3, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)

@@ -107,7 +107,7 @@ class LabeledOrderBookFrame(OrderBookFrame):
             database_name=self.database_name,
             depth=self.depth,
             end_date=self.end_date,
-            groupby=self.group_by,
+            group_by=self.group_by,
             start_date=self.start_date,
             symbol=self.symbol,
             window_size=self.window_size

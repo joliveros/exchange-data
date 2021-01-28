@@ -119,7 +119,7 @@ class PredictionEmitter(Messenger, TradeJob):
             database_name=self.database_name,
             depth=depth,
             end_date=DateTimeUtils.now(),
-            groupby='2s',
+            group_by='2s',
             sample_interval='48s',
             start_date=start_date,
             symbol=self.symbol,
