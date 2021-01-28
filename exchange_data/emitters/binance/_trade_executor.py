@@ -309,10 +309,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
     def model_params(self):
         params = self.trial_params['_params']
 
-        if 'group_by' in params:
-            group_by = params['group_by']
-            params['group_by'] = f'{group_by}m'
-
         return params
 
     @model_version.setter
