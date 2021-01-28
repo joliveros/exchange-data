@@ -122,7 +122,7 @@ class PredictionEmitter(Messenger, TradeJob, FrameNormalizer):
             end_date=DateTimeUtils.now(),
             database_name='bitmex',
             depth=depth,
-            groupby='2s',
+            group_by='2s',
             window_size='48s',
             sample_interval='48s'
         )

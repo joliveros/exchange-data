@@ -32,6 +32,7 @@ class BitmexOrderBookChannels(NoValue):
 class BitmexStreamer(Database, DateTimeUtils, Generator):
     def __init__(
         self,
+        group_by='1m',
         max_spread: float = 100.0,
         orderbook_depth: int = 10,
         random_start_date: bool = False,
@@ -46,7 +47,7 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
     ):
 
         super().__init__(**kwargs)
-
+        self.group_by = group_by
         self.counter = 0
         self._orderbook = []
         self.random_start_date = random_start_date
@@ -77,8 +78,9 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
             self.start_date = start_date
 
         if end_date:
-            self.stop_date = end_date
             self.end_date = end_date
+            self.stop_date = self.end_date + timedelta(seconds=timeparse(
+                self.group_by) * 4)
 
         if start_date is not None:
             if self.start_date > start_date:

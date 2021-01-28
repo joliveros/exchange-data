@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pip._vendor.contextlib2 import nullcontext
 
 from exchange_data import settings
 from exchange_data.data.max_min_frame import MaxMinFrame
@@ -118,6 +119,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     @property
     def train_lock(self):
+        if self.num_locks == 0:
+            return nullcontext()
+
         lock_name = f'train_lock_{self.current_lock_ix}'
 
         alog.info(f'### lock name {lock_name} ####')
@@ -127,7 +131,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         if self.current_lock_ix > self.num_locks - 1:
             self.current_lock_ix = 0
 
-        return lock_name
+        return RedLock(lock_name, [dict(
+            host=settings.REDIS_HOST,
+            db=0
+        )], retry_delay=timeparse('15s'),
+                retry_times=12, ttl=timeparse('1h') * 1000)
 
     def run(self, *args):
         retry_relay = 10
@@ -135,11 +143,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         try:
             if self.run_count > 1:
                 t.sleep(retry_relay)
-            with RedLock(self.train_lock, [dict(
-                    host=settings.REDIS_HOST,
-                    db=0
-                )], retry_delay=timeparse('15s'),
-                    retry_times=12, ttl=timeparse('1h') * 1000):
+            with self.train_lock:
                 self._run(*args)
             self.run_count += 1
             return self.run_backtest()
@@ -154,15 +158,30 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         alog.info(f'### trial number {trial.number} ###')
 
-        if self.clear_runs < trial.number:
+        if self.clear_runs < trial.number and self.clear_runs > 0:
             self.clear()
 
         tf.keras.backend.clear_session()
 
+        def multiples(m, count, min_val=0):
+            results = []
+            for i in range(0, count * m, m):
+                if i > min_val:
+                    results.append(i)
+            return results
+
         hparams = dict(
-            flat_ratio=trial.suggest_float('flat_ratio', 1.00, 1.1),
-            learning_rate=trial.suggest_float('learning_rate', 0.005, 0.2),
+            positive_change_quantile=trial.suggest_float(
+                'positive_change_quantile', 0.87, 0.889),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.22, 1.295),
+            learning_rate=trial.suggest_float('learning_rate', 0.017, 0.0187),
+            # num_conv=trial.suggest_int('num_conv', 3, 8),
+            # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
         )
+
+        # self.sequence_length = hparams['sequence_length']
+        # self.output_depth = hparams['depth']
+        self.positive_change_quantile=hparams['positive_change_quantile']
 
         self.hparams = hparams
         self._kwargs['group_by'] = self.group_by
@@ -201,11 +220,12 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'relu_alpha': 0.294,
                 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
-                'base_filter_size': 32,
+                'lstm_layers': 1,
+                'base_filter_size': 16,
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
                 'train_df': train_df,
-                'num_conv': 3
+                'num_conv': 6
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -236,8 +256,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
     def run_backtest(self):
         self._kwargs.pop('offset_interval', None)
+        kwargs = self._kwargs.copy()
+        kwargs['sequence_length'] = self.sequence_length
+        kwargs['depth'] = self.output_depth
 
-        self.backtest = BackTest(quantile=self.quantile, **self._kwargs)
+        self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.backtest.trial = self.trial
 
@@ -285,15 +308,15 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.argument('symbol', type=str)
 @click.option('--backtest-interval', '-b', default='15m', type=str)
 @click.option('--database-name', '-d', default='binance', type=str)
-@click.option('--depth', '-d', default=72, type=int)
-@click.option('--clear-runs', '-c', default=2, type=int)
+@click.option('--depth', '-d', default=76, type=int)
+@click.option('--clear-runs', '-c', default=0, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--group-by-min', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--memory', '-m', default=1000, type=int)
 @click.option('--min-capital', default=1.0, type=float)
-@click.option('--num-locks', '-n', default=2, type=int)
+@click.option('--num-locks', '-n', default=0, type=int)
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--round-decimals', '-D', default=3, type=int)

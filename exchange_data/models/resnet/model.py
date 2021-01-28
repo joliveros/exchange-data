@@ -30,6 +30,7 @@ def Model(
     base_filter_size=16,
     inception_units=1,
     lstm_units=8,
+    lstm_layers=2,
     relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
@@ -78,20 +79,23 @@ def Model(
 
     alog.info(convsecond_output.shape)
 
-    # build the last LSTM layer
-    # lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
-    #                 recurrent_activation='sigmoid')(
-    #     convsecond_output)
+    return_sequences = True
 
-    # lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
-    #                 recurrent_activation='sigmoid')(
-    #     lstm_out)
-    #
-    # lstm_out = LSTM(lstm_units, return_sequences=True, stateful=False,
-    #                 recurrent_activation='sigmoid')(convsecond_output)
+    if lstm_layers == 1:
+        return_sequences = False
 
-    lstm_out = LSTM(lstm_units, return_sequences=False, stateful=False,
-                    recurrent_activation='sigmoid')(convsecond_output)
+    lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
+                    recurrent_activation='sigmoid')(conv)
+
+    for i in range(0, lstm_layers - 1):
+        return_sequences = True
+        if i == lstm_layers - 2:
+            return_sequences = False
+
+        alog.info(return_sequences)
+
+        lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
+                        recurrent_activation='sigmoid')(lstm_out)
 
     alog.info(lstm_out.shape)
     alog.info(num_categories)
@@ -105,6 +109,9 @@ def Model(
     out = dense_out(lstm_out)
 
     alog.info(out.shape)
+
+    if out.shape.as_list() != [None, 2]:
+        raise Exception()
 
     model = tf.keras.Model(inputs=inputs, outputs=out)
 

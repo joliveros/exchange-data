@@ -14,7 +14,7 @@ services:
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 5m OGN -e"
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 30s OGN -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -30,7 +30,7 @@ services:
 
     ENJ:
         deploy:
-          replicas: 1
+          replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/

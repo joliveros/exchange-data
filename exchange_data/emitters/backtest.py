@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import alog
 
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
@@ -35,6 +36,8 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
         df['capital'] = self.capital
 
         df = df.apply(self.pnl, axis=1)
+
+        alog.info(df)
 
         return df
 
