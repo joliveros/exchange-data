@@ -8,6 +8,8 @@ from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
 from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.emitters.binance._orderbook import BinanceOrderBook
+from exchange_data.orderbook import OrderBookSide
+from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from exchange_data.utils import DateTimeUtils
 
 import alog
@@ -27,6 +29,7 @@ class BitmexOrderBookEmitter(
 
     def __init__(
         self,
+        limit,
         database_name='binance',
         reset_orderbook: bool = True,
         save_data: bool = True,
@@ -41,7 +44,7 @@ class BitmexOrderBookEmitter(
             database_batch_size=48,
             **kwargs
         )
-
+        self.limit = limit
         self.save_data = save_data
         self.slices = {}
         self.frame_slice = None
@@ -63,6 +66,7 @@ class BitmexOrderBookEmitter(
             for symbol in self.depth_symbols:
                 self.on(f'{symbol}_depth', self.message)
                 self.on(f'{symbol}_depth_reset', self.depth_reset)
+                self.on(f'{symbol}_book_ticker', self.book_ticker)
 
     @cached_property
     def queued_symbols(self):
@@ -80,6 +84,41 @@ class BitmexOrderBookEmitter(
             data = data['data']
             self.orderbooks[symbol].message(data)
 
+    def book_ticker(self, data):
+        best_ask = float(data['a'])
+        best_ask_qty = float(data['A'])
+        best_bid = float(data['b'])
+        best_bid_qty = float(data['B'])
+        symbol = data['s']
+
+        book: BinanceOrderBook = self.orderbooks[symbol]
+
+        book.update_price(best_bid, best_bid_qty, OrderBookSide.BID,
+                          DateTimeUtils.now())
+
+        book.update_price(best_ask, best_ask_qty, OrderBookSide.ASK,
+                          DateTimeUtils.now())
+
+        prices_remove = [price for price in book.bids.price_map.keys() if price
+                         > best_bid]
+
+        for price in prices_remove:
+            try:
+                book.bids.remove_price(price)
+            except PriceDoesNotExistException:
+                pass
+            # alog.info(f'removed {price}')
+
+        prices_remove = [price for price in book.asks.price_map.keys() if price
+                         < best_ask]
+
+        for price in prices_remove:
+            try:
+                book.asks.remove_price(price)
+            except PriceDoesNotExistException:
+                pass
+            # alog.info(f'removed {price}')
+
     def depth_reset(self, data):
         alog.info('### depth reset ###')
         data = data['data']
@@ -91,6 +130,8 @@ class BitmexOrderBookEmitter(
     def start(self, channels=[]):
         depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
         depth_reset_channels = [f'{symbol}_depth_reset' for symbol in self.depth_symbols]
+        depth_reset_channels += [f'{symbol}_book_ticker' for symbol in
+                                self.depth_symbols]
         self.sub([
             '30s',
             '2s',
@@ -111,6 +152,7 @@ class BitmexOrderBookEmitter(
 @click.command()
 @click.option('--save-data/--no-save-data', default=True)
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
+@click.option('--limit', '-l', default=0, type=int)
 def main(**kwargs):
     recorder = BitmexOrderBookEmitter(
         subscriptions_enabled=True,
@@ -118,6 +160,7 @@ def main(**kwargs):
     )
 
     recorder.start()
+
 
 if __name__ == '__main__':
     main()

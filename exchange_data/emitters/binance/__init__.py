@@ -16,6 +16,8 @@ import time
 
 
 class BinanceUtils(object):
+    limit = 0
+
     @cached_property
     def client(self):
         return ProxiedClient()
@@ -61,6 +63,9 @@ class BinanceUtils(object):
     def take_symbols(self, *args, prefix='', **kwargs):
         try:
             while len(self.queued_symbols) > 0:
+                if self.limit > 0:
+                    if len(self.depth_symbols) > self.limit:
+                        break
                 with self.take_lock(prefix):
                     self._take_symbols(*args, **kwargs)
                 time.sleep(2)
