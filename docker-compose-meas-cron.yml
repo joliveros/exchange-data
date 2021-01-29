@@ -46,6 +46,7 @@ services:
       - public
     depends_on:
       - redis
+
   proxies:
     deploy:
       labels:

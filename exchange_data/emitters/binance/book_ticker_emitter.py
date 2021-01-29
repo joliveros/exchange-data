@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import time
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -12,12 +11,13 @@ import alog
 import click
 import json
 import signal
+import time
 
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 
-class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
+class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     create_at = None
     depth_symbols = set()
     last_lock_ix = 0
@@ -29,48 +29,27 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     ):
         super().__init__(exchange="binance.com", **kwargs)
 
-        self.queued_symbols.update(self.symbols)
-
-        time.sleep(5)
-
-        self.take_symbols(prefix='symbol_emitter')
-
-        alog.info(self.depth_symbols)
-
-        self.create_stream(['depth'], self.depth_symbols)
+        self.create_stream('arr', '!bookTicker')
 
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
+
             try:
                 data = json.loads(data_str)
             except TypeError as e:
                 pass
 
             if data:
-                if 'data' in data:
-                    if 's' in data['data']:
-                        symbol = data['data']["s"]
-                        self.publish(f'{symbol}_depth', data_str)
+                if 's' in data:
+                    symbol = data["s"]
+                    self.publish(f'{symbol}_book_ticker', data_str)
 
-    @property
-    def symbols(self):
-        symbols = json.loads(SymbolEmitter._symbols())
-        if len(symbols) > 0:
-            return symbols
-        else:
-            raise Exception('not enough symbols')
-
-    @staticmethod
-    @cache.cache(ttl=timeparse('1h'))
-    def _symbols():
-        symbols = BinanceUtils().get_symbols()
-        return json.dumps(symbols)
 
 
 @click.command()
 def main(**kwargs):
-    SymbolEmitter(**kwargs)
+    BookTickerEmitter(**kwargs)
 
 
 if __name__ == '__main__':

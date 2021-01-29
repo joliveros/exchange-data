@@ -112,7 +112,11 @@ class OrderTree(object):
             order.order_list.remove_order(order)
 
             if len(order.order_list) == 0:
-                self.remove_price(order.price)
+                try:
+                    self.remove_price(order.price)
+                except PriceDoesNotExistException:
+                    pass
+
             del self.order_map[order_id]
 
     def max_price(self):

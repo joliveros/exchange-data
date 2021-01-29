@@ -29,7 +29,10 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
             if quantity == 0.0:
                 self.remove_price(price, side, timestamp)
             else:
-                self.update_price(price, quantity, side, timestamp)
+                try:
+                    self.update_price(price, quantity, side, timestamp)
+                except PriceDoesNotExistException:
+                    pass
 
     def remove_price(self, price, side, timestamp):
         try:

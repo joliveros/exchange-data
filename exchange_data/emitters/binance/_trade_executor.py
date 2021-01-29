@@ -317,21 +317,24 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @cached_property_with_ttl(ttl=30)
     def position(self) -> Positions:
-        df = BackTest(
-            best_exported_model=True,
-            database_name=self.database_name,
-            depth=self.depth,
-            interval='1m',
-            model_version=self.model_version,
-            quantile=self.quantile,
-            sequence_length=48,
-            group_by=self.group_by,
-            symbol=self.symbol,
-            window_size='3m',
-            **self.model_params
-        ).test()
+        try:
+            df = BackTest(
+                best_exported_model=True,
+                database_name=self.database_name,
+                depth=self.depth,
+                interval='1m',
+                model_version=self.model_version,
+                quantile=self.quantile,
+                sequence_length=48,
+                group_by=self.group_by,
+                symbol=self.symbol,
+                window_size='3m',
+                **self.model_params
+            ).test()
 
-        return df.iloc[-1]['position']
+            return df.iloc[-1]['position']
+        except KeyError:
+            return self.current_position
 
     def best_params(self) -> MacdParams:
         params_df = MacdParamFrame(database_name=self.database_name,

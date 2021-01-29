@@ -44,6 +44,25 @@ services:
         networks:
             - public
 
+    book_ticker_emitter:
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.1'
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/book_ticker_emitter.py"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+            - influxdb
+        networks:
+            - public
 
 secrets:
     BITMEX_API_KEY:
