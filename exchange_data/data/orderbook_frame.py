@@ -157,6 +157,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
                 left = np.sort(self.group_price_levels(left), axis=0)
                 right = np.sort(self.group_price_levels(right), axis=0)
+                right = np.flip(right, 0)
 
                 orderbook_img = np.zeros(max_shape)
 
@@ -171,7 +172,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
                 if left.shape != (0,) and right.shape != (0,):
                     orderbook_img[0, :left_len, :2] = left[:left_len, :2]
                     orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
-
                     orderbook_imgs.append(orderbook_img)
 
                     if len(orderbook_imgs) == self.sequence_length:
