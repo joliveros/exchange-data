@@ -3,16 +3,17 @@
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
 from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
 from unicorn_binance_websocket_api import BinanceWebSocketApiManager
+
 import alog
 import click
 import json
 import signal
 import time
-
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
@@ -25,11 +26,24 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
     def __init__(
         self,
+        limit,
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
 
-        self.create_stream('arr', '!bookTicker')
+        self.limit = limit
+
+        self.queued_symbols.update(self.symbols)
+
+        time.sleep(5)
+
+        self.take_symbols(prefix='symbol_emitter')
+
+        alog.info(self.depth_symbols)
+
+        self.create_stream(['depth'], self.depth_symbols)
+
+        self.create_stream(['bookTicker'], self.depth_symbols)
 
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
@@ -41,13 +55,30 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                 pass
 
             if data:
-                if 's' in data:
-                    symbol = data["s"]
-                    self.publish(f'{symbol}_book_ticker', data_str)
+                if 'data' in data:
+                    data = data['data']
+                    if 's' in data:
+                        symbol = data["s"]
+                        if 'e' not in data:
+                            self.publish(f'{symbol}_book_ticker', json.dumps(data))
 
+    @property
+    def symbols(self):
+        symbols = json.loads(SymbolEmitter._symbols())
+        if len(symbols) > 0:
+            return symbols
+        else:
+            raise Exception('not enough symbols')
+
+    @staticmethod
+    @cache.cache(ttl=timeparse('1h'))
+    def _symbols():
+        symbols = BinanceUtils().get_symbols()
+        return json.dumps(symbols)
 
 
 @click.command()
+@click.option('--limit', '-l', default=0, type=int)
 def main(**kwargs):
     BookTickerEmitter(**kwargs)
 

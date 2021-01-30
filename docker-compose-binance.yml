@@ -48,8 +48,8 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.1'
-            replicas: 1
+                    cpus: '0.5'
+            replicas: 8
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
