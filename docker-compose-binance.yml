@@ -9,14 +9,14 @@ services:
             resources:
                 limits:
                     cpus: '0.1'
-            replicas: 8
+            replicas: 12
             update_config:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/symbol_emitter.py"
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 12"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -26,14 +26,14 @@ services:
 
     orderbook_emitter:
         deploy:
-            replicas: 8
+            replicas: 12
             update_config:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 12"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -48,12 +48,12 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.5'
-            replicas: 8
+                    cpus: '0.1'
+            replicas: 12
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/book_ticker_emitter.py"
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 12"
         secrets:
             - DB
             - ROLLBAR_API_KEY
