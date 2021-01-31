@@ -25,15 +25,18 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
     def __init__(
         self,
+        limit,
+        workers,
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
+        self.limit = limit
 
         self.queued_symbols.update(self.symbols)
 
         time.sleep(5)
 
-        self.take_symbols(prefix='symbol_emitter')
+        self.take_symbols(prefix='symbol_emitter', workers=workers)
 
         alog.info(self.depth_symbols)
 
@@ -69,6 +72,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
 
 @click.command()
+@click.option('--workers', '-w', default=8, type=int)
+@click.option('--limit', '-l', default=0, type=int)
 def main(**kwargs):
     SymbolEmitter(**kwargs)
 

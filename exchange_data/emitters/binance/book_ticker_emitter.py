@@ -27,6 +27,7 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     def __init__(
         self,
         limit,
+        workers,
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
@@ -37,11 +38,9 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         time.sleep(5)
 
-        self.take_symbols(prefix='symbol_emitter')
+        self.take_symbols(prefix='symbol_emitter', workers=workers)
 
         alog.info(self.depth_symbols)
-
-        self.create_stream(['depth'], self.depth_symbols)
 
         self.create_stream(['bookTicker'], self.depth_symbols)
 
@@ -59,8 +58,7 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                     data = data['data']
                     if 's' in data:
                         symbol = data["s"]
-                        if 'e' not in data:
-                            self.publish(f'{symbol}_book_ticker', json.dumps(data))
+                        self.publish(f'{symbol}_book_ticker', json.dumps(data))
 
     @property
     def symbols(self):
@@ -79,6 +77,7 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
 @click.command()
 @click.option('--limit', '-l', default=0, type=int)
+@click.option('--workers', '-w', default=8, type=int)
 def main(**kwargs):
     BookTickerEmitter(**kwargs)
 
