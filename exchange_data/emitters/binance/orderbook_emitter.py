@@ -30,6 +30,7 @@ class BitmexOrderBookEmitter(
     def __init__(
         self,
         limit,
+        workers,
         database_name='binance',
         reset_orderbook: bool = True,
         save_data: bool = True,
@@ -54,7 +55,7 @@ class BitmexOrderBookEmitter(
 
         time.sleep(5)
 
-        self.take_symbols(prefix='orderbook')
+        self.take_symbols(prefix='orderbook', workers=workers)
 
         for symbol in self.depth_symbols:
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
@@ -153,6 +154,7 @@ class BitmexOrderBookEmitter(
 @click.option('--save-data/--no-save-data', default=True)
 @click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 @click.option('--limit', '-l', default=0, type=int)
+@click.option('--workers', '-w', default=8, type=int)
 def main(**kwargs):
     recorder = BitmexOrderBookEmitter(
         subscriptions_enabled=True,

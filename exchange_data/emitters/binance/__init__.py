@@ -78,7 +78,7 @@ class BinanceUtils(object):
         alog.info(self.symbols)
 
         queued_symbols = len(self.queued_symbols)
-        take_count = 40
+        take_count = 10
 
         if queued_symbols < take_count:
             take_count = queued_symbols
