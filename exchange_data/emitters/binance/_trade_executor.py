@@ -51,6 +51,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     measurements = []
     current_position = Positions.Flat
     symbol = None
+    bid_price = None
 
     def __init__(
         self,
@@ -79,6 +80,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self.asset = None
         self._model_version = None
         self.model_version = model_version
+        self.ticker_channel = f'{symbol}{self.base_asset}_book_ticker'
 
         if log_requests:
             self.log_requests()
@@ -88,6 +90,10 @@ class TradeExecutor(MeasurementFrame, Messenger):
             sys.exit(0)
 
         self.on(tick_interval, self.trade)
+        self.on(self.ticker_channel, self.ticker)
+
+    def ticker(self, data):
+        self.bid_price = float(data['b'])
 
     def log_requests(self):
         loggers = [logging.getLogger(name) for name in
@@ -138,19 +144,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
     @property
     def precision(self):
         return self.symbol_info['quoteAssetPrecision']
-
-    @cached_property_with_ttl(ttl=timeparse('4s'))
-    def bid_price(self):
-        getcontext().prec = self.precision
-
-        ticker = self.client.get_orderbook_ticker(symbol=self.symbol)
-
-        price = int((float(ticker['bidPrice'])) /
-                   self.tick_size) * self.tick_size
-
-        price = Decimal(price)
-
-        return round(price, self.precision)
 
     @property
     def tick_size(self):
@@ -213,6 +206,9 @@ class TradeExecutor(MeasurementFrame, Messenger):
         except Exception as e:
             if not self.trial_params:
                 raise Exception()
+
+        if self.bid_price is None:
+            return
 
         alog.info('### prediction ###')
         alog.info(self.position)
@@ -371,7 +367,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         return [order for order in orders if order['status'] == 'NEW']
 
     def start(self):
-        self.sub([self.tick_interval])
+        self.sub([self.tick_interval, self.ticker_channel])
 
     def stop(self):
         sys.exit(0)
