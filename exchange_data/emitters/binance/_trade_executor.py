@@ -11,6 +11,7 @@ from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import Messenger, binance
 from exchange_data.emitters.backtest import BackTest
+from exchange_data.emitters.binance import ProxiedClient
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
 from exchange_data.ta_model.tune_macd import MacdParamFrame
 from exchange_data.trading import Positions
@@ -82,6 +83,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self.model_version = model_version
         self.ticker_channel = f'{symbol}{self.base_asset}_book_ticker'
 
+        alog.info(self.exchange_info)
+
         if log_requests:
             self.log_requests()
 
@@ -110,7 +113,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @cached_property_with_ttl(ttl=timeparse('1h'))
     def exchange_info(self):
-        return self.client.get_exchange_info()
+        client = ProxiedClient()
+        return client.get_exchange_info()
 
     @property
     def symbol_info(self):
@@ -383,7 +387,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--log-requests', '-l', is_flag=True)
 @click.option('--tick', is_flag=True)
-@click.option('--group-by', '-g', default='30s', type=str)
+@click.option('--group-by', '-g', default='1m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
