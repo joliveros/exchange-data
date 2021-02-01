@@ -21,7 +21,7 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.1 --model_config_file_poll_wait_seconds=30
 
-    XVS:
+    XRP:
         deploy:
             replicas: 4
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py XVSBNB -i 12h -b 12h -o 0d -w 3m -g 30s --group-by-min 2 -m 148 -D 6 --min-capital 1.0"
+            ./exchange_data/models/resnet/tune.py XRPBNB -i 12h -b 12h -o 0d -w 3m -g 30s --group-by-min 2 -m 148 -D 6 --min-capital 1.14 -c 200"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
