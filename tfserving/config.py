@@ -10,18 +10,14 @@ import click
 
 
 class EDModelServerConfig(object):
-    def __init__(self, symbol, path, base_path=None):
-        self.name = symbol
-
-        if 'best' in base_path:
+    def __init__(self, symbol, path):
+        if 'best' in str(path):
             self.name = f'best_{symbol}'
+        else:
+            self.name = symbol
 
-        self.base_path = f'/models/{path}'
-
-        if base_path:
-            self.base_path = f'/{base_path}/{path}'
-
-        self.base_path = '/root' + str(self.base_path)
+        self.base_path = str(path)
+        self.base_path = self.base_path.replace('/home/joliveros', '/root')
 
         self.model_platform = 'tensorflow'
 
@@ -33,15 +29,27 @@ def config_for_model_dirs(exported_model_dirs, exp_dir, server_config, kwargs):
     exported_models = [
         (p.name, p.name.split('_')[0]) for p in exported_model_dirs
     ]
+    exported_models = [(Path().home() / exp_dir / path, os.listdir(Path(
 
-    exported_models = [(path, symbol) for path, symbol in exported_models
+    ).home() / exp_dir / path), symbol)
+                       for path, symbol in exported_models]
+
+    expand_exported_models = []
+
+    for base_path, paths, symbol in exported_models:
+        for path in paths:
+            expand_exported_models.append((base_path, base_path / path, symbol))
+
+    exported_models = [(base_path, symbol) for base_path, path, symbol in
+                       expand_exported_models
                         if len(os.listdir(Path().home() / exp_dir / path)) > 0]
+
+    exported_models = set(exported_models)
 
     for path, symbol in exported_models:
         config = server_config.model_config_list.config.add()
 
-        EDModelServerConfig.__init__(config, symbol, path, exp_dir,
-                                     **kwargs)
+        EDModelServerConfig.__init__(config, symbol, path, **kwargs)
 
 
 @click.command()
@@ -65,7 +73,7 @@ def main(**kwargs):
 
     config_file = base_config_dir / 'models.config'
 
-    alog.info(config_file)
+    # alog.info(config_file)
 
     if config_file.exists():
         config_file.unlink()
