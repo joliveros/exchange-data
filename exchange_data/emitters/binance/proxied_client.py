@@ -1,3 +1,4 @@
+import alog
 import requests
 from binance.client import Client
 from requests.adapters import HTTPAdapter
