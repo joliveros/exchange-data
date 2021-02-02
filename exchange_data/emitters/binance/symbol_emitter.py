@@ -3,7 +3,7 @@ import time
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
-from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.emitters.binance import BinanceUtils, ExceededLagException
 from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
@@ -13,6 +13,7 @@ import click
 import json
 import signal
 
+from exchange_data.utils import DateTimeUtils
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
@@ -40,8 +41,19 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.create_stream(['depth'], self.depth_symbols)
+        self.max_lag = timeparse('2s')
 
+        self.start_stream()
+
+    def start_stream(self):
+        try:
+            self._start_stream()
+        except ExceededLagException as e:
+            self.stop_manager_with_all_streams()
+            self.start_stream()
+
+    def _start_stream(self):
+        self.create_stream(['depth'], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
@@ -53,6 +65,16 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
             if data:
                 if 'data' in data:
                     if 's' in data['data']:
+                        timestamp = DateTimeUtils.parse_db_timestamp(
+                            data['data']['E']
+                        )
+
+                        lag = DateTimeUtils.now() - timestamp
+
+                        if lag.total_seconds() > self.max_lag:
+                            alog.info('## acceptable lag has been exceeded ##')
+                            raise ExceededLagException()
+
                         symbol = data['data']["s"]
                         self.publish(f'{symbol}_depth', data_str)
 

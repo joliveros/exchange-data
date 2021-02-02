@@ -2,7 +2,7 @@
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
-from exchange_data.emitters.binance import BinanceUtils
+from exchange_data.emitters.binance import BinanceUtils, ExceededLagException
 from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
 from pytimeparse.timeparse import timeparse
 from redis import Redis
@@ -15,10 +15,12 @@ import json
 import signal
 import time
 
+from exchange_data.utils import DateTimeUtils
+
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 
-class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
+class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
     create_at = None
     depth_symbols = set()
     last_lock_ix = 0
@@ -31,6 +33,7 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
+        BinanceUtils.__init__(self, **kwargs)
 
         self.limit = limit
 
@@ -42,8 +45,19 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.create_stream(['bookTicker'], self.depth_symbols)
+        self.max_lag = timeparse('2s')
 
+        self.start_stream()
+
+    def start_stream(self):
+        try:
+            self._start_stream()
+        except ExceededLagException as e:
+            self.stop_manager_with_all_streams()
+            self.start_stream()
+
+    def _start_stream(self):
+        self.create_stream(['ticker'], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
@@ -58,6 +72,14 @@ class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                     data = data['data']
                     if 's' in data:
                         symbol = data["s"]
+                        timestamp = DateTimeUtils.parse_db_timestamp(data['E'])
+                        lag = DateTimeUtils.now() - timestamp
+
+                        if lag.total_seconds() > self.max_lag:
+                            alog.info('## acceptable lag has been exceeded ##')
+                            alog.info(len(self.depth_symbols))
+                            raise ExceededLagException()
+
                         self.publish(f'{symbol}_book_ticker', json.dumps(data))
 
     @property

@@ -1,4 +1,6 @@
 from datetime import datetime
+
+import docker
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
@@ -17,6 +19,12 @@ import time
 
 class BinanceUtils(object):
     limit = 0
+
+    def __init__(
+        self,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
 
     @cached_property
     def client(self):
@@ -68,7 +76,7 @@ class BinanceUtils(object):
                         break
                 with self.take_lock(prefix):
                     self._take_symbols(*args, **kwargs)
-                time.sleep(2)
+                time.sleep(3)
         except RedLockError as e:
             alog.info(e)
             self.take_symbols(*args, prefix=prefix, **kwargs)
@@ -104,7 +112,7 @@ class BinanceUtils(object):
                 host=settings.REDIS_HOST,
                 db=0
             )],
-            retry_delay=2000,
+            retry_delay=3000,
             retry_times=60 * 60,
             ttl=timeparse('2m') * 1000
         )
@@ -112,3 +120,7 @@ class BinanceUtils(object):
         alog.info(lock_name)
 
         return lock
+
+
+class ExceededLagException(Exception):
+    pass
