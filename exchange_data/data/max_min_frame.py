@@ -128,8 +128,9 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-    df = MaxMinFrame(**kwargs)
-    return
+    # df = MaxMinFrame(**kwargs)
+    # return
+
     df = MaxMinFrame(**kwargs).label_positive_change()
 
     # pd.set_option('display.max_rows', len(df) + 1)
