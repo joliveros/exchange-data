@@ -58,7 +58,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    @property
+    @cached_property
     def frame(self):
         frames = []
 
