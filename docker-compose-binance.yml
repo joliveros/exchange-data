@@ -8,12 +8,14 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.1'
-            replicas: 12
+                    cpus: '0.3'
+            replicas: 8
             update_config:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/symbol_emitter.py -w 12"
@@ -31,6 +33,8 @@ services:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/orderbook_emitter.py -w 12"
@@ -48,9 +52,11 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.1'
-            replicas: 12
+                    cpus: '0.3'
+            replicas: 8
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/book_ticker_emitter.py -w 12"
