@@ -68,6 +68,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
+        self.backtest = BackTest(quantile=self.quantile, **kwargs)
+
         self.study.optimize(self.run, n_trials=session_limit)
 
     @property
@@ -172,9 +174,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.7, 0.9),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.0, 1.295),
-            learning_rate=trial.suggest_float('learning_rate', 0.017, 0.0187),
+                'positive_change_quantile', 0.68, 0.92),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.0, 1.5),
+            learning_rate=trial.suggest_float('learning_rate', 0.01, 0.03),
+            round_decimals=trial.suggest_int('round_decimals', 4, 7),
             # num_conv=trial.suggest_int('num_conv', 3, 8),
             # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
         )
@@ -182,6 +185,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         # self.sequence_length = hparams['sequence_length']
         # self.output_depth = hparams['depth']
         self.positive_change_quantile=hparams['positive_change_quantile']
+        self.round_decimals = hparams['round_decimals']
 
         self.hparams = hparams
         self._kwargs['group_by'] = self.group_by
@@ -218,7 +222,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
-                'round_decimals': self.round_decimals,
+                # 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
                 'lstm_layers': 1,
                 'base_filter_size': 16,
@@ -260,7 +264,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         kwargs['sequence_length'] = self.sequence_length
         kwargs['depth'] = self.output_depth
 
-        self.backtest = BackTest(quantile=self.quantile, **kwargs)
+        self.backtest.quantile = self.quantile
 
         self.backtest.trial = self.trial
 

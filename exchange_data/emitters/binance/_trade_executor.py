@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-import logging
-
-from math import floor
 
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
@@ -13,13 +10,14 @@ from exchange_data.emitters import Messenger, binance
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.emitters.binance import ProxiedClient
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
-from exchange_data.ta_model.tune_macd import MacdParamFrame
 from exchange_data.trading import Positions
+from math import floor
 from pytimeparse.timeparse import timeparse
 
 import alog
 import binance
 import click
+import logging
 import signal
 import sys
 
@@ -27,24 +25,6 @@ import sys
 def truncate(n, decimals=0):
     multiplier = 10 ** decimals
     return int(n * multiplier) / multiplier
-
-
-class MacdParams(object):
-    def __init__(
-        self,
-        group_by_min=0,
-        long_period=0,
-        short_period=0,
-        symbol=None,
-        **kwargs
-    ):
-        self.group_by_min = group_by_min
-        self.long_period = long_period
-        self.short_period = short_period
-        self.symbol = symbol
-
-    def __repr__(self):
-        return alog.pformat(vars(self))
 
 
 class TradeExecutor(MeasurementFrame, Messenger):
@@ -82,8 +62,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         self._model_version = None
         self.model_version = model_version
         self.ticker_channel = f'{symbol}{self.base_asset}_book_ticker'
-
-        alog.info(self.exchange_info)
+        info = self.exchange_info
 
         if log_requests:
             self.log_requests()
@@ -335,17 +314,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return df.iloc[-1]['position']
         except KeyError:
             return self.current_position
-
-    def best_params(self) -> MacdParams:
-        params_df = MacdParamFrame(database_name=self.database_name,
-                                   interval=self.interval_str)\
-            .frame_all_keys()
-
-        params = MacdParams(
-            **params_df.loc[params_df['value'].idxmax()].to_dict()
-        )
-
-        return params
 
     @cached_property_with_ttl(ttl=3)
     def account_data(self):
