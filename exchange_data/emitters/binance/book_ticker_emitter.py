@@ -41,7 +41,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
         time.sleep(5)
 
-        self.take_symbols(prefix='symbol_emitter', workers=workers)
+        self.take_symbols(prefix='book_ticker_emitter', workers=workers)
 
         alog.info(self.depth_symbols)
 

@@ -52,8 +52,9 @@ class BitmexOrderBookEmitter(
         self.queued_frames = []
 
         self.queued_symbols.update(set(self.symbols))
+        alog.info(self.queued_symbols)
 
-        time.sleep(5)
+        time.sleep(10)
 
         self.take_symbols(prefix='orderbook', workers=workers)
 

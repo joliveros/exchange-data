@@ -1,0 +1,33 @@
+version: '3.8'
+networks:
+    public:
+        name: public
+        external: true
+services:
+
+    emitter:
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.3'
+            replicas: 4
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 4"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - redis
+        networks:
+            - public
+
+secrets:
+    DB:
+        external: true
+    ROLLBAR_API_KEY:
+        external: true
+
