@@ -1,95 +1,97 @@
-version: '3.8'
+version: "3.8"
+
 networks:
-  public:
-    name: public
-    external: true
+    public:
+        name: public
+        external: true
 services:
-  volatility_change_emitter:
-    deploy:
-      labels:
-        - swarm.cronjob.enable=false
-        - swarm.cronjob.schedule=*/15 * * * *
-        - swarm.cronjob.skip-running=false
-      replicas: 0
-      placement:
-        constraints:
-          - node.hostname != ip-172-31-19-30
-      restart_policy:
-        condition: none
-    image: 'registry.rubercubic.com:5001/exchange-data:latest'
-    command: >-
-      bash -c "source ~/.bashrc &&
-      ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
-    env_file:
-      - ./.env.prod
-    networks:
-      - public
-    depends_on:
-      - redis
-      - influxdb
-  tf_serving_config:
-    deploy:
-      labels:
-        - swarm.cronjob.enable=true
-        - swarm.cronjob.schedule=* * * * *
-        - swarm.cronjob.skip-running=false
-      replicas: 0
-      restart_policy:
-        condition: none
-    image: 'registry.rubercubic.com:5001/exchange-data:latest'
-    command: bash -c "source ~/.bashrc && ./tfserving/config.py"
-    volumes:
-      - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
-    env_file:
-      - ./.env.prod
-    networks:
-      - public
-    depends_on:
-      - redis
+    volatility_change_emitter:
+        deploy:
+            labels:
+                - swarm.cronjob.enable=false
+                - swarm.cronjob.schedule=*/15 * * * *
+                - swarm.cronjob.skip-running=false
+            replicas: 0
+            placement:
+                constraints:
+                    - node.hostname != ip-172-31-19-30
+            restart_policy:
+                condition: none
+        image: "192.168.100.254:5001/exchange-data:latest"
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
+        env_file:
+            - ./.env.prod
+        networks:
+            - public
+        depends_on:
+            - redis
+            - influxdb
 
-  proxies:
-    deploy:
-      labels:
-        - swarm.cronjob.enable=true
-        - swarm.cronjob.schedule=0 */2 * * *
-        - swarm.cronjob.skip-running=false
-      replicas: 0
-      restart_policy:
-        condition: none
-    image: 'registry.rubercubic.com:5001/exchange-data:latest'
-    command: bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 0.7 -t 5"
-    env_file:
-      - ./.env.prod
-    networks:
-      - public
-    depends_on:
-      - redis
+    tf_serving_config:
+        deploy:
+            labels:
+                - swarm.cronjob.enable=true
+                - swarm.cronjob.schedule=* * * * *
+                - swarm.cronjob.skip-running=false
+            replicas: 0
+            restart_policy:
+                condition: none
+        image: "192.168.100.254:5001/exchange-data:latest"
+        command: bash -c "source ~/.bashrc && ./tfserving/config.py"
+        volumes:
+            - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+        env_file:
+            - ./.env.prod
+        networks:
+            - public
+        depends_on:
+            - redis
 
-  full_orderbook_emitter:
-    deploy:
-      labels:
-        - swarm.cronjob.enable=true
-        - swarm.cronjob.schedule=*/30 * * * *
-        - swarm.cronjob.skip-running=false
-      replicas: 0
-      restart_policy:
-         condition: none
-    image: 'registry.rubercubic.com:5001/exchange-data:latest'
-    command: >-
-      bash -c "source ~/.bashrc &&
-      ./exchange_data/emitters/binance/_full_orderbook_emitter.py"
-    env_file:
-      - ./.env.prod
-    secrets:
-      - DB
-    depends_on:
-      - emit_time
-      - redis
-      - influxdb
-    networks:
-      - public
+    proxies:
+        deploy:
+            labels:
+                - swarm.cronjob.enable=true
+                - swarm.cronjob.schedule=0 */2 * * *
+                - swarm.cronjob.skip-running=false
+            replicas: 0
+            restart_policy:
+                condition: none
+        image: "192.168.100.254:5001/exchange-data:latest"
+        command: bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 0.7 -t 5"
+        env_file:
+            - ./.env.prod
+        networks:
+            - public
+        depends_on:
+            - redis
 
+    full_orderbook_emitter:
+        deploy:
+            labels:
+                - swarm.cronjob.enable=true
+                - swarm.cronjob.schedule=*/15 * * * *
+                - swarm.cronjob.skip-running=false
+            replicas: 0
+            restart_policy:
+                condition: none
+        image: "registry.rubercubic.com:5001/exchange-data:latest"
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py"
+        env_file:
+            - ./.env.prod
+        secrets:
+            - DB
+        depends_on:
+            - emit_time
+            - redis
+            - influxdb
+        networks:
+            - public
 
 secrets:
-  DB:
-    external: true
+    DB:
+        external: true
+

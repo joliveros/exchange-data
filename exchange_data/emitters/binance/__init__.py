@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import docker
+import math
 from binance.exceptions import BinanceAPIException
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
@@ -19,6 +20,7 @@ import time
 
 class BinanceUtils(object):
     limit = 0
+    max_symbols = None
 
     def __init__(
         self,
@@ -68,40 +70,46 @@ class BinanceUtils(object):
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
 
-    def take_symbols(self, *args, prefix='', **kwargs):
+    def take_symbols(self, *args, workers, prefix='', **kwargs):
+        kwargs['workers'] = workers
+
+        if self.max_symbols is None:
+            alog.info(len(self.queued_symbols))
+            self.max_symbols = int(math.ceil((len(self.queued_symbols) / workers)))
+            alog.info(self.max_symbols)
+
         try:
-            while len(self.queued_symbols) > 0:
+            while len(self.queued_symbols) > 0 and \
+                len(self.depth_symbols) < self.max_symbols:
                 if self.limit > 0:
                     if len(self.depth_symbols) > self.limit:
                         break
                 with self.take_lock(prefix):
                     self._take_symbols(*args, **kwargs)
-                time.sleep(3)
+                time.sleep(2)
         except RedLockError as e:
             alog.info(e)
             self.take_symbols(*args, prefix=prefix, **kwargs)
 
     def _take_symbols(self, *args, workers=8, **kwargs):
         alog.info('### take symbols ##')
-        alog.info(self.symbols)
 
         queued_symbols = len(self.queued_symbols)
-        take_count = 10
+        take_count = int(math.ceil(self.max_symbols / 2))
 
         if queued_symbols < take_count:
             take_count = queued_symbols
 
-        for i in range(0, take_count):
+        symbols = self.queued_symbols.random_sample(k=take_count)
+
+        for symbol in symbols:
+            alog.info(f'### taking {symbol} ###')
+
             try:
-                symbol = self.queued_symbols.pop()
-                alog.info(f'### taking symbol {symbol} ###')
-
-                if symbol in self.queued_symbols:
-                    self.queued_symbols.remove(symbol)
-
-                self.depth_symbols.add(symbol)
-            except KeyError as e:
-                break
+                self.queued_symbols.remove(symbol)
+            except KeyError:
+                pass
+            self.depth_symbols.add(symbol)
 
         alog.info(len(self.depth_symbols))
 
@@ -112,7 +120,7 @@ class BinanceUtils(object):
                 host=settings.REDIS_HOST,
                 db=0
             )],
-            retry_delay=3000,
+            retry_delay=1000,
             retry_times=60 * 60,
             ttl=timeparse('2m') * 1000
         )

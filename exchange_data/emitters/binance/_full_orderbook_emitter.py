@@ -55,6 +55,7 @@ class FullOrderBookEmitter(Messenger):
         alog.info(len(data['a']) + len(data['b']))
 
         msg = f'{symbol}_depth_reset', json.dumps(dict(data=data))
+        alog.info(msg)
 
         self.publish(*msg)
 
