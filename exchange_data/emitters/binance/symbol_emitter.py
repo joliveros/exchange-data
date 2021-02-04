@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+from datetime import timedelta
 
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -23,6 +24,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     depth_symbols = set()
     last_lock_ix = 0
     last_queue_check = None
+    stream_id = None
 
     def __init__(
         self,
@@ -33,27 +35,28 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         super().__init__(exchange="binance.com", **kwargs)
         self.limit = limit
 
-        self.queued_symbols.update(self.symbols)
-
-        time.sleep(5)
+        self.update_queued_symbols('symbol')
 
         self.take_symbols(prefix='symbol_emitter', workers=workers)
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = timeparse('2s')
+        self.max_lag = timeparse('5s')
+
+        self.on('start', self.start_stream)
 
         self.start_stream()
 
-    def start_stream(self):
+    def start_stream(self, *args):
         try:
             self._start_stream()
         except ExceededLagException as e:
-            self.stop_manager_with_all_streams()
-            self.start_stream()
+            self.stop_stream(self.stream_id)
+            self.emit('start')
 
     def _start_stream(self):
-        self.create_stream(['depth'], self.depth_symbols)
+        self.last_start = DateTimeUtils.now()
+        self.stream_id = self.create_stream(['depth'], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
@@ -72,8 +75,10 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                         lag = DateTimeUtils.now() - timestamp
 
                         if lag.total_seconds() > self.max_lag:
-                            alog.info('## acceptable lag has been exceeded ##')
-                            raise ExceededLagException()
+                            if self.last_start < DateTimeUtils.now() - \
+                                timedelta(seconds=timeparse('1m')):
+                                alog.info('## acceptable lag has been exceeded ##')
+                                raise ExceededLagException()
 
                         symbol = data['data']["s"]
                         self.publish(f'{symbol}_depth', data_str)

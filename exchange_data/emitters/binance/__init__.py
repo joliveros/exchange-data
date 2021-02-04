@@ -21,6 +21,7 @@ import time
 class BinanceUtils(object):
     limit = 0
     max_symbols = None
+    last_start = None
 
     def __init__(
         self,
@@ -39,6 +40,22 @@ class BinanceUtils(object):
     @cached_property_with_ttl(ttl=60 * 10)
     def symbols(self):
         return self.get_symbols()
+
+    def update_queued_symbols(self, prefix):
+        try:
+            with self.take_lock(prefix=f'{prefix}_symbol_update',
+                                retry_times=1,
+                                retry_delay=300):
+                with self.take_lock(prefix=prefix):
+                    alog.info('try to update queued symbols')
+                    self.queued_symbols.clear()
+                    self.queued_symbols.update(set(self.symbols))
+                    alog.info(self.queued_symbols)
+
+        except RedLockError:
+            pass
+
+        time.sleep(30)
 
     def get_symbols(self):
         try:
@@ -74,13 +91,12 @@ class BinanceUtils(object):
         kwargs['workers'] = workers
 
         if self.max_symbols is None:
-            alog.info(len(self.queued_symbols))
-            self.max_symbols = int(math.ceil((len(self.queued_symbols) / workers)))
-            alog.info(self.max_symbols)
+            with self.queued_symbols as queued_symbols:
+                self.max_symbols = int(math.ceil((len(self.symbols) / workers)))
+                alog.info(self.max_symbols)
 
         try:
-            while len(self.queued_symbols) > 0 and \
-                len(self.depth_symbols) < self.max_symbols:
+            while len(self.queued_symbols) > 0 and len(self.depth_symbols) < self.max_symbols:
                 if self.limit > 0:
                     if len(self.depth_symbols) > self.limit:
                         break
@@ -93,35 +109,42 @@ class BinanceUtils(object):
 
     def _take_symbols(self, *args, workers=8, **kwargs):
         alog.info('### take symbols ##')
+        with self.queued_symbols as queued_symbols:
+            len_queued_symbols = len(queued_symbols)
+            take_count = int(math.ceil(self.max_symbols / 2))
 
-        queued_symbols = len(self.queued_symbols)
-        take_count = int(math.ceil(self.max_symbols / 2))
+            if len_queued_symbols < take_count:
+                take_count = len_queued_symbols
 
-        if queued_symbols < take_count:
-            take_count = queued_symbols
+            symbols = queued_symbols.random_sample(k=take_count)
 
-        symbols = self.queued_symbols.random_sample(k=take_count)
+            for symbol in symbols:
+                alog.info(f'### taking {symbol} ###')
 
-        for symbol in symbols:
-            alog.info(f'### taking {symbol} ###')
+                self.remove_symbol_queue(symbol)
 
-            try:
-                self.queued_symbols.remove(symbol)
-            except KeyError:
-                pass
-            self.depth_symbols.add(symbol)
+                if symbol in queued_symbols:
+                    self.remove_symbol_queue(symbol)
 
-        alog.info(len(self.depth_symbols))
+                self.depth_symbols.add(symbol)
 
-    def take_lock(self, prefix=''):
+            alog.info(len(self.depth_symbols))
+
+    def remove_symbol_queue(self, symbol):
+        try:
+            self.queued_symbols.remove(symbol)
+        except KeyError:
+            pass
+
+    def take_lock(self, prefix='', retry_times=60*60, retry_delay=1000):
         lock_name = f'{prefix}_take_lock'
 
         lock = RedLock(lock_name, [dict(
                 host=settings.REDIS_HOST,
                 db=0
             )],
-            retry_delay=1000,
-            retry_times=60 * 60,
+            retry_delay=retry_delay,
+            retry_times=retry_times,
             ttl=timeparse('2m') * 1000
         )
 
