@@ -81,8 +81,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
         orderbook_img = np.asarray(orderbook_img)
 
-        orderbook_img = np.sort(orderbook_img, axis=3)
-
         orderbook_img = np.concatenate((
             orderbook_img[:, :, 0],
             orderbook_img[:, :, 1]),
@@ -146,7 +144,6 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         max_shape = (2, self.output_depth, 2)
 
         for timestamp, best_ask, best_bid, orderbook_img in levels:
-
             if orderbook_img is not None:
                 orderbook_img = np.asarray(json.loads(orderbook_img))
                 orderbook_img[0][0] = orderbook_img[0][0].round(self.round_decimals)
