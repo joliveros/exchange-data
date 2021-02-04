@@ -4,7 +4,7 @@ networks:
         name: public
         external: true
 services:
-    symbol_emitter:
+    emitter:
         deploy:
             resources:
                 limits:

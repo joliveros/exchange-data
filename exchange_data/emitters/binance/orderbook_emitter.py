@@ -3,6 +3,7 @@ import time
 
 from cached_property import cached_property
 from redis_collections import Set
+from redlock import RedLockError
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -51,10 +52,7 @@ class BitmexOrderBookEmitter(
         self.frame_slice = None
         self.queued_frames = []
 
-        self.queued_symbols.update(set(self.symbols))
-        alog.info(self.queued_symbols)
-
-        time.sleep(10)
+        self.update_queued_symbols('orderbook')
 
         self.take_symbols(prefix='orderbook', workers=workers)
 
