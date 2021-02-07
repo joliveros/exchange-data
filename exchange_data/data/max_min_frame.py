@@ -14,8 +14,15 @@ pd.options.plotting.backend = 'plotly'
 
 
 class MaxMinFrame(OrderBookFrame, BackTestBase):
-    def __init__(self, symbol, positive_change_quantile=0.9, **kwargs):
+    def __init__(
+        self,
+        symbol,
+        negative_change_quantile=0.7,
+        positive_change_quantile=0.7,
+        **kwargs
+    ):
         self.positive_change_quantile = positive_change_quantile
+        self.negative_change_quantile = negative_change_quantile
 
         super().__init__(symbol=symbol, **kwargs)
         BackTestBase.__init__(self, symbol=symbol, **kwargs)
@@ -30,16 +37,47 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         # df['position'][df.open - df.close < 0] = Positions.Long
 
         df['change'] = df.close - df.open
-        df['change'][df['change'] < 0.0] = 0.0
+        # df['change'][df['change'] < 0.0] = 0.0
         df['change'] = df['change'].fillna(0.0)
 
         change = df['change'].to_numpy()
 
-        change_quantile = np.quantile(change, self.positive_change_quantile)
+        pos_change = np.where(change < 0.0, 0, change)
+        neg_change = np.abs(np.where(change > 0.0, 0, change))
 
-        df['position'][df['change'] >= change_quantile] = Positions.Long
+        pos_change_quantile = np.quantile(pos_change,
+                                          self.positive_change_quantile)
+        neg_change_quantile = np.quantile(neg_change,
+                                          self.negative_change_quantile)
+
+        pos_change = np.where(pos_change > pos_change_quantile,
+                              Positions.Long, pos_change)
+
+        neg_change = np.where(neg_change > neg_change_quantile,
+                              Positions.Flat, pos_change)
+
+        position = np.zeros(pos_change.shape, dtype=Positions)
+
+        for i in range(0, position.shape[0]):
+            pos = pos_change[i]
+
+            if pos != 0.0:
+                position[i] = pos
+
+            pos = neg_change[i]
+
+            if pos != 0.0:
+                position[i] = pos
+
+        for i in range(0, position.shape[0]):
+            if type(position[i]) != Positions:
+                position[i] = 0
 
         df = df.drop(['change'], axis=1)
+
+        df['position'] = position
+
+        df = df[df['position'] != 0]
 
         df = df.set_index('time')
 
@@ -120,6 +158,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--positive-change-quantile', '-q', default=0.50, type=float)
+@click.option('--negative-change-quantile', '-n', default=0.50, type=float)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--round-decimals', '-D', default=3, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
