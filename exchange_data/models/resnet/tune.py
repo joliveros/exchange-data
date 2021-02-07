@@ -174,17 +174,20 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.6, 0.8),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.00, 1.3),
-            learning_rate=trial.suggest_float('learning_rate', 0.04, 0.06),
+                'positive_change_quantile', 0.84, 0.95),
+            negative_change_quantile=trial.suggest_float(
+                'negative_change_quantile', 0.73, 0.95),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.23),
+            #learning_rate=trial.suggest_float('learning_rate', 0.04, 0.06),
             #round_decimals=trial.suggest_int('round_decimals', 5, 8),
-            num_conv=trial.suggest_int('num_conv', 3, 8),
+            #num_conv=trial.suggest_int('num_conv', 3, 8),
             # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
         )
 
         # self.sequence_length = hparams['sequence_length']
         # self.output_depth = hparams['depth']
         self.positive_change_quantile=hparams['positive_change_quantile']
+        self.negative_change_quantile=hparams['negative_change_quantile']
         #self.round_decimals = hparams['round_decimals']
 
         self.hparams = hparams
@@ -222,6 +225,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
+                'learning_rate': 0.048254,
                 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
                 'lstm_layers': 1,
@@ -229,7 +233,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
                 'train_df': train_df,
-                #'num_conv': 3
+                'num_conv': 6
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
