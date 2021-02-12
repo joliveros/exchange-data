@@ -7,14 +7,35 @@ networks:
 
 services:
 
-    MFT:
+    RUNE:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m MFT -e"
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m RUNE -e"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+            - model_serving
+            - influxdb
+        secrets:
+            - DB
+            - BINANCE_API_KEY
+            - BINANCE_API_SECRET
+
+    AVAX:
+        deploy:
+          replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
+        command: >-
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m AVAX -e"
         environment:
             - LOG_LEVEL=INFO
         networks:

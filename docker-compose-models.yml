@@ -21,15 +21,15 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.1 --model_config_file_poll_wait_seconds=30
 
-    MFT:
+    RUNE:
         deploy:
-            replicas: 4
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py MFTBNB -i 1d -b 1d -o 4h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -c 40"
+            ./exchange_data/models/resnet/tune.py RUNEBNB -i 1d -b 1d -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -e -c 36"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
@@ -42,6 +42,26 @@ services:
         secrets:
             - DB
 
+    AVAXBNB:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/models/resnet/tune.py AVAXBNB -i 1d -b 1d -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 5 --min-capital 1.005 -e -c 36"
+        environment:
+            - LOG_LEVEL=INFO
+            - NVIDIA_VISIBLE_DEVICES=all
+        networks:
+            - public
+        depends_on:
+            - influxdb
+            - model_serving
+            - redis
+        secrets:
+            - DB
 secrets:
   DB:
       external: true

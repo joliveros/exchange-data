@@ -36,6 +36,11 @@ class MeasurementFrame(MeasurementMeta):
         self.interval = timedelta(seconds=timeparse(interval))
         self._start_date = start_date
         self._end_date = end_date
+        self.original_interval = (start_date, end_date)
+
+    def reset_interval(self):
+        self.start_date = self.original_interval[0]
+        self.end_date = self.original_interval[1]
 
     @property
     def name(self):
