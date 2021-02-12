@@ -305,7 +305,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
                 interval='1m',
                 model_version=self.model_version,
                 quantile=self.quantile,
-                sequence_length=48,
+                sequence_length=20,
                 group_by=self.group_by,
                 symbol=self.symbol,
                 window_size='3m',

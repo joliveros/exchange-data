@@ -101,7 +101,7 @@ class BackTestBase(object):
                                      close=df['close'], yaxis='y4'))
         fig.show()
 
-    @property
+    @cached_property
     def ohlc(self):
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)

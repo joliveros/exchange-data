@@ -31,7 +31,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         sequence_length,
         symbol,
         window_size,
-        offset_interval=None,
+        offset_interval='0h',
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
@@ -58,7 +58,7 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    @property
+    @cached_property
     def frame(self):
         frames = []
 
@@ -116,11 +116,10 @@ class OrderBookFrame(MeasurementFrame, FrameNormalizer):
 
             return twindow.intervals
         else:
-            if self.offset_interval:
-                self.reset_interval()
-                offset_interval = timedelta(seconds=timeparse(self.offset_interval))
-                start_date = self.start_date - offset_interval
-                end_date = self.end_date - offset_interval
+            self.reset_interval()
+            offset_interval = timedelta(seconds=timeparse(self.offset_interval))
+            start_date = self.start_date - offset_interval
+            end_date = self.end_date - offset_interval
 
             return [(start_date, end_date)]
 

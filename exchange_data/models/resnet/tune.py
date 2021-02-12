@@ -181,12 +181,15 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'positive_change_quantile', 0.84, 0.95),
             negative_change_quantile=trial.suggest_float(
                 'negative_change_quantile', 0.73, 0.95),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.5),
-            #interval=trial.suggest_int('interval', 12, 48),
-            #learning_rate=trial.suggest_float('learning_rate', 0.04, 0.06),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.33),
+            # interval=trial.suggest_int('interval', 6, 24),
+            learning_rate=trial.suggest_float('learning_rate', 0.034, 0.052),
             #round_decimals=trial.suggest_int('round_decimals', 5, 8),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
             # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
+            # sequence_length=trial.suggest_categorical(
+            #     'sequence_length',
+            #     multiples(2, 26, 12)),
         )
 
         # self.sequence_length = hparams['sequence_length']
@@ -194,8 +197,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         alog.info(alog.pformat(hparams))
 
-        #interval = hparams['interval']
-        #self.interval = timedelta(seconds=timeparse(f'{interval}h'))
+        # interval = hparams['interval']
+        # self.interval = timedelta(seconds=timeparse(f'{interval}h'))
 
         self.positive_change_quantile = hparams['positive_change_quantile']
         self.negative_change_quantile = hparams['negative_change_quantile']
@@ -239,7 +242,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
-                'learning_rate': 0.048254,
+                # 'learning_rate': 0.048254,
                 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
                 'lstm_layers': 1,
@@ -345,7 +348,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--round-decimals', '-D', default=3, type=int)
-@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--sequence-length', '-l', default=20, type=int)
 @click.option('--session-limit', '-s', default=None, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)
