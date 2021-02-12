@@ -287,6 +287,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
     @property
     def model_params(self):
         params = self.trial_params['_params']
+        del params['interval']
 
         return params
 

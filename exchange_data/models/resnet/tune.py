@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from datetime import timedelta
+
 from pip._vendor.contextlib2 import nullcontext
 
 from exchange_data import settings
@@ -29,6 +31,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
     backtest = None
 
     def __init__(self,
+                 export_best,
                  group_by_min,
                  volatility_intervals,
                  session_limit,
@@ -48,6 +51,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
+        self.export_best = export_best
         self.group_by_min = group_by_min
         self.clear_runs = clear_runs
         self.min_capital = min_capital
@@ -177,7 +181,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'positive_change_quantile', 0.84, 0.95),
             negative_change_quantile=trial.suggest_float(
                 'negative_change_quantile', 0.73, 0.95),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.23),
+            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.5),
+            #interval=trial.suggest_int('interval', 12, 48),
             #learning_rate=trial.suggest_float('learning_rate', 0.04, 0.06),
             #round_decimals=trial.suggest_int('round_decimals', 5, 8),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
@@ -186,8 +191,14 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         # self.sequence_length = hparams['sequence_length']
         # self.output_depth = hparams['depth']
-        self.positive_change_quantile=hparams['positive_change_quantile']
-        self.negative_change_quantile=hparams['negative_change_quantile']
+
+        alog.info(alog.pformat(hparams))
+
+        #interval = hparams['interval']
+        #self.interval = timedelta(seconds=timeparse(f'{interval}h'))
+
+        self.positive_change_quantile = hparams['positive_change_quantile']
+        self.negative_change_quantile = hparams['negative_change_quantile']
         #self.round_decimals = hparams['round_decimals']
 
         self.hparams = hparams
@@ -205,6 +216,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             long_df.loc[:, 'expected_position'] = 1
 
             flat_count = len(long_df) * flat_ratio
+
+            alog.info(long_df)
+            alog.info(flat_df)
 
             flat_df = flat_df.sample(frac=flat_count/len(flat_df),
                                      replace=True)
@@ -233,7 +247,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
                 'train_df': train_df,
-                'num_conv': 6
+                'num_conv': 5
             }
 
             hp.hparams(hparams, trial_id=str(trial.number))
@@ -285,7 +299,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             try:
                 if trial.study.best_trial.value < self.backtest.capital:
                     shutil.rmtree(self.best_model_dir, ignore_errors=True)
-                    shutil.copytree(exported_model_path, self.best_model_dir)
+                    if self.export_best:
+                        shutil.copytree(exported_model_path, self.best_model_dir)
             except ValueError:
                 pass
 
@@ -312,12 +327,14 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
             #assert len(logical_devices) == len(physical_devices) + 1
 
+
 @click.command()
 @click.argument('symbol', type=str)
 @click.option('--backtest-interval', '-b', default='15m', type=str)
+@click.option('--clear-runs', '-c', default=0, type=int)
 @click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--depth', '-d', default=76, type=int)
-@click.option('--clear-runs', '-c', default=0, type=int)
+@click.option('--export-best', '-e', is_flag=True)
 @click.option('--group-by', '-g', default='1m', type=str)
 @click.option('--group-by-min', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)

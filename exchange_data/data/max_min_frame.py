@@ -81,12 +81,11 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df = df.set_index('time')
 
-        alog.info(df)
-
         return df
 
     def plot(self):
         df = self.ohlc
+
         df.reset_index(drop=False, inplace=True)
 
         alog.info(df)
@@ -157,9 +156,10 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--group-by-min', '-G', default=5, type=int)
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
-@click.option('--positive-change-quantile', '-q', default=0.50, type=float)
 @click.option('--negative-change-quantile', '-n', default=0.50, type=float)
+@click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
+@click.option('--positive-change-quantile', '-q', default=0.50, type=float)
 @click.option('--round-decimals', '-D', default=3, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--tick', is_flag=True)
@@ -173,7 +173,6 @@ def main(**kwargs):
     df = MaxMinFrame(**kwargs).label_positive_change()
 
     # pd.set_option('display.max_rows', len(df) + 1)
-
     alog.info(df)
 
 
