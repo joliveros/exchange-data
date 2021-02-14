@@ -9,7 +9,7 @@ services:
 
     RUNE:
         deploy:
-          replicas: 0
+          replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
