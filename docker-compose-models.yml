@@ -23,13 +23,13 @@ services:
 
     ANKR:
         deploy:
-            replicas: 1
+            replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py ANKRBNB -i 13h -b 13h -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -e -c 36"
+            ./exchange_data/models/resnet/tune.py ANKRBNB -i 13h -b 13h -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -e -c 72"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
@@ -44,13 +44,13 @@ services:
 
     MFT:
         deploy:
-            replicas: 1
+            replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py MFTBNB -i 13h -b 13h -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -e -c 36"
+            ./exchange_data/models/resnet/tune.py MFTBNB -i 13h -b 13h -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 6 --min-capital 1.005 -e -c 72"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
