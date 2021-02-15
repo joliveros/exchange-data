@@ -209,6 +209,11 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
             flat_ratio = hparams.get('flat_ratio')
+
+            self.reset_interval()
+
+            alog.info((str(self.start_date), str(self.end_date)))
+
             _df = self.train_df = self.label_positive_change().copy()
 
             alog.info(_df)
