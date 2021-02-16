@@ -72,8 +72,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
-        self.backtest = BackTest(quantile=self.quantile, **kwargs)
-
         self.study.optimize(self.run, n_trials=session_limit)
 
     @property
@@ -289,6 +287,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         kwargs = self._kwargs.copy()
         kwargs['sequence_length'] = self.sequence_length
         kwargs['depth'] = self.output_depth
+
+        self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.backtest.quantile = self.quantile
 
