@@ -297,6 +297,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     @cached_property_with_ttl(ttl=30)
     def position(self) -> Positions:
+        alog.info(alog.pformat(self.model_params))
+
         try:
             df = BackTest(
                 best_exported_model=True,
