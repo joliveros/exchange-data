@@ -313,7 +313,8 @@ class TradeExecutor(MeasurementFrame, Messenger):
             ).test()
 
             return df.iloc[-1]['position']
-        except KeyError:
+        except KeyError as e:
+            alog.info(e)
             return self.current_position
 
     @cached_property_with_ttl(ttl=3)
