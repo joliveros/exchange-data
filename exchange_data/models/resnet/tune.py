@@ -182,7 +182,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.33),
             # interval=trial.suggest_int('interval', 6, 24),
             learning_rate=trial.suggest_float('learning_rate', 0.034, 0.052),
-            #round_decimals=trial.suggest_int('round_decimals', 5, 8),
+            round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
             # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
             # sequence_length=trial.suggest_categorical(
@@ -200,7 +200,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         self.positive_change_quantile = hparams['positive_change_quantile']
         self.negative_change_quantile = hparams['negative_change_quantile']
-        #self.round_decimals = hparams['round_decimals']
+        self.round_decimals = hparams['round_decimals']
 
         self.hparams = hparams
         self._kwargs['group_by'] = self.group_by
