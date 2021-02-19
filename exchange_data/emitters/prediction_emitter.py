@@ -61,6 +61,8 @@ class PredictionBase(object):
             url = f'http://{settings.MODEL_HOST}:8501/v1/models/' \
                   f'{model_name}:predict'
 
+        alog.info(url)
+
         json_response = requests.post(
             url,
             data=data,
