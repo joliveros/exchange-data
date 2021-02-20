@@ -1,20 +1,17 @@
 #!/usr/bin/env python
-import gzip
-import logging
+
 from collections import deque
 from datetime import timedelta
 from distutils.util import strtobool
-
 from exchange_data import settings
-from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import Messenger
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
-from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
 import click
+import gzip
 import json
 import numpy as np
 import requests

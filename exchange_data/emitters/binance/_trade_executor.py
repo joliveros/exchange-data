@@ -2,11 +2,13 @@
 
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
-from cached_property import cached_property_with_ttl
 from decimal import Decimal, getcontext
+
+from cached_property import cached_property_with_ttl
+
 from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
-from exchange_data.emitters import Messenger, binance
+from exchange_data.emitters import binance, Messenger
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.emitters.binance import ProxiedClient
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
