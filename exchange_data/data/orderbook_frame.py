@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from baselines.a2c.prediction_emitter import FrameNormalizer
-from cached_property import cached_property
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
@@ -19,7 +17,7 @@ import pandas as pd
 pd.options.plotting.backend = 'plotly'
 
 
-class OrderBookFrame(MeasurementFrame, FrameNormalizer):
+class OrderBookFrame(MeasurementFrame):
     positive_change_count = 0
     min_consecutive_count = 1
 

@@ -1,11 +1,6 @@
-import alog
-import tensorflow as tf
-from cached_property import cached_property
-from plotly import graph_objects as go
-
-from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.trading import Positions
-from pytimeparse.timeparse import timeparse
+from plotly import graph_objects as go
+import alog
 
 
 class BackTestBase(object):

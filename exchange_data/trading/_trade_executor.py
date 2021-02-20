@@ -1,16 +1,14 @@
 #! /usr/bin/env python
 
-from datetime import timedelta
-from time import sleep
-
 from bitmex import bitmex
-
+from datetime import timedelta
 from exchange_data import settings, Database
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import SignalInterceptor
 from exchange_data.emitters.messenger import Messenger
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
+from time import sleep
 
 import alog
 import click

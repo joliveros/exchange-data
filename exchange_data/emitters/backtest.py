@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-import alog
 
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.emitters.prediction_emitter import PredictionBase
 from optuna import Trial
 
+import alog
 import click
 
 
