@@ -1,5 +1,6 @@
 from exchange_data.trading import Positions
 from plotly import graph_objects as go
+import tensorflow as tf
 import alog
 
 
