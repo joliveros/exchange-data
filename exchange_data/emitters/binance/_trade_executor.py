@@ -42,6 +42,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         symbol,
         trading_enabled,
         depth,
+        window_size,
         log_requests,
         tick=False,
         fee=0.0075,
@@ -52,6 +53,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         super().__init__(
             **kwargs
         )
+        self.window_size = window_size
         self.depth = depth
         self.tick = tick
         self.symbol = f'{symbol}{base_asset}'
@@ -314,7 +316,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
                 sequence_length=20,
                 group_by=self.group_by,
                 symbol=self.symbol,
-                window_size='3m',
+                window_size=self.window_size,
                 **self.model_params
             ).test()
 
@@ -364,6 +366,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--log-requests', '-l', is_flag=True)
 @click.option('--tick', is_flag=True)
 @click.option('--group-by', '-g', default='1m', type=str)
+@click.option('--window-size', '-w', default='5m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
