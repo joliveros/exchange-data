@@ -9,7 +9,7 @@ services:
 
     COCOS:
         deploy:
-          replicas: 1
+          replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
@@ -28,14 +28,14 @@ services:
             - BINANCE_API_KEY
             - BINANCE_API_SECRET
 
-    BAKE:
+    FTM:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m BAKE -e"
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m FTM -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
