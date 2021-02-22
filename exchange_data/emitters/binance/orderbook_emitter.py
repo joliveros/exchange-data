@@ -43,7 +43,7 @@ class BitmexOrderBookEmitter(
 
         super().__init__(
             database_name=database_name,
-            database_batch_size=48,
+            database_batch_size=2,
             **kwargs
         )
         self.limit = limit
