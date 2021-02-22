@@ -187,6 +187,8 @@ class OrderBookFrame(MeasurementFrame):
 
         df = DataFrame(frames)
 
+        alog.info(df)
+
         df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
 
         return df
