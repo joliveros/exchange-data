@@ -124,8 +124,8 @@ class OrderBookFrame(MeasurementFrame):
     def load_frames(self):
         frames = []
 
-        self.start_date = self.start_date - timedelta(seconds=timeparse(
-            self.group_by) * self.sequence_length)
+        self.start_date = self.start_date - timedelta(seconds=(timeparse(
+            self.group_by) * self.sequence_length) + timeparse('1m'))
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
@@ -186,8 +186,6 @@ class OrderBookFrame(MeasurementFrame):
                         frames.append(frame)
 
         df = DataFrame(frames)
-
-        alog.info(df)
 
         df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
 
