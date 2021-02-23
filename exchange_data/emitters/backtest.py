@@ -70,7 +70,7 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--volume-max', default=1.0e4, type=float)
-@click.option('--window-size', '-w', default='2h', type=str)
+@click.option('--window-size', '-w', default='3m', type=str)
 @click.option('--model-version', default=None, type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
