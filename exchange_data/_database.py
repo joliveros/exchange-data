@@ -48,7 +48,8 @@ class Database(EventEmitterBase):
             database=database,
             ssl=ssl,
             verify_ssl=settings.CERT_FILE,
-            timeout=10000
+            timeout=15000,
+            gzip=True
         )
 
         super().__init__(**kwargs)

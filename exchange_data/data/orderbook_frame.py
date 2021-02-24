@@ -125,7 +125,7 @@ class OrderBookFrame(MeasurementFrame):
         frames = []
 
         self.start_date = self.start_date - timedelta(seconds=(timeparse(
-            self.group_by) * self.sequence_length) + timeparse('3m'))
+            self.group_by) * self.sequence_length) + timeparse('6m'))
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
