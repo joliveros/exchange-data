@@ -30,7 +30,7 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
         df = self.frame.copy()
 
         df.reset_index(drop=False, inplace=True)
-
+        df = df.iloc[[-1]]
         df = df.apply(self.prediction, axis=1)
 
         df['capital'] = self.capital
@@ -79,7 +79,7 @@ def main(**kwargs):
     #
     # test = BackTest(start_date=start_date, end_date=end_date, **kwargs)
 
-    backtest = BackTest(**kwargs)
+    backtest = BackTest(best_exported_model=True, **kwargs)
     backtest.test()
 
 
