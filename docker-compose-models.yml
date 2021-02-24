@@ -50,7 +50,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py FTMBNB -i 13h -b 9h -o 0h -w 3m -g 1m --group-by-min 2 -m 148 -D 7 --min-capital 1.005 -e -c 36"
+            ./exchange_data/models/resnet/tune.py FTMBNB -i 13h -b 9h -o 4h -w 3m -g 1m --group-by-min 2 -m 148 -D 7 --min-capital 1.005 -e -c 36"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
