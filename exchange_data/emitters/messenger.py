@@ -1,5 +1,8 @@
 from abc import ABC
 from enum import Enum, auto
+
+from statsd import StatsClient
+
 from exchange_data import settings
 from exchange_data.utils import NoValue, EventEmitterBase
 from pyee import EventEmitter
@@ -21,12 +24,14 @@ class MessageType(NoValue):
     message = auto()
 
 
-class Messenger(EventEmitterBase):
+class Messenger(EventEmitterBase, StatsClient):
 
     def __init__(self, decode=True, **kwargs):
         host = settings.REDIS_HOST
 
         super().__init__(**kwargs)
+        StatsClient.__init__(self, host='telegraf')
+
         self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None
