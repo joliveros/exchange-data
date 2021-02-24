@@ -306,24 +306,28 @@ class TradeExecutor(MeasurementFrame, Messenger):
         alog.info(alog.pformat(self.model_params))
 
         try:
-            df = BackTest(
-                best_exported_model=True,
-                database_name=self.database_name,
-                depth=self.depth,
-                interval='1m',
-                model_version=self.model_version,
-                quantile=self.quantile,
-                sequence_length=20,
-                group_by=self.group_by,
-                symbol=self.symbol,
-                window_size=self.window_size,
-                **self.model_params
-            ).test()
-
-            return df.iloc[-1]['position']
+            self.get_position()
         except KeyError as e:
             alog.info(e)
-            return self.current_position
+            alog.info('### try again ###')
+            return self.get_position()
+
+    def get_position(self):
+        df = BackTest(
+            best_exported_model=True,
+            database_name=self.database_name,
+            depth=self.depth,
+            interval='1m',
+            model_version=self.model_version,
+            quantile=self.quantile,
+            sequence_length=20,
+            group_by=self.group_by,
+            symbol=self.symbol,
+            window_size=self.window_size,
+            **self.model_params
+        ).test()
+
+        return df.iloc[-1]['position']
 
     @cached_property_with_ttl(ttl=3)
     def account_data(self):
