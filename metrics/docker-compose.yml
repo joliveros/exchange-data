@@ -1,5 +1,10 @@
 version: '3.8'
 
+networks:
+  public:
+    name: public
+    external: true
+
 services:
   telegraf:
     image: telegraf:1.17.2-alpine
@@ -11,15 +16,8 @@ services:
       - influxdb
     ports:
       - '0.0.0.0:8125:8125/udp'
-
-  influxdb:
-    image: influxdb:1.8.4-alpine
-    env_file: configuration.env
-    ports:
-      - '0.0.0.0:8086:8086'
-    volumes:
-      - ./:/imports
-      - ${HOME}/data/metrics:/var/lib/influxdb
+    networks:
+      - public
 
   grafana:
     image: grafana/grafana:7.4.2
@@ -35,3 +33,6 @@ services:
       - ${HOME}/data/grafana:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning/
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+    networks:
+      - public
+
