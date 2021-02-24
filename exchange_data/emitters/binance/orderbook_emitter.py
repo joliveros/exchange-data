@@ -27,6 +27,7 @@ class BitmexOrderBookEmitter(
 ):
     orderbooks = {}
     depth_symbols = set()
+    last_book_ticker_update = {}
 
     def __init__(
         self,
@@ -61,6 +62,7 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements)
+            self.on('1m', self.metrics)
             # self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
@@ -77,6 +79,23 @@ class BitmexOrderBookEmitter(
         if symbol in self.orderbooks:
             alog.info(self.orderbooks[symbol].print(depth=10, trades=False))
             orderbook: BinanceOrderBook = self.orderbooks[symbol]
+
+    def metrics(self, timestamp):
+        now = DateTimeUtils.now()
+        for symbol in self.last_book_ticker_update.keys():
+            secs = (now - self.last_book_ticker_update[symbol]).total_seconds()
+            self.gauge('last_book_ticker_update', secs)
+
+            if secs < 60.0:
+                self.incr('last_book_ticker_update_count')
+
+        orderbook: BinanceOrderBook
+        for symbol, orderbook in self.orderbooks.items():
+            secs = (now - orderbook.last_timestamp).total_seconds()
+            self.gauge('last_orderbook_update', secs)
+
+            if secs < 60.0:
+                self.incr('last_orderbook_update_count')
 
     def message(self, data):
         if 'data' in data:
@@ -118,6 +137,7 @@ class BitmexOrderBookEmitter(
             except PriceDoesNotExistException:
                 pass
             # alog.info(f'removed {price}')
+        self.last_book_ticker_update[symbol] = DateTimeUtils.now()
 
     def depth_reset(self, data):
         alog.info('### depth reset ###')

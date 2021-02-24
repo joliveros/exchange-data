@@ -30,7 +30,7 @@ class OrderBook(object):
         self.bids = OrderTree()
         self.asks = OrderTree()
         self.last_tick = None
-        self.last_timestamp = TimeEmitter.timestamp()
+        self.last_timestamp = DateTimeUtils.now()
         self.tick_size = tick_size
         self.time = 0
         self._next_order_id = 0
