@@ -33,6 +33,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         **kwargs
     ):
         super().__init__(exchange="binance.com", **kwargs)
+        BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
         self.limit = limit
 
         self.update_queued_symbols('symbol')
