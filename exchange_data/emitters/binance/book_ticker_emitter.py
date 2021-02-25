@@ -39,7 +39,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
     ):
         super().__init__(exchange="binance.com", **kwargs)
         BinanceUtils.__init__(self, **kwargs)
-
+        BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
         self.limit = limit
 
         self.update_queued_symbols('book_ticker')
