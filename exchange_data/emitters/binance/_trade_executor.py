@@ -315,6 +315,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 
     def get_position(self):
         df = BackTest(
+            last_frame_only=True,
             best_exported_model=True,
             database_name=self.database_name,
             depth=self.depth,
