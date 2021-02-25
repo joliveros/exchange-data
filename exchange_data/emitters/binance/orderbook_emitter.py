@@ -86,7 +86,7 @@ class BitmexOrderBookEmitter(
             secs = (now - self.last_book_ticker_update[symbol]).total_seconds()
             self.gauge('last_book_ticker_update', secs)
 
-            if secs < 60.0:
+            if secs <= 60.0:
                 self.incr('last_book_ticker_update_count')
 
         orderbook: BinanceOrderBook
@@ -94,8 +94,10 @@ class BitmexOrderBookEmitter(
             secs = (now - orderbook.last_timestamp).total_seconds()
             self.gauge('last_orderbook_update', secs)
 
-            if secs < 60.0:
+            if secs <= 60.0:
                 self.incr('last_orderbook_update_count')
+
+            self.incr('orderbook_count')
 
     def message(self, data):
         if 'data' in data:
