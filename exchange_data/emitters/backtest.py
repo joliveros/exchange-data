@@ -13,13 +13,14 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
     def __init__(
         self,
         trial=None,
+        last_frame_only=False,
         **kwargs
     ):
         super().__init__(**kwargs)
 
         BackTestBase.__init__(self, **kwargs)
         PredictionBase.__init__(self, **kwargs)
-
+        self.last_frame_only = last_frame_only
         self.trial: Trial = trial
 
     def test(self, model_version=None):
@@ -30,7 +31,10 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
         df = self.frame.copy()
 
         df.reset_index(drop=False, inplace=True)
-        df = df.iloc[[-1]]
+
+        if self.last_frame_only:
+            df = df.iloc[[-1]]
+
         df = df.apply(self.prediction, axis=1)
 
         df['capital'] = self.capital
