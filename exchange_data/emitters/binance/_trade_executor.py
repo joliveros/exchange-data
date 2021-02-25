@@ -306,7 +306,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         alog.info(alog.pformat(self.model_params))
 
         try:
-            self.get_position()
+            return self.get_position()
         except KeyError as e:
             alog.info(e)
             alog.info(type(e))
