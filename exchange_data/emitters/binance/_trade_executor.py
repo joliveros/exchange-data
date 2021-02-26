@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
@@ -309,6 +310,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return self.get_position()
         except KeyError as e:
             alog.info(e)
+            time.sleep(1)
             alog.info('### try again ###')
             return self.position
 
