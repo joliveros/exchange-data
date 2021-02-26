@@ -1,4 +1,4 @@
-FROM influxdb
+FROM influxdb:1.8
 
 COPY . .
 
