@@ -313,6 +313,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return self.position
 
     def get_position(self):
+        self.incr('trade_executor_call_position')
         df = BackTest(
             last_frame_only=True,
             best_exported_model=True,
