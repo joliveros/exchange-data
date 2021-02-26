@@ -83,7 +83,7 @@ def main(**kwargs):
     #
     # test = BackTest(start_date=start_date, end_date=end_date, **kwargs)
 
-    backtest = BackTest(best_exported_model=True, **kwargs)
+    backtest = BackTest(best_exported_model=True, last_frame_only=True, **kwargs)
     backtest.test()
 
 
