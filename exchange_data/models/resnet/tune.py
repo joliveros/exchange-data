@@ -163,9 +163,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         alog.info(f'### trial number {trial.number} ###')
 
         if self.clear_runs < trial.number and self.clear_runs > 0:
-            shutil.rmtree(self.best_model_dir, ignore_errors=True)
             exported_model_path = self.study.best_trial.user_attrs['exported_model_path']
             if self.export_best and self.study.best_trial.value > self.min_capital:
+                shutil.rmtree(self.best_model_dir, ignore_errors=True)
                 shutil.copytree(exported_model_path, self.best_model_dir)
 
             self.clear()
