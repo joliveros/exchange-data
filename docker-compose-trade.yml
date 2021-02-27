@@ -7,35 +7,14 @@ networks:
 
 services:
 
-    COCOS:
-        deploy:
-          replicas: 0
-        image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        volumes:
-            - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
-        command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m COCOS -e"
-        environment:
-            - LOG_LEVEL=INFO
-        networks:
-            - public
-        depends_on:
-            - redis
-            - model_serving
-            - influxdb
-        secrets:
-            - DB
-            - BINANCE_API_KEY
-            - BINANCE_API_SECRET
-
-    FTM:
+    ADA:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
-          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m FTM -e -w 3m"
+          bash -c "source ~/.bashrc && ./exchange_data/emitters/binance/_trade_executor.py -t 1m ADA -e -w 3m"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -57,3 +36,4 @@ secrets:
         external: true
     BINANCE_API_SECRET:
         external: true
+
