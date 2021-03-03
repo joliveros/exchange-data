@@ -186,18 +186,18 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'negative_change_quantile', 0.73, 0.99),
             flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.33),
             # interval=trial.suggest_int('interval', 6, 24),
-            learning_rate=trial.suggest_float('learning_rate', 0.036, 0.07),
+            learning_rate=trial.suggest_float('learning_rate', 0.036, 0.049783),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
-            epochs=trial.suggest_categorical('epochs', [4, 5]),
+            #epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
-            depth=trial.suggest_categorical('depth', multiples(2, 80, 36)),
-            sequence_length=trial.suggest_categorical(
-                 'sequence_length',
-                 multiples(2, 40, 36)),
+            #depth=trial.suggest_categorical('depth', multiples(2, 80, 36)),
+            #sequence_length=trial.suggest_categorical(
+            #    'sequence_length',
+            #     multiples(2, 40, 36)),
         )
 
-        self.sequence_length = hparams['sequence_length']
-        self.output_depth = hparams['depth']
+        #self.sequence_length = hparams['sequence_length']
+        #self.output_depth = hparams['depth']
 
         alog.info(alog.pformat(hparams))
 
@@ -247,7 +247,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 3,
+                'epochs': 4,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
