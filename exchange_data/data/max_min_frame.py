@@ -19,10 +19,12 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         symbol,
         negative_change_quantile=0.7,
         positive_change_quantile=0.7,
+        flat_ratio=0.5,
         **kwargs
     ):
         self.positive_change_quantile = positive_change_quantile
         self.negative_change_quantile = negative_change_quantile
+        self.flat_ratio = flat_ratio
 
         super().__init__(symbol=symbol, **kwargs)
         BackTestBase.__init__(self, symbol=symbol, **kwargs)
@@ -77,7 +79,13 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df['position'] = position
 
+        flat_df = df[df['position'] == 0]\
+            .sample(frac=self.flat_ratio, random_state=0)
+
+        flat_df['position'] = Positions.Flat
+
         df = df[df['position'] != 0]
+        df = pd.concat([df, flat_df])
 
         df = df.set_index('time')
 
@@ -139,8 +147,6 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         df = self.frame.copy()
 
         df['expected_position'] = position
-
-        df['expected_position'] = df.expected_position.ffill()
 
         df.dropna(how='any', inplace=True)
 
