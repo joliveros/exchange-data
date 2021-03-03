@@ -184,7 +184,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'positive_change_quantile', 0.84, 0.99),
             negative_change_quantile=trial.suggest_float(
                 'negative_change_quantile', 0.73, 0.99),
-            flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.33),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.0, 1.0),
             # interval=trial.suggest_int('interval', 6, 24),
             learning_rate=trial.suggest_float('learning_rate', 0.036, 0.049783),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
@@ -198,6 +198,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         #self.sequence_length = hparams['sequence_length']
         #self.output_depth = hparams['depth']
+        self.flat_ratio = hparams['flat_ratio']
 
         alog.info(alog.pformat(hparams))
 
@@ -212,8 +213,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         self._kwargs['group_by'] = self.group_by
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            flat_ratio = hparams.get('flat_ratio')
-
             self.reset_interval()
 
             alog.info((str(self.start_date), str(self.end_date)))
@@ -221,21 +220,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             _df = self.train_df = self.label_positive_change().copy()
 
             alog.info(_df)
-
-            flat_df = _df[_df['expected_position'] == Positions.Flat]
-            flat_df.loc[:, 'expected_position'] = 0
-            long_df = _df[_df['expected_position'] == Positions.Long]
-            long_df.loc[:, 'expected_position'] = 1
-
-            flat_count = len(long_df) * flat_ratio
-
-            alog.info(long_df)
-            alog.info(flat_df)
-
-            flat_df = flat_df.sample(frac=flat_count/len(flat_df),
-                                     replace=True)
-
-            _df = pd.concat([flat_df, long_df])
 
             train_df = _df.sample(frac=0.9, random_state=0)
             eval_df = _df.sample(frac=0.1, random_state=0)
@@ -247,7 +231,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 4,
+                'epochs': 1,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
