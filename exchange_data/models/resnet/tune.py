@@ -181,23 +181,23 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.84, 0.95),
+                'positive_change_quantile', 0.84, 0.99),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.73, 0.95),
+                'negative_change_quantile', 0.73, 0.99),
             flat_ratio=trial.suggest_float('flat_ratio', 1.05, 1.33),
             # interval=trial.suggest_int('interval', 6, 24),
-            learning_rate=trial.suggest_float('learning_rate', 0.034, 0.052),
-            #round_decimals=trial.suggest_int('round_decimals', 3, 9),
-            #epochs=trial.suggest_int('epochs', 1, 4),
+            learning_rate=trial.suggest_float('learning_rate', 0.036, 0.07),
+            #round_decimals=trial.suggest_int('round_decimals', 4, 9),
+            epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
-            # depth=trial.suggest_categorical('depth', multiples(2, 60, 22)),
-            # sequence_length=trial.suggest_categorical(
-            #     'sequence_length',
-            #     multiples(2, 26, 12)),
+            depth=trial.suggest_categorical('depth', multiples(2, 80, 36)),
+            sequence_length=trial.suggest_categorical(
+                 'sequence_length',
+                 multiples(2, 40, 36)),
         )
 
-        # self.sequence_length = hparams['sequence_length']
-        # self.output_depth = hparams['depth']
+        self.sequence_length = hparams['sequence_length']
+        self.output_depth = hparams['depth']
 
         alog.info(alog.pformat(hparams))
 
