@@ -146,6 +146,9 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df = self.frame.copy()
 
+        position = position.replace(Positions.Long, 1)
+        position = position.replace(Positions.Flat, 0)
+
         df['expected_position'] = position
 
         df.dropna(how='any', inplace=True)
