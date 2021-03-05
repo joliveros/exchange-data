@@ -27,3 +27,16 @@ class StudyWrapper(object):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
             storage=db_conn_str)
+
+    def save_best_params(self):
+        self.best_study_params = vars(self.study.best_trial)
+
+    @property
+    def best_study_params(self):
+        return Dict(key=f'best_key_{self.symbol}')
+
+
+    @best_study_params.setter
+    def best_study_params(self, values):
+        self._best_study_params = \
+        Dict(key=f'best_key_{self.symbol}', data=values)
