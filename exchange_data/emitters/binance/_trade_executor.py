@@ -30,8 +30,7 @@ def truncate(n, decimals=0):
     return int(n * multiplier) / multiplier
 
 
-class TradeExecutor(MeasurementFrame, Messenger):
-    _trial_params_val = None
+class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
     measurements = []
     current_position = Positions.Flat
     symbol = None
@@ -54,6 +53,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
         super().__init__(
             **kwargs
         )
+        StudyWrapper.__init__(self, symbol=symbol, **kwargs)
         self.window_size = window_size
         self.depth = depth
         self.tick = tick
@@ -189,12 +189,6 @@ class TradeExecutor(MeasurementFrame, Messenger):
             return None
 
     def trade(self, timestamp=None):
-        try:
-            self._trial_params_val = self._trial_params()
-        except Exception as e:
-            if not self.trial_params:
-                raise Exception()
-
         if self.bid_price is None:
             return
 
@@ -263,35 +257,23 @@ class TradeExecutor(MeasurementFrame, Messenger):
             )
             alog.info(alog.pformat(response))
 
-    def _trial_params(self):
-        study = StudyWrapper(self.symbol)
-
-        return vars(study.study.best_trial)
-
-    @property
-    def trial_params(self):
-        if not self._trial_params_val:
-            self._trial_params_val = self._trial_params()
-
-        return self._trial_params_val
-
     @property
     def quantile(self):
-        return self.trial_params['_user_attrs']['quantile']
+        return self.best_study_params['_user_attrs']['quantile']
 
     @property
     def model_version(self):
         if self._model_version:
             return self._model_version
         else:
-            v = self.trial_params['_user_attrs']['model_version']
+            v = self.best_study_params['_user_attrs']['model_version']
             self._model_version = v
 
         return self._model_version
 
     @property
     def model_params(self):
-        params = self.trial_params['_params']
+        params = self.best_study_params['_params']
 
         if 'interval' in params:
             del params['interval']

@@ -14,6 +14,7 @@ from pathlib import Path
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 from tensorboard.plugins.hparams import api as hp
+from redis_collections import Dict
 
 import alog
 import click
@@ -165,6 +166,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
         if self.clear_runs < trial.number and self.clear_runs > 0:
             exported_model_path = self.study.best_trial.user_attrs['exported_model_path']
             if self.export_best and self.study.best_trial.value > self.min_capital:
+                self.save_best_params()
                 shutil.rmtree(self.best_model_dir, ignore_errors=True)
                 shutil.copytree(exported_model_path, self.best_model_dir)
 
