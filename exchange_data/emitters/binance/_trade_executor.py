@@ -296,6 +296,9 @@ class TradeExecutor(MeasurementFrame, Messenger):
         if 'interval' in params:
             del params['interval']
 
+        if 'depth' in params:
+            del params['depth']
+
         return params
 
     @model_version.setter
@@ -368,7 +371,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--base-asset', '-b', default='BNB', type=str)
 @click.option('--tick-interval', '-t', default='1m', type=str)
 @click.option('--interval', '-i', default='2m', type=str)
-@click.option('--depth', default=156, type=int)
+@click.option('--depth', default=200, type=int)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--log-requests', '-l', is_flag=True)

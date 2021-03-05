@@ -190,7 +190,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
-            #depth=trial.suggest_categorical('depth', multiples(2, 80, 36)),
+            #depth=trial.suggest_categorical('depth', multiples(4, 144, 124)),
             #sequence_length=trial.suggest_categorical(
             #    'sequence_length',
             #     multiples(2, 40, 36)),
