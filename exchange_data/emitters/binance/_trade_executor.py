@@ -324,7 +324,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
             interval='1m',
             model_version=self.model_version,
             quantile=self.quantile,
-            sequence_length=20,
+            sequence_length=44,
             group_by=self.group_by,
             symbol=self.symbol,
             window_size=self.window_size,
@@ -368,7 +368,7 @@ class TradeExecutor(MeasurementFrame, Messenger):
 @click.option('--base-asset', '-b', default='BNB', type=str)
 @click.option('--tick-interval', '-t', default='1m', type=str)
 @click.option('--interval', '-i', default='2m', type=str)
-@click.option('--depth', default=76, type=int)
+@click.option('--depth', default=156, type=int)
 @click.option('--model-version', '-m', default=None, type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--log-requests', '-l', is_flag=True)

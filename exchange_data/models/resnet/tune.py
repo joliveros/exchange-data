@@ -181,12 +181,12 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.84, 0.99),
+                'positive_change_quantile', 0.4, 0.7),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.73, 0.99),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.0, 1.0),
+                'negative_change_quantile', 0.0, 0.265),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.37, 0.6),
             # interval=trial.suggest_int('interval', 6, 24),
-            learning_rate=trial.suggest_float('learning_rate', 0.036, 0.049783),
+            learning_rate=trial.suggest_float('learning_rate', 0.03, 0.06),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
@@ -231,7 +231,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 1,
+                'epochs': 4,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
