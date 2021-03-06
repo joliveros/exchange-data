@@ -89,8 +89,8 @@ class OrderBookFrame(MeasurementFrame):
         orderbook_img = np.absolute(orderbook_img)
 
         if self.quantile == 0.0:
-            self.quantile = np.quantile(orderbook_img,
-                                         self.max_volume_quantile)
+            self.quantile = \
+                np.quantile(orderbook_img, self.max_volume_quantile)
 
         orderbook_img = orderbook_img / self.quantile
 
@@ -144,8 +144,11 @@ class OrderBookFrame(MeasurementFrame):
         for timestamp, best_ask, best_bid, orderbook_img in levels:
             if orderbook_img is not None:
                 orderbook_img = np.asarray(json.loads(orderbook_img))
-                orderbook_img[0][0] = orderbook_img[0][0].round(self.round_decimals)
-                orderbook_img[1][0] = orderbook_img[1][0].round(self.round_decimals)
+
+                orderbook_img[0][0] = \
+                    orderbook_img[0][0].round(self.round_decimals)
+                orderbook_img[1][0] = \
+                    orderbook_img[1][0].round(self.round_decimals)
 
                 left = orderbook_img[0].swapaxes(1, 0)
                 right = orderbook_img[1].swapaxes(1, 0)
@@ -166,7 +169,7 @@ class OrderBookFrame(MeasurementFrame):
 
                 if left.shape != (0,) and right.shape != (0,):
                     orderbook_img[0, :left_len, :2] = left[:left_len, :2]
-                    orderbook_img[1, :right_len, :2 ] = right[:right_len, :2]
+                    orderbook_img[1, :right_len, :2] = right[:right_len, :2]
                     orderbook_imgs.append(orderbook_img)
 
                     if len(orderbook_imgs) == self.sequence_length:
@@ -200,7 +203,9 @@ class OrderBookFrame(MeasurementFrame):
             vol += price_vol[1]
             groups[price] = vol
 
-        return np.array([[p, v] for p, v in groups.items()])
+        result = np.array([[p, v] for p, v in groups.items()])
+
+        return result
 
 
 @click.command()
