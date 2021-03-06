@@ -137,7 +137,6 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         fig.show()
 
-
     def label_positive_change(
         self,
         **kwargs
