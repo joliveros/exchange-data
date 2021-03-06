@@ -36,9 +36,9 @@ class StudyWrapper(object):
 
     @property
     def best_study_params(self):
-        return Dict(key=f'best_key_{self.symbol}')
+        return Dict(key=f'best_key_{self.symbol}', redis=self.redis_client)
 
     @best_study_params.setter
     def best_study_params(self, values):
         self._best_study_params = \
-            Dict(key=f'best_key_{self.symbol}', data=values)
+            Dict(key=f'best_key_{self.symbol}', data=values, redis=self.redis_client)
