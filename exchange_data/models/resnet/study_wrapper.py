@@ -1,8 +1,9 @@
 from pathlib import Path
+from optuna import load_study
+from redis_collections import Dict
 
 import alog
 import optuna
-from optuna import load_study
 
 
 class StudyWrapper(object):
@@ -11,7 +12,8 @@ class StudyWrapper(object):
     def __init__(self, symbol, **kwargs):
         self.symbol = symbol
         self.base_path = f'{Path.home()}/.exchange-data/models/'
-        self.study_db_path = f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
+        self.study_db_path = \
+            f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
         self.study_db_path = Path(self.study_db_path)
         db_conn_str = f'sqlite:///{self.study_db_path}'
 
@@ -19,8 +21,9 @@ class StudyWrapper(object):
             self.create_study(db_conn_str)
         else:
             try:
-                self.study = load_study(study_name=self.symbol, storage=db_conn_str)
-            except KeyError as e:
+                self.study = \
+                    load_study(study_name=self.symbol, storage=db_conn_str)
+            except KeyError:
                 self.create_study(db_conn_str)
 
     def create_study(self, db_conn_str):
@@ -35,8 +38,7 @@ class StudyWrapper(object):
     def best_study_params(self):
         return Dict(key=f'best_key_{self.symbol}')
 
-
     @best_study_params.setter
     def best_study_params(self, values):
         self._best_study_params = \
-        Dict(key=f'best_key_{self.symbol}', data=values)
+            Dict(key=f'best_key_{self.symbol}', data=values)
