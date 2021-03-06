@@ -31,7 +31,6 @@ class Messenger(EventEmitterBase, StatsClient):
 
         super().__init__(**kwargs)
         StatsClient.__init__(self, host='telegraf')
-
         self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None

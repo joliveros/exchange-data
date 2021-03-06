@@ -2,7 +2,7 @@
 from datetime import timedelta
 
 from pip._vendor.contextlib2 import nullcontext
-
+from exchange_data.emitters import Messenger
 from exchange_data import settings
 from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
@@ -28,7 +28,7 @@ import time as t
 logging.getLogger('tensorflow').setLevel(logging.INFO)
 
 
-class SymbolTuner(MaxMinFrame, StudyWrapper):
+class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
     backtest = None
 
     def __init__(self,
@@ -52,6 +52,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper):
                          session_limit=macd_session_limit, **kwargs)
 
         StudyWrapper.__init__(self, **kwargs)
+        Messenger.__init__(self, **kwargs)
+
         self.export_best = export_best
         self.group_by_min = group_by_min
         self.clear_runs = clear_runs
