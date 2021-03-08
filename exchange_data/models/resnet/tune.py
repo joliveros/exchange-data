@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from datetime import timedelta
 
 from pip._vendor.contextlib2 import nullcontext
 from exchange_data.emitters import Messenger
@@ -8,18 +7,16 @@ from exchange_data.data.max_min_frame import MaxMinFrame
 from exchange_data.emitters.backtest import BackTest
 from exchange_data.models.resnet.model_trainer import ModelTrainer
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
-from exchange_data.trading import Positions
 from optuna import Trial
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
 from redlock import RedLock, RedLockError
 from tensorboard.plugins.hparams import api as hp
-from redis_collections import Dict
+from exchange_data.trading import Positions
 
 import alog
 import click
 import logging
-import pandas as pd
 import re
 import shutil
 import tensorflow as tf
@@ -291,21 +288,30 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         tf.keras.backend.clear_session()
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            trial = self.trial
-            exported_model_path = self.exported_model_path
-
             test_df = self.backtest.test(self.model_version)
 
             alog.info(test_df)
 
-            if self.min_capital > self.backtest.capital:
+            trades = 0
+            last_position = None
+            for row in test_df.iterrows():
+                if row.position == Positions.Flat.value and \
+                    last_position == Positions.Long.value:
+                    trades += 1
+                last_position = row.position
+
+            capital = self.backtest.capital
+            capital_trade = capital + (trades / 100)
+
+            if self.min_capital > capital_trade:
                 shutil.rmtree(self.run_dir, ignore_errors=True)
                 shutil.rmtree(self.model_dir, ignore_errors=True)
 
-            if self.backtest.capital == 1.0:
+            if capital_trade == 1.0:
                 return 0.0
 
-            return self.backtest.capital
+            tf.summary.scalar('capital_trade', capital, step=0)
+            return capital_trade
 
     def split_gpu(self):
         physical_devices = tf.config.list_physical_devices('GPU')
@@ -314,12 +320,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             tf.config.set_logical_device_configuration(
                 physical_devices[0],
                 [
-                    tf.config.LogicalDeviceConfiguration(memory_limit=self.memory),
-                 ])
-
-            #logical_devices = tf.config.list_logical_devices('GPU')
-
-            #assert len(logical_devices) == len(physical_devices) + 1
+                    tf.config.
+                    LogicalDeviceConfiguration(memory_limit=self.memory),
+                ])
 
 
 @click.command()

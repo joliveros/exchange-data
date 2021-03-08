@@ -159,3 +159,4 @@ fabric.properties
 
 logs
 .env*
+.magicindex.json
