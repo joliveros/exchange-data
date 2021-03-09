@@ -294,23 +294,28 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
             trades = 0
             last_position = None
-            for row in test_df.iterrows():
-                if row.position == Positions.Flat.value and \
-                    last_position == Positions.Long.value:
+            for name, row in test_df.iterrows():
+                position = row['position']
+                if position == Positions.Flat and \
+                    last_position == Positions.Long: 
                     trades += 1
-                last_position = row.position
+                last_position = position
+
+            alog.info(f'trades {trades}')
 
             capital = self.backtest.capital
-            capital_trade = capital + (trades / 100)
+            capital_trade = capital + (trades / 40)
 
-            if self.min_capital > capital_trade:
+            if self.min_capital > capital:
                 shutil.rmtree(self.run_dir, ignore_errors=True)
                 shutil.rmtree(self.model_dir, ignore_errors=True)
 
-            if capital_trade == 1.0:
+            if capital <= 1.0:
                 return 0.0
 
-            tf.summary.scalar('capital_trade', capital, step=0)
+            alog.info(f'### capital_trade: {capital_trade} ###')
+
+            tf.summary.scalar('capital_trade', capital_trade, step=1)
             return capital_trade
 
     def split_gpu(self):
