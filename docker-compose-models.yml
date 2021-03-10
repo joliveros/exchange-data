@@ -21,7 +21,7 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.12 --model_config_file_poll_wait_seconds=30
 
-    CHZ:
+    THETA:
         deploy:
             replicas: 3
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py CHZBNB -i 1d -b 1d -o 1d -w 3m -g 1m --group-by-min 2 -m 256 -D 7 --min-capital 1.005 -e -d 200 -l 44 -c 36"
+            ./exchange_data/models/resnet/tune.py THETABNB -i 1d -b 1d -o 1d -w 3m -g 1m --group-by-min 1 -m 256 -D 6 --min-capital 1.005 -e -d 200 -l 44"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all

@@ -232,7 +232,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 4,
+                'epochs': 2,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
