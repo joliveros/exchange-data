@@ -297,7 +297,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             for name, row in test_df.iterrows():
                 position = row['position']
                 if position == Positions.Flat and \
-                    last_position == Positions.Long: 
+                        last_position == Positions.Long:
                     trades += 1
                 last_position = position
 
