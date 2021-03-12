@@ -38,7 +38,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df['change'] = df.close - df.open
 
-        pd.set_option('display.max_rows', len(df) + 1)
+        #pd.set_option('display.max_rows', len(df) + 1)
 
         df['change'] = df['change'].fillna(0.0)
 
