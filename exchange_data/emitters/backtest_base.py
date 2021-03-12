@@ -1,5 +1,7 @@
 from exchange_data.trading import Positions
 from plotly import graph_objects as go
+from pytimeparse.timeparse import timeparse
+
 import tensorflow as tf
 import alog
 
@@ -9,14 +11,14 @@ class BackTestBase(object):
 
     def __init__(
         self,
-        group_by_min=1,
+        group_by_min='1m',
         print_all_rows=False,
         plot=False,
         **kwargs
     ):
         self.print_all_rows = print_all_rows
         self.trial = None
-        self.group_by_min = group_by_min
+        self.group_by_min = timeparse(group_by_min)
 
         self.should_plot = plot
         self.entry_price = 0.0
@@ -101,14 +103,13 @@ class BackTestBase(object):
     def ohlc(self):
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
-        df['openbid'] = (df['best_ask'] + df['best_bid']) / 2
+        df['openbid'] = df['best_bid']
         ohlc_df = df.drop(df.columns.difference(['time', 'openbid']), 1,
                           inplace=False)
         ohlc_df = ohlc_df.set_index('time')
-        ohlc_df = ohlc_df.resample(f'{self.group_by_min}T').ohlc()
+        ohlc_df = ohlc_df.resample(f'{self.group_by_min}S').ohlc()
         ohlc_df.columns = ohlc_df.columns.droplevel()
-        ohlc_df = ohlc_df[ohlc_df.low != 0.0]
 
-        # alog.info(ohlc_df)
+        ohlc_df = ohlc_df[ohlc_df.low != 0.0]
 
         return ohlc_df

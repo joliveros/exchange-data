@@ -36,10 +36,10 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         df['position'] = Positions.Flat
 
-        # df['position'][df.open - df.close < 0] = Positions.Long
-
         df['change'] = df.close - df.open
-        # df['change'][df['change'] < 0.0] = 0.0
+
+        pd.set_option('display.max_rows', len(df) + 1)
+
         df['change'] = df['change'].fillna(0.0)
 
         change = df['change'].to_numpy()
@@ -161,7 +161,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=40, type=int)
 @click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--group-by-min', '-G', default=5, type=int)
+@click.option('--group-by-min', '-G', default='1m', type=str)
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--negative-change-quantile', '-n', default=0.50, type=float)
@@ -180,7 +180,8 @@ def main(**kwargs):
 
     df = MaxMinFrame(**kwargs).label_positive_change()
 
-    # pd.set_option('display.max_rows', len(df) + 1)
+    pd.set_option('display.max_rows', len(df) + 1)
+
     alog.info(df)
 
 
