@@ -232,7 +232,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 2,
+                'epochs': 4,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
@@ -304,7 +304,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             alog.info(f'trades {trades}')
 
             capital = self.backtest.capital
-            capital_trade = capital + (trades / 40)
+            capital_trade = capital + (trades / 21)
 
             if self.min_capital > capital:
                 shutil.rmtree(self.run_dir, ignore_errors=True)
