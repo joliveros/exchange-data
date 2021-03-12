@@ -52,7 +52,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         Messenger.__init__(self, **kwargs)
 
         self.export_best = export_best
-        self.group_by_min = group_by_min
+        self.group_by_min = timeparse(group_by_min)
         self.clear_runs = clear_runs
         self.min_capital = min_capital
         self.memory = memory
