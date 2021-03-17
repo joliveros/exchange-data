@@ -46,7 +46,6 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 
         pos_change = np.where(change < 0.0, 0, change)
         neg_change = np.abs(np.where(change > 0.0, 0, change))
-
         pos_change_quantile = np.quantile(pos_change,
                                           self.positive_change_quantile)
         neg_change_quantile = np.quantile(neg_change,
@@ -56,7 +55,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
                               Positions.Long, pos_change)
 
         neg_change = np.where(neg_change > neg_change_quantile,
-                              Positions.Flat, pos_change)
+                              Positions.Flat, neg_change)
 
         position = np.zeros(pos_change.shape, dtype=Positions)
 
