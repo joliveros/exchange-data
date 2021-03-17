@@ -338,7 +338,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 @click.option('--depth', '-d', default=76, type=int)
 @click.option('--export-best', '-e', is_flag=True)
 @click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--group-by-min', default='1m', type=str)
+@click.option('--group-by-min', '-G', default='1m', type=str)
 @click.option('--interval', '-i', default='1h', type=str)
 @click.option('--macd-session-limit', default=200, type=int)
 @click.option('--memory', '-m', default=1000, type=int)
