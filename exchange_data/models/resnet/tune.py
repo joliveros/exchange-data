@@ -182,19 +182,19 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.5, 0.99),
+                'positive_change_quantile', 0.0, 0.99),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.41, 0.99),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.0, 0.99),
+                'negative_change_quantile', 0.0, 0.99),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.00, 0.99),
             # interval=trial.suggest_int('interval', 6, 24),
-            learning_rate=trial.suggest_float('learning_rate', 0.03, 0.06),
+            learning_rate=trial.suggest_float('learning_rate', 0.025, 0.0509),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
-            #depth=trial.suggest_categorical('depth', multiples(4, 144, 124)),
+            #depth=trial.suggest_categorical('depth', multiples(4, 40, 72)),
             #sequence_length=trial.suggest_categorical(
-            #    'sequence_length',
-            #     multiples(2, 40, 36)),
+            #   'sequence_length',
+            #     multiples(2, 50, 36)),
         )
 
         #self.sequence_length = hparams['sequence_length']
@@ -232,7 +232,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 4,
+                'epochs': 3,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,

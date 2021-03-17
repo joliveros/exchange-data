@@ -9,7 +9,7 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.3'
+                    cpus: '0.4'
             replicas: 6
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
