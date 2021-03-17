@@ -182,10 +182,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.4, 0.7),
+                'positive_change_quantile', 0.5, 0.99),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.0, 0.265),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.37, 0.6),
+                'negative_change_quantile', 0.41, 0.99),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.0, 0.99),
             # interval=trial.suggest_int('interval', 6, 24),
             learning_rate=trial.suggest_float('learning_rate', 0.03, 0.06),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
