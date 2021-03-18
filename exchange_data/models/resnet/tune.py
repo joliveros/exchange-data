@@ -350,7 +350,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 @click.option('--sequence-length', '-l', default=20, type=int)
 @click.option('--session-limit', '-s', default=None, type=int)
 @click.option('--volatility-intervals', '-v', is_flag=True)
-@click.option('--window-size', '-w', default='3m', type=str)
+@click.option('--window-size', '-w', default='1m', type=str)
 def main(**kwargs):
     SymbolTuner(**kwargs)
 

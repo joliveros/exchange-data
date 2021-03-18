@@ -103,7 +103,7 @@ class BackTestBase(object):
     def ohlc(self):
         df = self.frame.copy()
         df.reset_index(drop=False, inplace=True)
-        df['openbid'] = df['best_bid']
+        df['openbid'] = (df['best_bid'] + df['best_ask']) / 2
         ohlc_df = df.drop(df.columns.difference(['time', 'openbid']), 1,
                           inplace=False)
         ohlc_df = ohlc_df.set_index('time')
