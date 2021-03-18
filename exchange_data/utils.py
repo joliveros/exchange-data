@@ -69,6 +69,12 @@ class DateTimeUtils(ABC):
 
 
     @staticmethod
+    def remove_seconds(value):
+        if value:
+            return value.replace(second=0, microsecond=0)
+        return value
+
+    @staticmethod
     def now():
         return datetime.utcnow().replace(tzinfo=tz.tzutc())
 

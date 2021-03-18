@@ -35,7 +35,6 @@ class OrderBookLevelStreamer(BitmexStreamer):
         query = f'SELECT first(*) AS data FROM {self.channel_name} ' \
             f'WHERE time > {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.group_by});'
-
         return self.query(query)
 
     def get_orderbook_frames(self):
