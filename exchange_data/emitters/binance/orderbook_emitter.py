@@ -164,11 +164,12 @@ class BitmexOrderBookEmitter(
         sys.exit(0)
 
     def save_measurements(self, timestamp):
-        alog.info('### save_measurements ###')
+        ms = []
         for symbol, book in self.orderbooks.items():
-            if symbol == 'ZILBNB':
-                alog.info(book.print(depth=10, trades=False))
-            self.write_points([book.measurement()], time_precision='s')
+            ms.append(book.measurement())
+
+        self.write_points(ms, time_precision='s')
+        alog.info('### save_measurements ###')
 
 
 @click.command()
