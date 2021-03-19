@@ -75,5 +75,5 @@ class Database(EventEmitterBase):
         self.points += points
 
         if len(self.points) >= self.batch_size:
-            self.influxdb_client.write_points(self.points, *args, **kwargs)
+            self.influxdb_client.write_points(self.points, consistency='all', *args, **kwargs)
             self.points = []
