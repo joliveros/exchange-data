@@ -49,7 +49,11 @@ class BinanceUtils(object):
                 with self.take_lock(prefix=prefix):
                     alog.info('try to update queued symbols')
                     self.queued_symbols.clear()
-                    self.queued_symbols.update(set(self.symbols))
+                    symbols = [
+                        symbol for symbol in self.symbols
+                        if symbol.endswith('BNB')
+                    ]
+                    self.queued_symbols.update(set(symbols))
                     alog.info(self.queued_symbols)
 
         except RedLockError:
