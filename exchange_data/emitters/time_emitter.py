@@ -82,6 +82,9 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 if self.minute_counter % 30 == 0:
                     self.publish('30s', t)
 
+                if self.minute_counter % 10 == 0:
+                    self.publish('10s', t)
+
                 if self.five_second_counter % 5 == 0:
                     self.five_second_counter = 0
                     self.publish('5s', t)
