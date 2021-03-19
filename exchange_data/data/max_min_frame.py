@@ -32,6 +32,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
     def label_position(self):
         df = self.ohlc.copy()
 
+
         df.reset_index(drop=False, inplace=True)
 
         df['position'] = Positions.Flat
@@ -84,6 +85,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         flat_df['position'] = Positions.Flat
 
         df = df[df['position'] != 0]
+
         df = pd.concat([df, flat_df])
 
         df = df.set_index('time')
@@ -133,7 +135,6 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
         alog.info(df)
 
         fig.add_trace(go.Scatter(x=df.index, y=df['position'], mode='lines'))
-
         fig.show()
 
     def label_positive_change(
