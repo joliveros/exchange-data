@@ -8,6 +8,7 @@ from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout, \
     SSLError
 from urllib3.exceptions import ConnectTimeoutError
 
+from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.emitters import Messenger, TimeEmitter
 
 import click
@@ -18,7 +19,7 @@ from exchange_data.emitters.binance import ProxiedClient
 from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
 
 
-class FullOrderBookEmitter(Messenger):
+class FullOrderBookEmitter(Messenger, BinanceUtils):
 
     def __init__(self, symbol, **kwargs):
         super().__init__(**kwargs)
@@ -28,10 +29,6 @@ class FullOrderBookEmitter(Messenger):
     @property
     def client(self):
         return ProxiedClient()
-
-    @property
-    def symbols(self):
-        return json.loads(SymbolEmitter._symbols())
 
     def publish_orderbook(self, *args):
         try:
@@ -65,7 +62,7 @@ def main(**kwargs):
     def emit_orderbook(symbol):
         FullOrderBookEmitter(symbol, **kwargs)
 
-    symbols = json.loads(SymbolEmitter._symbols())
+    symbols = BinanceUtils().symbols
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         while len(symbols) > 0:
