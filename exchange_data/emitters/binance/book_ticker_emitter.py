@@ -93,20 +93,6 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
                         self.publish(f'{symbol}_book_ticker', json.dumps(data))
 
-    @property
-    def symbols(self):
-        symbols = json.loads(SymbolEmitter._symbols())
-        if len(symbols) > 0:
-            return symbols
-        else:
-            raise Exception('not enough symbols')
-
-    @staticmethod
-    @cache.cache(ttl=timeparse('1h'))
-    def _symbols():
-        symbols = BinanceUtils().get_symbols()
-        return json.dumps(symbols)
-
 
 @click.command()
 @click.option('--limit', '-l', default=0, type=int)
