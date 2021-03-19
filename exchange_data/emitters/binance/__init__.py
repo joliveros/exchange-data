@@ -39,7 +39,12 @@ class BinanceUtils(object):
 
     @cached_property_with_ttl(ttl=60 * 10)
     def symbols(self):
-        return self.get_symbols()
+        symbols = self.get_symbols()
+        result = [
+            symbol for symbol in symbols
+            if symbol.endswith('BNB')
+        ]
+        return result
 
     def update_queued_symbols(self, prefix):
         try:
@@ -49,11 +54,7 @@ class BinanceUtils(object):
                 with self.take_lock(prefix=prefix):
                     alog.info('try to update queued symbols')
                     self.queued_symbols.clear()
-                    symbols = [
-                        symbol for symbol in self.symbols
-                        if symbol.endswith('BNB')
-                    ]
-                    self.queued_symbols.update(set(symbols))
+                    self.queued_symbols.update(set(self.symbols))
                     alog.info(self.queued_symbols)
 
         except RedLockError:
