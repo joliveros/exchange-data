@@ -7,7 +7,7 @@ services:
 
     emitter:
         deploy:
-            replicas: 16
+            replicas: 6
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -16,7 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 16"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 6"
         secrets:
             - DB
             - ROLLBAR_API_KEY
