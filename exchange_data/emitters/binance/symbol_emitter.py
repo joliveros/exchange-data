@@ -84,20 +84,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                         symbol = data['data']["s"]
                         self.publish(f'{symbol}_depth', data_str)
 
-    @property
-    def symbols(self):
-        symbols = json.loads(SymbolEmitter._symbols())
-        if len(symbols) > 0:
-            return symbols
-        else:
-            raise Exception('not enough symbols')
-
-    @staticmethod
-    @cache.cache(ttl=timeparse('1h'))
-    def _symbols():
-        symbols = BinanceUtils().get_symbols()
-        return json.dumps(symbols)
-
 
 @click.command()
 @click.option('--workers', '-w', default=8, type=int)
