@@ -61,8 +61,8 @@ class BitmexOrderBookEmitter(
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
 
         if self.subscriptions_enabled:
-            self.on('15s', self.save_measurements)
-            self.on('15s', self.metrics)
+            self.on('10s', self.save_measurements)
+            self.on('10s', self.metrics)
             # self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
@@ -155,7 +155,7 @@ class BitmexOrderBookEmitter(
         depth_reset_channels += [f'{symbol}_book_ticker' for symbol in
                                 self.depth_symbols]
         self.sub([
-            '15s',
+            '10s',
             '2s',
         ] + channels + depth_channels + depth_reset_channels)
 
