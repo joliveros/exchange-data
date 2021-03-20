@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from datetime import timedelta
 
 from pip._vendor.contextlib2 import nullcontext
 from exchange_data.emitters import Messenger
