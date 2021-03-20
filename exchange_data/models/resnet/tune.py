@@ -182,12 +182,12 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.0, 0.99),
+                'positive_change_quantile', 0.49, 0.73),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.0, 0.99),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.00, 0.2),
-            # interval=trial.suggest_int('interval', 6, 24),
-            learning_rate=trial.suggest_float('learning_rate', 0.025, 0.0509),
+                'negative_change_quantile', 0.01, 0.34),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.00, 0.137),
+            interval=trial.suggest_int('interval', 9, 24),
+            learning_rate=trial.suggest_float('learning_rate', 0.028, 0.034),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_categorical('epochs', [4, 5]),
             #num_conv=trial.suggest_int('num_conv', 3, 8),
@@ -203,8 +203,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         alog.info(alog.pformat(hparams))
 
-        # interval = hparams['interval']
-        # self.interval = timedelta(seconds=timeparse(f'{interval}h'))
+        interval = hparams['interval']
+        self.interval = timedelta(seconds=timeparse(f'{interval}h'))
 
         self.positive_change_quantile = hparams['positive_change_quantile']
         self.negative_change_quantile = hparams['negative_change_quantile']
@@ -232,7 +232,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'batch_size': 2,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 1,
+                'epochs': 2,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
@@ -304,7 +304,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             alog.info(f'trades {trades}')
 
             capital = self.backtest.capital
-            capital_trade = capital + (trades / 21)
+            capital_trade = capital + (trades / 72)
 
             if self.min_capital > capital:
                 shutil.rmtree(self.run_dir, ignore_errors=True)
