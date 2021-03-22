@@ -63,7 +63,7 @@ class VolatilityChange(MeasurementFrame):
         df = pd.concat(volatility_change)
         df.index.rename('pair', inplace=True)
         df.reset_index(drop=False, inplace=True)
-        df['partial_sum'] = df.volatility * df.change
+        df['partial_sum'] = (df.volatility / 100) + df.change
         out = df.groupby('pair').partial_sum.agg('sum')
         out.rename('volatility_change', inplace=True)
         df = out.to_frame()
@@ -74,7 +74,7 @@ class VolatilityChange(MeasurementFrame):
 
         # df = df[df.index > 0.001]
 
-        pd.set_option('display.max_rows', len(df) + 1)
+        # pd.set_option('display.max_rows', len(df) + 1)
 
         alog.info(df)
 
