@@ -21,7 +21,7 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.25 --model_config_file_poll_wait_seconds=30
 
-    VTHO:
+    ONE:
         deploy:
             replicas: 4
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py VTHOBNB -i 12h -b 12h -o 3h -w 3m -g 15s --group-by-min 30s -m 148 -D 8 --min-capital 1.005 -e -d 92 -l 44"
+            ./exchange_data/models/resnet/tune.py ONEBNB -i 6h -b 6h -o 1h -w 3m -g 15s --group-by-min 30s -m 148 -D 8 --min-capital 1.005 -e -d 92 -l 44 -c 32"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
