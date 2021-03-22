@@ -8,8 +8,8 @@ services:
     volatility_change_emitter:
         deploy:
             labels:
-                - swarm.cronjob.enable=false
-                - swarm.cronjob.schedule=*/15 * * * *
+                - swarm.cronjob.enable=true
+                - swarm.cronjob.schedule=0 * * * *
                 - swarm.cronjob.skip-running=false
             replicas: 0
             placement:
