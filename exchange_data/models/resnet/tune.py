@@ -185,9 +185,9 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             positive_change_quantile=trial.suggest_float(
                 'positive_change_quantile', 0.49, 0.73),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.01, 0.34),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.00, 0.137),
-            interval=trial.suggest_int('interval', 9, 24),
+                'negative_change_quantile', 0.01, 0.4),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.1, 0.3),
+            #interval=trial.suggest_int('interval', 9, 24),
             learning_rate=trial.suggest_float('learning_rate', 0.028, 0.034),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_categorical('epochs', [4, 5]),
@@ -204,8 +204,8 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         alog.info(alog.pformat(hparams))
 
-        interval = hparams['interval']
-        self.interval = timedelta(seconds=timeparse(f'{interval}h'))
+        #interval = hparams['interval']
+        #self.interval = timedelta(seconds=timeparse(f'{interval}h'))
 
         self.positive_change_quantile = hparams['positive_change_quantile']
         self.negative_change_quantile = hparams['negative_change_quantile']
@@ -314,10 +314,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             if capital <= 1.0:
                 return 0.0
 
-            alog.info(f'### capital_trade: {capital_trade} ###')
+            #alog.info(f'### capital_trade: {capital_trade} ###')
 
-            tf.summary.scalar('capital_trade', capital_trade, step=1)
-            return capital_trade
+            #tf.summary.scalar('capital_trade', capital_trade, step=1)
+            return capital
 
     def split_gpu(self):
         physical_devices = tf.config.list_physical_devices('GPU')
