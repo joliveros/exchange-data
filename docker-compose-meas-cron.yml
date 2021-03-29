@@ -9,7 +9,7 @@ services:
         deploy:
             labels:
                 - swarm.cronjob.enable=true
-                - swarm.cronjob.schedule=0 * * * *
+                - swarm.cronjob.schedule=* * * * *
                 - swarm.cronjob.skip-running=false
             replicas: 0
             restart_policy:
@@ -17,7 +17,7 @@ services:
         image: "192.168.100.254:5001/exchange-data:latest"
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/volatility_change_emitter.py --tick"
+            ./exchange_data/emitters/binance/volatility_change_emitter.py --tick -i 1h"
         env_file:
             - ./.env.prod
         networks:
