@@ -8,7 +8,7 @@ networks:
 services:
     model_serving:
         deploy:
-            replicas: 1
+           replicas: 1
         image: tensorflow/serving:latest-gpu
         environment:
             - NVIDIA_VISIBLE_DEVICES=all
@@ -21,7 +21,7 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.25 --model_config_file_poll_wait_seconds=30
 
-    BURGER:
+    COCOS:
         deploy:
             replicas: 4
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py BURGERBNB -i 3h -b 3h -o 2h -w 2m -g 5s --group-by-min 10s -m 148 -D 8 --min-capital 1.005 -e -d 92 -l 44 -c 18"
+            ./exchange_data/models/resnet/tune.py COCOSBNB -i 3h -b 3h -o 1h -w 2m -g 5s --group-by-min 10s -m 148 -D 8 --min-capital 1.005 -e -d 92 -l 44"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
@@ -44,3 +44,4 @@ services:
 secrets:
   DB:
       external: true
+
