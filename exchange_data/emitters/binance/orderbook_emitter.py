@@ -77,9 +77,16 @@ class BitmexOrderBookEmitter(
             # self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
-                self.on(f'{symbol}_depth', self.message)
-                self.on(f'{symbol}_depth_reset', self.depth_reset)
-                self.on(f'{symbol}_book_ticker', self.book_ticker)
+                self.on(self.channel_suffix(f'{symbol}_depth'), self.message)
+                self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
+                self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
+
+    def channel_suffix(self, channel):
+        if self.futures:
+            return f'{channel}_futures'
+        else:
+            return channel
+
 
     @cached_property
     def queued_symbols(self):
