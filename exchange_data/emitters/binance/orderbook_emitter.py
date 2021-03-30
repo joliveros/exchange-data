@@ -41,14 +41,19 @@ class BitmexOrderBookEmitter(
         self.subscriptions_enabled = subscriptions_enabled
         self.should_reset_orderbook = reset_orderbook
 
+        stats_prefix = None
+
         if kwargs['futures']:
             database_name = 'binance_futures'
+            stats_prefix = 'futures'
         else:
             database_name = 'binance'
+
 
         super().__init__(
             database_name=database_name,
             database_batch_size=10,
+            stats_prefix=stats_prefix,
             **kwargs
         )
 
