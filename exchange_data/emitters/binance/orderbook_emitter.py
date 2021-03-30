@@ -41,10 +41,18 @@ class BitmexOrderBookEmitter(
         self.subscriptions_enabled = subscriptions_enabled
         self.should_reset_orderbook = reset_orderbook
 
+        if kwargs['futures']:
+            database_name = 'binance_futures'
+        else:
+            database_name = 'binance'
+
         super().__init__(
+            database_name=database_name,
             database_batch_size=10,
             **kwargs
         )
+
+
         self.limit = limit
         self.save_data = save_data
         self.slices = {}
@@ -147,15 +155,30 @@ class BitmexOrderBookEmitter(
 
         self.orderbooks[symbol].message(data)
 
-    def start(self, channels=[]):
+    def channels(self):
         depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
         depth_reset_channels = [f'{symbol}_depth_reset' for symbol in self.depth_symbols]
         depth_reset_channels += [f'{symbol}_book_ticker' for symbol in
                                 self.depth_symbols]
+        return depth_channels + depth_reset_channels
+
+    def futures_channels(self):
+        depth_channels = [f'{symbol}_depth_futures' for symbol in self.depth_symbols]
+        depth_reset_channels = [f'{symbol}_depth_reset_futures' for symbol in self.depth_symbols]
+        depth_reset_channels += [f'{symbol}_book_ticker_futures' for symbol in
+                                self.depth_symbols]
+        return depth_channels + depth_reset_channels
+
+    def start(self, channels=[]):
+        if self.futures:
+            channels = channels + self.futures_channels()
+        else:
+            channels = channels + self.channels()
+
         self.sub([
             '5s',
             '2s',
-        ] + channels + depth_channels + depth_reset_channels)
+        ] + channels)
 
     def exit(self, *args):
         self.stop()
@@ -176,8 +199,8 @@ class BitmexOrderBookEmitter(
 @click.option('--limit', '-l', default=0, type=int)
 @click.option('--workers', '-w', default=8, type=int)
 @click.option('--symbol-filter', default=None, type=str)
-@click.option('--database_name', '-D', default='binance', type=str)
 @click.option('--futures', '-F', is_flag=True)
+@click.option('--log-requests', is_flag=True)
 def main(**kwargs):
     recorder = BitmexOrderBookEmitter(
         subscriptions_enabled=True,
