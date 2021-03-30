@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import time
 from datetime import timedelta
-
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils, ExceededLagException
@@ -9,6 +7,7 @@ from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
 from unicorn_binance_websocket_api import BinanceWebSocketApiManager
+
 import alog
 import click
 import json
@@ -30,10 +29,21 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         self,
         limit,
         workers,
+        futures,
         **kwargs
     ):
-        super().__init__(exchange="binance.com", **kwargs)
-        BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
+        self.futures = futures
+
+        if futures:
+            exchange = 'binance.com-futures'
+        else:
+            exchange = 'binance.com'
+
+        super().__init__(exchange=exchange, **kwargs)
+        BinanceUtils.__init__(self, **kwargs)
+        del kwargs['symbol_filter']
+        BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
+
         self.limit = limit
 
         self.update_queued_symbols('symbol')
@@ -82,12 +92,20 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                                 raise ExceededLagException()
 
                         symbol = data['data']["s"]
-                        self.publish(f'{symbol}_depth', data_str)
+                        self.publish(self.channel_for_symbol(symbol), data_str)
+
+    def channel_for_symbol(self, symbol):
+        if self.futures:
+            return f'{symbol}_depth_futures'
+        else:
+            return f'{symbol}_depth'
 
 
 @click.command()
 @click.option('--workers', '-w', default=8, type=int)
 @click.option('--limit', '-l', default=0, type=int)
+@click.option('--symbol-filter', default=None, type=str)
+@click.option('--futures', '-F', is_flag=True)
 def main(**kwargs):
     SymbolEmitter(**kwargs)
 

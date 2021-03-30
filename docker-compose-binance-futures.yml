@@ -1,0 +1,80 @@
+version: '3.8'
+networks:
+    public:
+        name: public
+        external: true
+services:
+
+    orderbook:
+        deploy:
+            replicas: 0
+            update_config:
+                parallelism: 2
+                delay: 20s
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 6"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - emit_time
+            - redis
+            - influxdb
+        networks:
+            - public
+
+    ticker:
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.4'
+            replicas: 3
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 3 -F"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - redis
+        networks:
+            - public
+
+    symbol:
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.4'
+            replicas: 2
+            update_config:
+                parallelism: 2
+                delay: 20s
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 2 -F"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+
+secrets:
+    BITMEX_API_KEY:
+        external: true
+    BITMEX_API_SECRET:
+        external: true
+    DB:
+        external: true
+    ROLLBAR_API_KEY:
+        external: true

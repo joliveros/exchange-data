@@ -8,6 +8,7 @@ from dateutil.tz import tz
 from pytimeparse.timeparse import timeparse
 from redis_collections import Set
 from redlock import RedLock, RedLockError
+from retry import retry
 
 from exchange_data import settings
 from exchange_data.emitters.binance.proxied_client import ProxiedClient
@@ -25,9 +26,13 @@ class BinanceUtils(object):
 
     def __init__(
         self,
+        futures,
+        symbol_filter='BNB',
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.futures = futures
+        self.symbol_filter = symbol_filter
 
     @cached_property
     def client(self):
@@ -37,14 +42,17 @@ class BinanceUtils(object):
     def queued_symbols(self):
         return Set(key='queued_symbols', redis=self.redis_client)
 
-    @cached_property_with_ttl(ttl=60 * 10)
+    @property
     def symbols(self):
-        symbols = self.get_symbols()
-        result = [
-            symbol for symbol in symbols
-            if symbol.endswith('BNB')
-        ]
-        return result
+        symbols = self._get_symbols()
+
+        if self.symbol_filter:
+            return [
+                symbol for symbol in symbols
+                if symbol.endswith(self.symbol_filter)
+            ]
+        else:
+            return symbols
 
     def update_queued_symbols(self, prefix):
         try:
@@ -66,13 +74,27 @@ class BinanceUtils(object):
         try:
             return self._get_symbols()
         except Exception as e:
+            alog.info(e)
             return self.get_symbols()
 
+    @retry(Exception, tries=100, delay=0.5)
+    def _get_exchange_info(self):
+        if self.futures:
+            exchange_info = self.client.futures_exchange_info()
+        else:
+            exchange_info = self.client.get_exchange_info()
+        return exchange_info
+
+    @cached_property_with_ttl(ttl=60 * 10)
+    def get_exchange_info(self):
+        return self._get_exchange_info()
+
     def _get_symbols(self):
-        exchange_info = self.client.get_exchange_info()
+        exchange_info = self.get_exchange_info
 
         symbols = [symbol for symbol in exchange_info['symbols']
                    if symbol['status'] == 'TRADING']
+
 
         symbol_names = [symbol['symbol'] for symbol in symbols if symbol[
             'symbol']]
@@ -156,6 +178,7 @@ class BinanceUtils(object):
         alog.info(lock_name)
 
         return lock
+
 
 
 class ExceededLagException(Exception):
