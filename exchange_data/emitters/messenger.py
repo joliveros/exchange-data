@@ -26,11 +26,12 @@ class MessageType(NoValue):
 
 class Messenger(EventEmitterBase, StatsClient):
 
-    def __init__(self, decode=True, **kwargs):
+    def __init__(self, decode=True, stats_prefix=None, **kwargs):
         host = settings.REDIS_HOST
 
         super().__init__(**kwargs)
-        StatsClient.__init__(self, host='telegraf')
+
+        StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
         self.decode = decode
         self.redis_client = Redis(host=host)
         self._pubsub = None
