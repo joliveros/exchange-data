@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import docker
@@ -27,12 +28,16 @@ class BinanceUtils(object):
     def __init__(
         self,
         futures,
+        log_requests=False,
         symbol_filter='BNB',
         **kwargs
     ):
         super().__init__(**kwargs)
         self.futures = futures
         self.symbol_filter = symbol_filter
+
+        if log_requests:
+            self.log_requests()
 
     @cached_property
     def client(self):
@@ -178,6 +183,12 @@ class BinanceUtils(object):
         alog.info(lock_name)
 
         return lock
+
+    def log_requests(self):
+        loggers = [logging.getLogger(name) for name in
+                   logging.root.manager.loggerDict]
+        logger = [logger for logger in loggers if logger.name == 'urllib3'][0]
+        logger.setLevel(logging.DEBUG)
 
 
 
