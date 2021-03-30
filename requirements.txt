@@ -33,6 +33,7 @@ pytz
 redis
 redis-collections
 redlock
+retry
 rollbar>=0.13.12
 scikit-image
 scipy==1.4.1
