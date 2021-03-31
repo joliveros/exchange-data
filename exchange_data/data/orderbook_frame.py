@@ -56,8 +56,7 @@ class OrderBookFrame(MeasurementFrame):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    @property
-    def frame(self):
+    def _frame(self):
         frames = []
 
         for interval in self.intervals:
@@ -78,6 +77,12 @@ class OrderBookFrame(MeasurementFrame):
 
         orderbook_img = np.asarray(orderbook_img)
 
+        return orderbook_img, df
+
+    @property
+    def frame(self):
+        orderbook_img, df = self._frame()
+
         orderbook_img = np.concatenate((
             orderbook_img[:, :, 0],
             orderbook_img[:, :, 1]),
@@ -94,6 +99,24 @@ class OrderBookFrame(MeasurementFrame):
         orderbook_img = orderbook_img / self.quantile
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
+
+        df['orderbook_img'] = [
+            orderbook_img[i] for i in range(0, orderbook_img.shape[0])
+        ]
+
+        return df
+
+    @property
+    def price_level_frame(self):
+        orderbook_img, df = self._frame()
+
+        orderbook_img = np.concatenate((
+            orderbook_img[:, :, 0],
+            orderbook_img[:, :, 1]),
+            axis=2
+        )
+
+        orderbook_img = np.absolute(orderbook_img)
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
