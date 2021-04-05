@@ -167,12 +167,13 @@ class BitmexOrderBookEmitter(
 
         self.orderbooks[symbol].message(data)
 
-    def channels(self):
+    def spot_channels(self):
         depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
         depth_reset_channels = [f'{symbol}_depth_reset' for symbol in self.depth_symbols]
         depth_reset_channels += [f'{symbol}_book_ticker' for symbol in
                                 self.depth_symbols]
-        return depth_channels + depth_reset_channels
+        channels = depth_channels + depth_reset_channels
+        return channels
 
     def futures_channels(self):
         depth_channels = [f'{symbol}_depth_futures' for symbol in self.depth_symbols]
@@ -185,7 +186,7 @@ class BitmexOrderBookEmitter(
         if self.futures:
             channels = channels + self.futures_channels()
         else:
-            channels = channels + self.channels()
+            channels = channels + self.spot_channels()
 
         self.sub([
             '5s',
