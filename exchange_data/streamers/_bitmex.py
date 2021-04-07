@@ -212,7 +212,7 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
 
     def _set_next_window(self):
         self.start_date += timedelta(seconds=self.window_size)
-        self.end_date = self.start_date + timedelta(seconds=self.window_size + timeparse(self.group_by))
+        self.end_date = self.start_date + timedelta(seconds=self.window_size)
 
     def send(self, *args):
         self.counter += 1

@@ -56,8 +56,7 @@ class OrderBookFrame(MeasurementFrame):
         self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
-    @property
-    def frame(self):
+    def _frame(self):
         frames = []
 
         for interval in self.intervals:
@@ -73,9 +72,14 @@ class OrderBookFrame(MeasurementFrame):
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
 
+        return df
+
+    @property
+    def frame(self):
+        df = self._frame()
+
         orderbook_img = df.orderbook_img.to_numpy().tolist()
         df.drop(['orderbook_img'], axis=1)
-
         orderbook_img = np.asarray(orderbook_img)
 
         orderbook_img = np.concatenate((
@@ -84,8 +88,30 @@ class OrderBookFrame(MeasurementFrame):
             axis=2
         )
 
-        orderbook_img = np.delete(orderbook_img, 0, axis=3)
         orderbook_img = np.absolute(orderbook_img)
+        # alog.info(orderbook_img[-1][-1].tolist())
+
+        for frame_ix in range(orderbook_img.shape[0]):
+            orderbook = orderbook_img[frame_ix]
+            shape = orderbook.shape
+            new_ob = np.zeros((shape[0], shape[1], 1))
+            last_frame = orderbook[-1]
+            last_frame_price = np.sort(last_frame[:, 0])
+
+            for i in range(shape[0]):
+                frame = orderbook[i]
+
+                for l in range(frame.shape[0]):
+                    level = frame[l]
+
+                    if level.shape == (2,):
+                        price, volume = level
+                        last_frame_index = np.where(last_frame_price == price)
+                        new_ob[i, last_frame_index[0]] = np.asarray([volume])
+
+            orderbook_img[frame_ix] = new_ob
+
+        orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         if self.quantile == 0.0:
             self.quantile = \
@@ -124,7 +150,7 @@ class OrderBookFrame(MeasurementFrame):
         frames = []
 
         self.start_date = self.start_date - timedelta(seconds=(timeparse(
-            self.group_by) * self.sequence_length) + timeparse('6m'))
+            self.group_by) * self.sequence_length))
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
