@@ -5,27 +5,6 @@ networks:
         name: public
         external: true
 services:
-    volatility_change_emitter:
-        deploy:
-            labels:
-                - swarm.cronjob.enable=true
-                - swarm.cronjob.schedule=* * * * *
-                - swarm.cronjob.skip-running=false
-            replicas: 0
-            restart_policy:
-                condition: none
-        image: "192.168.100.254:5001/exchange-data:latest"
-        command: >-
-            bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/volatility_change_emitter.py --tick -i 1h"
-        env_file:
-            - ./.env.prod
-        networks:
-            - public
-        depends_on:
-            - redis
-            - influxdb
-
     tf_serving_config:
         deploy:
             labels:

@@ -160,7 +160,6 @@ class BitmexOrderBookEmitter(
         self.last_book_ticker_update[symbol] = DateTimeUtils.now()
 
     def depth_reset(self, data):
-        alog.info('### depth reset ###')
         data = data['data']
         symbol = data['s']
         self.orderbooks[symbol] = BinanceOrderBook(symbol)
@@ -203,7 +202,6 @@ class BitmexOrderBookEmitter(
             ms.append(book.measurement())
 
         self.write_points(ms, time_precision='s')
-        alog.info('### save_measurements ###')
 
 
 @click.command()
