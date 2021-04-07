@@ -51,11 +51,11 @@ class MeasurementFrame(MeasurementMeta):
         if self._start_date:
             return self._start_date
         else:
-            return DateTimeUtils.remove_seconds(DateTimeUtils.now() - self.interval)
+            return DateTimeUtils.now() - self.interval
 
     @start_date.setter
     def start_date(self, value):
-        self._start_date = DateTimeUtils.remove_seconds(value)
+        self._start_date = value
 
     @property
     def formatted_start_date(self):
@@ -70,11 +70,11 @@ class MeasurementFrame(MeasurementMeta):
         if self._end_date:
             return self._end_date
         else:
-            return DateTimeUtils.remove_seconds(DateTimeUtils.now())
+            return DateTimeUtils.now()
 
     @end_date.setter
     def end_date(self, value):
-        self._end_date = DateTimeUtils.remove_seconds(value)
+        self._end_date = value
 
     def frame(self):
         query = f'SELECT first(*) AS data FROM {self.name} WHERE time >=' \
