@@ -72,16 +72,15 @@ class OrderBookFrame(MeasurementFrame):
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
 
-        orderbook_img = df.orderbook_img.to_numpy().tolist()
-        df.drop(['orderbook_img'], axis=1)
-
-        orderbook_img = np.asarray(orderbook_img)
-
-        return orderbook_img, df
+        return df
 
     @property
     def frame(self):
-        orderbook_img, df = self._frame()
+        df = self._frame()
+
+        orderbook_img = df.orderbook_img.to_numpy().tolist()
+        df.drop(['orderbook_img'], axis=1)
+        orderbook_img = np.asarray(orderbook_img)
 
         orderbook_img = np.concatenate((
             orderbook_img[:, :, 0],
@@ -89,8 +88,30 @@ class OrderBookFrame(MeasurementFrame):
             axis=2
         )
 
-        orderbook_img = np.delete(orderbook_img, 0, axis=3)
         orderbook_img = np.absolute(orderbook_img)
+        # alog.info(orderbook_img[-1][-1].tolist())
+
+        for frame_ix in range(orderbook_img.shape[0]):
+            orderbook = orderbook_img[frame_ix]
+            shape = orderbook.shape
+            new_ob = np.zeros((shape[0], shape[1], 1))
+            last_frame = orderbook[-1]
+            last_frame_price = np.sort(last_frame[:, 0])
+
+            for i in range(shape[0]):
+                frame = orderbook[i]
+
+                for l in range(frame.shape[0]):
+                    level = frame[l]
+
+                    if level.shape == (2,):
+                        price, volume = level
+                        last_frame_index = np.where(last_frame_price == price)
+                        new_ob[i, last_frame_index[0]] = np.asarray([volume])
+
+            orderbook_img[frame_ix] = new_ob
+
+        orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         if self.quantile == 0.0:
             self.quantile = \
@@ -99,24 +120,6 @@ class OrderBookFrame(MeasurementFrame):
         orderbook_img = orderbook_img / self.quantile
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
-
-        df['orderbook_img'] = [
-            orderbook_img[i] for i in range(0, orderbook_img.shape[0])
-        ]
-
-        return df
-
-    @property
-    def price_level_frame(self):
-        orderbook_img, df = self._frame()
-
-        orderbook_img = np.concatenate((
-            orderbook_img[:, :, 0],
-            orderbook_img[:, :, 1]),
-            axis=2
-        )
-
-        orderbook_img = np.absolute(orderbook_img)
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
@@ -147,7 +150,7 @@ class OrderBookFrame(MeasurementFrame):
         frames = []
 
         self.start_date = self.start_date - timedelta(seconds=(timeparse(
-            self.group_by) * self.sequence_length) + timeparse('6m'))
+            self.group_by) * self.sequence_length))
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
