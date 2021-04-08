@@ -83,6 +83,10 @@ class BinanceUtils(object):
             return self.get_symbols()
 
     @retry(Exception, tries=100, delay=0.5)
+    def _retry_get_exchange_info(self):
+        return self._get_exchange_info
+
+    @cached_property_with_ttl(ttl=60 * 60)
     def _get_exchange_info(self):
         if self.get_exchange_info:
             return self._get_exchange_info
@@ -93,9 +97,9 @@ class BinanceUtils(object):
             exchange_info = self.client.get_exchange_info()
         return exchange_info
 
-    @cached_property_with_ttl(ttl=60 * 60)
+    @property
     def get_exchange_info(self):
-        return self._get_exchange_info()
+        return self._retry_get_exchange_info()
 
     def _get_symbols(self):
         exchange_info = self.get_exchange_info
