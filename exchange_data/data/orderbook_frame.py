@@ -89,7 +89,6 @@ class OrderBookFrame(MeasurementFrame):
         )
 
         orderbook_img = np.absolute(orderbook_img)
-        # alog.info(orderbook_img[-1][-1].tolist())
 
         for frame_ix in range(orderbook_img.shape[0]):
             orderbook = orderbook_img[frame_ix]
