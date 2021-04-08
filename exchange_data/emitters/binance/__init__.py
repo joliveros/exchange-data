@@ -84,6 +84,9 @@ class BinanceUtils(object):
 
     @retry(Exception, tries=100, delay=0.5)
     def _get_exchange_info(self):
+        if self.get_exchange_info:
+            return self._get_exchange_info
+
         if self.futures:
             exchange_info = self.client.futures_exchange_info()
         else:
