@@ -96,12 +96,12 @@ class BinanceUtils(object):
             return BinanceUtils.exchange_info()
     @staticmethod
     @cache.cache(ttl=60 * 60)
-    def futures_exchange_info(self):
+    def futures_exchange_info():
         return ProxiedClient().futures_exchange_info()
 
     @staticmethod
     @cache.cache(ttl=60 * 60)
-    def exchange_info(self):
+    def exchange_info():
         return ProxiedClient().get_exchange_info()
 
     @property
