@@ -15,6 +15,9 @@ class ProxiedClient(Client, ProxiesBase):
         ProxiesBase.__init__(self, **kwargs)
         super().__init__(**kwargs)
 
+    def ping(self):
+        pass
+
     @property
     def proxies(self):
         if self._proxies:
