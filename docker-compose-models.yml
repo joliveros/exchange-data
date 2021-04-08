@@ -21,15 +21,15 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.25 --model_config_file_poll_wait_seconds=30
 
-    OGNUSDT:
+    ENJUSDT:
         deploy:
-            replicas: 4
+            replicas: 3
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py OGNUSDT -i 1h -b 1h -o 10m -w 20s -g 10s --group-by-min 10s -m 148 -D 4 --min-capital 1.005 -e -d 92 -l 44 --database-name binance_futures"
+            ./exchange_data/models/resnet/tune.py ENJUSDT -i 2h -b 2h -o 30m -w 20s -g 10s --group-by-min 10s -m 172 -D 5 --min-capital 1.005 -e -d 92 -l 44 --database-name binance_futures"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
