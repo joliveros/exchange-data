@@ -90,7 +90,7 @@ class BinanceUtils(object):
             exchange_info = self.client.get_exchange_info()
         return exchange_info
 
-    @cached_property_with_ttl(ttl=60 * 10)
+    @cached_property_with_ttl(ttl=60 * 60)
     def get_exchange_info(self):
         return self._get_exchange_info()
 
