@@ -84,15 +84,21 @@ class BinanceUtils(object):
 
     @retry(Exception, tries=100, delay=0.5)
     def _retry_get_exchange_info(self):
-        return self._get_exchange_info
+        return self._get_exchange_info()
 
-    @cached_property_with_ttl(ttl=60 * 60)
     def _get_exchange_info(self):
         if self.futures:
-            exchange_info = self.client.futures_exchange_info()
+            return self.futures_exchange_info
         else:
-            exchange_info = self.client.get_exchange_info()
-        return exchange_info
+            return self.exchange_info
+
+    @cached_property_with_ttl(ttl=60 * 60)
+    def futures_exchange_info(self):
+        return self.client.futures_exchange_info()
+
+    @cached_property_with_ttl(ttl=60 * 60)
+    def exchange_info(self):
+        return self.client.get_exchange_info()
 
     @property
     def get_exchange_info(self):
