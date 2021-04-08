@@ -7,6 +7,8 @@ from binance.exceptions import BinanceAPIException
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
 from pytimeparse.timeparse import timeparse
+from redis import Redis
+from redis_cache import RedisCache
 from redis_collections import Set
 from redlock import RedLock, RedLockError
 from retry import retry
@@ -19,6 +21,7 @@ import alog
 import re
 import time
 
+cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 class BinanceUtils(object):
     limit = 0
@@ -88,17 +91,19 @@ class BinanceUtils(object):
 
     def _get_exchange_info(self):
         if self.futures:
-            return self.futures_exchange_info
+            return BinanceUtils.futures_exchange_info()
         else:
-            return self.exchange_info
+            return BinanceUtils.exchange_info()
 
-    @cached_property_with_ttl(ttl=60 * 60)
+    @cache.cache(ttl=60 * 60)
+    @staticmethod
     def futures_exchange_info(self):
-        return self.client.futures_exchange_info()
+        return ProxiedClient().futures_exchange_info()
 
-    @cached_property_with_ttl(ttl=60 * 60)
+    @cache.cache(ttl=60 * 60)
+    @staticmethod
     def exchange_info(self):
-        return self.client.get_exchange_info()
+        return ProxiedClient().get_exchange_info()
 
     @property
     def get_exchange_info(self):
