@@ -8,6 +8,8 @@ from optuna import Trial
 import alog
 import click
 
+from exchange_data.trading import Positions
+
 
 class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
     def __init__(
@@ -28,6 +30,9 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
             self.model_version = model_version
 
         self.capital = 1.0
+        self.last_position = Positions.Flat
+        self.entry_price = 0.0
+
         df = self.frame.copy()
 
         df.reset_index(drop=False, inplace=True)
