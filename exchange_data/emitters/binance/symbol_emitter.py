@@ -72,6 +72,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
             try:
                 data = json.loads(data_str)
             except TypeError as e:
+                alog.info('no data')
+                alog.info(data_str)
                 pass
 
             if data:
