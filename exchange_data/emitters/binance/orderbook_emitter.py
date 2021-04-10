@@ -72,6 +72,7 @@ class BitmexOrderBookEmitter(
             self.orderbooks[symbol] = BinanceOrderBook(symbol)
 
         if self.subscriptions_enabled:
+            self.on('1m', self.save_measurements_1m)
             self.on('5s', self.save_measurements)
             self.on('5s', self.metrics)
             # self.on('2s', self.temp)
@@ -188,6 +189,7 @@ class BitmexOrderBookEmitter(
             channels = channels + self.spot_channels()
 
         self.sub([
+            '1m',
             '5s',
             '2s',
         ] + channels)
@@ -195,6 +197,13 @@ class BitmexOrderBookEmitter(
     def exit(self, *args):
         self.stop()
         sys.exit(0)
+
+    def save_measurements_1m(self, timestamp):
+        ms = []
+        for symbol, book in self.orderbooks.items():
+            ms.append(book.measurement())
+
+        self.write_points(ms, time_precision='s', database=f'{self.database_name}_1m')
 
     def save_measurements(self, timestamp):
         ms = []
