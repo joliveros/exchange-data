@@ -3,12 +3,11 @@
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.emitters.backtest_base import BackTestBase
 from exchange_data.emitters.prediction_emitter import PredictionBase
+from exchange_data.trading import Positions
 from optuna import Trial
 
 import alog
 import click
-
-from exchange_data.trading import Positions
 
 
 class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
