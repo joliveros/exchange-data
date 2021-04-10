@@ -73,6 +73,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
+        self.reset_interval()
+        self.train_df = self.label_positive_change().copy()
+        self.backtest = BackTest(quantile=self.quantile, **kwargs)
+
         self.study.optimize(self.run, n_trials=session_limit)
 
     @property
@@ -215,12 +219,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         self._kwargs['group_by'] = self.group_by
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            self.reset_interval()
-
-            alog.info((str(self.start_date), str(self.end_date)))
-
-            _df = self.train_df = self.label_positive_change().copy()
-
+            _df = self.train_df
             alog.info(_df)
 
             train_df = _df.sample(frac=0.9, random_state=0)
@@ -279,8 +278,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         kwargs = self._kwargs.copy()
         kwargs['sequence_length'] = self.sequence_length
         kwargs['depth'] = self.output_depth
-
-        self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.backtest.quantile = self.quantile
 
