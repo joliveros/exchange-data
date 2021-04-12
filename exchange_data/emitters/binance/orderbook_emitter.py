@@ -33,13 +33,11 @@ class BitmexOrderBookEmitter(
         self,
         limit,
         workers,
-        reset_orderbook: bool = True,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
     ):
         self.subscriptions_enabled = subscriptions_enabled
-        self.should_reset_orderbook = reset_orderbook
 
         stats_prefix = None
 
@@ -215,7 +213,6 @@ class BitmexOrderBookEmitter(
 
 @click.command()
 @click.option('--save-data/--no-save-data', default=True)
-@click.option('--reset-orderbook/--no-reset-orderbook', default=True)
 @click.option('--limit', '-l', default=0, type=int)
 @click.option('--workers', '-w', default=8, type=int)
 @click.option('--symbol-filter', default=None, type=str)
