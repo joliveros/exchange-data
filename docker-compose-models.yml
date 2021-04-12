@@ -29,7 +29,7 @@ services:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py XRPUSDT -i 2h -b 2h -o 30m -w 20s -g 5s --group-by-min 10s -m 172 -D 5 --min-capital 1.005 -e -d 92 -l 44 --database-name binance_futures"
+            ./exchange_data/models/resnet/tune.py XRPUSDT -i 6h -b 6h -o 1h -w 40s -g 10s --group-by-min 20s -m 172 -D 5 --min-capital 1.005 -e -d 92 -l 44 --database-name binance_futures"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all
