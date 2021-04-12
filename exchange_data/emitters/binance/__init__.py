@@ -94,6 +94,7 @@ class BinanceUtils(object):
             return BinanceUtils.futures_exchange_info()
         else:
             return BinanceUtils.exchange_info()
+
     @staticmethod
     @cache.cache(ttl=60 * 60)
     def futures_exchange_info():
