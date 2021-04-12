@@ -73,8 +73,8 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements_1m)
-            self.on('5s', self.save_measurements)
-            self.on('5s', self.metrics)
+            self.on('10s', self.save_measurements)
+            self.on('10s', self.metrics)
             # self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
@@ -190,7 +190,7 @@ class BitmexOrderBookEmitter(
 
         self.sub([
             '1m',
-            '5s',
+            '10s',
             '2s',
         ] + channels)
 
