@@ -3,6 +3,7 @@ import concurrent
 import time
 
 import alog
+from binance.exceptions import BinanceAPIException
 from pytimeparse.timeparse import timeparse
 from requests.exceptions import ProxyError, ConnectTimeout, ReadTimeout, \
     SSLError
@@ -21,9 +22,10 @@ from exchange_data.emitters.binance.symbol_emitter import SymbolEmitter
 
 class FullOrderBookEmitter(Messenger, BinanceUtils):
 
-    def __init__(self, symbol, **kwargs):
+    def __init__(self, symbol, futures, depth, **kwargs):
         super().__init__(**kwargs)
-
+        self.futures = futures
+        self.depth = depth
         self.publish_orderbook(symbol)
 
     @property
@@ -33,14 +35,20 @@ class FullOrderBookEmitter(Messenger, BinanceUtils):
     def publish_orderbook(self, *args):
         try:
             self._publish_orderbook(*args)
-        except (ProxyError, ConnectTimeout, ReadTimeout, SSLError) as e:
+        except (ProxyError, ConnectTimeout, ReadTimeout, SSLError, BinanceAPIException) as e:
             alog.info(e)
             self.publish_orderbook(*args)
 
     def _publish_orderbook(self, symbol):
         alog.info(f'## get orderbook for {symbol} ##')
         timestamp = TimeEmitter.timestamp()
-        depth = self.client.get_order_book(symbol=symbol, limit=5000)
+
+        if self.futures:
+            depth = self.client.futures_order_book(symbol=symbol, limit=self.depth)
+        else:
+            depth = self.client.get_order_book(symbol=symbol, limit=self.depth)
+
+        alog.info(depth)
 
         data = dict(
             a=depth['asks'],
@@ -51,18 +59,25 @@ class FullOrderBookEmitter(Messenger, BinanceUtils):
 
         alog.info(len(data['a']) + len(data['b']))
 
-        msg = f'{symbol}_depth_reset', json.dumps(dict(data=data))
+        if self.futures:
+            channel = f'{symbol}_depth_reset_futures'
+        else:
+            channel = f'{symbol}_depth_reset'
+
+        msg = channel, json.dumps(dict(data=data))
         alog.info(msg)
 
         self.publish(*msg)
 
 
 @click.command()
-def main(**kwargs):
+@click.option('--futures', '-F', is_flag=True)
+@click.option('--depth', '-d', default=5000, type=int)
+def main(futures, **kwargs):
     def emit_orderbook(symbol):
-        FullOrderBookEmitter(symbol, **kwargs)
+        FullOrderBookEmitter(symbol, futures, **kwargs)
 
-    symbols = BinanceUtils().symbols
+    symbols = BinanceUtils(futures=futures, symbol_filter=None).symbols
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         while len(symbols) > 0:
