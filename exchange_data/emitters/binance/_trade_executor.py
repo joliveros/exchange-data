@@ -32,9 +32,6 @@ def truncate(n, decimals=0):
     return int(n * multiplier) / multiplier
 
 
-def p(*args):
-    alog.info(alog.pformat(*args))
-
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
@@ -227,7 +224,7 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
         if self.bid_price is None:
             return
 
-        p(self.model_params)
+        alog.info(alog.pformat(self.model_params))
 
         if self.model_params['capital'] < self.min_best_capital:
             raise Exception('Model does not meet minimum capital')
