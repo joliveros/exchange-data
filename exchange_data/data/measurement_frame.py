@@ -33,8 +33,12 @@ class MeasurementFrame(MeasurementMeta):
         super().__init__(**kwargs)
         self.group_by = group_by
         self.interval_str = interval
-        self.interval = timedelta(seconds=timeparse(interval))
-        self._start_date = start_date
+
+        if type(interval) == str:
+            self.interval = timedelta(seconds=timeparse(interval))
+        else:
+            self.interval = interval
+
         self._end_date = end_date
         self.original_interval = (start_date, end_date)
 
