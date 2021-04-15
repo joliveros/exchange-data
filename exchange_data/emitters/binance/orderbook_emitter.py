@@ -80,13 +80,6 @@ class BitmexOrderBookEmitter(
                 self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
                 self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
 
-    def channel_suffix(self, channel):
-        if self.futures:
-            return f'{channel}_futures'
-        else:
-            return channel
-
-
     @cached_property
     def queued_symbols(self):
         return Set(key='orderbook_queued_symbols', redis=self.redis_client)

@@ -205,6 +205,12 @@ class BinanceUtils(object):
         logger = [logger for logger in loggers if logger.name == 'urllib3'][0]
         logger.setLevel(logging.DEBUG)
 
+    def channel_suffix(self, channel):
+        if self.futures:
+            return f'{channel}_futures'
+        else:
+            return channel
+
 
 
 class ExceededLagException(Exception):

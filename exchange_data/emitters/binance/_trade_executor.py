@@ -1,17 +1,18 @@
 #!/usr/bin/env python
-import time
 
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
+from cached_property import cached_property_with_ttl
 from decimal import Decimal, getcontext
 
-from cached_property import cached_property_with_ttl
+from redis import Redis
+from redis_cache import RedisCache
 
 from exchange_data import settings
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import binance, Messenger
 from exchange_data.emitters.backtest import BackTest
-from exchange_data.emitters.binance import ProxiedClient
+from exchange_data.emitters.binance import ProxiedClient, BinanceUtils
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
 from exchange_data.trading import Positions
 from math import floor
@@ -23,6 +24,7 @@ import click
 import logging
 import signal
 import sys
+import time
 
 
 def truncate(n, decimals=0):
@@ -30,7 +32,12 @@ def truncate(n, decimals=0):
     return int(n * multiplier) / multiplier
 
 
-class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
+def p(*args):
+    alog.info(alog.pformat(*args))
+
+cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
+
+class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
     measurements = []
     current_position = Positions.Flat
     symbol = None
@@ -39,11 +46,15 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
     def __init__(
         self,
         base_asset,
+        depth,
+        futures,
+        leverage,
+        log_requests,
+        min_best_capital,
         symbol,
         trading_enabled,
-        depth,
         window_size,
-        log_requests,
+        trade_min=False,
         tick=False,
         fee=0.0075,
         model_version=None,
@@ -51,9 +62,13 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
         **kwargs
     ):
         super().__init__(
+            futures=futures,
             **kwargs
         )
-        StudyWrapper.__init__(self, symbol=symbol, **kwargs)
+        StudyWrapper.__init__(self, symbol=symbol, futures=futures, **kwargs)
+        self.trade_min = trade_min
+        self.leverage = leverage
+        self.min_best_capital = min_best_capital
         self.window_size = window_size
         self.depth = depth
         self.tick = tick
@@ -66,8 +81,16 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
         self.asset = None
         self._model_version = None
         self.model_version = model_version
-        self.ticker_channel = f'{symbol}{self.base_asset}_book_ticker'
+        self.ticker_channel = self.channel_suffix(f'{symbol}{self.base_asset}_book_ticker')
+        alog.info(self.ticker_channel)
+
         info = self.exchange_info
+
+        if leverage < self.max_leverage:
+            self.client.futures_change_leverage(
+                symbol=self.symbol,
+                leverage=self.leverage
+            )
 
         if log_requests:
             self.log_requests()
@@ -79,6 +102,24 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
         self.on(tick_interval, self.trade)
         self.on(self.ticker_channel, self.ticker)
 
+    @staticmethod
+    @cache.cache(ttl=60 * 60)
+    def leverage_brackets():
+        return TradeExecutor._client().futures_leverage_bracket()
+
+    @property
+    def bracket(self):
+        return [bracket for bracket in self.leverage_brackets()
+                if bracket['symbol'] == self.symbol][0]
+
+    @property
+    def max_leverage(self):
+        if self.futures:
+            return max([bracket['initialLeverage']
+                        for bracket in self.bracket['brackets']])
+        else:
+            raise Exception('only available for futures.')
+
     def ticker(self, data):
         self.bid_price = float(data['b'])
 
@@ -89,26 +130,19 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
         logger.setLevel(logging.DEBUG)
 
     @cached_property_with_ttl(ttl=timeparse('1h'))
-    def client(self):
+    def client(self) -> Client:
+        return self._client()
+
+    @staticmethod
+    def _client():
         return Client(
             api_key=settings.BINANCE_API_KEY,
             api_secret=settings.BINANCE_API_SECRET,
         )
-
-    @cached_property_with_ttl(ttl=timeparse('1h'))
-    def exchange_info(self):
-        client = ProxiedClient()
-        return client.get_exchange_info()
-
     @property
     def symbol_info(self):
-        return [info for info in self.exchange_info['symbols'] if
+        return [info for info in self.get_exchange_info['symbols'] if
                    info['symbol'] == self.symbol][0]
-
-    @property
-    def symbols(self):
-        return [symbol['symbol'] for symbol in self.exchange_info['symbols']
-                   if symbol['symbol'].endswith(self.base_asset)]
 
     @property
     def asset_name(self):
@@ -131,7 +165,8 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
 
     @property
     def precision(self):
-        return self.symbol_info['quoteAssetPrecision']
+        return self.symbol_info.get('quoteAssetPrecision', None) or \
+               self.symbol_info.get('quotePrecision', None)
 
     @property
     def tick_size(self):
@@ -192,6 +227,11 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
         if self.bid_price is None:
             return
 
+        p(self.model_params)
+
+        if self.model_params['capital'] < self.min_best_capital:
+            raise Exception('Model does not meet minimum capital')
+
         alog.info('### prediction ###')
         alog.info(self.position)
         alog.info(self.quantity)
@@ -249,11 +289,16 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
 
     def buy(self):
         if self.trading_enabled:
+            if self.trade_min:
+                quantity = self.min_quantity
+            else:
+                quantity = self.quantity
+
             response = self.client.create_order(
                 symbol=self.symbol,
                 side=SIDE_BUY,
                 type=binance.enums.ORDER_TYPE_MARKET,
-                quantity=self.quantity,
+                quantity=quantity,
             )
             alog.info(alog.pformat(response))
 
@@ -273,7 +318,10 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
 
     @property
     def model_params(self):
+        capital = self.best_study_params['_values'][0]
+
         params = self.best_study_params['_params']
+        params['capital'] = capital
 
         if 'interval' in params:
             del params['interval']
@@ -287,10 +335,8 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
     def model_version(self, value):
         self._model_version = value
 
-    @cached_property_with_ttl(ttl=30)
+    @cached_property_with_ttl(ttl=2)
     def position(self) -> Positions:
-        alog.info(alog.pformat(self.model_params))
-
         try:
             return self.get_position()
         except KeyError as e:
@@ -306,7 +352,7 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
             best_exported_model=True,
             database_name=self.database_name,
             depth=self.depth,
-            interval='1m',
+            interval=self.interval,
             model_version=self.model_version,
             quantile=self.quantile,
             sequence_length=44,
@@ -349,16 +395,19 @@ class TradeExecutor(MeasurementFrame, Messenger, StudyWrapper):
 
 
 @click.command()
-@click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--base-asset', '-b', default='BNB', type=str)
-@click.option('--tick-interval', '-t', default='1m', type=str)
-@click.option('--interval', '-i', default='2m', type=str)
+@click.option('--database-name', '-d', default='binance', type=str)
 @click.option('--depth', default=92, type=int)
-@click.option('--model-version', '-m', default=None, type=str)
-@click.option('--trading-enabled', '-e', is_flag=True)
-@click.option('--log-requests', '-l', is_flag=True)
-@click.option('--tick', is_flag=True)
+@click.option('--futures', '-F', is_flag=True)
 @click.option('--group-by', '-g', default='1m', type=str)
+@click.option('--interval', '-i', default='1m', type=str)
+@click.option('--leverage', default=2, type=int)
+@click.option('--log-requests', '-l', is_flag=True)
+@click.option('--min-best-capital', '-M', default=1.05, type=float)
+@click.option('--model-version', '-m', default=None, type=str)
+@click.option('--tick', is_flag=True)
+@click.option('--tick-interval', '-t', default='1m', type=str)
+@click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--window-size', '-w', default='5m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
