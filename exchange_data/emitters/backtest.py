@@ -52,12 +52,6 @@ class BackTest(OrderBookFrame, BackTestBase, PredictionBase):
     def load_previous_frames(self, depth):
         pass
 
-    # def get_prediction(self):
-    #     if random.randint(0, 1) == 0:
-    #         return Positions.Flat
-    #     else:
-    #         return Positions.Long
-
     def prediction(self, row):
         self.frames = row['orderbook_img']
 
