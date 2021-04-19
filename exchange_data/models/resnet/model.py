@@ -85,7 +85,7 @@ def Model(
         return_sequences = False
 
     lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-                    recurrent_activation='sigmoid')(conv)
+                    recurrent_activation='sigmoid')(convsecond_output)
 
     for i in range(0, lstm_layers - 1):
         return_sequences = True
