@@ -21,15 +21,15 @@ services:
             - public
         command: --model_config_file=/root/.exchange-data/models/models.config --per_process_gpu_memory_fraction=0.25 --model_config_file_poll_wait_seconds=30
 
-    DOGEUSDT:
+    QTUMUSDT:
         deploy:
-            replicas: 3
+            replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/models/resnet/tune.py DOGEUSDT -i 8h -b 8h -o 1h -w 40s -g 30s --group-by-min 1m -m 172 -D 5 --min-capital 1.005 -e -d 92 -l 44 --database-name binance_futures -c 32"
+            ./exchange_data/models/resnet/tune.py QTUMUSDT -i 4h -b 4h -o 1h -w 40s -g 15s --group-by-min 30s -m 726 -D 6 --min-capital 1.005 -e -d 200 -l 55 --database-name binance_futures"
         environment:
             - LOG_LEVEL=INFO
             - NVIDIA_VISIBLE_DEVICES=all

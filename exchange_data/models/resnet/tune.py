@@ -73,6 +73,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
+        self.reset_interval()
+        self.train_df = self.label_positive_change().copy()
+        self.backtest = BackTest(quantile=self.quantile, **kwargs)
+
         self.study.optimize(self.run, n_trials=session_limit)
 
     @property
@@ -183,23 +187,23 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.58, 0.8),
+                'positive_change_quantile', 0.40, 0.7),
             negative_change_quantile=trial.suggest_float(
-                'negative_change_quantile', 0.03, 0.091),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.37, 0.74),
+                'negative_change_quantile', 0.1, 0.3),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.3, 0.8),
             #interval=trial.suggest_int('interval', 4, 12),
-            learning_rate=trial.suggest_float('learning_rate', 0.027, 0.0302),
+            learning_rate=trial.suggest_float('learning_rate', 0.031, 0.05),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
-            #epochs=trial.suggest_categorical('epochs', [4, 5]),
-            num_conv=trial.suggest_int('num_conv', 3, 7),
-            depth=trial.suggest_categorical('depth', multiples(4, 40, 72)),
-            sequence_length=trial.suggest_categorical(
-              'sequence_length',
-                multiples(2, 50, 36)),
+            #epochs=trial.suggest_int('epochs', 2, 3),
+            #num_conv=trial.suggest_int('num_conv', 3, 7),
+            #depth=trial.suggest_categorical('depth', multiples(4, 50, 100)),
+            #sequence_length=trial.suggest_categorical(
+            #  'sequence_length',
+            #    multiples(2, 36, 48)),
         )
 
-        self.sequence_length = hparams['sequence_length']
-        self.output_depth = hparams['depth']
+        #self.sequence_length = hparams['sequence_length']
+        #self.output_depth = hparams['depth']
         self.flat_ratio = hparams['flat_ratio']
 
         alog.info(alog.pformat(hparams))
@@ -215,8 +219,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         self._kwargs['group_by'] = self.group_by
 
         with tf.summary.create_file_writer(self.run_dir).as_default():
-            self.reset_interval()
-            self.train_df = self.label_positive_change().copy()
+
             _df = self.train_df
             alog.info(_df)
 
@@ -227,10 +230,10 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
             alog.info(eval_df)
 
             params = {
-                'batch_size': 2,
+                'batch_size': 4,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 2,
+                'epochs': 3,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
@@ -276,8 +279,6 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
         kwargs = self._kwargs.copy()
         kwargs['sequence_length'] = self.sequence_length
         kwargs['depth'] = self.output_depth
-
-        self.backtest = BackTest(quantile=self.quantile, **kwargs)
 
         self.backtest.quantile = self.quantile
 
