@@ -190,7 +190,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'positive_change_quantile', 0.40, 0.7),
             negative_change_quantile=trial.suggest_float(
                 'negative_change_quantile', 0.1, 0.3),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.3, 0.8),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.01, 0.5),
             #interval=trial.suggest_int('interval', 4, 12),
             learning_rate=trial.suggest_float('learning_rate', 0.031, 0.05),
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
@@ -240,7 +240,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 # 'learning_rate': 0.048254,
                 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
-                'lstm_layers': 1,
+                'lstm_layers': 2,
                 'base_filter_size': 16,
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
