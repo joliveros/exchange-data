@@ -187,12 +187,13 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
 
         hparams = dict(
             positive_change_quantile=trial.suggest_float(
-                'positive_change_quantile', 0.0, 0.7),
+                'positive_change_quantile', 0.24, 0.99),
             negative_change_quantile=trial.suggest_float(
                 'negative_change_quantile', 0.01, 0.7),
-            flat_ratio=trial.suggest_float('flat_ratio', 0.01, 0.15),
+            flat_ratio=trial.suggest_float('flat_ratio', 0.1, 0.55),
             #interval=trial.suggest_int('interval', 4, 12),
-            learning_rate=trial.suggest_float('learning_rate', 0.02, 0.05),
+            learning_rate=trial.suggest_float('learning_rate', 0.027, 0.045),
+            lstm_units=trial.suggest_int('lstm_units', 4, 18)
             #round_decimals=trial.suggest_int('round_decimals', 4, 9),
             #epochs=trial.suggest_int('epochs', 2, 3),
             #num_conv=trial.suggest_int('num_conv', 3, 7),
@@ -233,7 +234,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'batch_size': 3,
                 'depth': self.output_depth,
                 'directory': trial.number,
-                'epochs': 2,
+                'epochs': 20,
                 'eval_df': eval_df,
                 'export_model': True,
                 'relu_alpha': 0.294,
@@ -241,6 +242,7 @@ class SymbolTuner(MaxMinFrame, StudyWrapper, Messenger):
                 'round_decimals': self.round_decimals,
                 'sequence_length': self.sequence_length,
                 'lstm_layers': 1,
+                #'lstm_units': 12,
                 'base_filter_size': 16,
                 'symbol': self.symbol,
                 'dir_name': self.symbol,
