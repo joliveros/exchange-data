@@ -69,6 +69,8 @@ def Model(
                         recurrent_activation='sigmoid')(lstm_out)
 
     alog.info(lstm_out.shape)
+    dense = Dense(128)(lstm_out)
+    alog.info(dense.shape)
     alog.info(num_categories)
 
     dense_out = Dense(
@@ -77,7 +79,7 @@ def Model(
         bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
-    out = dense_out(lstm_out)
+    out = dense_out(dense)
 
     alog.info(out.shape)
 

@@ -165,6 +165,7 @@ class MaxMinFrame(OrderBookFrame, BackTestBase):
 @click.option('--interval', '-i', default='3h', type=str)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--negative-change-quantile', '-n', default=0.50, type=float)
+@click.option('--flat-ratio', '-f', default=0.50, type=float)
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--positive-change-quantile', '-q', default=0.50, type=float)
