@@ -122,8 +122,8 @@ class Trade(Logging):
 
         if self.pnl > self.min_profit:
             self.reward += self.step_reward * self.step_reward_ratio
-        # else:
-        #     self.reward += self.step_reward * self.step_reward_ratio * -1.0
+        else:
+            self.reward += self.step_reward * self.step_reward_ratio * -1.0
 
         if pnl_delta < 0.0 and self.position_length > 6:
             self.reward -= self.step_reward * self.step_reward_ratio
