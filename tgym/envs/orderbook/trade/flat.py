@@ -50,6 +50,7 @@ class FlatTrade(Trade):
         self.total_reward += self.reward
 
     def close(self):
+        return
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.info(f'{self.yaml(self.summary())}')
 
