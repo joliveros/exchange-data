@@ -1,0 +1,31 @@
+version: '3.8'
+
+networks:
+  public:
+    name: public
+    external: true
+
+services:
+    LINAUSDT:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+        command: >-
+            bash -c "source ~/.bashrc &&
+             ./baselines/a2c/tune.py FLMUSDT -i 1h -s 60"
+        environment:
+            - LOG_LEVEL=INFO
+            - NVIDIA_VISIBLE_DEVICES=all
+        networks:
+            - public
+        depends_on:
+            - influxdb
+            - redis
+        secrets:
+            - DB
+secrets:
+  DB:
+      external: true
+
