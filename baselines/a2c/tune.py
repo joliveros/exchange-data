@@ -78,7 +78,7 @@ def run(trial: Trial, **kwargs):
     extra_args = {
         'hparams': hparams,
         'log_interval': 100,
-        'lr': 0.03,
+        'lr': 0.0000001,
         'nsteps': 3
     }
 
