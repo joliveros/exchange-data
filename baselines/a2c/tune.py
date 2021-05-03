@@ -1,37 +1,24 @@
 #!/usr/bin/env python
 
-import time
 from argparse import Namespace
-
-from optuna import Trial
-
 from baselines.run import train
-from tensorboard.plugins.hparams import api as hp
+from optuna import Trial
 
 import alog
 import click
 import logging
-import tensorflow as tf
 import optuna
-
-from exchange_data.utils import DateTimeUtils
-
-HP_LRATE = hp.HParam('Learning Rate', hp.RealInterval(0.00001, 0.0003))
-HP_REWARD_RATIO = hp.HParam('Reward Ratio', hp.RealInterval(0.99445, 1.0))
-HP_EPSILON = hp.HParam('Epsilon', hp.RealInterval(0.09, 0.1064380))
-HP_GAIN_DELAY = hp.HParam('gain_delay', hp.IntInterval(30, 360))
-HP_FLAT_REWARD = hp.HParam('Flat Reward', hp.RealInterval(0.55250, 0.55598))
-
-METRIC_ACCURACY = 'accuracy'
-# HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','RMSprop']))
+import tensorflow as tf
+import tgym.envs
+import time
 
 
-def run(trial: Trial):
+def run(trial: Trial, **kwargs):
     tf.keras.backend.clear_session()
 
     run_name = str(int(time.time() * 1000))
 
-    steps = 4000000
+    steps = 4e4
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
@@ -46,8 +33,6 @@ def run(trial: Trial):
         # step_reward=trial.suggest_float('step_reward', 0.01, 1.0),
         # max_loss=trial.suggest_float('max_loss', -0.02, -0.0001),
         # gain_delay=trial.suggest_float('gain_delay', 200, steps/2)
-        # max_negative_pnl_delay=trial.suggest_int('max_negative_pnl_delay',
-        #                                          190, 240),
         # max_negative_pnl=trial.suggest_float('max_negative_pnl', -0.006,
         #                                      -0.002)
     )
@@ -61,7 +46,7 @@ def run(trial: Trial):
         # gain_per_step=gain_per_step,
         alg='a2c',
         directory_name='default',
-        env='tf-orderbook-v0',
+        env='orderbook-frame-env-v0',
         env_type=None,
         flat_reward=hparams.get('flat_reward'),
         gamestate=None,
@@ -69,12 +54,11 @@ def run(trial: Trial):
         log_path=None,
         max_frames=48,
         max_loss=-0.01,
-        max_negative_pnl=-0.0002648181835761804 * 3,
-        max_negative_pnl_delay=0,
+        max_negative_pnl=-0.1,
         max_steps=steps,
         levels=40,
         min_change=2.0,
-        network='nasnet',
+        network='resnet',
         num_env=1,
         num_timesteps=steps,
         play=False,
@@ -89,45 +73,51 @@ def run(trial: Trial):
         step_reward=1.0,
         step_reward_ratio=1.0,
         trial=trial,
+        **kwargs
     )
     extra_args = {
-        'batch_size': 1,
-        'epsilon': 1e-7,
         'hparams': hparams,
-        'kernel_dim': 4,
         'log_interval': 100,
         'lr': 0.01,
-        'nsteps': 12,
+        'nsteps': 3
     }
 
     model, env = train(args, extra_args)
-
-    # try:
-    #     model, env = train(args, extra_args)
-    # except:
-    #     return 0.0
 
     return model.capital
 
 
 @click.command()
+@click.option('--database_name', '-d', default='binance_futures', type=str)
+@click.option('--depth', default=72, type=int)
+@click.option('--group-by', '-g', default='30s', type=str)
+@click.option('--interval', '-i', default='10m', type=str)
+@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
+@click.option('--offset-interval', '-o', default='0h', type=str)
+@click.option('--round-decimals', '-D', default=4, type=int)
+@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--summary-interval', '-s', default=1, type=int)
+@click.option('--window-size', '-w', default='2m', type=str)
+@click.argument('symbol', type=str)
 def main(**kwargs):
     physical_devices = tf.config.list_physical_devices('GPU')
 
-    tf.config.set_logical_device_configuration(
-        physical_devices[0],
-        [tf.config.LogicalDeviceConfiguration(memory_limit=100),
-         tf.config.LogicalDeviceConfiguration(memory_limit=100)])
+    if len(physical_devices):
+        tf.config.set_logical_device_configuration(
+            physical_devices[0],
+            [tf.config.LogicalDeviceConfiguration(memory_limit=100),
+             tf.config.LogicalDeviceConfiguration(memory_limisummaryt=100)])
 
-    logical_devices = tf.config.list_logical_devices('GPU')
+        logical_devices = tf.config.list_logical_devices('GPU')
 
-    assert len(logical_devices) == len(physical_devices) + 1
+        assert len(logical_devices) == len(physical_devices) + 1
+
     logging.getLogger('tensorflow').setLevel(logging.INFO)
     session_limit = 1000
 
     study = optuna.create_study(direction='maximize')
 
-    study.optimize(run, n_trials=session_limit)
+    study.optimize(lambda trial: run(trial, **kwargs), n_trials=session_limit)
 
 
 if __name__ == '__main__':

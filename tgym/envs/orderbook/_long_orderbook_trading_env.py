@@ -3,7 +3,8 @@ from exchange_data.trading import Positions
 from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook._orderbook import OrderBookTradingEnv
-from tgym.envs.orderbook._trade import Trade, LongTrade
+from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.long import LongTrade
 
 import alog
 import click

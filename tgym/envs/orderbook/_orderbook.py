@@ -10,7 +10,11 @@ from pytimeparse.timeparse import timeparse
 
 from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook._plot_orderbook import PlotOrderbook
-from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
+from tgym.envs.orderbook.utils import Logging
+from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.long import LongTrade
+from tgym.envs.orderbook.trade.flat import FlatTrade
+from tgym.envs.orderbook.trade.short import ShortTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
@@ -25,7 +29,7 @@ class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
+class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
     """
     Orderbook based trading environment.
     """
@@ -35,6 +39,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self,
         start_date,
         end_date,
+        sequence_length,
+        depth,
         min_steps=10,
         levels=30,
         summary_interval=120,
@@ -60,7 +66,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         is_training=True,
         print_ascii_chart=False,
         min_change=0.0,
-        max_negative_pnl_delay=20,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
@@ -69,6 +74,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         gain_delay=30,
         **kwargs
     ):
+
         kwargs['start_date'] = start_date
         kwargs['end_date'] = end_date
         kwargs['database_name'] = database_name
@@ -91,7 +97,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
         self.min_steps = min_steps
         self.eval_mode = eval_mode
-        self.max_negative_pnl_delay = max_negative_pnl_delay
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay
@@ -108,12 +113,10 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.min_change = min_change
         self.logger = logger
         self.summary_interval = summary_interval
-        self.name = None
         self.max_n_noops = 10
         self.last_spread = 0.0
         self.is_training = is_training
         self.max_frames = max_frames
-        self.frames = deque(maxlen=max_frames)
         self.price_frames = deque(maxlen=max_frames)
         self.position_data_history = deque(maxlen=max_frames * 6)
         self.long_pnl_history = []
@@ -169,12 +172,12 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.start_date -= timedelta(seconds=self.max_frames + 1)
 
         high = np.full(
-            (max_frames, levels * 2, 1),
+            (sequence_length, depth * 2, 1),
             1.0,
             dtype=np.float32
         )
         low = np.full(
-            (max_frames, levels * 2, 1),
+            (sequence_length, depth * 2, 1),
             0.0,
             dtype=np.float32
         )
@@ -266,15 +269,11 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         if self.step_count >= self.max_episode_length:
             self.done = True
 
-        try:
-            observation = self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            observation = self.last_observation
-            self.done = True
+        raise Exception()
+
+        observation = self.get_observation()
 
         reward = self.reset_reward()
-
-        alog.info(reward)
 
         self.print_summary()
 
@@ -283,7 +282,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def print_summary(self):
         if settings.LOG_LEVEL == logging.DEBUG and not self.is_training:
             if self.step_count % self.summary_interval == 0:
-                alog.debug(alog.pformat(self.summary()))
+                alog.info(alog.pformat(self.summary()))
 
     @property
     def best_bid(self):
