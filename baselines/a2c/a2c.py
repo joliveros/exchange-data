@@ -136,8 +136,6 @@ def learn(
 
                 tf.summary.scalar('eval_capital', model.capital, step=update)
 
-            alog.info(alog.pformat(env.summary()))
-
             epinfobuf.extend(epinfos)
 
             obs = tf.constant(obs)
