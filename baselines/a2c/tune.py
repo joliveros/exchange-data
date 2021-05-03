@@ -57,7 +57,7 @@ def run(trial: Trial, **kwargs):
         max_negative_pnl=-0.5,
         max_steps=steps,
         levels=40,
-        min_change=2.0,
+        min_change=0.001,
         network='resnet',
         num_env=1,
         num_timesteps=steps,
