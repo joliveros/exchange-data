@@ -117,9 +117,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             if self.current_trade.pnl < self.max_negative_pnl:
                 self.done = True
 
-            if self.current_trade.done:
-                self.done = True
-
         if self.done:
             self.reset_dataset()
 
