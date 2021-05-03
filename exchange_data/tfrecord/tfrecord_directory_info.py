@@ -20,7 +20,7 @@ class TFRecordDirectoryInfo(object):
         self.directory = Path(directory)
 
         if not self.directory.exists():
-            self.directory.mkdir()
+            self.directory.mkdir(parents=True)
 
         super().__init__(**kwargs)
 

@@ -41,7 +41,8 @@ class OrderBookFrame(MeasurementFrame):
             database_name=database_name,
             interval=interval,
             symbol=symbol,
-            depth=0,
+            depth=depth,
+            sequence_length=sequence_length,
             **kwargs)
 
         self.offset_interval = offset_interval
@@ -153,7 +154,7 @@ class OrderBookFrame(MeasurementFrame):
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
-            depth=self.depth,
+            depth=self.depth   ,
             end_date=self.end_date,
             group_by=self.group_by,
             start_date=self.start_date,
@@ -235,8 +236,8 @@ class OrderBookFrame(MeasurementFrame):
 @click.command()
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=72, type=int)
-@click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--interval', '-i', default='3h', type=str)
+@click.option('--group-by', '-g', default='30s', type=str)
+@click.option('--interval', '-i', default='10m', type=str)
 @click.option('--offset-interval', '-o', default='3h', type=str)
 @click.option('--plot', '-p', is_flag=True)
 @click.option('--sequence-length', '-l', default=48, type=int)

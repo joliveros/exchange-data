@@ -1,19 +1,22 @@
 from baselines.common import set_global_seeds
 from baselines.common.models import register, get_network_builder
 from baselines.common.policies import PolicyWithValue
-from exchange_data.models.resnet.model import Model as ED_Model
+from exchange_data.models.resnet.model import Model as ResnetModel
 from pathlib import Path
 
 import alog
 import tensorflow as tf
 
 
-@register("nasnet")
+@register("resnet")
 def network(*args, **net_kwargs):
-    net_kwargs['sequence_length'] = net_kwargs.get('max_frames')
-
     def network_fn(input_shape):
-        return ED_Model(input_shape=input_shape, num_categories=2, include_last=False, **net_kwargs)
+        return ResnetModel(
+            input_shape=input_shape,
+            num_categories=2,
+            include_last=False,
+            **net_kwargs
+        )
 
     return network_fn
 
@@ -36,7 +39,6 @@ class Model(tf.keras.Model):
     def __init__(self, *, env, network, seed, nsteps, run_name='default',
             ent_coef=0.01, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
             alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), max_frames, **kwargs):
-
         super(Model, self).__init__(name='A2CModel')
         nenvs = None
 
@@ -48,7 +50,6 @@ class Model(tf.keras.Model):
         set_global_seeds(seed)
 
         total_timesteps = int(total_timesteps)
-        alpha = alpha
 
         total_timesteps = total_timesteps  # Calculate the batch_size
         self.nbatch = nenvs * nsteps

@@ -71,8 +71,9 @@ def train(args, extra_args):
 
     alg_kwargs['max_frames'] = args.max_frames
     alg_kwargs['run_name'] = args.run_name
+    alg_kwargs['depth'] = args.depth
+    alg_kwargs['sequence_length'] = args.sequence_length
 
-    alog.info(alog.pformat(args))
     env = build_env(args)
 
     if args.save_video_interval != 0:
@@ -268,6 +269,7 @@ def main(args):
     env.close()
 
     return model
+
 
 if __name__ == '__main__':
     main(sys.argv)

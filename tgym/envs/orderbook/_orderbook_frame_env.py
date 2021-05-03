@@ -1,31 +1,27 @@
 #!/usr/bin/env python
 
-from exchange_data.tfrecord.dataset import dataset
-from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
-from exchange_data.trading import Positions
+from cached_property import cached_property
+from exchange_data.data.orderbook_frame import OrderBookFrame
 from exchange_data.utils import DateTimeUtils
 from gym.spaces import Discrete
-from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 
-import tensorflow_datasets as tfds
 import alog
 import click
 import numpy as np
 import random
-import tensorflow as tf
-import pandas as pd
-from optuna import TrialPruned
-
-from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
-class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
-    def __init__(self, trial=None, max_steps=30, num_env=1,
-                 min_change=2.0,
-                 should_load_dataset=True,
-                 **kwargs):
+class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
+    def __init__(
+        self,
+        trial=None,
+        max_steps=30,
+        num_env=1,
+        min_change=2.0,
+        **kwargs
+    ):
         now = DateTimeUtils.now()
         start_date = kwargs.get('start_date', now)
         end_date = kwargs.get('end_date', now)
@@ -37,20 +33,17 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
             del kwargs['end_date']
 
         super().__init__(
-            min_change=min_change,
-            action_space=Discrete(2),
             start_date=start_date,
             end_date=end_date,
+            min_change=min_change,
+            action_space=Discrete(2),
             **kwargs
         )
-        self.should_load_dataset = should_load_dataset
+
         self.trial = trial
         self.num_env = num_env
-        self.max_steps = max_steps
+        x_steps = max_steps
         kwargs['batch_size'] = 1
-
-        if self.should_load_dataset:
-            self.load_dataset(kwargs)
 
         self.observations = None
         self.prune_capital = 1.01
@@ -60,27 +53,6 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def reset_dataset(self):
         self.was_reset = True
 
-    def load_dataset(self, kwargs):
-        self.dataset = dataset(epochs=1, **kwargs)
-        frames = []
-        for data in tfds.as_numpy(dataset(**kwargs)):
-            data['datetime'] = DateTimeUtils \
-                .parse_datetime_str(data['datetime'][0].decode('utf8'))
-
-            frames.append(data)
-        frames_df = DataFrame.from_dict(frames)
-        alog.info(frames_df)
-        alog.info(frames_df.shape)
-        frames_df.drop_duplicates(subset=['datetime'], inplace=True)
-        alog.info(frames_df)
-        alog.info(frames_df.shape)
-        frames_df = frames_df.set_index('datetime')
-        frames_df = frames_df.sort_index()
-        frames_df.reset_index(drop=False, inplace=True)
-        alog.info(frames_df)
-        alog.info(frames_df.shape)
-        self.frames_df = frames_df
-
     @property
     def best_bid(self):
         return self._best_bid
@@ -89,17 +61,22 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
     def best_ask(self):
         return self._best_ask
 
+    @cached_property
+    def frame(self):
+        return super().frame
+
     def _get_observation(self):
         while True:
-            for i in range(len(self.frames_df)):
+            for i in range(len(self.frame)):
                 if self.was_reset:
                     self.was_reset = False
                     break
-                row = self.frames_df.loc[i]
-                best_ask = row['best_ask'][0][0]
-                best_bid = row['best_bid'][0][0]
-                frame = row['frame'][0]
-                timestamp = row['datetime'].to_pydatetime()
+
+                row = self.frame.iloc[i]
+                best_ask = row.best_ask
+                best_bid = row.best_bid
+                frame = row.orderbook_img
+                timestamp = row.name.to_pydatetime()
 
                 yield timestamp, best_ask, best_bid, frame
 
@@ -112,13 +89,12 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
         self._best_ask = best_ask
         self._best_bid = best_bid
 
-        self.frames.append(frame)
         self.position_history.append(self.position.name[0])
 
         self.last_datetime = str(timestamp)
         self._last_datetime = timestamp
 
-        self.last_observation = np.copy(self.frames)
+        self.last_observation = frame
 
         return self.last_observation
 
@@ -157,12 +133,21 @@ class TFOrderBookEnv(TFRecordDirectoryInfo, OrderBookTradingEnv):
 
 
 @click.command()
-@click.option('--test-span', default='5m')
-@click.option('--summary-interval', '-s', default=120, type=int)
+@click.option('--database_name', '-d', default='binance', type=str)
+@click.option('--depth', default=72, type=int)
+@click.option('--group-by', '-g', default='30s', type=str)
+@click.option('--interval', '-i', default='10m', type=str)
+@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
+@click.option('--offset-interval', '-o', default='0h', type=str)
+@click.option('--round-decimals', '-D', default=4, type=int)
+@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--summary-interval', '-s', default=1, type=int)
+@click.option('--test-span', default='20s')
+@click.option('--window-size', '-w', default='2m', type=str)
+@click.argument('symbol', type=str)
 def main(test_span, **kwargs):
-    env = TFOrderBookEnv(
-        directory_name='default',
-        print_ascii_chart=True,
+    env = OrderBookFrameEnv(
+        is_training=False,
         **kwargs
     )
 

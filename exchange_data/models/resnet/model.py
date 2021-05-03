@@ -25,6 +25,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    batch_size,
     num_conv=2,
     filters=1,
     base_filter_size=16,
@@ -33,10 +34,10 @@ def Model(
     relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
+    include_last=True,
     **kwargs
 ):
     input_shape = (sequence_length, depth * 2, 1)
-    alog.info(input_shape)
 
     inputs = Input(shape=input_shape)
 
@@ -79,21 +80,25 @@ def Model(
         bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
-    out = dense_out(dense)
+    if include_last:
+        out = dense_out(dense)
+    else:
+        out = dense
 
     alog.info(out.shape)
 
-    if out.shape.as_list() != [None, 2]:
+    if out.shape.as_list() != [None, 2] and include_last:
         raise Exception()
 
     model = tf.keras.Model(inputs=inputs, outputs=out)
 
-    model.compile(
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'],
-        optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
-                                               clipnorm=1.0)
-    )
+    if include_last:
+        model.compile(
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'],
+            optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
+                                                   clipnorm=1.0)
+        )
     return model
 
 
