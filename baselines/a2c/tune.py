@@ -16,7 +16,7 @@ import time
 def run(trial: Trial, **kwargs):
     tf.keras.backend.clear_session()
 
-    run_name = str(int(time.time() * 1000))
+    run_name = trial.number
 
     steps = 4e4
 
