@@ -247,6 +247,9 @@ class OrderBookTradingEnv(Logging, Env):
         self.position = action
         self.current_trade.step(self.best_bid, self.best_ask)
 
+        if self.current_trade.done:
+            self.done = True
+
     def step(self, action):
         assert self.action_space.contains(action)
 
