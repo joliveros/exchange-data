@@ -236,7 +236,10 @@ class OrderBookTradingEnv(Logging, Env):
 
         self.observations = self._get_observation()
 
-        self.get_observation()
+        try:
+            self.get_observation()
+        except StopIteration:
+            self.observations = self._get_observation()
 
         return self.last_observation
 
@@ -255,8 +258,6 @@ class OrderBookTradingEnv(Logging, Env):
 
         if self.step_count >= self.max_episode_length:
             self.done = True
-
-        raise Exception()
 
         observation = self.get_observation()
 
