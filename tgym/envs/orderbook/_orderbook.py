@@ -268,7 +268,7 @@ class OrderBookTradingEnv(Logging, Env):
         return observation, reward, self.done, {}
 
     def print_summary(self):
-        if settings.LOG_LEVEL == logging.DEBUG and not self.is_training:
+        if settings.LOG_LEVEL == logging.DEBUG:
             if self.step_count % self.summary_interval == 0:
                 alog.info(alog.pformat(self.summary()))
 
