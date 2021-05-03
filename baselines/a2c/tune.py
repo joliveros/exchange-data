@@ -106,7 +106,7 @@ def main(**kwargs):
         tf.config.set_logical_device_configuration(
             physical_devices[0],
             [tf.config.LogicalDeviceConfiguration(memory_limit=100),
-             tf.config.LogicalDeviceConfiguration(memory_limisummaryt=100)])
+             tf.config.LogicalDeviceConfiguration(memory_limit=100)])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
