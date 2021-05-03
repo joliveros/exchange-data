@@ -45,7 +45,7 @@ class FlatTrade(Trade):
         #         self.reward -= self.reward_ratio
         #         # self.done = True
             # else:
-            #     self.reward += self.flat_reward
+        self.reward -= self.flat_reward
 
         self.total_reward += self.reward
 
