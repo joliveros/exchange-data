@@ -18,7 +18,7 @@ def run(trial: Trial, **kwargs):
 
     run_name = str(trial.number)
 
-    steps = 4e4
+    steps = 5e5
 
     hparams = dict(
         # kernel_dim=trial.suggest_categorical('kernel_dim', [
@@ -53,8 +53,8 @@ def run(trial: Trial, **kwargs):
         leverage=1.0,
         log_path=None,
         max_frames=48,
-        max_loss=-0.5,
-        max_negative_pnl=-0.5,
+        max_loss=-0.01,
+        max_negative_pnl=-0.01,
         max_steps=steps,
         levels=40,
         min_change=0.001,
