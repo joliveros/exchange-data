@@ -54,7 +54,7 @@ def run(trial: Trial, **kwargs):
         log_path=None,
         max_frames=48,
         max_loss=-0.01,
-        max_negative_pnl=-0.1,
+        max_negative_pnl=-0.5,
         max_steps=steps,
         levels=40,
         min_change=2.0,
@@ -78,7 +78,7 @@ def run(trial: Trial, **kwargs):
     extra_args = {
         'hparams': hparams,
         'log_interval': 100,
-        'lr': 0.01,
+        'lr': 0.03,
         'nsteps': 3
     }
 
