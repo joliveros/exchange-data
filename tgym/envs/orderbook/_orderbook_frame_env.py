@@ -22,24 +22,17 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         min_change=2.0,
         **kwargs
     ):
-        now = DateTimeUtils.now()
-        start_date = kwargs.get('start_date', now)
-        end_date = kwargs.get('end_date', now)
-
-        if 'start_date' in kwargs:
-            del kwargs['start_date']
-
-        if 'end_date' in kwargs:
-            del kwargs['end_date']
-
         super().__init__(
-            start_date=start_date,
-            end_date=end_date,
             min_change=min_change,
             action_space=Discrete(2),
             **kwargs
         )
-
+        OrderBookTradingEnv.__init__(
+            self,
+            min_change=min_change,
+            action_space=Discrete(2),
+            **kwargs
+        )
         self.trial = trial
         self.num_env = num_env
         x_steps = max_steps
@@ -66,24 +59,20 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return super().frame
 
     def _get_observation(self):
-        while True:
-            for i in range(len(self.frame)):
-                if self.was_reset:
-                    self.was_reset = False
-                    break
+        for i in range(len(self.frame)):
+            if self.was_reset:
+                self.was_reset = False
+                break
 
-                row = self.frame.iloc[i]
-                best_ask = row.best_ask
-                best_bid = row.best_bid
-                frame = row.orderbook_img
-                timestamp = row.name.to_pydatetime()
+            row = self.frame.iloc[i]
+            best_ask = row.best_ask
+            best_bid = row.best_bid
+            frame = row.orderbook_img
+            timestamp = row.name.to_pydatetime()
 
-                yield timestamp, best_ask, best_bid, frame
+            yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
-        if self.observations is None:
-            self.observations = self._get_observation()
-
         timestamp, best_ask, best_bid, frame = next(self.observations)
 
         self._best_ask = best_ask
@@ -117,10 +106,15 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             if self.current_trade.pnl < self.max_negative_pnl:
                 self.done = True
 
+        observation = None
+
+        try:
+            observation = self.get_observation()
+        except StopIteration:
+            self.done = True
+
         if self.done:
             self.reset_dataset()
-
-        observation = self.get_observation()
 
         reward = self.reset_reward()
 
