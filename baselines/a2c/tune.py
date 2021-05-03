@@ -95,7 +95,7 @@ def run(trial: Trial, **kwargs):
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--offset-interval', '-o', default='0h', type=str)
 @click.option('--round-decimals', '-D', default=4, type=int)
-@click.option('--sequence-length', '-l', default=48, type=int)
+@click.option('--sequence-length', '-l', default=24, type=int)
 @click.option('--summary-interval', '-s', default=1, type=int)
 @click.option('--window-size', '-w', default='2m', type=str)
 @click.argument('symbol', type=str)
