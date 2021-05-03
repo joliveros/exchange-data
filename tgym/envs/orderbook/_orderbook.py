@@ -29,7 +29,7 @@ class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
+class OrderBookTradingEnv(Logging, Env):
     """
     Orderbook based trading environment.
     """
@@ -37,8 +37,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
 
     def __init__(
         self,
-        start_date,
-        end_date,
         sequence_length,
         depth,
         min_steps=10,
@@ -74,9 +72,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
         gain_delay=30,
         **kwargs
     ):
-
-        kwargs['start_date'] = start_date
-        kwargs['end_date'] = end_date
         kwargs['database_name'] = database_name
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
@@ -90,11 +85,9 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
         self.reset_class = OrderBookTradingEnv
 
         super().__init__(
-            frame_width=frame_width,
             **kwargs
         )
 
-        PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
         self.min_steps = min_steps
         self.eval_mode = eval_mode
         self.max_negative_pnl = max_negative_pnl
@@ -165,11 +158,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
         self.position_repeat = 0
         self.trade_size = self.capital * (10/100)
         self.reset_count = 0
-        self.start_date = start_date
-        self.end_date = end_date
         self.levels = levels
-
-        self.start_date -= timedelta(seconds=self.max_frames + 1)
 
         high = np.full(
             (sequence_length, depth * 2, 1),
@@ -245,11 +234,9 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Logging, Env):
 
         self.__dict__ = {**self.__dict__, **new_instance.__dict__}
 
-        # for i in range(noops):
-        #     self.get_observation()
+        self.observations = self._get_observation()
 
-        for _ in range(self.max_frames):
-            self.get_observation()
+        self.get_observation()
 
         return self.last_observation
 
