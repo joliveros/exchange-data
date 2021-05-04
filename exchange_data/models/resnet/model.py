@@ -56,9 +56,6 @@ def Model(
     if lstm_layers == 1:
         return_sequences = False
 
-    lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-                    recurrent_activation='sigmoid')(conv)
-
     for i in range(0, lstm_layers - 1):
         return_sequences = True
         if i == lstm_layers - 2:
@@ -67,7 +64,7 @@ def Model(
         alog.info(return_sequences)
 
         lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-                        recurrent_activation='sigmoid')(lstm_out)
+                        recurrent_activation='sigmoid')(conv)
 
     alog.info(lstm_out.shape)
     dense = Dense(128)(lstm_out)
