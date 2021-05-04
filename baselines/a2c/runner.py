@@ -62,12 +62,14 @@ class Runner(AbstractEnvRunner):
             for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
                 rewards = rewards.tolist()
                 dones = dones.tolist()
+                alog.info(rewards)
+                alog.info(dones)
 
                 if dones[-1] == 0:
                     rewards = discount_with_dones(rewards+[value], dones+[0], self.gamma)[:-1]
                 else:
                     rewards = discount_with_dones(rewards, dones, self.gamma)
-
+                alog.info(rewards)
                 mb_rewards[n] = rewards
 
 
