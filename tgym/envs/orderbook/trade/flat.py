@@ -48,8 +48,8 @@ class FlatTrade(Trade):
 
         diff = self.entry_price - self.exit_price
 
-        #if diff != 0.0:
-            #self.reward -= self.flat_reward
+        if diff != 0.0:
+            self.reward -= self.flat_reward
 
         self.total_reward += self.reward
 
