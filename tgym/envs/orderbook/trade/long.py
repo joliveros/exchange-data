@@ -12,11 +12,6 @@ class LongTrade(Trade):
         self.capital += self.pnl
         super().close()
 
-    def step(self, *args, **kwargs):
-        super().step(*args, **kwargs)
-        self.reward += self.step_reward * self.step_reward_ratio
-        self.total_reward += self.reward
-
     @property
     def exit_price(self):
         return self.best_bid
