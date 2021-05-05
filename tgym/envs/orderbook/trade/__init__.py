@@ -116,7 +116,7 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        if pnl_delta >= 0.0:
+        if pnl_delta > 0.0:
             self.reward += self.step_reward * self.step_reward_ratio
         else:
             self.reward -= self.step_reward * self.step_reward_ratio
