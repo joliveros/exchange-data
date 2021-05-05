@@ -21,13 +21,11 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         **kwargs
     ):
         super().__init__(
-            min_change=min_change,
             action_space=Discrete(2),
             **kwargs
         )
         OrderBookTradingEnv.__init__(
             self,
-            min_change=min_change,
             action_space=Discrete(2),
             **kwargs
         )
