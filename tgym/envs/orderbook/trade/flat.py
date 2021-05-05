@@ -36,9 +36,6 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        if self.position_length > 30:
-             self.done = True
-
         # if len(self.asks) > 2:
         #     if self.best_ask != self.asks[-2]:
         #         self.reward -= self.reward_ratio
@@ -48,8 +45,8 @@ class FlatTrade(Trade):
 
         diff = self.entry_price - self.exit_price
 
-        #if diff != 0.0:
-            #self.reward -= self.flat_reward
+        if diff != 0.0:
+            self.reward -= self.step_reward * self.step_reward_ratio
 
         self.total_reward += self.reward
 

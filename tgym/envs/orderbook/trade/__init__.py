@@ -18,7 +18,6 @@ class Trade(Logging):
         min_change: float,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
-        flat_reward: float = 1.0,
         step_reward_ratio: float = 1.0,
         step_reward: float = 1.0,
         min_steps: int = 10,
@@ -26,7 +25,6 @@ class Trade(Logging):
         Logging.__init__(self)
         self.trading_fee = trading_fee
         self.min_steps = min_steps
-        self.flat_reward = flat_reward
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.reward_ratio = reward_ratio
