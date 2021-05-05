@@ -77,7 +77,7 @@ def run(trial: Trial, **kwargs):
     extra_args = {
         'hparams': hparams,
         'log_interval': 100,
-        'lr': 0.00000000001,
+        'lr': 0.0000001,
         'nsteps': 3
     }
 
@@ -104,8 +104,8 @@ def main(**kwargs):
     if len(physical_devices):
         tf.config.set_logical_device_configuration(
             physical_devices[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=100),
-             tf.config.LogicalDeviceConfiguration(memory_limit=100)])
+            [tf.config.LogicalDeviceConfiguration(memory_limit=256),
+             tf.config.LogicalDeviceConfiguration(memory_limit=256)])
 
         logical_devices = tf.config.list_logical_devices('GPU')
 
