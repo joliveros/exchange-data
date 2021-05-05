@@ -24,6 +24,7 @@ class FlatTrade(Trade):
             change = 0.0
         else:
             change = diff / self.entry_price
+
         pnl = (self.capital * (change * self.leverage)) + \
                    (-1 * self.capital * self.trading_fee)
 
