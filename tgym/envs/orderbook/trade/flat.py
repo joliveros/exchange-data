@@ -47,7 +47,7 @@ class FlatTrade(Trade):
 
         pnl_delta = self.pnl - last_pnl
 
-        self.reward -= pnl_delta
+        #self.reward -= pnl_delta
 
         # if pnl_delta > 0.0:
         #     self.reward -= self.step_reward * self.step_reward_ratio
@@ -57,8 +57,6 @@ class FlatTrade(Trade):
         self.total_reward += self.reward
 
     def close(self):
-        return
-        if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(f'{self.yaml(self.summary())}')
+        self.reward -= self.pnl
 
 

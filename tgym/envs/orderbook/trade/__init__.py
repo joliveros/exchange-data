@@ -95,10 +95,10 @@ class Trade(Logging):
         #     self.reward += self.step_reward * self.reward_ratio
         # else:
         #     self.reward -= self.step_reward * self.reward_ratio
-        # self.reward += self.pnl
-        #
-        # self.total_reward += self.reward
-        return
+
+        self.reward += self.pnl
+
+        self.total_reward += self.reward
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
@@ -117,7 +117,7 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        self.reward += pnl_delta
+        #self.reward += pnl_delta
 
         # if pnl_delta >= 0.0:
         #     self.reward += self.step_reward * self.step_reward_ratio
