@@ -95,9 +95,10 @@ class Trade(Logging):
         #     self.reward += self.step_reward * self.reward_ratio
         # else:
         #     self.reward -= self.step_reward * self.reward_ratio
-        self.reward += self.pnl
-
-        self.total_reward += self.reward
+        # self.reward += self.pnl
+        #
+        # self.total_reward += self.reward
+        return
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
