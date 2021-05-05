@@ -17,25 +17,20 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def __init__(
         self,
         trial=None,
-        max_steps=30,
         num_env=1,
-        min_change=2.0,
         **kwargs
     ):
         super().__init__(
-            min_change=min_change,
             action_space=Discrete(2),
             **kwargs
         )
         OrderBookTradingEnv.__init__(
             self,
-            min_change=min_change,
             action_space=Discrete(2),
             **kwargs
         )
         self.trial = trial
         self.num_env = num_env
-        x_steps = max_steps
         kwargs['batch_size'] = 1
 
         self.observations = None
