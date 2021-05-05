@@ -1,4 +1,7 @@
 import os
+
+import alog
+import math
 import numpy as np
 import tensorflow as tf
 from collections import deque
@@ -37,9 +40,11 @@ def fc(input_shape, scope, nh, *, init_scale=1.0, init_bias=0.0):
 
 def discount_with_dones(rewards, dones, gamma):
     discounted = []
-    r = 0
+    r = 0.0
     for reward, done in zip(rewards[::-1], dones[::-1]):
-        r = reward + gamma*r*(1.-done) # fixed off by one bug
+        r = reward + (gamma * r * (1. - done)) # fixed off by one bug
+        if math.isnan(r):
+            r = 0.0
         discounted.append(r)
     return discounted[::-1]
 

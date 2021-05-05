@@ -20,6 +20,21 @@ def network(*args, **net_kwargs):
 
     return network_fn
 
+@register("value")
+def network(*args, **net_kwargs):
+    Dense = tf.keras.layers.Dense
+    Input = tf.keras.Input
+    def network_fn(input_shape):
+        return tf.keras.Sequential([
+            Input(input_shape),
+            Dense(32, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(1, activation='linear')
+        ])
+
+    return network_fn
+
 
 
 class Model(tf.keras.Model):
@@ -65,7 +80,8 @@ class Model(tf.keras.Model):
             policy_network = policy_network_fn(ob_space.shape)
 
             policy_network.summary()
-            value_network = policy_network_fn(ob_space.shape)
+            value_network_fn = get_network_builder('resnet')(**kwargs)
+            value_network = value_network_fn(ob_space.shape)
         else:
             value_network = network
             policy_network = network
@@ -85,8 +101,8 @@ class Model(tf.keras.Model):
         self.step = self.train_model.step
         self.value = self.train_model.value
         self.initial_state = self.train_model.initial_state
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
-        #self.optimizer = tf.keras.optimizers.Adadelta(learning_rate=lr)
+        #self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
+        self.optimizer = tf.keras.optimizers.Adadelta(learning_rate=lr)
 
     @tf.function
     def train(self, obs, states, rewards, masks, actions, values):

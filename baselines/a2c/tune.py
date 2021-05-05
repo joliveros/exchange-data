@@ -53,8 +53,8 @@ def run(trial: Trial, **kwargs):
         leverage=1.0,
         log_path=None,
         max_frames=48,
-        max_loss=-0.1,
-        max_negative_pnl=-0.1,
+        max_loss=-0.5,
+        max_negative_pnl=-0.5,
         max_steps=steps,
         levels=40,
         min_change=0.0001,
@@ -62,8 +62,7 @@ def run(trial: Trial, **kwargs):
         num_env=1,
         num_timesteps=steps,
         play=False,
-        reward_ratio=1.0,
-        reward_scale=1.0,
+        reward_ratio=1e-4,
         run_name=run_name,
         save_model=True,
         save_path=None,
@@ -71,7 +70,7 @@ def run(trial: Trial, **kwargs):
         save_video_length=200,
         seed=31583,
         step_reward=1.0,
-        step_reward_ratio=1.0,
+        step_reward_ratio=1e-4,
         trial=trial,
         **kwargs
     )
@@ -79,7 +78,7 @@ def run(trial: Trial, **kwargs):
         'hparams': hparams,
         'log_interval': 100,
         'lr': 0.0000001,
-        'nsteps': 12
+        'nsteps': 3
     }
 
     model, env = train(args, extra_args)
