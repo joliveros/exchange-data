@@ -47,10 +47,12 @@ class FlatTrade(Trade):
 
         pnl_delta = self.pnl - last_pnl
 
-        if pnl_delta > 0.0:
-            self.reward -= self.step_reward * self.step_reward_ratio
-        else:
-            self.reward += self.step_reward * self.step_reward_ratio
+        self.reward -= pnl_delta
+
+        # if pnl_delta > 0.0:
+        #     self.reward -= self.step_reward * self.step_reward_ratio
+        # else:
+        #     self.reward += self.step_reward * self.step_reward_ratio
 
         self.total_reward += self.reward
 

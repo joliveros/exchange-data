@@ -91,10 +91,11 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.pnl >= self.min_profit:
-            self.reward += self.step_reward * self.reward_ratio
-        else:
-            self.reward -= self.step_reward * self.reward_ratio
+        # if self.pnl >= self.min_profit:
+        #     self.reward += self.step_reward * self.reward_ratio
+        # else:
+        #     self.reward -= self.step_reward * self.reward_ratio
+        self.reward += self.pnl
 
         self.total_reward += self.reward
 
@@ -115,10 +116,12 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        if pnl_delta >= 0.0:
-            self.reward += self.step_reward * self.step_reward_ratio
-        else:
-            self.reward -= self.step_reward * self.step_reward_ratio
+        self.reward += pnl_delta
+
+        # if pnl_delta >= 0.0:
+        #     self.reward += self.step_reward * self.step_reward_ratio
+        # else:
+        #     self.reward -= self.step_reward * self.step_reward_ratio
 
         # if self.pnl > self.min_profit:
         #     self.reward += self.step_reward * self.step_reward_ratio
