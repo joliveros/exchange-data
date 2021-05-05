@@ -29,6 +29,8 @@ class Runner(AbstractEnvRunner):
             # We already have self.obs because Runner superclass run self.obs[:] = env.reset() on init
             obs = tf.constant(self.obs)
             actions, values, self.states, _ = self.model.step(obs)
+            alog.info(values)
+            raise Exception()
             actions = actions._numpy()
             # Append the experiences
             mb_obs.append(self.obs.copy())
@@ -54,6 +56,8 @@ class Runner(AbstractEnvRunner):
         mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
+
+        alog.info(mb_rewards)
 
 
         if self.gamma > 0.0:

@@ -101,17 +101,21 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         if not self.eval_mode:
             if self.capital < self.min_capital and not self.eval_mode:
-                self.done = True
+                # self.done = True
+                self.reset()
 
-            if self.current_trade.pnl < self.max_negative_pnl:
-                self.done = True
+            if self.current_trade:
+                if self.current_trade.pnl < self.max_negative_pnl:
+                    # self.done = True
+                    self.reset()
 
         observation = None
 
         try:
             observation = self.get_observation()
         except StopIteration:
-            self.done = True
+            # self.done = True
+            self.reset()
 
         if self.done:
             self.reset_dataset()

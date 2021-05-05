@@ -145,6 +145,7 @@ def learn(
             values = tf.constant(values)
 
             if update < train_updates:
+                alog.info((obs, states, rewards, masks, actions, values))
                 model.train(obs, states, rewards, masks, actions, values)
 
         return model
