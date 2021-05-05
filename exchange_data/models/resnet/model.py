@@ -25,7 +25,8 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
-    batch_size,
+    input_shape=None,
+    batch_size=3,
     num_conv=2,
     filters=1,
     base_filter_size=16,
@@ -37,7 +38,8 @@ def Model(
     include_last=True,
     **kwargs
 ):
-    input_shape = (sequence_length, depth * 2, 1)
+    if not input_shape:
+        input_shape = (sequence_length, depth * 2, 1)
 
     inputs = Input(shape=input_shape)
 
@@ -73,14 +75,18 @@ def Model(
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+        # use_bias=True,
+        # bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
-    if include_last:
-        out = dense_out(dense)
-    else:
-        out = dense
+    out = dense_out(dense)
+
+    alog.info(out.shape)
+
+    # if include_last:
+    #     out = dense_out(dense)
+    # else:
+    #     out = dense
 
     alog.info(out.shape)
 
@@ -113,7 +119,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
     for i in range(0, num_conv):
         conv = conv_block(filters, conv, i)
 
-    gap = GlobalAveragePooling1D()(conv)
+    gap = GlobalAveragePooling2D()(conv)
 
     alog.info(gap.shape)
 

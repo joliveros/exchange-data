@@ -47,7 +47,7 @@ class OrderBookTradingEnv(Logging, Env):
         logger=None,
         leverage=1.0,
         trading_fee=0.125/100.0,
-        max_loss=-0.1/100.0,
+        max_loss=-5.0/100.0,
         orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
@@ -58,16 +58,15 @@ class OrderBookTradingEnv(Logging, Env):
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward_ratio=1.0,
-        step_reward=0.000005,
+        step_reward=0.001,
         capital=1.0,
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
-        min_change=0.0,
+        min_change=0.00,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
-        flat_reward=1.0,
         gain_per_step=1.0,
         gain_delay=30,
         **kwargs
@@ -94,7 +93,6 @@ class OrderBookTradingEnv(Logging, Env):
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay
         self.reward_ratio = reward_ratio
-        self.flat_reward = flat_reward
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.leverage = leverage
@@ -469,7 +467,6 @@ class OrderBookTradingEnv(Logging, Env):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
-                flat_reward=self.flat_reward,
                 step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
                 min_steps=self.min_steps
