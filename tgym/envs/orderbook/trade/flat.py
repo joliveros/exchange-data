@@ -18,37 +18,38 @@ class FlatTrade(Trade):
 
     @property
     def pnl(self):
-        return 0.0
-        diff = self.entry_price - self.exit_price
+        diff = self.exit_price - self.entry_price
 
         if self.entry_price == 0.0:
             change = 0.0
         else:
             change = diff / self.entry_price
-
-        pnl = (self.capital * change) + \
+        pnl = (self.capital * (change * self.leverage)) + \
                    (-1 * self.capital * self.trading_fee)
+
         return pnl
 
     def step(self, best_bid: float, best_ask: float):
+        self.clear_pnl()
         self.reward = 0.0
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # if len(self.asks) > 2:
-        #     if self.best_ask != self.asks[-2]:
-        #         self.reward -= self.reward_ratio
-        #         # self.done = True
-            # else:
-        #self.reward -= self.flat_reward
+        pnl = self.pnl
+        last_pnl = 0.0
 
-        diff = self.exit_price - self.entry_price
+        if len(self.pnl_history) > 0:
+            last_pnl = self.pnl_history[-1]
 
-        # if diff >= 0.0:
-        #     self.reward -= self.step_reward * self.step_reward_ratio
-        # else:
-        #     self.reward += self.step_reward * self.step_reward_ratio
+        self.pnl_history = np.append(self.pnl_history, [pnl])
+
+        pnl_delta = self.pnl - last_pnl
+
+        if pnl_delta > 0.0:
+            self.reward -= self.step_reward * self.step_reward_ratio
+        else:
+            self.reward += self.step_reward * self.step_reward_ratio
 
         self.total_reward += self.reward
 
