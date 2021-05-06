@@ -95,8 +95,14 @@ class Trade(Logging):
         #     self.reward += self.step_reward * self.reward_ratio
         # else:
         #     self.reward -= self.step_reward * self.reward_ratio
+        if self.pnl >= self.min_change:
+            self.reward += self.pnl
+        else:
+            if self.pnl > 0.0:
+                self.reward -= self.pnl
+            else:
+                self.reward += self.pnl
 
-        self.reward += self.pnl
 
         self.total_reward += self.reward
 
