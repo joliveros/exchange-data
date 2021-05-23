@@ -1,5 +1,6 @@
 from gym.envs.registration import register
 from tgym.envs.orderbook import TFOrderBookEnv
+from tgym.envs.orderbook._orderbook_frame_env import OrderBookFrameEnv
 
 
 register(
@@ -15,4 +16,9 @@ register(
 register(
     id='tf-orderbook-v0',
     entry_point='tgym.envs:TFOrderBookEnv',
+)
+
+register(
+    id='orderbook-frame-env-v0',
+    entry_point='tgym.envs:OrderBookFrameEnv',
 )

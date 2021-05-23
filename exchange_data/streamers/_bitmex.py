@@ -45,7 +45,6 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         date_checks = True,
         **kwargs
     ):
-
         super().__init__(**kwargs)
         self.group_by = group_by
         self.counter = 0
@@ -62,8 +61,13 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
         self.realtime = False
         self._min_date = min_date
         self.orderbook_depth = orderbook_depth
-        self.window_size_str = window_size
-        self.window_size = timeparse(window_size)
+
+        if type(window_size) == str:
+            self.window_size_str = window_size
+            self.window_size = timeparse(window_size)
+        else:
+            self.window_size = window_size
+
         self.window_delta = timedelta(seconds=self.window_size)
         self.stop_date = None
 

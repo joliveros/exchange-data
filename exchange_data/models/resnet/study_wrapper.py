@@ -6,12 +6,19 @@ import alog
 import optuna
 
 
+
+
+
 class StudyWrapper(object):
     study_db_path: Path = None
 
     def __init__(self, symbol, **kwargs):
         self.symbol = symbol
         self.base_path = f'{Path.home()}/.exchange-data/models/'
+
+        self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
+                             f'/{self.symbol}'
+
         self.study_db_path = \
             f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
         self.study_db_path = Path(self.study_db_path)

@@ -15,7 +15,8 @@ import random
 import numpy as np
 
 from tgym.envs.orderbook import OrderBookTradingEnv
-from tgym.envs.orderbook._trade import FlatTrade, Trade
+from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.flat import FlatTrade
 
 
 class VirtualTradeExecutor(

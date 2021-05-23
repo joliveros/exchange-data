@@ -25,18 +25,21 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    input_shape=None,
+    batch_size=3,
     num_conv=2,
     filters=1,
     base_filter_size=16,
     lstm_units=8,
-    lstm_layers=2,
+    lstm_layers=1,
     relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
+    include_last=True,
     **kwargs
 ):
-    input_shape = (sequence_length, depth * 2, 1)
-    alog.info(input_shape)
+    if not input_shape:
+        input_shape = (sequence_length, depth * 2, 1)
 
     inputs = Input(shape=input_shape)
 
@@ -55,45 +58,52 @@ def Model(
     if lstm_layers == 1:
         return_sequences = False
 
-    lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-                    recurrent_activation='sigmoid')(conv)
+    # for i in range(0, lstm_layers):
+    #     return_sequences = True
+    #     if i == lstm_layers - 1:
+    #         return_sequences = False
+    #
+    #     alog.info(return_sequences)
+    #
+    #     lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
+    #                     recurrent_activation='sigmoid')(conv)
 
-    for i in range(0, lstm_layers - 1):
-        return_sequences = True
-        if i == lstm_layers - 2:
-            return_sequences = False
+    # alog.info(lstm_out.shape)
 
-        alog.info(return_sequences)
+    dense = Dense(128)(Flatten()(conv))
 
-        lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-                        recurrent_activation='sigmoid')(lstm_out)
-
-    alog.info(lstm_out.shape)
-    dense = Dense(128)(lstm_out)
-    alog.info(dense.shape)
-    alog.info(num_categories)
+    # alog.info(dense.shape)
+    # alog.info(num_categories)
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+        # use_bias=True,
+        # bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
     out = dense_out(dense)
 
     alog.info(out.shape)
 
-    if out.shape.as_list() != [None, 2]:
+    # if include_last:
+    #     out = dense_out(dense)
+    # else:
+    #     out = dense
+
+    alog.info(out.shape)
+
+    if out.shape.as_list() != [None, 2] and include_last:
         raise Exception()
 
     model = tf.keras.Model(inputs=inputs, outputs=out)
 
-    model.compile(
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'],
-        optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
-                                               clipnorm=1.0)
-    )
+    if include_last:
+        model.compile(
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'],
+            optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
+                                                   clipnorm=1.0)
+        )
     return model
 
 
@@ -111,7 +121,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
     for i in range(0, num_conv):
         conv = conv_block(filters, conv, i)
 
-    gap = GlobalAveragePooling1D()(conv)
+    gap = GlobalAveragePooling2D()(conv)
 
     alog.info(gap.shape)
 

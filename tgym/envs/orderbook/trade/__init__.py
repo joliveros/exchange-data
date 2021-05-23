@@ -1,24 +1,11 @@
-from optuna import TrialPruned
-
-from exchange_data import settings
-from exchange_data.trading import Positions
-from skimage import color
-from tgym.envs.orderbook.ascii_image import AsciiImage
-from yaml.representer import SafeRepresenter
-
 import alog
-import logging
-import matplotlib.pyplot as plt
 import numpy as np
-import yaml
+from matplotlib import pyplot as plt
+from skimage import color
 
-
-class Logging(object):
-    def __init__(self):
-        yaml.add_representer(float, SafeRepresenter.represent_float)
-
-    def yaml(self, value: dict):
-        return yaml.dump(value)
+from exchange_data.trading import Positions
+from tgym.envs.orderbook.utils import Logging
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class Trade(Logging):
@@ -31,14 +18,13 @@ class Trade(Logging):
         min_change: float,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
-        flat_reward: float = 1.0,
         step_reward_ratio: float = 1.0,
         step_reward: float = 1.0,
         min_steps: int = 10,
     ):
         Logging.__init__(self)
+        self.trading_fee = trading_fee
         self.min_steps = min_steps
-        self.flat_reward = flat_reward
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.reward_ratio = reward_ratio
@@ -51,12 +37,6 @@ class Trade(Logging):
         self.steps_since_max = 0.0
         self.frame_width = 42
         self.capital = capital
-
-        if self.leverage > 1.0:
-            self.trading_fee = trading_fee
-        else:
-            self.trading_fee = 0.0
-
         self.position_length = 0
         self.position_type = position_type
         self.entry_price = entry_price
@@ -111,12 +91,16 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        if self.pnl >= self.min_profit:
-            self.reward += self.reward_ratio
+        pnl = self.pnl
+        if pnl >= self.min_change:
+            self.reward += pnl
         else:
-            self.reward += self.reward_ratio * -1.0
+            if pnl > 0.0:
+                self.reward += pnl * -1
+            else:
+                self.reward += pnl
 
-        self.total_reward += self.total_reward
+        self.total_reward += self.reward
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
@@ -135,17 +119,21 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        # if pnl_delta > 0.0:
+        #self.reward += pnl_delta
+
+        # if pnl_delta >= 0.0:
         #     self.reward += self.step_reward * self.step_reward_ratio
-
-        if self.pnl > self.min_profit:
-            self.reward += self.step_reward * self.step_reward_ratio
         # else:
-        #     self.reward += self.step_reward * self.step_reward_ratio * -1.0
+        #     self.reward -= self.step_reward * self.step_reward_ratio
 
-        if pnl_delta < 0.0 and self.position_length > 6:
-            self.reward -= self.step_reward * self.step_reward_ratio
-            self.done = True
+        # if self.pnl > self.min_profit:
+        #     self.reward += self.step_reward * self.step_reward_ratio
+        # else:
+        #     self.reward -= self.step_reward * self.step_reward_ratio
+
+        #if pnl_delta < 0.0 and self.position_length > 6:
+           # self.reward -= self.step_reward * self.step_reward_ratio
+           # self.done = True
 
         self.total_reward += self.reward
 
@@ -198,104 +186,3 @@ class Trade(Logging):
 
     def clear_steps_since_max(self):
         self.steps_since_max = 0.0
-
-
-class LongTrade(Trade):
-    def __init__(self, **kwargs):
-        Trade.__init__(self, position_type=Positions.Long, **kwargs)
-
-    def close(self):
-        self.capital += self.pnl
-        super().close()
-
-    @property
-    def exit_price(self):
-        return self.best_bid
-
-    @property
-    def pnl(self):
-        diff = self.exit_price - self.entry_price
-
-        if self.entry_price == 0.0:
-            change = 0.0
-        else:
-            change = diff / self.entry_price
-
-        pnl = (self.capital * (change * self.leverage)) + \
-                   (-1 * self.capital * self.trading_fee)
-
-        return pnl
-
-
-class ShortTrade(Trade):
-    def __init__(self, **kwargs):
-        Trade.__init__(self, position_type=Positions.Short, **kwargs)
-
-    @property
-    def exit_price(self):
-        return self.best_ask
-
-    @property
-    def pnl(self):
-        diff = self.entry_price - self.exit_price
-
-        if self.entry_price == 0.0:
-            change = 0.0
-        else:
-            change = diff / self.entry_price
-
-        pnl = (self.capital * (change * self.leverage)) + \
-                   (-1 * self.capital * self.trading_fee)
-
-        return pnl
-
-    def close(self):
-        self.capital += self.pnl
-        super().close()
-
-
-class FlatTrade(Trade):
-    def __init__(self, **kwargs):
-        Trade.__init__(self, position_type=Positions.Flat, **kwargs)
-
-    @property
-    def exit_price(self):
-        return (self.best_ask + self.best_bid) / 2
-
-    @property
-    def pnl(self):
-        return 0.0
-        diff = self.entry_price - self.exit_price
-
-        if self.entry_price == 0.0:
-            change = 0.0
-        else:
-            change = diff / self.entry_price
-
-        pnl = (self.capital * change) + \
-                   (-1 * self.capital * self.trading_fee)
-        return pnl
-
-    def step(self, best_bid: float, best_ask: float):
-        self.reward = 0.0
-        self.position_length += 1
-        self.bids = np.append(self.bids, [best_bid])
-        self.asks = np.append(self.asks, [best_ask])
-
-        # if self.position_length > 30:
-        #     # raise TrialPruned()
-        #     self.done = True
-
-        # if len(self.asks) > 2:
-        #     if self.best_ask != self.asks[-2]:
-        #         self.reward -= self.reward_ratio
-        #         # self.done = True
-            # else:
-            #     self.reward += self.flat_reward
-
-        self.total_reward += self.reward
-
-    def close(self):
-        if settings.LOG_LEVEL == logging.DEBUG:
-            alog.info(f'{self.yaml(self.summary())}')
-

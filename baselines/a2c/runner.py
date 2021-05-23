@@ -23,11 +23,14 @@ class Runner(AbstractEnvRunner):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
         mb_states = self.states
         epinfos = []
+
         for _ in range(self.nsteps):
             # Given observations, take action and value (V(s))
             # We already have self.obs because Runner superclass run self.obs[:] = env.reset() on init
             obs = tf.constant(self.obs)
             actions, values, self.states, _ = self.model.step(obs)
+            alog.info(values)
+            raise Exception()
             actions = actions._numpy()
             # Append the experiences
             mb_obs.append(self.obs.copy())
@@ -54,6 +57,8 @@ class Runner(AbstractEnvRunner):
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
 
+        alog.info(mb_rewards)
+
 
         if self.gamma > 0.0:
             # Discount/bootstrap off value fn
@@ -66,7 +71,6 @@ class Runner(AbstractEnvRunner):
                     rewards = discount_with_dones(rewards+[value], dones+[0], self.gamma)[:-1]
                 else:
                     rewards = discount_with_dones(rewards, dones, self.gamma)
-
                 mb_rewards[n] = rewards
 
 

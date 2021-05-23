@@ -21,6 +21,8 @@ class MeasurementMeta(Database, DateTimeUtils):
 
 
 class MeasurementFrame(MeasurementMeta):
+    _start_date = None
+    _end_date = None
 
     def __init__(
         self,
@@ -30,7 +32,11 @@ class MeasurementFrame(MeasurementMeta):
         end_date=None,
         **kwargs
     ):
+        kwargs['start_date'] = start_date
+        kwargs['end_date'] = end_date
+
         super().__init__(**kwargs)
+
         self.group_by = group_by
         self.interval_str = interval
 
@@ -40,6 +46,7 @@ class MeasurementFrame(MeasurementMeta):
             self.interval = interval
 
         self._end_date = end_date
+
         self.original_interval = (start_date, end_date)
 
     def reset_interval(self):
