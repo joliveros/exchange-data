@@ -1,19 +1,37 @@
 from baselines.common import set_global_seeds
 from baselines.common.models import register, get_network_builder
 from baselines.common.policies import PolicyWithValue
-from exchange_data.models.resnet.model import Model as ED_Model
+from exchange_data.models.resnet.model import Model as ResnetModel
 from pathlib import Path
 
 import alog
 import tensorflow as tf
 
 
-@register("nasnet")
+@register("resnet")
 def network(*args, **net_kwargs):
-    net_kwargs['sequence_length'] = net_kwargs.get('max_frames')
-
     def network_fn(input_shape):
-        return ED_Model(input_shape=input_shape, num_categories=2, include_last=False, **net_kwargs)
+        return ResnetModel(
+            input_shape=input_shape,
+            num_categories=2,
+            include_last=False,
+            **net_kwargs
+        )
+
+    return network_fn
+
+@register("value")
+def network(*args, **net_kwargs):
+    Dense = tf.keras.layers.Dense
+    Input = tf.keras.Input
+    def network_fn(input_shape):
+        return tf.keras.Sequential([
+            Input(input_shape),
+            Dense(32, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(1, activation='linear')
+        ])
 
     return network_fn
 
@@ -36,7 +54,6 @@ class Model(tf.keras.Model):
     def __init__(self, *, env, network, seed, nsteps, run_name='default',
             ent_coef=0.01, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
             alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), max_frames, **kwargs):
-
         super(Model, self).__init__(name='A2CModel')
         nenvs = None
 
@@ -48,7 +65,6 @@ class Model(tf.keras.Model):
         set_global_seeds(seed)
 
         total_timesteps = int(total_timesteps)
-        alpha = alpha
 
         total_timesteps = total_timesteps  # Calculate the batch_size
         self.nbatch = nenvs * nsteps
@@ -64,7 +80,8 @@ class Model(tf.keras.Model):
             policy_network = policy_network_fn(ob_space.shape)
 
             policy_network.summary()
-            value_network = policy_network_fn(ob_space.shape)
+            value_network_fn = get_network_builder('resnet')(**kwargs)
+            value_network = value_network_fn(ob_space.shape)
         else:
             value_network = network
             policy_network = network
@@ -84,7 +101,7 @@ class Model(tf.keras.Model):
         self.step = self.train_model.step
         self.value = self.train_model.value
         self.initial_state = self.train_model.initial_state
-        # self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
+        #self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr, epsilon=epsilon)
         self.optimizer = tf.keras.optimizers.Adadelta(learning_rate=lr)
 
     @tf.function

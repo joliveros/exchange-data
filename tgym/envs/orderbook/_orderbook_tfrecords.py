@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-from gym.spaces import Discrete
-from pandas import DataFrame
 
 from exchange_data.tfrecord.dataset import dataset
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
 from exchange_data.trading import Positions
 from exchange_data.utils import DateTimeUtils
+from gym.spaces import Discrete
+from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 

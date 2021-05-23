@@ -42,7 +42,7 @@ sortedcontainers
 statsd
 stringcase
 tensorflow-datasets
-tensorflow-gpu==2.4.0rc2
+tensorflow-gpu==2.4.1
 tensorflow-serving-api
 timestamp
 tqdm

@@ -10,7 +10,11 @@ from pytimeparse.timeparse import timeparse
 
 from exchange_data.utils import DateTimeUtils
 from tgym.envs.orderbook._plot_orderbook import PlotOrderbook
-from tgym.envs.orderbook._trade import Trade, LongTrade, ShortTrade, FlatTrade
+from tgym.envs.orderbook.utils import Logging
+from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.long import LongTrade
+from tgym.envs.orderbook.trade.flat import FlatTrade
+from tgym.envs.orderbook.trade.short import ShortTrade
 from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
@@ -19,13 +23,14 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import traceback
 
 
 class OrderBookIncompleteException(Exception):
     pass
 
 
-class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
+class OrderBookTradingEnv(Logging, Env):
     """
     Orderbook based trading environment.
     """
@@ -33,8 +38,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
     def __init__(
         self,
-        start_date,
-        end_date,
+        sequence_length,
+        depth,
         min_steps=10,
         levels=30,
         summary_interval=120,
@@ -43,7 +48,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         logger=None,
         leverage=1.0,
         trading_fee=0.125/100.0,
-        max_loss=-0.1/100.0,
+        max_loss=-5.0/100.0,
         orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
@@ -54,23 +59,19 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         min_std_dev=2.0,
         should_penalize_even_trade=True,
         step_reward_ratio=1.0,
-        step_reward=0.000005,
+        step_reward=0.001,
         capital=1.0,
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
-        min_change=0.0,
-        max_negative_pnl_delay=20,
+        min_change=0.00,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
-        flat_reward=1.0,
         gain_per_step=1.0,
         gain_delay=30,
         **kwargs
     ):
-        kwargs['start_date'] = start_date
-        kwargs['end_date'] = end_date
         kwargs['database_name'] = database_name
         kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
@@ -84,19 +85,15 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.reset_class = OrderBookTradingEnv
 
         super().__init__(
-            frame_width=frame_width,
             **kwargs
         )
 
-        PlotOrderbook.__init__(self, frame_width=frame_width, **kwargs)
         self.min_steps = min_steps
         self.eval_mode = eval_mode
-        self.max_negative_pnl_delay = max_negative_pnl_delay
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay
         self.reward_ratio = reward_ratio
-        self.flat_reward = flat_reward
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.leverage = leverage
@@ -104,16 +101,14 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.frame_width = frame_width
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
-        self.done = False
+        self._done = False
         self.min_change = min_change
         self.logger = logger
         self.summary_interval = summary_interval
-        self.name = None
         self.max_n_noops = 10
         self.last_spread = 0.0
         self.is_training = is_training
         self.max_frames = max_frames
-        self.frames = deque(maxlen=max_frames)
         self.price_frames = deque(maxlen=max_frames)
         self.position_data_history = deque(maxlen=max_frames * 6)
         self.long_pnl_history = []
@@ -162,19 +157,15 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         self.position_repeat = 0
         self.trade_size = self.capital * (10/100)
         self.reset_count = 0
-        self.start_date = start_date
-        self.end_date = end_date
         self.levels = levels
 
-        self.start_date -= timedelta(seconds=self.max_frames + 1)
-
         high = np.full(
-            (max_frames, levels * 2, 1),
+            (sequence_length, depth * 2, 1),
             1.0,
             dtype=np.float32
         )
         low = np.full(
-            (max_frames, levels * 2, 1),
+            (sequence_length, depth * 2, 1),
             0.0,
             dtype=np.float32
         )
@@ -207,6 +198,15 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
             raise Exception()
 
     @property
+    def done(self):
+        return self._done
+
+    @done.setter
+    def done(self, value):
+        traceback.print_stack()
+        self._done = value
+
+    @property
     def trade_capital(self):
         self.capital = self.capital - self.trade_size
 
@@ -227,6 +227,7 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
     def reset(self, **kwargs):
         self.reset_count += 1
+        reset_count = self.reset_count
 
         if self.step_count > 0:
             alog.debug('##### reset ######')
@@ -241,11 +242,14 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         new_instance = self.reset_class(**_kwargs)
 
         self.__dict__ = {**self.__dict__, **new_instance.__dict__}
+        self.reset_count = reset_count
 
-        # for i in range(noops):
-        #     self.get_observation()
+        self.observations = self._get_observation()
 
-        for _ in range(self.max_frames):
+        try:
+            self.get_observation()
+        except StopIteration:
+            self.observations = self._get_observation()
             self.get_observation()
 
         return self.last_observation
@@ -253,6 +257,9 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
     def step_position(self, action):
         self.position = action
         self.current_trade.step(self.best_bid, self.best_ask)
+
+        if self.current_trade.done:
+            self.done = True
 
     def step(self, action):
         assert self.action_space.contains(action)
@@ -266,24 +273,18 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
         if self.step_count >= self.max_episode_length:
             self.done = True
 
-        try:
-            observation = self.get_observation()
-        except (OutOfFramesException, TypeError, Exception):
-            observation = self.last_observation
-            self.done = True
+        observation = self.get_observation()
 
         reward = self.reset_reward()
-
-        alog.info(reward)
 
         self.print_summary()
 
         return observation, reward, self.done, {}
 
     def print_summary(self):
-        if settings.LOG_LEVEL == logging.DEBUG and not self.is_training:
+        if settings.LOG_LEVEL == logging.DEBUG:
             if self.step_count % self.summary_interval == 0:
-                alog.debug(alog.pformat(self.summary()))
+                alog.info(alog.pformat(self.summary()))
 
     @property
     def best_bid(self):
@@ -479,7 +480,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
-                flat_reward=self.flat_reward,
                 step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
                 min_steps=self.min_steps
@@ -494,6 +494,8 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         if type(trade) != FlatTrade:
             self.capital = trade.capital
+
+        self.reward += self.current_trade.reward
 
         self.trades.append(trade)
         self.current_trade = None
@@ -527,11 +529,6 @@ class OrderBookTradingEnv(BitmexStreamer, PlotOrderbook, Env):
 
         summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
                              if type(trade) != FlatTrade]
-
-        lag = DateTimeUtils.now() - DateTimeUtils.parse_datetime_str(
-            self.last_datetime)
-
-        summary['lag'] = str(lag)
 
         return summary
 

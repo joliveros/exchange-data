@@ -1,24 +1,22 @@
 #!/usr/bin/env python
-import time
 
-import alog
 
 from exchange_data.tfrecord.date_range_split_workers import DateRangeSplitWorkers
 from exchange_data.tfrecord.orderbook_tf_record import OrderBookTFRecord
-from pytimeparse.timeparse import timeparse
-
-import click
-import shutil
-
 from exchange_data.tfrecord.tfrecord_directory_info import TFRecordDirectoryInfo
 from exchange_data.trading import Positions
+from pytimeparse.timeparse import timeparse
+import alog
+import click
+import shutil
+import time
 
 
 class OrderBookTFRecordWorkers(TFRecordDirectoryInfo, DateRangeSplitWorkers):
     worker_class = OrderBookTFRecord
 
     def __init__(self, symbol, depth, directory_name, clear, **kwargs):
-        channel_name = f'{symbol}_OrderBookFrame_depth_{depth}'
+        channel_name = f'{symbol}_OrderBookFrame'
         directory_name = f'{symbol}_{directory_name}'
 
         super().__init__(symbol=symbol, depth=depth,

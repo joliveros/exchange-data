@@ -22,7 +22,7 @@ class ActorCriticTrain(ModelDirectoryInfo):
 
         # hyper parameters
         self.env = gym.make(
-            'tf-orderbook-v0',
+            'orderbook-frame-env-v0',
             directory_name='default',
             max_frames=100
         )

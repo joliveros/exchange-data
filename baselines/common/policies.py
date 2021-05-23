@@ -1,3 +1,4 @@
+import alog
 import tensorflow as tf
 from baselines.a2c.utils import fc
 from baselines.common.distributions import make_pdtype
@@ -52,7 +53,6 @@ class PolicyWithValue(tf.Module):
         -------
         (action, value estimate, next state, negative log likelihood of the action under current policy parameters) tuple
         """
-
         latent = self.policy_network(observation)
         pd, pi = self.pdtype.pdfromlatent(latent)
         action = pd.sample()

@@ -117,8 +117,6 @@ def learn(
 
             env.total_steps = update * nsteps
 
-            tf.summary.scalar('price', env.best_bid, step=update)
-
             if capital != 1.0 and update < train_updates:
                 model.capital = capital
                 tf.summary.scalar('capital', capital, step=update)
@@ -136,8 +134,6 @@ def learn(
 
                 tf.summary.scalar('eval_capital', model.capital, step=update)
 
-            alog.info(alog.pformat(env.summary()))
-
             epinfobuf.extend(epinfos)
 
             obs = tf.constant(obs)
@@ -149,6 +145,7 @@ def learn(
             values = tf.constant(values)
 
             if update < train_updates:
+                alog.info((obs, states, rewards, masks, actions, values))
                 model.train(obs, states, rewards, masks, actions, values)
 
         return model
