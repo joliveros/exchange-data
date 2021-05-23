@@ -11,6 +11,7 @@ import alog
 import click
 import numpy as np
 import random
+import traceback
 
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
@@ -42,6 +43,17 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.was_reset = True
 
     @property
+    def done(self):
+        return self._done
+
+    @done.setter
+    def done(self, value):
+        if value:
+            traceback.print_stack()
+
+        self._done = value
+
+    @property
     def best_bid(self):
         return self._best_bid
 
@@ -54,6 +66,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return super().frame
 
     def _get_observation(self):
+        self.max_steps = len(self.frame)
+
         for i in range(len(self.frame)):
             if self.was_reset:
                 self.was_reset = False
@@ -68,7 +82,11 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
-        timestamp, best_ask, best_bid, frame = next(self.observations)
+        try:
+            timestamp, best_ask, best_bid, frame = next(self.observations)
+        except StopIteration:
+            self.observations = self._get_observation()
+            timestamp, best_ask, best_bid, frame = next(self.observations)
 
         self._best_ask = best_ask
         self._best_bid = best_bid
@@ -83,6 +101,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
+        done = False
         assert self.action_space.contains(action)
 
         self.step_position(action)
@@ -96,30 +115,25 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         if not self.eval_mode:
             if self.capital < self.min_capital and not self.eval_mode:
-                # self.done = True
-                self.reset()
+                done = True
 
-            if self.current_trade:
-                if self.current_trade.pnl < self.max_negative_pnl:
-                    # self.done = True
-                    self.reset()
+            # if self.current_trade:
+            #     if self.current_trade.pnl < self.max_negative_pnl:
+            #         done = True
 
-        observation = None
+        observation = self.get_observation()
 
-        try:
-            observation = self.get_observation()
-        except StopIteration:
-            # self.done = True
-            self.reset()
-
-        if self.done:
-            self.reset_dataset()
+        if self.step_count > self.max_steps:
+            done = True
 
         reward = self.reset_reward()
 
         self.print_summary()
 
-        return observation, reward, self.done, {}
+        # if done:
+        #     traceback.print_stack()
+
+        return observation, reward, done, {'capital': self.capital}
 
 
 @click.command()

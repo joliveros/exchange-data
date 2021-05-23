@@ -31,7 +31,7 @@ def Model(
     filters=1,
     base_filter_size=16,
     lstm_units=8,
-    lstm_layers=2,
+    lstm_layers=1,
     relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
@@ -58,9 +58,9 @@ def Model(
     if lstm_layers == 1:
         return_sequences = False
 
-    # for i in range(0, lstm_layers - 1):
+    # for i in range(0, lstm_layers):
     #     return_sequences = True
-    #     if i == lstm_layers - 2:
+    #     if i == lstm_layers - 1:
     #         return_sequences = False
     #
     #     alog.info(return_sequences)
@@ -69,9 +69,11 @@ def Model(
     #                     recurrent_activation='sigmoid')(conv)
 
     # alog.info(lstm_out.shape)
+
     dense = Dense(128)(Flatten()(conv))
-    alog.info(dense.shape)
-    alog.info(num_categories)
+
+    # alog.info(dense.shape)
+    # alog.info(num_categories)
 
     dense_out = Dense(
         num_categories, activation='softmax',

@@ -23,6 +23,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import traceback
 
 
 class OrderBookIncompleteException(Exception):
@@ -100,7 +101,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.frame_width = frame_width
         self.position_pnl_history = np.array([])
         self.position_pnl_diff_history = np.array([])
-        self.done = False
+        self._done = False
         self.min_change = min_change
         self.logger = logger
         self.summary_interval = summary_interval
@@ -197,6 +198,15 @@ class OrderBookTradingEnv(Logging, Env):
             raise Exception()
 
     @property
+    def done(self):
+        return self._done
+
+    @done.setter
+    def done(self, value):
+        traceback.print_stack()
+        self._done = value
+
+    @property
     def trade_capital(self):
         self.capital = self.capital - self.trade_size
 
@@ -217,6 +227,7 @@ class OrderBookTradingEnv(Logging, Env):
 
     def reset(self, **kwargs):
         self.reset_count += 1
+        reset_count = self.reset_count
 
         if self.step_count > 0:
             alog.debug('##### reset ######')
@@ -231,6 +242,7 @@ class OrderBookTradingEnv(Logging, Env):
         new_instance = self.reset_class(**_kwargs)
 
         self.__dict__ = {**self.__dict__, **new_instance.__dict__}
+        self.reset_count = reset_count
 
         self.observations = self._get_observation()
 
@@ -238,6 +250,7 @@ class OrderBookTradingEnv(Logging, Env):
             self.get_observation()
         except StopIteration:
             self.observations = self._get_observation()
+            self.get_observation()
 
         return self.last_observation
 
@@ -516,11 +529,6 @@ class OrderBookTradingEnv(Logging, Env):
 
         summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
                              if type(trade) != FlatTrade]
-
-        lag = DateTimeUtils.now() - DateTimeUtils.parse_datetime_str(
-            self.last_datetime)
-
-        summary['lag'] = str(lag)
 
         return summary
 

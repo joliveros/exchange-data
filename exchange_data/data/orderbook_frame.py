@@ -37,7 +37,6 @@ class OrderBookFrame(MeasurementFrame):
         **kwargs
     ):
         super().__init__(
-            batch_size=1,
             database_name=database_name,
             interval=interval,
             symbol=symbol,
