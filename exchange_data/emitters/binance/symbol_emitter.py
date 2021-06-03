@@ -69,10 +69,11 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
+
             try:
                 data = json.loads(data_str)
             except TypeError as e:
-                self.incr('symbol_emitter_no_data')
+                pass
 
             if data:
                 if 'data' in data:

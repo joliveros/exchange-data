@@ -76,7 +76,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
             try:
                 data = json.loads(data_str)
             except TypeError as e:
-                self.incr('book_ticker_no_data')
+                pass
 
             if data:
                 if 'data' in data:
