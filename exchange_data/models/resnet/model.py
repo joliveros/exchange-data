@@ -68,9 +68,21 @@ def Model(
     #     lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
     #                     recurrent_activation='sigmoid')(conv)
 
-    # alog.info(lstm_out.shape)
 
-    dense = Dense(128)(Flatten()(conv))
+    # alog.info(lstm_out.shape)
+    filters = 16
+    conv = conv_block(filters, conv, 0)
+    alog.info(conv.shape)
+
+    conv = conv_block(filters, conv, 1)
+    alog.info(conv.shape)
+
+    # conv = conv_block(filters, conv, 2)
+    # alog.info(conv.shape)
+
+    dense = GlobalAveragePooling1D()(conv)
+
+    # dense = Dense(128)(Flatten()(conv))
 
     # alog.info(dense.shape)
     # alog.info(num_categories)
@@ -123,8 +135,6 @@ def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
 
     gap = GlobalAveragePooling2D()(conv)
 
-    alog.info(gap.shape)
-
     output = gap
 
     # output = Dense(num_categories, activation='softmax')(gap)
@@ -142,11 +152,11 @@ def conv_block(filters, last_conv, block_n):
     alog.info(last_conv.shape)
     alog.info((block_n, filters))
 
-    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(last_conv)
+    conv = Conv1D(filters=filters, kernel_size=8, padding='same')(last_conv)
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
-    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(conv)
+    conv = Conv1D(filters=filters, kernel_size=5, padding='same')(conv)
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 

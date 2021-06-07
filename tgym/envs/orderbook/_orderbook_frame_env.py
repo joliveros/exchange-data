@@ -13,6 +13,8 @@ import numpy as np
 import random
 import traceback
 
+from tgym.envs.orderbook.trade.flat import FlatTrade
+
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def __init__(
@@ -107,6 +109,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.step_position(action)
 
         self.reward += self.current_trade.reward
+
+        # if type(self.current_trade) == FlatTrade:
+        #     self.reward = self.reward * 2
 
         self.step_count += 1
 
