@@ -1,8 +1,5 @@
-import alog
 from exchange_data.trading import Positions
 from tgym.envs.orderbook.trade import Trade
-
-import numpy as np
 
 
 class FlatTrade(Trade):
