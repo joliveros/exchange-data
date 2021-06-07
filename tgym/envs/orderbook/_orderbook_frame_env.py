@@ -2,18 +2,13 @@
 
 from cached_property import cached_property
 from exchange_data.data.orderbook_frame import OrderBookFrame
-from exchange_data.utils import DateTimeUtils
 from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 
-import alog
 import click
-import numpy as np
 import random
 import traceback
-
-from tgym.envs.orderbook.trade.flat import FlatTrade
 
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
