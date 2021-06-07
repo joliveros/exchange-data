@@ -50,6 +50,11 @@ class Trade(Logging):
         self.done = False
 
     @property
+    def raw_pnl(self):
+        diff = self.exit_price - self.entry_price
+        return diff
+
+    @property
     def is_long(self):
         return self.position_type.value == Positions.Long.value
 
@@ -92,13 +97,12 @@ class Trade(Logging):
 
     def close(self):
         pnl = self.pnl
+
         if pnl >= self.min_change:
-            self.reward += pnl
+            self.reward += pnl * self.reward_ratio
         else:
-            if pnl > 0.0:
-                self.reward += pnl * -1
-            else:
-                self.reward += pnl
+            if pnl < 0.0:
+                self.reward += pnl * self.reward_ratio
 
         self.total_reward += self.reward
 
@@ -119,21 +123,7 @@ class Trade(Logging):
 
         pnl_delta = self.pnl - last_pnl
 
-        #self.reward += pnl_delta
-
-        # if pnl_delta >= 0.0:
-        #     self.reward += self.step_reward * self.step_reward_ratio
-        # else:
-        #     self.reward -= self.step_reward * self.step_reward_ratio
-
-        # if self.pnl > self.min_profit:
-        #     self.reward += self.step_reward * self.step_reward_ratio
-        # else:
-        #     self.reward -= self.step_reward * self.step_reward_ratio
-
-        #if pnl_delta < 0.0 and self.position_length > 6:
-           # self.reward -= self.step_reward * self.step_reward_ratio
-           # self.done = True
+        self.reward += pnl_delta * self.reward_ratio
 
         self.total_reward += self.reward
 

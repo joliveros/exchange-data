@@ -25,7 +25,8 @@ class LongTrade(Trade):
         else:
             change = diff / self.entry_price
 
-        pnl = (self.capital * (change * self.leverage)) + \
-                   (-1 * self.capital * self.trading_fee)
+        fee = (-1 * self.capital * self.trading_fee)
+
+        pnl = (self.capital * (change * self.leverage)) + fee
 
         return pnl

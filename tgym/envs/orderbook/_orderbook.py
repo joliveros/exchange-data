@@ -93,7 +93,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay
-        self.reward_ratio = reward_ratio
+        self._reward_ratio = reward_ratio
         self.step_reward_ratio = step_reward_ratio
         self.step_reward = step_reward
         self.leverage = leverage
@@ -196,6 +196,14 @@ class OrderBookTradingEnv(Logging, Env):
 
         if self.current_trade is None:
             raise Exception()
+
+    @property
+    def reward_ratio(self):
+        return self._reward_ratio
+
+    @reward_ratio.setter
+    def reward_ratio(self, value):
+        self._reward_ratio = value
 
     @property
     def done(self):
