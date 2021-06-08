@@ -17,7 +17,4 @@ class FlatTrade(Trade):
         else:
             change = self.raw_pnl / self.entry_price
 
-        return self.capital * (change * self.leverage) * -1
-
-    def close(self):
-        self.reward += self.pnl * -1 * self.reward_ratio
+        return self.capital * (change * self.leverage)

@@ -96,15 +96,7 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        pnl = self.pnl
-
-        if pnl >= self.min_change:
-            self.reward += pnl * self.reward_ratio
-        else:
-            if pnl < 0.0:
-                self.reward += pnl * self.reward_ratio
-
-        self.total_reward += self.reward
+        pass
 
     def step(self, best_bid: float, best_ask: float):
         self.clear_pnl()
