@@ -99,25 +99,24 @@ class Trade(Logging):
         pass
 
     def step(self, best_bid: float, best_ask: float):
-        self.clear_pnl()
         self.reward = 0.0
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        pnl = self.pnl
-        last_pnl = 0.0
+        # pnl = self.pnl
+        # last_pnl = 0.0
+        #
+        # if len(self.pnl_history) > 0:
+        #     last_pnl = self.pnl_history[-1]
+        #
+        # self.pnl_history = np.append(self.pnl_history, [pnl])
 
-        if len(self.pnl_history) > 0:
-            last_pnl = self.pnl_history[-1]
+        # pnl_delta = self.pnl - last_pnl
 
-        self.pnl_history = np.append(self.pnl_history, [pnl])
-
-        pnl_delta = self.pnl - last_pnl
-
-        self.reward += pnl_delta * self.reward_ratio
-
-        self.total_reward += self.reward
+        # self.reward += pnl_delta * self.reward_ratio
+        #
+        # self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)

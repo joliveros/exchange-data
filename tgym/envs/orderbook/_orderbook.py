@@ -445,7 +445,7 @@ class OrderBookTradingEnv(Logging, Env):
             self.current_trade = LongTrade(
                 leverage=self.leverage,
                 capital=self.capital,
-                entry_price=self.best_ask,
+                entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
@@ -465,7 +465,7 @@ class OrderBookTradingEnv(Logging, Env):
             self.current_trade = ShortTrade(
                 leverage=self.leverage,
                 capital=self.capital,
-                entry_price=self.best_bid,
+                entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 step_reward_ratio=self.step_reward_ratio,
@@ -484,7 +484,7 @@ class OrderBookTradingEnv(Logging, Env):
         if self.current_trade is None:
             self.current_trade = FlatTrade(
                 capital=self.trade_size,
-                entry_price=(self.best_bid + self.best_ask) / 2,
+                entry_price=self.best_ask,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 reward_ratio=self.reward_ratio,
