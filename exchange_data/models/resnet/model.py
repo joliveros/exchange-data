@@ -77,8 +77,8 @@ def Model(
     conv = conv_block(filters, conv, 1)
     alog.info(conv.shape)
 
-    # conv = conv_block(filters, conv, 2)
-    # alog.info(conv.shape)
+    conv = conv_block(filters, conv, 2)
+    alog.info(conv.shape)
 
     dense = GlobalAveragePooling1D()(conv)
 
