@@ -70,19 +70,20 @@ def Model(
 
 
     # alog.info(lstm_out.shape)
-    filters = 16
-    conv = conv_block(filters, conv, 0)
-    alog.info(conv.shape)
-
-    conv = conv_block(filters, conv, 1)
-    alog.info(conv.shape)
-
-    conv = conv_block(filters, conv, 2)
-    alog.info(conv.shape)
-
-    dense = GlobalAveragePooling1D()(conv)
-
+    # filters = 16
+    # conv = conv_block(filters, conv, 0)
+    # alog.info(conv.shape)
+    #
+    # conv = conv_block(filters, conv, 1)
+    # alog.info(conv.shape)
+    #
+    # conv = conv_block(filters, conv, 2)
+    # alog.info(conv.shape)
+    #
+    # dense = GlobalAveragePooling1D()(conv)
     # dense = Dense(128)(Flatten()(conv))
+
+    dense = Flatten()(conv)
 
     # alog.info(dense.shape)
     # alog.info(num_categories)
@@ -126,7 +127,7 @@ def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
     input = Input(input_shape)
     conv = input
 
-    conv = Conv1D(filters=filters, kernel_size=1, padding='same')(input)
+    conv = Conv1D(filters=filters, kernel_size=2, padding='same')(input)
     conv = tf.keras.layers.BatchNormalization()(conv)
     conv = Activation('relu')(conv)
 
