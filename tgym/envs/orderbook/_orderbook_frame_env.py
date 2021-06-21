@@ -141,6 +141,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.option('--depth', default=72, type=int)
 @click.option('--group-by', '-g', default='30s', type=str)
 @click.option('--interval', '-i', default='10m', type=str)
+@click.option('--leverage', default=1.0, type=float)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--offset-interval', '-o', default='0h', type=str)
 @click.option('--round-decimals', '-D', default=4, type=int)

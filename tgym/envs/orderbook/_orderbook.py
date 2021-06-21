@@ -485,12 +485,13 @@ class OrderBookTradingEnv(Logging, Env):
             self.current_trade = FlatTrade(
                 capital=self.trade_size,
                 entry_price=self.best_ask,
-                trading_fee=self.trading_fee,
+                leverage=self.leverage,
                 min_change=self.min_change,
+                min_steps=self.min_steps,
                 reward_ratio=self.reward_ratio,
-                step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
-                min_steps=self.min_steps
+                step_reward_ratio=self.step_reward_ratio,
+                trading_fee=self.trading_fee,
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
