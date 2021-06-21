@@ -19,7 +19,7 @@ class ShortTrade(Trade):
         else:
             change = diff / self.entry_price
 
-        fee = (-1 * self.capital * self.trading_fee)
+        fee = (-1 * self.capital * self.leverage * self.trading_fee)
 
         pnl = (self.capital * (change * self.leverage)) + fee
 
