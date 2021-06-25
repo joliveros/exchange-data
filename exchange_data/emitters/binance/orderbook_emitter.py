@@ -33,6 +33,7 @@ class BitmexOrderBookEmitter(
         self,
         limit,
         workers,
+        max_depth: int,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
         **kwargs
@@ -46,7 +47,6 @@ class BitmexOrderBookEmitter(
             stats_prefix = 'futures'
         else:
             database_name = 'binance'
-
 
         super().__init__(
             database_name=database_name,
@@ -67,7 +67,7 @@ class BitmexOrderBookEmitter(
         self.take_symbols(prefix='orderbook', workers=workers)
 
         for symbol in self.depth_symbols:
-            self.orderbooks[symbol] = BinanceOrderBook(symbol)
+            self.orderbooks[symbol] = BinanceOrderBook(symbol, max_depth=max_depth)
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements_1m)
@@ -208,6 +208,7 @@ class BitmexOrderBookEmitter(
 @click.option('--save-data/--no-save-data', default=True)
 @click.option('--limit', '-l', default=0, type=int)
 @click.option('--workers', '-w', default=8, type=int)
+@click.option('--max-depth', '-m', default=8, type=int)
 @click.option('--symbol-filter', default=None, type=str)
 @click.option('--futures', '-F', is_flag=True)
 @click.option('--log-requests', is_flag=True)

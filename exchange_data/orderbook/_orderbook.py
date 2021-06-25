@@ -24,8 +24,13 @@ class OrderBook(object):
     asks: OrderTree
     bids: OrderTree
 
-    def __init__(self, tick_size=0.0001, **kwargs):
-        # Index[0] is most recent trade
+    def __init__(
+        self,
+        tick_size=0.0001,
+        max_depth=0,
+        **kwargs
+    ):
+        self.max_depth = max_depth
         self.tape = deque(maxlen=10)
         self.bids = OrderTree()
         self.asks = OrderTree()
@@ -376,6 +381,9 @@ class OrderBook(object):
             bid_side = new_bid_side
 
         frame = np.array((ask_side, bid_side))
+
+        if self.max_depth > 0:
+            frame = frame[:, :, :self.max_depth]
 
         return frame
 
