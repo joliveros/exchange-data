@@ -70,7 +70,7 @@ services:
     full_orderbook_emitter_futures:
         deploy:
             labels:
-                - swarm.cronjob.enable=true
+                - swarm.cronjob.enable=false
                 - swarm.cronjob.schedule=0 * * * *
                 - swarm.cronjob.skip-running=false
             replicas: 0
