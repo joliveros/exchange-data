@@ -1,5 +1,6 @@
 from exchange_data.trading import Positions
 from tgym.envs.orderbook.trade import Trade
+import alog
 
 
 class FlatTrade(Trade):
@@ -17,7 +18,8 @@ class FlatTrade(Trade):
         else:
             change = self.raw_pnl / self.entry_price
 
-        fee = (-1 * self.capital * self.leverage * self.trading_fee)
+        # fee = (-1 * self.capital * self.leverage * self.trading_fee)
+        fee = 0.0
 
         return (self.capital * (change * self.leverage)) + fee
 
