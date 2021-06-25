@@ -104,19 +104,19 @@ class Trade(Logging):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # pnl = self.pnl
-        # last_pnl = 0.0
-        #
-        # if len(self.pnl_history) > 0:
-        #     last_pnl = self.pnl_history[-1]
-        #
-        # self.pnl_history = np.append(self.pnl_history, [pnl])
+        pnl = self.pnl
+        last_pnl = 0.0
 
-        # pnl_delta = self.pnl - last_pnl
+        if len(self.pnl_history) > 0:
+            last_pnl = self.pnl_history[-1]
 
-        # self.reward += pnl_delta * self.reward_ratio
-        #
-        # self.total_reward += self.reward
+        self.pnl_history = np.append(self.pnl_history, [pnl])
+
+        pnl_delta = self.pnl - last_pnl
+
+        self.reward += pnl_delta * self.reward_ratio
+
+        self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
