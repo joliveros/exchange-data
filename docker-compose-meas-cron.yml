@@ -70,7 +70,7 @@ services:
     full_orderbook_emitter_futures:
         deploy:
             labels:
-                - swarm.cronjob.enable=false
+                - swarm.cronjob.enable=true
                 - swarm.cronjob.schedule=0 * * * *
                 - swarm.cronjob.skip-running=false
             replicas: 0
@@ -79,7 +79,7 @@ services:
         image: "registry.rubercubic.com:5001/exchange-data:latest"
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_full_orderbook_emitter.py -F -d 1000"
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py -F -d 250"
         env_file:
             - ./.env.prod
         secrets:

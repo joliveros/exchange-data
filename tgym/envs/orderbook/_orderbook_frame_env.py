@@ -6,6 +6,7 @@ from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 
+import alog
 import click
 import random
 import traceback
@@ -16,6 +17,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self,
         trial=None,
         num_env=1,
+        is_test=False,
         **kwargs
     ):
         super().__init__(
