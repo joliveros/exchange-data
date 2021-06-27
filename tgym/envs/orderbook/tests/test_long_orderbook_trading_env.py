@@ -1,7 +1,7 @@
-import alog
 from dateutil import parser
 from dateutil.tz import tz
-from tgym.envs import LongOrderBookTradingEnv
+from tgym.envs.orderbook import LongOrderBookTradingEnv
+import alog
 
 
 class TestLongOrderBookTradingEnv(object):

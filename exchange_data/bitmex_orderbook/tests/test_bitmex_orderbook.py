@@ -7,7 +7,7 @@ from exchange_data.channels import BitmexChannels
 import pytest
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def orderbook_update_msg():
     return {'action': 'update',
             'data': [{'id': 8799384950,
@@ -21,7 +21,7 @@ def orderbook_update_msg():
             'table': 'orderBookL2'}
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def orderbook_insert_msg():
     return {'action': 'insert',
             'data': [{'id': 8799938600,
@@ -32,7 +32,7 @@ def orderbook_insert_msg():
             'table': 'orderBookL2'}
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def orderbook_delete_msg():
     return {'action': 'delete',
             'data': [{'id': 8799938600, 'side': 'Buy', 'symbol': 'XBTUSD'}],

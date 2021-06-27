@@ -2,13 +2,14 @@ import random
 
 from dateutil import parser, tz
 from pytimeparse import timeparse
-from tgym.envs import OrderBookTradingEnv
-from tgym.envs.orderbook.utils import Positions
 import matplotlib.pyplot as plt
 
 import alog
 import mock
 import pytest
+
+from exchange_data.trading import Positions
+from tgym.envs.orderbook import OrderBookTradingEnv
 
 
 class TestOrderBookTradingEnv(object):

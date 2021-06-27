@@ -1,11 +1,10 @@
+from exchange_data.channels import BitmexChannels
+from exchange_data.emitters.bitmex._bitmex_position_emitter import BitmexPositionEmitter
+from exchange_data.trading import Positions
+from tgym.envs.orderbook import LongOrderBookTradingEnv
+
 import alog
 import click
-
-from exchange_data.channels import BitmexChannels
-from exchange_data.emitters.bitmex._bitmex_position_emitter import \
-    BitmexPositionEmitter
-from tgym.envs import LongOrderBookTradingEnv
-from _positions import Positions
 
 
 class LongPositionEmitter(BitmexPositionEmitter, LongOrderBookTradingEnv):

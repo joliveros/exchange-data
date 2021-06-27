@@ -2,7 +2,8 @@ from dateutil import parser
 from exchange_data.bitmex_orderbook import InstrumentInfo
 from exchange_data.channels import BitmexChannels
 from exchange_data.emitters import TimeEmitter
-from exchange_data.emitters.bitmex import BinanceOrderBookEmitter
+from exchange_data.emitters.binance.emit_and_record_depths import \
+    BinanceOrderBookEmitter
 from exchange_data.orderbook.tests.fixtures import orders
 
 import alog
