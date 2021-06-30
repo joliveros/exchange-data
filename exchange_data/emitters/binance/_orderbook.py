@@ -1,5 +1,3 @@
-import alog
-
 from exchange_data.utils import EventEmitterBase, DateTimeUtils
 from exchange_data.orderbook import OrderBook, OrderType, OrderBookSide, Order
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
