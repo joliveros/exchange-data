@@ -16,7 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 5 -F -m 200"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 5 -F -m 500"
         secrets:
             - DB
             - ROLLBAR_API_KEY
