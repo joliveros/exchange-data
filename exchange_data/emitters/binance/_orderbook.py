@@ -1,7 +1,6 @@
-from exchange_data.utils import EventEmitterBase, DateTimeUtils
 from exchange_data.orderbook import OrderBook, OrderType, OrderBookSide, Order
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
-
+from exchange_data.utils import EventEmitterBase, DateTimeUtils
 
 
 class BinanceOrderBook(OrderBook, EventEmitterBase):
@@ -27,10 +26,7 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
             if quantity == 0.0:
                 self.remove_price(price, side, timestamp)
             else:
-                try:
-                    self.update_price(price, quantity, side, timestamp)
-                except PriceDoesNotExistException:
-                    pass
+                self.update_price(price, quantity, side, timestamp)
 
     def remove_price(self, price, side, timestamp):
         try:
@@ -55,29 +51,14 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
         except PriceDoesNotExistException as e:
             current_quantity = 0.0
 
-        try:
-            if current_quantity != quantity:
-                self.remove_price(price, side, timestamp)
+        if current_quantity != quantity:
+            self.remove_price(price, side, timestamp)
 
-                self.process_order(Order(
-                    order_type=OrderType.LIMIT,
-                    price=price,
-                    quantity=quantity,
-                    side=side,
-                    timestamp=timestamp
-                ))
-
-        except PriceDoesNotExistException as e:
-            order = Order(
+            self.process_order(Order(
                 order_type=OrderType.LIMIT,
                 price=price,
                 quantity=quantity,
                 side=side,
                 timestamp=timestamp
-            )
-
-            if side == OrderBookSide.BID:
-                self.bids.insert_order(order)
-            else:
-                self.asks.insert_order(order)
+            ))
 
