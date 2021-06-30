@@ -411,9 +411,6 @@ class OrderBook(object):
 
         frame = np.array((ask_side, bid_side))
 
-        if self.max_depth > 0:
-            frame = frame[:, :, :self.max_depth]
-
         return frame
 
     @property

@@ -61,12 +61,14 @@ class BitmexOrderBookEmitter(
 
         if symbol:
             self.depth_symbols.add(self.symbol)
-            self.orderbooks[symbol] = BinanceOrderBook(symbol, max_depth=max_depth)
+            self.orderbooks[symbol] = \
+                BinanceOrderBook(symbol, max_depth=max_depth)
         else:
             self.update_queued_symbols('orderbook')
             self.take_symbols(prefix='orderbook', workers=workers)
             for symbol in self.depth_symbols:
-                self.orderbooks[symbol] = BinanceOrderBook(symbol, max_depth=max_depth)
+                self.orderbooks[symbol] = \
+                    BinanceOrderBook(symbol, max_depth=max_depth)
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements_1m)
