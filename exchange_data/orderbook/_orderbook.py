@@ -115,6 +115,7 @@ class OrderBook(object):
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
+            order.quantity = quantity_to_trade
             self.asks.insert_order(order)
 
         return TradeSummary(quantity_to_trade, trades, order)
@@ -136,6 +137,7 @@ class OrderBook(object):
 
         # If volume remains, need to update the book with new quantity
         if quantity_to_trade > 0:
+            order.quantity = quantity_to_trade
             self.bids.insert_order(order)
 
         return TradeSummary(quantity_to_trade, trades, order)
@@ -168,17 +170,23 @@ class OrderBook(object):
             head_order = _order_list.get_head_order()
             traded_price = head_order.price
             counter_party = head_order.uid
-            new_book_quantity = None
             side = order.side
 
             head_price = _order_list.head_order.price
 
-            if head_price != order.price:
-                if order.type == OrderType.LIMIT:
-                    raise PriceDoesNotExistException()
+            if order.price is not None:
+                if side == OrderBookSide.BID:
+                    if order.price < head_price:
+                        remaining_quantity = quantity
+                        quantity = 0
+                        yield Trade(party1, party2, remaining_quantity, traded_quantity,
+                              traded_price)
                 else:
-                    order.price = head_price
-
+                    if order.price > head_price:
+                        remaining_quantity = quantity
+                        quantity = 0
+                        yield Trade(party1, party2, remaining_quantity, traded_quantity,
+                              traded_price)
 
             if quantity < head_order.quantity:
                 traded_quantity = quantity

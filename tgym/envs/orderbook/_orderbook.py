@@ -38,8 +38,8 @@ class OrderBookTradingEnv(Logging, Env):
 
     def __init__(
         self,
-        sequence_length,
-        depth,
+        sequence_length=12,
+        depth=24,
         min_steps=10,
         levels=30,
         summary_interval=120,
@@ -49,7 +49,6 @@ class OrderBookTradingEnv(Logging, Env):
         leverage=1.0,
         trading_fee=0.125/100.0,
         max_loss=-5.0/100.0,
-        orderbook_depth=21,
         window_size='2m',
         sample_interval='1s',
         max_summary=10,
@@ -73,11 +72,8 @@ class OrderBookTradingEnv(Logging, Env):
         **kwargs
     ):
         kwargs['database_name'] = database_name
-        kwargs['orderbook_depth'] = orderbook_depth
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
-        kwargs['channel_name'] = \
-            f'XBTUSD_OrderBookFrame_depth_{orderbook_depth}'
 
         self._args = locals()
         self.last_observation = None
@@ -146,9 +142,6 @@ class OrderBookTradingEnv(Logging, Env):
         self.trading_fee = trading_fee
         self.use_volatile_ranges = use_volatile_ranges
         self.last_position = Positions.Flat
-        self.orderbook_depth = orderbook_depth
-        self.last_bid_side = np.zeros((self.orderbook_depth,))
-        self.last_ask_side = np.copy(self.last_bid_side)
         self.current_trade = None
         self._position = None
         self.short_pnl = 0.0
@@ -358,9 +351,6 @@ class OrderBookTradingEnv(Logging, Env):
         self.long_pnl_history.append(self.long_pnl)
 
         plot = self.plot_orderbook()
-
-        if orderbook.shape[1] != self.orderbook_depth:
-            raise OrderBookIncompleteException()
 
         if self.last_orderbook_levels is not None:
             self.bid_diff = self.best_bid - self.last_best_bid
