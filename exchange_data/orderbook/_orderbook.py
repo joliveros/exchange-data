@@ -7,7 +7,7 @@ from ._ordertree import OrderTree
 from collections import deque  # a faster insert/pop queue
 from exchange_data import Buffer, Measurement
 from exchange_data.orderbook import OrderType, OrderBookSide, Order, Trade, \
-    TradeSummary, TradeParty
+    TradeSummary, TradeParty, OrderList
 from exchange_data.orderbook.exceptions import OrderExistsException, \
     PriceDoesNotExistException
 from typing import Callable
@@ -118,6 +118,17 @@ class OrderBook(object):
             order.quantity = quantity_to_trade
             self.asks.insert_order(order)
 
+            prices = sorted(list(self.asks.price_map.keys()))
+
+            if len(prices) > self.max_depth > 0:
+                remainder_depth = len(prices) - self.max_depth
+
+                remainder_prices = \
+                    prices[-1 * remainder_depth:]
+
+                for price in remainder_prices:
+                    self.asks.remove_price(price)
+
         return TradeSummary(quantity_to_trade, trades, order)
 
     def bid_limit_order(self, order, price, quantity_to_trade,
@@ -139,6 +150,17 @@ class OrderBook(object):
         if quantity_to_trade > 0:
             order.quantity = quantity_to_trade
             self.bids.insert_order(order)
+
+            prices = sorted(list(self.bids.price_map.keys()))
+
+            if len(prices) > self.max_depth > 0:
+                remainder_depth = len(prices) - self.max_depth
+
+                remainder_prices = \
+                    prices[:remainder_depth]
+
+                for price in remainder_prices:
+                    self.bids.remove_price(price)
 
         return TradeSummary(quantity_to_trade, trades, order)
 
@@ -194,7 +216,6 @@ class OrderBook(object):
                 new_book_quantity = head_order.quantity - quantity
                 head_order.update_quantity(new_book_quantity)
                 quantity = 0
-
 
             elif quantity == head_order.quantity:
                 traded_quantity = quantity

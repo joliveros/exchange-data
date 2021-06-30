@@ -18,11 +18,11 @@ class OrderTree(object):
     """
 
     def __init__(self):
-        self.price_tree = RBTree()
-        self.price_map = {}  # Dictionary containing price : OrderList object
-        self.order_map = {}  # Dictionary containing order_id : Order object
-        self.volume = 0  # Contains total quantity from all Orders in tree
         self.num_orders = 0  # Contains count of Orders in tree
+        self.order_map = {}  # Dictionary containing order_id : Order object
+        self.price_map = {}  # Dictionary containing price : OrderList object
+        self.price_tree = RBTree()
+        self.volume = 0  # Contains total quantity from all Orders in tree
 
         # Number of different prices in tree (
         # http://en.wikipedia.org/wiki/Order_book_(trading)#Book_depth)
@@ -83,7 +83,7 @@ class OrderTree(object):
         self.volume += order.quantity
 
     def modify_order(self, order_id: int, price: float, quantity: float,
-                     timestamp: int=None):
+                     timestamp: int = None):
 
         order = self.order_map[order_id]
         order.timestamp = timestamp
