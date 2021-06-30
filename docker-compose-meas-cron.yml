@@ -79,7 +79,7 @@ services:
         image: "registry.rubercubic.com:5001/exchange-data:latest"
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/_full_orderbook_emitter.py -F -d 250"
+            ./exchange_data/emitters/binance/_full_orderbook_emitter.py -F -d 500"
         env_file:
             - ./.env.prod
         secrets:
