@@ -1,7 +1,6 @@
 from collections import deque
 from datetime import timedelta
 from exchange_data import settings
-from exchange_data.streamers._bitmex import BitmexStreamer, OutOfFramesException
 from exchange_data.trading import Positions
 from gym import Env
 from gym.spaces import Discrete, Box

@@ -3,7 +3,6 @@
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
-from exchange_data.emitters.trading_window_emitter import TradingWindowEmitter
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
@@ -33,7 +32,6 @@ class OrderBookFrame(MeasurementFrame):
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
-        volatility_intervals=False,
         **kwargs
     ):
         super().__init__(
@@ -53,7 +51,6 @@ class OrderBookFrame(MeasurementFrame):
         self.depth = 0
         self.output_depth = depth
         self.symbol = symbol
-        self.volatility_intervals = volatility_intervals
         self.sequence_length = sequence_length
 
     def _frame(self):
@@ -128,22 +125,12 @@ class OrderBookFrame(MeasurementFrame):
 
     @property
     def intervals(self):
-        if self.volatility_intervals:
-            twindow = TradingWindowEmitter(interval=self.interval_str,
-                                           group_by='1m',
-                                           database_name=self.database_name,
-                                           plot=False,
-                                           symbol=self.symbol)
-            twindow.next_intervals()
+        self.reset_interval()
+        offset_interval = timedelta(seconds=timeparse(self.offset_interval))
+        start_date = self.start_date - offset_interval
+        end_date = self.end_date - offset_interval
 
-            return twindow.intervals
-        else:
-            self.reset_interval()
-            offset_interval = timedelta(seconds=timeparse(self.offset_interval))
-            start_date = self.start_date - offset_interval
-            end_date = self.end_date - offset_interval
-
-            return [(start_date, end_date)]
+        return [(start_date, end_date)]
 
     def load_frames(self):
         frames = []
@@ -243,7 +230,6 @@ class OrderBookFrame(MeasurementFrame):
 @click.option('--round-decimals', '-D', default=4, type=int)
 @click.option('--tick', is_flag=True)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
-@click.option('--volatility-intervals', '-v', is_flag=True)
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
