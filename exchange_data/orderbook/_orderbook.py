@@ -101,7 +101,7 @@ class OrderBook(object):
     def ask_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         if self.bids.max_price() is not None:
-            while self.bids and price <= self.bids.max_price() and \
+            while self.bids and price <= (self.bids.max_price() or 0.0) and \
                     quantity_to_trade > 0:
                 trade_summary = \
                     self._process_order_list(
@@ -134,7 +134,7 @@ class OrderBook(object):
     def bid_limit_order(self, order, price, quantity_to_trade,
                         side, trades):
         if self.asks.min_price() is not None:
-            while self.asks and price >= self.asks.min_price() and \
+            while self.asks and price >= (self.asks.min_price() or 0.0) and \
                     quantity_to_trade > 0:
                 trade_summary = \
                     self._process_order_list(
