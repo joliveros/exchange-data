@@ -21,7 +21,9 @@ class FlatTrade(Trade):
         # fee = (-1 * self.capital * self.leverage * self.trading_fee)
         fee = 0.0
 
-        return (self.capital * (change * self.leverage)) + fee
+        capital = 1.0
+
+        return (capital * (change * self.leverage)) + fee
 
     def close(self):
         self.reward += self.pnl * self.reward_ratio
