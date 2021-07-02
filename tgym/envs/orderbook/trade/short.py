@@ -27,5 +27,5 @@ class ShortTrade(Trade):
 
     def close(self):
         self.reward += self.pnl * self.reward_ratio
-        self.capital += self.pnl
+        # self.capital += self.pnl
         super().close()
