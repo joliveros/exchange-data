@@ -19,13 +19,15 @@ class ShortTrade(Trade):
         else:
             change = diff / self.entry_price
 
-        fee = (-1 * self.capital * self.leverage * self.trading_fee)
+        capital = 1.0
 
-        pnl = (self.capital * (change * self.leverage)) + fee
+        fee = (-1 * capital * self.leverage * self.trading_fee)
+
+        pnl = (capital * (change * self.leverage)) + fee
 
         return pnl
 
     def close(self):
         self.reward += self.pnl * self.reward_ratio
-        # self.capital += self.pnl
+        self.capital += self.pnl
         super().close()
