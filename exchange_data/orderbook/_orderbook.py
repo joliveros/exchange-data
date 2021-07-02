@@ -410,6 +410,7 @@ class OrderBook(object):
             bid_side = new_bid_side
 
         frame = np.array((ask_side, bid_side))
+        alog.info(frame.shape)
 
         return frame
 
