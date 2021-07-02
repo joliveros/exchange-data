@@ -28,7 +28,8 @@ class CompoundPnl(object):
 
             self.capital += capital * (1 + rate)
 
-        alog.info(f'### {int(self.steps)} steps, capital: {self.capital}')
+        alog.info(f'### {int(self.steps)} steps, capital: {"${:,.2f}".format(self.capital)}')
+
 
 
 
@@ -39,8 +40,6 @@ class CompoundPnl(object):
 @click.option('--interval', '-i', type=str, default='1d')
 @click.option('--trade-interval', '-t', type=str, default='30m')
 def main(**kwargs):
-    alog.info(alog.pformat(kwargs))
-
     CompoundPnl(**kwargs)
 
 
