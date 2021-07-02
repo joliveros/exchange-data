@@ -5,6 +5,7 @@ import click
 import tensorflow as tf
 
 Activation = tf.keras.layers.Activation
+BatchNormalization = tf.keras.layers.BatchNormalization
 Conv1D = tf.keras.layers.Conv1D
 Conv2D = tf.keras.layers.Conv2D
 ConvLSTM2D = tf.keras.layers.ConvLSTM2D
@@ -20,7 +21,6 @@ MaxPooling2D = tf.keras.layers.MaxPooling2D
 Reshape = tf.keras.layers.Reshape
 Sequential = tf.keras.models.Sequential
 TimeDistributed = tf.keras.layers.TimeDistributed
-
 
 def Model(
     depth,
@@ -39,49 +39,15 @@ def Model(
     **kwargs
 ):
     if not input_shape:
-        input_shape = (sequence_length, depth * 2, 1)
+        input_shape = (1, sequence_length, depth * 2, 1)
 
     inputs = Input(shape=input_shape)
 
     filters = filters * base_filter_size
 
-    conv = TimeDistributed(ResNetTS(input_shape[1:], filters, num_categories,
+    conv = TimeDistributed(ResNetTS(input_shape[1:], num_categories,
                                     num_conv
-                                    ))(inputs)
-
-    lstm_units = lstm_units * base_filter_size
-
-    alog.info(conv.shape)
-
-    return_sequences = True
-
-    if lstm_layers == 1:
-        return_sequences = False
-
-    # for i in range(0, lstm_layers):
-    #     return_sequences = True
-    #     if i == lstm_layers - 1:
-    #         return_sequences = False
-    #
-    #     alog.info(return_sequences)
-    #
-    #     lstm_out = LSTM(lstm_units, return_sequences=return_sequences, stateful=False,
-    #                     recurrent_activation='sigmoid')(conv)
-
-
-    # alog.info(lstm_out.shape)
-    # filters = 16
-    # conv = conv_block(filters, conv, 0)
-    # alog.info(conv.shape)
-    #
-    # conv = conv_block(filters, conv, 1)
-    # alog.info(conv.shape)
-    #
-    # conv = conv_block(filters, conv, 2)
-    # alog.info(conv.shape)
-    #
-    # dense = GlobalAveragePooling1D()(conv)
-    # dense = Dense(128)(Flatten()(conv))
+                                    ).model)(inputs)
 
     dense = Flatten()(conv)
 
@@ -120,66 +86,124 @@ def Model(
     return model
 
 
-def ResNetTS(input_shape, filters=64, num_categories=2, num_conv=2):
-    if num_conv < 1:
-        raise Exception()
+class ResNetTS:
+    def __init__(self, input_shape, num_categories=2, num_conv=2):
+        alog.info(input_shape)
 
-    input = Input(input_shape)
-    conv = input
+        if num_conv < 1:
+            raise Exception()
 
-    conv = Conv1D(filters=filters, kernel_size=2, padding='same')(input)
-    conv = tf.keras.layers.BatchNormalization()(conv)
-    conv = Activation('relu')(conv)
+        input = Input(input_shape)
 
-    for i in range(0, num_conv):
-        conv = conv_block(filters, conv, i)
+        alog.info(input)
 
-    gap = GlobalAveragePooling2D()(conv)
+        self.bn_axis = 3
+        base_filter = 64
 
-    output = gap
+        conv = tf.keras.layers.ZeroPadding2D(padding=(2, 2))(input)
+        alog.info(conv.shape)
+        conv = Conv2D(filters=base_filter, kernel_size=(7, 7), strides=(2, 2),
+                      padding='valid', kernel_initializer='he_normal')(conv)
 
-    # output = Dense(num_categories, activation='softmax')(gap)
+        alog.info(conv.shape)
+        # raise Exception()
 
-    alog.info(output.shape)
+        conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
+        conv = Activation('relu')(conv)
+        conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
+        conv = tf.keras.layers.MaxPooling2D((3, 3), strides=(2, 2))(conv)
 
-    return tf.keras.models.Model(inputs=input, outputs=output)
+        alog.info(conv.shape)
 
+        filters = [base_filter, base_filter, base_filter *  4]
+        kernel_size = (3, 3)
+        conv = self.conv_block(conv, kernel_size, filters, [1, 1])
+        conv = self.identity_block(conv, kernel_size, filters)
+        conv = self.identity_block(conv, kernel_size, filters)
 
-def conv_block(filters, last_conv, block_n):
+        filters2 = [filter * 2 for filter in filters]
+        conv = self.conv_block(conv, kernel_size, filters2)
+        conv = self.identity_block(conv, kernel_size, filters2)
+        # conv = self.identity_block(conv, kernel_size, filters2)
+        # conv = self.identity_block(conv, kernel_size, filters2)
 
-    if block_n > 0:
-        filters = filters * 2
+        # filters3 = [filter * 4 for filter in filters]
+        # conv = self.conv_block(conv, kernel_size, filters3, [1, 1])
+        # conv = self.identity_block(conv, kernel_size, filters3)
+        # conv = self.identity_block(conv, kernel_size, filters3)
+        # conv = self.identity_block(conv, kernel_size, filters3)
+        # conv = self.identity_block(conv, kernel_size, filters3)
+        # conv = self.identity_block(conv, kernel_size, filters3)
+        #
+        # filters4 = [filter * 8 for filter in filters]
+        # conv = self.conv_block(conv, kernel_size, filters4)
+        # conv = self.identity_block(conv, kernel_size, filters4)
+        # conv = self.identity_block(conv, kernel_size, filters4)
 
-    alog.info(last_conv.shape)
-    alog.info((block_n, filters))
+        gap = GlobalAveragePooling2D()(conv)
 
-    conv = Conv1D(filters=filters, kernel_size=8, padding='same')(last_conv)
-    conv = tf.keras.layers.BatchNormalization()(conv)
-    conv = Activation('relu')(conv)
+        output = gap
 
-    conv = Conv1D(filters=filters, kernel_size=5, padding='same')(conv)
-    conv = tf.keras.layers.BatchNormalization()(conv)
-    conv = Activation('relu')(conv)
+        # output = Dense(num_categories, activation='softmax')(gap)
 
-    conv = Conv1D(filters=filters, kernel_size=3, padding='same')(conv)
-    conv = tf.keras.layers.BatchNormalization()(conv)
+        alog.info(output.shape)
 
-    alog.info(conv.shape)
+        self.model = tf.keras.models.Model(inputs=input, outputs=output)
+        self.model.summary()
 
-    if last_conv.shape[-1] != filters:
-        short_cut = Conv1D(filters=filters, kernel_size=1, padding='same')(
-            last_conv)
-        short_cut = tf.keras.layers.BatchNormalization()(short_cut)
-    else:
-        short_cut = tf.keras.layers.BatchNormalization()(last_conv)
+    def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):
+        alog.info(input_tensor.shape)
 
-    alog.info(short_cut.shape)
+        conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
+                      kernel_initializer='he_normal')(input_tensor)
+        conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
+        conv = Activation('relu')(conv)
 
-    output = tf.keras.layers.add([short_cut, conv])
-    output = Activation('relu')(output)
+        conv = Conv2D(filters=filters[1], kernel_size=kernel_size, padding='same',
+                      kernel_initializer='he_normal')(conv)
+        conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
+        conv = Activation('relu')(conv)
 
-    return output
+        conv = Conv2D(filters=filters[2], kernel_size=(1, 1), padding='same',
+                      kernel_initializer='he_normal')(conv)
 
+        conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
+
+        alog.info(conv.shape)
+
+        short_cut = Conv2D(filters=filters[2], kernel_size=(1, 1), strides=strides, padding='same',
+                           kernel_initializer='he_normal')(input_tensor)
+
+        short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(short_cut)
+
+        alog.info(short_cut.shape)
+
+        output = tf.keras.layers.add([conv, short_cut])
+        output = Activation('relu')(output)
+
+        return output
+
+    def identity_block(self, input_tensor, kernel_size, filters):
+        filters1, filters2, filters3 = filters
+
+        x = Conv2D(filters1, (1, 1),
+                          kernel_initializer='he_normal')(input_tensor)
+        x = BatchNormalization(axis=self.bn_axis)(x)
+        x = Activation('relu')(x)
+
+        x = Conv2D(filters2, kernel_size,
+                          padding='same',
+                          kernel_initializer='he_normal')(x)
+        x = BatchNormalization(axis=self.bn_axis)(x)
+        x = Activation('relu')(x)
+
+        x = Conv2D(filters3, (1, 1),
+                          kernel_initializer='he_normal')(x)
+        x = BatchNormalization(axis=self.bn_axis)(x)
+
+        x = tf.keras.layers.add([x, input_tensor])
+        x = Activation('relu')(x)
+        return x
 
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
