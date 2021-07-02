@@ -74,8 +74,9 @@ class BitmexOrderBookEmitter(
             self.on('1m', self.save_measurements_1m)
             self.on('10s', self.save_measurements)
             self.on('10s', self.metrics)
-            if self.symbol:
-                self.on('2s', self.temp)
+
+            # if self.symbol:
+            #     self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
                 self.on(self.channel_suffix(f'{symbol}_depth'), self.message)
