@@ -68,6 +68,7 @@ class OrderBookTradingEnv(Logging, Env):
         reward_ratio=1.0,
         gain_per_step=1.0,
         gain_delay=30,
+        is_test=False,
         **kwargs
     ):
         kwargs['database_name'] = database_name
@@ -75,6 +76,7 @@ class OrderBookTradingEnv(Logging, Env):
         kwargs['sample_interval'] = sample_interval
 
         self._args = locals()
+        self.is_test = is_test
         self.last_observation = None
         self.last_timestamp = 0
         self.reset_class = OrderBookTradingEnv
