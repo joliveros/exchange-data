@@ -17,7 +17,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self,
         trial=None,
         num_env=1,
-        is_test=False,
         **kwargs
     ):
         super().__init__(
@@ -119,7 +118,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             # if self.capital < self.min_capital and not self.eval_mode:
             #     done = True
 
-            if self.current_trade:
+            if self.current_trade and not self.is_test:
                 if self.current_trade.pnl <= self.max_negative_pnl:
                     done = True
 
