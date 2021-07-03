@@ -30,8 +30,6 @@ def Model(
     num_conv=2,
     filters=1,
     base_filter_size=16,
-    lstm_units=8,
-    lstm_layers=1,
     relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
@@ -45,9 +43,11 @@ def Model(
 
     filters = filters * base_filter_size
 
-    conv = TimeDistributed(ResNetTS(input_shape[1:], num_categories,
-                                    num_conv
-                                    ).model)(inputs)
+    conv = TimeDistributed(ResNetTS(
+        input_shape[1:],
+        num_categories,
+        base_filter_size=base_filter_size
+    ).model)(inputs)
 
     dense = Flatten()(conv)
 
@@ -87,22 +87,24 @@ def Model(
 
 
 class ResNetTS:
-    def __init__(self, input_shape, num_categories=2, num_conv=2):
+    def __init__(
+        self,
+        input_shape,
+        num_categories=2,
+        base_filter_size=64,
+        padding=2
+    ):
         alog.info(input_shape)
-
-        if num_conv < 1:
-            raise Exception()
 
         input = Input(input_shape)
 
         alog.info(input)
 
         self.bn_axis = 3
-        base_filter = 64
 
-        conv = tf.keras.layers.ZeroPadding2D(padding=(2, 2))(input)
+        conv = tf.keras.layers.ZeroPadding2D(padding=(padding, padding))(input)
         alog.info(conv.shape)
-        conv = Conv2D(filters=base_filter, kernel_size=(7, 7), strides=(2, 2),
+        conv = Conv2D(filters=base_filter_size, kernel_size=(7, 7), strides=(2, 2),
                       padding='valid', kernel_initializer='he_normal')(conv)
 
         alog.info(conv.shape)
@@ -115,7 +117,7 @@ class ResNetTS:
 
         alog.info(conv.shape)
 
-        filters = [base_filter, base_filter, base_filter *  4]
+        filters = [base_filter_size, base_filter_size, base_filter_size *  4]
         kernel_size = (3, 3)
         conv = self.conv_block(conv, kernel_size, filters, [1, 1])
         conv = self.identity_block(conv, kernel_size, filters)
