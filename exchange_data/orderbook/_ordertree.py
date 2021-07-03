@@ -49,6 +49,7 @@ class OrderTree(object):
 
     def remove_price(self, price):
         try:
+            del self.order_map[self.get_price_list(price).head_order.uid]
             self.price_tree.remove(price)
             del self.price_map[price]
             self.depth -= 1  # Remove a price depth level
@@ -112,12 +113,10 @@ class OrderTree(object):
             order.order_list.remove_order(order)
 
             if len(order.order_list) == 0:
-                try:
-                    self.remove_price(order.price)
-                except PriceDoesNotExistException:
-                    pass
+                self.remove_price(order.price)
 
-            del self.order_map[order_id]
+            if order_id in self.order_map:
+                del self.order_map[order_id]
 
     def max_price(self):
         if self.depth > 0:

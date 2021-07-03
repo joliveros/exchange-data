@@ -1,3 +1,5 @@
+import alog
+
 from .fixtures import orderbook, orders
 from exchange_data.orderbook import OrderBook, BuyOrder, SellOrder
 
