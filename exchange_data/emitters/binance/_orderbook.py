@@ -1,3 +1,5 @@
+import alog
+
 from exchange_data.orderbook import OrderBook, OrderType, OrderBookSide, Order
 from exchange_data.orderbook.exceptions import PriceDoesNotExistException
 from exchange_data.utils import EventEmitterBase, DateTimeUtils
@@ -33,14 +35,9 @@ class BinanceOrderBook(OrderBook, EventEmitterBase):
             price_list, s = self.get_price(price)
 
             if s == OrderBookSide.ASK:
-                self.asks.remove_order_by_id(price_list.head_order.uid)
+                self.asks.remove_order_by_id(price_list.get_head_order().uid)
             else:
-                self.bids.remove_order_by_id(price_list.head_order.uid)
-
-            remaining_vol = self.get_volume(price)
-
-            if remaining_vol > 0.0:
-                self.remove_price(price, side, timestamp)
+                self.bids.remove_order_by_id(price_list.get_head_order().uid)
 
         except PriceDoesNotExistException as e:
             pass
