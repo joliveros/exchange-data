@@ -46,7 +46,8 @@ def Model(
     conv = TimeDistributed(ResNetTS(
         input_shape[1:],
         num_categories,
-        base_filter_size=base_filter_size
+        base_filter_size=base_filter_size,
+        **kwargs
     ).model)(inputs)
 
     dense = Flatten()(conv)
@@ -91,8 +92,14 @@ class ResNetTS:
         self,
         input_shape,
         num_categories=2,
+        kernel_size=7,
+        strides=2,
         base_filter_size=64,
-        padding=2
+        padding=2,
+        max_pooling_kernel=3,
+        max_pooling_strides=2,
+        block_kernel=3,
+        **kwargs
     ):
         alog.info(input_shape)
 
@@ -104,7 +111,9 @@ class ResNetTS:
 
         conv = tf.keras.layers.ZeroPadding2D(padding=(padding, padding))(input)
         alog.info(conv.shape)
-        conv = Conv2D(filters=base_filter_size, kernel_size=(7, 7), strides=(2, 2),
+        conv = Conv2D(filters=base_filter_size,
+                      kernel_size=(kernel_size, kernel_size),
+                      strides=(strides, strides),
                       padding='valid', kernel_initializer='he_normal')(conv)
 
         alog.info(conv.shape)
@@ -113,12 +122,14 @@ class ResNetTS:
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
         conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
-        conv = tf.keras.layers.MaxPooling2D((3, 3), strides=(2, 2))(conv)
+        conv = tf.keras.layers.MaxPooling2D(
+            (max_pooling_kernel, max_pooling_kernel),
+            strides=(max_pooling_strides, max_pooling_strides))(conv)
 
         alog.info(conv.shape)
 
         filters = [base_filter_size, base_filter_size, base_filter_size *  4]
-        kernel_size = (3, 3)
+        kernel_size = (block_kernel, block_kernel)
         conv = self.conv_block(conv, kernel_size, filters, [1, 1])
         conv = self.identity_block(conv, kernel_size, filters)
         conv = self.identity_block(conv, kernel_size, filters)
