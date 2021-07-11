@@ -27,7 +27,7 @@ def Model(
     sequence_length,
     input_shape=None,
     batch_size=3,
-    num_conv=2,
+    num_conv=8,
     filters=1,
     base_filter_size=16,
     relu_alpha=0.01,
@@ -46,6 +46,7 @@ def Model(
     conv = TimeDistributed(ResNetTS(
         input_shape[1:],
         num_categories,
+        num_conv=num_conv,
         base_filter_size=base_filter_size,
         **kwargs
     ).model)(inputs)
@@ -92,6 +93,7 @@ class ResNetTS:
         self,
         input_shape,
         num_categories=2,
+        num_conv=None,
         kernel_size=7,
         strides=2,
         base_filter_size=64,
@@ -130,28 +132,33 @@ class ResNetTS:
 
         filters = [base_filter_size, base_filter_size, base_filter_size *  4]
         kernel_size = (block_kernel, block_kernel)
-        conv = self.conv_block(conv, kernel_size, filters, [1, 1])
-        conv = self.identity_block(conv, kernel_size, filters)
-        conv = self.identity_block(conv, kernel_size, filters)
 
         filters2 = [filter * 2 for filter in filters]
-        conv = self.conv_block(conv, kernel_size, filters2)
-        conv = self.identity_block(conv, kernel_size, filters2)
-        # conv = self.identity_block(conv, kernel_size, filters2)
-        # conv = self.identity_block(conv, kernel_size, filters2)
+        filters3 = [filter * 4 for filter in filters]
+        filters4 = [filter * 8 for filter in filters]
 
-        # filters3 = [filter * 4 for filter in filters]
-        # conv = self.conv_block(conv, kernel_size, filters3, [1, 1])
-        # conv = self.identity_block(conv, kernel_size, filters3)
-        # conv = self.identity_block(conv, kernel_size, filters3)
-        # conv = self.identity_block(conv, kernel_size, filters3)
-        # conv = self.identity_block(conv, kernel_size, filters3)
-        # conv = self.identity_block(conv, kernel_size, filters3)
-        #
-        # filters4 = [filter * 8 for filter in filters]
-        # conv = self.conv_block(conv, kernel_size, filters4)
-        # conv = self.identity_block(conv, kernel_size, filters4)
-        # conv = self.identity_block(conv, kernel_size, filters4)
+        convs = [
+            lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
+            lambda conv: self.identity_block(conv, kernel_size, filters),
+            lambda conv: self.identity_block(conv, kernel_size, filters),
+            lambda conv: self.conv_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.conv_block(conv, kernel_size, filters3, [1, 1]),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+        ]
+        convs = convs[:num_conv]
+
+        for _conv in convs:
+            conv = _conv(conv)
 
         gap = GlobalAveragePooling2D()(conv)
 
