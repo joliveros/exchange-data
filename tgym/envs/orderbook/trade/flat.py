@@ -1,5 +1,6 @@
 from exchange_data.trading import Positions
 from tgym.envs.orderbook.trade import Trade
+import numpy as np
 import alog
 
 
@@ -25,7 +26,18 @@ class FlatTrade(Trade):
         return ((capital * (change * self.leverage)) + fee)
 
     def step(self, best_bid: float, best_ask: float):
-        pass
+        self.reward = 0.0
+        self.position_length += 1
+        self.bids = np.append(self.bids, [best_bid])
+        self.asks = np.append(self.asks, [best_ask])
+
+        pnl = self.pnl
+        last_pnl = 0.0
+
+        if len(self.pnl_history) > 0:
+            last_pnl = self.pnl_history[-1]
+
+        self.pnl_history = np.append(self.pnl_history, [pnl])
 
     def close(self):
         pass
