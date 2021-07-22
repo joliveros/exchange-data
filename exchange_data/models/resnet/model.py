@@ -101,6 +101,7 @@ class ResNetTS:
         max_pooling_kernel=3,
         max_pooling_strides=2,
         block_kernel=3,
+        block_filter_factor=4,
         **kwargs
     ):
         alog.info(input_shape)
@@ -118,9 +119,6 @@ class ResNetTS:
                       strides=(strides, strides),
                       padding='valid', kernel_initializer='he_normal')(conv)
 
-        alog.info(conv.shape)
-        # raise Exception()
-
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
         conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
@@ -130,7 +128,8 @@ class ResNetTS:
 
         alog.info(conv.shape)
 
-        filters = [base_filter_size, base_filter_size, base_filter_size *  4]
+        filters = [base_filter_size, base_filter_size, base_filter_size
+                                                *  block_filter_factor]
         kernel_size = (block_kernel, block_kernel)
 
         filters2 = [filter * 2 for filter in filters]
@@ -143,17 +142,17 @@ class ResNetTS:
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.conv_block(conv, kernel_size, filters2),
             lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.conv_block(conv, kernel_size, filters3, [1, 1]),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            # lambda conv: self.identity_block(conv, kernel_size, filters2),
+            # lambda conv: self.identity_block(conv, kernel_size, filters2),
+            # lambda conv: self.conv_block(conv, kernel_size, filters3, [1, 1]),
+            # lambda conv: self.identity_block(conv, kernel_size, filters3),
+            # lambda conv: self.identity_block(conv, kernel_size, filters3),
+            # lambda conv: self.identity_block(conv, kernel_size, filters3),
+            # lambda conv: self.identity_block(conv, kernel_size, filters3),
+            # lambda conv: self.identity_block(conv, kernel_size, filters3),
+            # lambda conv: self.conv_block(conv, kernel_size, filters4),
+            # lambda conv: self.identity_block(conv, kernel_size, filters4),
+            # lambda conv: self.identity_block(conv, kernel_size, filters4),
         ]
         convs = convs[:num_conv]
 
