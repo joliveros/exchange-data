@@ -138,6 +138,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
 
 @click.command()
+@click.option('--cache', is_flag=True)
 @click.option('--database_name', '-d', default='binance', type=str)
 @click.option('--depth', default=72, type=int)
 @click.option('--group-by', '-g', default='30s', type=str)

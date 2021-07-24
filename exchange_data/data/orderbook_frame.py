@@ -5,6 +5,7 @@ from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
+from pathlib import Path
 from pytimeparse.timeparse import timeparse
 
 import alog
@@ -16,7 +17,30 @@ import pandas as pd
 pd.options.plotting.backend = 'plotly'
 
 
-class OrderBookFrame(MeasurementFrame):
+class OrderBookFrameDirectoryInfo(object):
+    def __init__(
+        self,
+        directory_name=None,
+        directory=None,
+        **kwargs
+    ):
+        if directory_name is None:
+            raise Exception()
+
+        if directory is None:
+            directory = \
+                f'{Path.home()}/.exchange-data/orderbook_frame/{directory_name}'
+
+        self.directory_name = directory_name
+        self.directory = Path(directory)
+
+        if not self.directory.exists():
+            self.directory.mkdir(parents=True)
+
+        super().__init__(**kwargs)
+
+
+class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
     positive_change_count = 0
     min_consecutive_count = 1
 
@@ -32,9 +56,11 @@ class OrderBookFrame(MeasurementFrame):
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
+        cache=False,
         **kwargs
     ):
         super().__init__(
+            directory_name=symbol,
             database_name=database_name,
             interval=interval,
             symbol=symbol,
@@ -52,22 +78,28 @@ class OrderBookFrame(MeasurementFrame):
         self.output_depth = depth
         self.symbol = symbol
         self.sequence_length = sequence_length
+        self.cache = cache
+        self.filename = Path(self.directory / f'{interval}.pickle')
 
     def _frame(self):
-        frames = []
+        if not self.filename.exists() or not self.cache:
+            frames = []
 
-        for interval in self.intervals:
-            self.start_date = interval[0]
-            self.end_date = interval[1]
-            frames.append(self.load_frames())
+            for interval in self.intervals:
+                self.start_date = interval[0]
+                self.end_date = interval[1]
+                frames.append(self.load_frames())
 
-        df = pd.concat(frames)
+            df = pd.concat(frames)
 
-        df.drop_duplicates(subset=['time'], inplace=True)
+            df.drop_duplicates(subset=['time'], inplace=True)
 
-        df = df.set_index('time')
-        df = df.sort_index()
-        df.dropna(how='any', inplace=True)
+            df = df.set_index('time')
+            df = df.sort_index()
+            df.dropna(how='any', inplace=True)
+            df.to_pickle(str(self.filename))
+        else:
+            df = pd.read_pickle(str(self.filename))
 
         return df
 
@@ -229,6 +261,7 @@ class OrderBookFrame(MeasurementFrame):
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--round-decimals', '-D', default=4, type=int)
 @click.option('--tick', is_flag=True)
+@click.option('--cache', is_flag=True)
 @click.option('--max-volume-quantile', '-m', default=0.99, type=float)
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
