@@ -82,24 +82,20 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.filename = Path(self.directory / f'{interval}.pickle')
 
     def _frame(self):
-        if not self.filename.exists() or not self.cache:
-            frames = []
+        frames = []
 
-            for interval in self.intervals:
-                self.start_date = interval[0]
-                self.end_date = interval[1]
-                frames.append(self.load_frames())
+        for interval in self.intervals:
+            self.start_date = interval[0]
+            self.end_date = interval[1]
+            frames.append(self.load_frames())
 
-            df = pd.concat(frames)
+        df = pd.concat(frames)
 
-            df.drop_duplicates(subset=['time'], inplace=True)
+        df.drop_duplicates(subset=['time'], inplace=True)
 
-            df = df.set_index('time')
-            df = df.sort_index()
-            df.dropna(how='any', inplace=True)
-            df.to_pickle(str(self.filename))
-        else:
-            df = pd.read_pickle(str(self.filename))
+        df = df.set_index('time')
+        df = df.sort_index()
+        df.dropna(how='any', inplace=True)
 
         return df
 
@@ -180,11 +176,13 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             window_size=self.window_size
         )
 
+        df = self.cache_frame(levels)
+
         orderbook_imgs = deque(maxlen=self.sequence_length)
 
         max_shape = (2, self.output_depth, 2)
 
-        for timestamp, best_ask, best_bid, orderbook_img in levels:
+        for ix, timestamp, best_ask, best_bid, orderbook_img in df.itertuples():
             if orderbook_img is not None:
                 orderbook_img = np.asarray(json.loads(orderbook_img))
 
@@ -235,6 +233,20 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         df = df.astype({"best_ask": np.float16, "best_bid": np.float16})
 
+        return df
+
+    def cache_frame(self, levels):
+        if not self.filename.exists() or not self.cache:
+            df = pd.DataFrame(
+                columns=['timestamp', 'best_ask', 'best_bid', 'orderbook_img'])
+
+            for row in levels:
+                df.loc[df.shape[0], :] = row
+            df.to_pickle(str(self.filename))
+            df = None
+            df = pd.read_pickle(str(self.filename))
+        else:
+            df = pd.read_pickle(str(self.filename))
         return df
 
     def group_price_levels(self, orderbook_side):

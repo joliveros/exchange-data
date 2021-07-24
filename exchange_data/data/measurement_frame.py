@@ -1,14 +1,12 @@
-import json
-import re
 from datetime import timedelta, datetime
-
-import alog
-import pandas as pd
-from pandas import DataFrame
-from pytimeparse.timeparse import timeparse
-
 from exchange_data import Measurement, Database
 from exchange_data.utils import DateTimeUtils
+from pandas import DataFrame
+from pytimeparse.timeparse import timeparse
+import alog
+import json
+import pandas as pd
+import re
 
 
 class MeasurementMeta(Database, DateTimeUtils):
