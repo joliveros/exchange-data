@@ -25,15 +25,10 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    include_last=False,
     input_shape=None,
-    batch_size=3,
-    num_conv=8,
-    filters=1,
-    base_filter_size=16,
-    relu_alpha=0.01,
     learning_rate=5e-5,
     num_categories=2,
-    include_last=True,
     **kwargs
 ):
     if not input_shape:
@@ -41,20 +36,12 @@ def Model(
 
     inputs = Input(shape=input_shape)
 
-    filters = filters * base_filter_size
-
     conv = TimeDistributed(ResNetTS(
         input_shape[1:],
-        num_categories,
-        num_conv=num_conv,
-        base_filter_size=base_filter_size,
         **kwargs
     ).model)(inputs)
 
     dense = Flatten()(conv)
-
-    # alog.info(dense.shape)
-    # alog.info(num_categories)
 
     dense_out = Dense(
         num_categories, activation='softmax',
@@ -92,16 +79,16 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
+        base_filter_size=8,
+        block_filter_factor=6,
+        block_kernel=2,
+        kernel_size=3,
+        max_pooling_kernel=2,
+        max_pooling_strides=1,
         num_categories=2,
-        num_conv=None,
-        kernel_size=7,
-        strides=2,
-        base_filter_size=64,
+        num_conv=6,
         padding=2,
-        max_pooling_kernel=3,
-        max_pooling_strides=2,
-        block_kernel=3,
-        block_filter_factor=4,
+        strides=2,
         **kwargs
     ):
         alog.info(input_shape)
