@@ -46,6 +46,11 @@ class BinanceUtils(object):
     def client(self):
         return ProxiedClient()
 
+    @property
+    def symbol_info(self):
+        return [info for info in self.get_exchange_info['symbols'] if
+                   info['symbol'] == self.symbol][0]
+
     @cached_property
     def queued_symbols(self):
         return Set(key='queued_symbols', redis=self.redis_client)
@@ -108,6 +113,43 @@ class BinanceUtils(object):
     @property
     def get_exchange_info(self):
         return self._retry_get_exchange_info()
+
+    @property
+    def lot_size(self):
+        return [filter for filter in self.symbol_info['filters'] if filter[
+            'filterType'] == 'LOT_SIZE'][0]
+
+    @property
+    def price_filter(self):
+        return [filter for filter in self.symbol_info['filters'] if
+                        filter[
+            'filterType'] == 'PRICE_FILTER'][0]
+
+    @property
+    def step_size(self):
+        return float(self.lot_size['stepSize'])
+
+    @property
+    def precision(self):
+        return self.symbol_info.get('quoteAssetPrecision', None) or \
+               self.symbol_info.get('quotePrecision', None)
+
+    @property
+    def tick_size(self):
+        return float(self.price_filter['tickSize'])
+
+    @property
+    def bracket(self):
+        return [bracket for bracket in self.leverage_brackets()
+                if bracket['symbol'] == self.symbol][0]
+
+    @property
+    def max_leverage(self):
+        if self.futures:
+            return max([bracket['initialLeverage']
+                        for bracket in self.bracket['brackets']])
+        else:
+            raise Exception('only available for futures.')
 
     def _get_symbols(self):
         exchange_info = self.get_exchange_info
@@ -210,8 +252,6 @@ class BinanceUtils(object):
             return f'{channel}_futures'
         else:
             return channel
-
-
 
 class ExceededLagException(Exception):
     pass
