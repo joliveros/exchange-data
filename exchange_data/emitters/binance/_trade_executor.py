@@ -1,30 +1,24 @@
 #!/usr/bin/env python
-
+import math
 from binance.client import Client
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
 from cached_property import cached_property_with_ttl
 from decimal import Decimal, getcontext
-
-from redis import Redis
-from redis_cache import RedisCache
-
 from exchange_data import settings
-from exchange_data.data.measurement_frame import MeasurementFrame
 from exchange_data.emitters import binance, Messenger
-from exchange_data.emitters.backtest import BackTest
-from exchange_data.emitters.binance import ProxiedClient, BinanceUtils
+from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.models.resnet.study_wrapper import StudyWrapper
 from exchange_data.trading import Positions
 from math import floor
 from pytimeparse.timeparse import timeparse
-
+from redis import Redis
+from redis_cache import RedisCache
 import alog
 import binance
 import click
 import logging
 import signal
 import sys
-import time
 
 
 def truncate(n, decimals=0):
@@ -34,7 +28,8 @@ def truncate(n, decimals=0):
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
-class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
+
+class TradeExecutor(BinanceUtils, Messenger):
     measurements = []
     current_position = Positions.Flat
     symbol = None
@@ -43,45 +38,32 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
     def __init__(
         self,
         base_asset,
-        depth,
         futures,
         leverage,
         log_requests,
-        min_best_capital,
         symbol,
+        quantity,
         trading_enabled,
-        window_size,
         trade_min=False,
-        tick=False,
         fee=0.0075,
-        model_version=None,
-        tick_interval='5s',
         **kwargs
     ):
         super().__init__(
             futures=futures,
             **kwargs
         )
-        StudyWrapper.__init__(self, symbol=symbol, futures=futures, **kwargs)
+        self._quantity = quantity
         self.trade_min = trade_min
         self.leverage = leverage
-        self.min_best_capital = min_best_capital
-        self.window_size = window_size
-        self.depth = depth
-        self.tick = tick
         self.symbol = f'{symbol}{base_asset}'
+        self._symbol = symbol
         self.trading_enabled = trading_enabled
         self.fee = fee
 
-        self.tick_interval = tick_interval
         self.base_asset = base_asset
         self.asset = None
-        self._model_version = None
-        self.model_version = model_version
         self.ticker_channel = self.channel_suffix(f'{symbol}{self.base_asset}_book_ticker')
-        alog.info(self.ticker_channel)
-
-        info = self.exchange_info
+        self.prediction_channel = f'{symbol}{self.base_asset}_prediction'
 
         if leverage < self.max_leverage:
             self.client.futures_change_leverage(
@@ -92,39 +74,16 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
         if log_requests:
             self.log_requests()
 
-        if tick:
-            self.trade()
-            sys.exit(0)
-
-        self.on(tick_interval, self.trade)
+        self.on(self.prediction_channel, self.trade)
         self.on(self.ticker_channel, self.ticker)
+
+    def ticker(self, data):
+        self.bid_price = float(data['b'])
 
     @staticmethod
     @cache.cache(ttl=60 * 60)
     def leverage_brackets():
         return TradeExecutor._client().futures_leverage_bracket()
-
-    @property
-    def bracket(self):
-        return [bracket for bracket in self.leverage_brackets()
-                if bracket['symbol'] == self.symbol][0]
-
-    @property
-    def max_leverage(self):
-        if self.futures:
-            return max([bracket['initialLeverage']
-                        for bracket in self.bracket['brackets']])
-        else:
-            raise Exception('only available for futures.')
-
-    def ticker(self, data):
-        self.bid_price = float(data['b'])
-
-    def log_requests(self):
-        loggers = [logging.getLogger(name) for name in
-                   logging.root.manager.loggerDict]
-        logger = [logger for logger in loggers if logger.name == 'urllib3'][0]
-        logger.setLevel(logging.DEBUG)
 
     @cached_property_with_ttl(ttl=timeparse('1h'))
     def client(self) -> Client:
@@ -136,60 +95,37 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
             api_key=settings.BINANCE_API_KEY,
             api_secret=settings.BINANCE_API_SECRET,
         )
-    @property
-    def symbol_info(self):
-        return [info for info in self.get_exchange_info['symbols'] if
-                   info['symbol'] == self.symbol][0]
 
     @property
     def asset_name(self):
         return self.symbol.replace(self.base_asset, '')
 
-    @property
-    def lot_size(self):
-        return [filter for filter in self.symbol_info['filters'] if filter[
-            'filterType'] == 'LOT_SIZE'][0]
-
-    @property
-    def price_filter(self):
-        return [filter for filter in self.symbol_info['filters'] if
-                        filter[
-            'filterType'] == 'PRICE_FILTER'][0]
-
-    @property
-    def step_size(self):
-        return float(self.lot_size['stepSize'])
-
-    @property
-    def precision(self):
-        return self.symbol_info.get('quoteAssetPrecision', None) or \
-               self.symbol_info.get('quotePrecision', None)
-
-    @property
-    def tick_size(self):
-        return float(self.price_filter['tickSize'])
-
-    @property
-    def quantity(self):
-        getcontext().prec = self.precision
-
-        quantity = self.balance / (float(self.bid_price) * (1 + self.fee))
-
+    def truncate_quantity(self, quantity):
         quantity = float(int(quantity / self.step_size) * self.step_size)
 
         quantity = Decimal(quantity)
-
         quantity = truncate(quantity, self.precision)
 
         return quantity
 
     @property
+    def quantity(self):
+        if self._quantity > 0.0:
+            return self._quantity
+        else:
+            getcontext().prec = self.precision
+
+            quantity = self.balance / (float(self.bid_price) * (1 + self.fee))
+
+            return self.truncate_quantity(quantity)
+
+    @property
     def min_quantity(self):
         getcontext().prec = self.precision
 
-        quantity = 0.15 / (float(self.bid_price))
+        quantity = 5.00 / (float(self.bid_price))
 
-        quantity = float(int(quantity / self.step_size) * self.step_size)
+        quantity = math.ceil(quantity / self.step_size)
 
         quantity = Decimal(quantity)
 
@@ -201,7 +137,7 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
     def asset_quantity(self):
         getcontext().prec = self.precision
 
-        quantity = self.client.get_asset_balance(self.asset_name)['free']
+        quantity = self.client.get_asset_balance(self._symbol)['free']
 
         quantity = floor(Decimal(quantity) / Decimal(self.step_size)) * \
                     Decimal(self.step_size)
@@ -214,26 +150,22 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
     def order(self):
         orders = self.orders
 
-        if len(self.orders) \
-            > 0:
+        if len(self.orders) > 0:
             return orders[0]
         else:
             return None
 
-    def trade(self, timestamp=None):
+    def trade(self, position):
+        self.position = Positions(position)
+
         if self.bid_price is None:
             return
-
-        alog.info(alog.pformat(self.model_params))
-
-        if self.model_params['capital'] < self.min_best_capital:
-            raise Exception('Model does not meet minimum capital')
 
         alog.info('### prediction ###')
         alog.info(self.position)
         alog.info(self.quantity)
 
-        can_trade = True
+        can_trade = False
 
         if self.position != self.current_position:
             can_trade = True
@@ -242,13 +174,10 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
             alog.info('## attempt trade ##')
 
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
-                Positions.Long and self.asset_quantity < self.min_quantity:
+                Positions.Short and self.asset_quantity < self.min_quantity:
                 # add limit orders
 
-                alog.info(self.quantity)
-                alog.info(self.bid_price)
-
-                self.buy()
+                self.sell()
 
             if self.order:
                 price = Decimal(self.order['price'])
@@ -261,22 +190,30 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
 
                     self.client.cancel_order(**params)
 
-                    if self.position == Positions.Long:
-                        self.buy()
+                    if self.position == Positions.Short:
+                        self.sell()
+
+            alog.info((self.position, self.asset_quantity))
 
             if self.position == Positions.Flat and \
                 self.asset_quantity > self.tick_size:
                 alog.info('### sell ###')
-                self.sell()
+
+                self.buy(self.asset_quantity)
 
             self.current_position = self.position
 
     def sell(self):
+        if self.trade_min:
+            quantity = self.min_quantity
+        else:
+            quantity = self.quantity
+
         params = dict(
             symbol=self.symbol,
             side=SIDE_SELL,
             type=ORDER_TYPE_MARKET,
-            quantity=self.asset_quantity,
+            quantity=quantity,
         )
 
         alog.info(alog.pformat(params))
@@ -284,13 +221,8 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
         if self.trading_enabled:
             self.client.create_order(**params)
 
-    def buy(self):
+    def buy(self, quantity):
         if self.trading_enabled:
-            if self.trade_min:
-                quantity = self.min_quantity
-            else:
-                quantity = self.quantity
-
             response = self.client.create_order(
                 symbol=self.symbol,
                 side=SIDE_BUY,
@@ -298,68 +230,6 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
                 quantity=quantity,
             )
             alog.info(alog.pformat(response))
-
-    @property
-    def quantile(self):
-        return self.best_study_params['_user_attrs']['quantile']
-
-    @property
-    def model_version(self):
-        if self._model_version:
-            return self._model_version
-        else:
-            v = self.best_study_params['_user_attrs']['model_version']
-            self._model_version = v
-
-        return self._model_version
-
-    @property
-    def model_params(self):
-        capital = self.best_study_params['_values'][0]
-
-        params = self.best_study_params['_params']
-        params['capital'] = capital
-
-        if 'interval' in params:
-            del params['interval']
-
-        if 'depth' in params:
-            del params['depth']
-
-        return params
-
-    @model_version.setter
-    def model_version(self, value):
-        self._model_version = value
-
-    @cached_property_with_ttl(ttl=2)
-    def position(self) -> Positions:
-        try:
-            return self.get_position()
-        except KeyError as e:
-            alog.info(e)
-            time.sleep(1)
-            alog.info('### try again ###')
-            return self.position
-
-    def get_position(self):
-        self.incr('trade_executor_call_position')
-        df = BackTest(
-            last_frame_only=True,
-            best_exported_model=True,
-            database_name=self.database_name,
-            depth=self.depth,
-            interval=self.interval,
-            model_version=self.model_version,
-            quantile=self.quantile,
-            sequence_length=44,
-            group_by=self.group_by,
-            symbol=self.symbol,
-            window_size=self.window_size,
-            **self.model_params
-        ).test()
-
-        return df.iloc[-1]['position']
 
     @cached_property_with_ttl(ttl=3)
     def account_data(self):
@@ -385,7 +255,8 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
         return [order for order in orders if order['status'] == 'NEW']
 
     def start(self):
-        self.sub([self.tick_interval, self.ticker_channel])
+        self.sub([self.ticker_channel,
+                  self.prediction_channel])
 
     def stop(self):
         sys.exit(0)
@@ -393,19 +264,12 @@ class TradeExecutor(BinanceUtils, MeasurementFrame, Messenger, StudyWrapper):
 
 @click.command()
 @click.option('--base-asset', '-b', default='BNB', type=str)
-@click.option('--database-name', '-d', default='binance', type=str)
-@click.option('--depth', default=92, type=int)
 @click.option('--futures', '-F', is_flag=True)
-@click.option('--group-by', '-g', default='1m', type=str)
-@click.option('--interval', '-i', default='1m', type=str)
 @click.option('--leverage', default=2, type=int)
+@click.option('--quantity', '-q', default=0.0, type=float)
 @click.option('--log-requests', '-l', is_flag=True)
-@click.option('--min-best-capital', '-M', default=1.05, type=float)
-@click.option('--model-version', '-m', default=None, type=str)
-@click.option('--tick', is_flag=True)
-@click.option('--tick-interval', '-t', default='1m', type=str)
 @click.option('--trading-enabled', '-e', is_flag=True)
-@click.option('--window-size', '-w', default='5m', type=str)
+@click.option('--trade-min', is_flag=True)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)

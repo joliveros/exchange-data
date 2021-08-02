@@ -25,7 +25,7 @@ pytest
 pytest-cov
 pytest-mock
 pytest-mypy
-pytest-vcr
+pytest-recording
 python-binance
 python-redis-cache
 pytimeparse
