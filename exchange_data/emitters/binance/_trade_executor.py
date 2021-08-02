@@ -65,6 +65,8 @@ class TradeExecutor(BinanceUtils, Messenger):
         self.ticker_channel = self.channel_suffix(f'{symbol}{self.base_asset}_book_ticker')
         self.prediction_channel = f'{symbol}{self.base_asset}_prediction'
 
+        info = self.exchange_info
+
         if leverage < self.max_leverage:
             self.client.futures_change_leverage(
                 symbol=self.symbol,
@@ -123,7 +125,7 @@ class TradeExecutor(BinanceUtils, Messenger):
     def min_quantity(self):
         getcontext().prec = self.precision
 
-        quantity = 5.00 / (float(self.bid_price))
+        quantity = (5.00 * self.leverage) / (float(self.bid_price))
 
         quantity = math.ceil(quantity / self.step_size)
 
@@ -155,6 +157,17 @@ class TradeExecutor(BinanceUtils, Messenger):
         else:
             return None
 
+    @property
+    def exchange_position(self):
+        position = [pos for pos in self.client.futures_position_information()
+         if pos['symbol'] == self.symbol][0]
+
+        return position
+
+    @cached_property_with_ttl(ttl=2)
+    def positionAmt(self):
+        return float(self.exchange_position['positionAmt'])
+
     def trade(self, position):
         self.position = Positions(position)
 
@@ -176,8 +189,8 @@ class TradeExecutor(BinanceUtils, Messenger):
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
                 Positions.Short and self.asset_quantity < self.min_quantity:
                 # add limit orders
-
-                self.sell()
+                if self.positionAmt == 0.0:
+                    self.sell()
 
             if self.order:
                 price = Decimal(self.order['price'])
@@ -190,16 +203,14 @@ class TradeExecutor(BinanceUtils, Messenger):
 
                     self.client.cancel_order(**params)
 
-                    if self.position == Positions.Short:
+                    if self.position == Positions.Short and self.positionAmt == 0.0:
                         self.sell()
 
             alog.info((self.position, self.asset_quantity))
+            alog.info(self.positionAmt)
 
-            if self.position == Positions.Flat and \
-                self.asset_quantity > self.tick_size:
-                alog.info('### sell ###')
-
-                self.buy(self.asset_quantity)
+            if self.position == Positions.Flat and self.positionAmt < 0.0:
+                self.buy(abs(self.positionAmt))
 
             self.current_position = self.position
 
@@ -219,11 +230,12 @@ class TradeExecutor(BinanceUtils, Messenger):
         alog.info(alog.pformat(params))
 
         if self.trading_enabled:
-            self.client.create_order(**params)
+            response = self.client.futures_create_order(**params)
+            alog.info(alog.pformat(response))
 
     def buy(self, quantity):
         if self.trading_enabled:
-            response = self.client.create_order(
+            response = self.client.futures_create_order(
                 symbol=self.symbol,
                 side=SIDE_BUY,
                 type=binance.enums.ORDER_TYPE_MARKET,
