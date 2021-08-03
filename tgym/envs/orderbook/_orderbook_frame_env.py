@@ -115,8 +115,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.trial.report(self.capital, self.step_count)
 
         if not self.eval_mode:
-            # if self.capital < self.min_capital and not self.eval_mode:
-            #     done = True
+            if self.capital < self.min_capital and not self.eval_mode:
+                done = True
 
             if self.current_trade and not self.is_test:
                 if self.current_trade.pnl <= self.max_negative_pnl:
