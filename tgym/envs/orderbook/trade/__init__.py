@@ -21,6 +21,7 @@ class Trade(Logging):
         step_reward_ratio: float = 1.0,
         step_reward: float = 1.0,
         min_steps: int = 10,
+        **kwargs
     ):
         Logging.__init__(self)
         self.trading_fee = trading_fee

@@ -5,12 +5,17 @@ import alog
 
 
 class FlatTrade(Trade):
-    def __init__(self, **kwargs):
-        Trade.__init__(self, position_type=Positions.Flat, **kwargs)
+    def __init__(self, short_reward_enabled=False, **kwargs):
+        Trade.__init__(
+            self,
+            position_type=Positions.Flat,
+            **kwargs
+        )
+        self.short_reward_enabled = short_reward_enabled
 
     @property
     def exit_price(self):
-        return self.best_bid
+        return self.best_ask
 
     @property
     def pnl(self):
@@ -39,6 +44,9 @@ class FlatTrade(Trade):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
+
+
     def close(self):
-        pass
-        # self.reward += self.pnl * self.reward_ratio
+        if self.short_reward_enabled:
+            raise Exception()
+            self.reward += self.pnl * self.reward_ratio
