@@ -156,6 +156,7 @@ def main(test_span, **kwargs):
     for t in range(100):
         kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
+            short_reward_enabled=True,
             is_training=False,
             **kwargs
         )
