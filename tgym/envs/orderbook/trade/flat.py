@@ -44,9 +44,6 @@ class FlatTrade(Trade):
 
         self.pnl_history = np.append(self.pnl_history, [pnl])
 
-
-
     def close(self):
         if self.short_reward_enabled:
-            raise Exception()
             self.reward += self.pnl * self.reward_ratio
