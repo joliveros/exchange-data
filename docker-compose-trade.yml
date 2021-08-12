@@ -7,7 +7,7 @@ networks:
 
 services:
 
-    DOGEUSDT:
+    BAKEUSDT:
         deploy:
           replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
@@ -15,8 +15,7 @@ services:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
           bash -c "source ~/.bashrc &&
-          ./exchange_data/emitters/binance/_trade_executor.py -t 1m \
-          -g 1m DOGE -b USDT -F -d binance_futures -M 1.0 --leverage 10 -e"
+          ./exchange_data/emitters/binance/_trade_executor.py BAKE -b USDT --leverage 2 -F -q 5.0 --trade-min -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
