@@ -1,18 +1,19 @@
-import alog
-import numpy as np
+from exchange_data.trading import Positions
 from matplotlib import pyplot as plt
 from skimage import color
-
-from exchange_data.trading import Positions
-from tgym.envs.orderbook.utils import Logging
 from tgym.envs.orderbook.ascii_image import AsciiImage
+from tgym.envs.orderbook.utils import Logging
+
+import alog
+import numpy as np
 
 
 class Trade(Logging):
+    closed = False
+
     def __init__(
         self,
         entry_price: float,
-        capital: float,
         trading_fee: float,
         position_type: Positions,
         min_change: float,
@@ -23,7 +24,8 @@ class Trade(Logging):
         min_steps: int = 10,
         **kwargs
     ):
-        Logging.__init__(self)
+        super().__init__(**kwargs)
+
         self.trading_fee = trading_fee
         self.min_steps = min_steps
         self.step_reward_ratio = step_reward_ratio
@@ -37,7 +39,7 @@ class Trade(Logging):
         self.positive_close_reward = 1.0
         self.steps_since_max = 0.0
         self.frame_width = 42
-        self.capital = capital
+        self.capital = 1.0
         self.position_length = 0
         self.position_type = position_type
         self.entry_price = entry_price
@@ -97,7 +99,11 @@ class Trade(Logging):
         return pnl
 
     def close(self):
-        pass
+        self.closed = True
+        self.append_pnl_history()
+
+    def append_pnl_history(self):
+        self.pnl_history = np.append(self.pnl_history, [self.pnl])
 
     def step(self, best_bid: float, best_ask: float):
         self.reward = 0.0
@@ -105,17 +111,9 @@ class Trade(Logging):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        pnl = self.pnl
-        last_pnl = 0.0
+        self.append_pnl_history()
 
-        if len(self.pnl_history) > 0:
-            last_pnl = self.pnl_history[-1]
-
-        self.pnl_history = np.append(self.pnl_history, [pnl])
-
-        pnl_delta = self.pnl - last_pnl
-
-        self.reward += pnl_delta * self.reward_ratio
+        # self.reward += self.pnl * self.reward_ratio
 
         self.total_reward += self.reward
 

@@ -7,6 +7,5 @@ class Logging(object):
         super().__init__()
         yaml.add_representer(float, SafeRepresenter.represent_float)
 
-
     def yaml(self, value: dict):
         return yaml.dump(value)

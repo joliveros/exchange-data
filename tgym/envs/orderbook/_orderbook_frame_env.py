@@ -106,9 +106,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self.reward += self.current_trade.reward
 
-        # if type(self.current_trade) == FlatTrade:
-        #     self.reward = self.reward * 2
-
         self.step_count += 1
 
         if self.trial:
