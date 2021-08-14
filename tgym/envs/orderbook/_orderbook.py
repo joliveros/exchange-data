@@ -475,8 +475,8 @@ class OrderBookTradingEnv(Logging, Env):
         if self.current_trade is None:
             self.current_trade = FlatTrade(
                 capital=self.trade_size,
-                entry_price=self.best_bid,
-                # entry_price=self.best_ask,
+                # entry_price=self.best_bid,
+                entry_price=self.best_ask,
                 leverage=self.leverage,
                 min_change=self.min_change,
                 min_steps=self.min_steps,
