@@ -87,9 +87,11 @@ class TradeExecutor(BinanceUtils, Messenger):
     def leverage_brackets():
         return TradeExecutor._client().futures_leverage_bracket()
 
-    @cached_property_with_ttl(ttl=timeparse('1h'))
+    @cached_property_with_ttl(ttl=timeparse('1m'))
     def client(self) -> Client:
-        return self._client()
+        client = self._client()
+        alog.info(client)
+        return client
 
     @staticmethod
     def _client():
