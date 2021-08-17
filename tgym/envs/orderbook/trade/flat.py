@@ -39,4 +39,4 @@ class FlatTrade(Trade):
 
     def close(self):
         if self.short_reward_enabled:
-            self.reward += self.pnl * self.reward_ratio
+            self.reward += self.pnl ** (1/4)
