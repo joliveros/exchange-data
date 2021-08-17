@@ -44,4 +44,4 @@ class FlatTrade(Trade):
                 _pnl = abs(pnl)
                 self.reward = (_pnl ** (1 / 4)) * -1
             else:
-                self.reward = pnl ** (1 / 4)
+                self.reward = pnl
