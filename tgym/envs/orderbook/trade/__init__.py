@@ -25,7 +25,6 @@ class Trade(Logging):
         **kwargs
     ):
         super().__init__(**kwargs)
-
         self.trading_fee = trading_fee
         self.min_steps = min_steps
         self.step_reward_ratio = step_reward_ratio

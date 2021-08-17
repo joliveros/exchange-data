@@ -8,7 +8,7 @@ services:
     tf_serving_config:
         deploy:
             labels:
-                - swarm.cronjob.enable=true
+                - swarm.cronjob.enable=false
                 - swarm.cronjob.schedule=* * * * *
                 - swarm.cronjob.skip-running=false
             replicas: 0
