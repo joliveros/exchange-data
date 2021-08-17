@@ -178,11 +178,11 @@ class TradeExecutor(BinanceUtils, Messenger):
 
         alog.info('### prediction ###')
         alog.info(self.position)
-        alog.info(self.quantity)
+        alog.info((self.quantity))
 
         can_trade = False
 
-        if self.position != self.current_position:
+        if self.position != self.current_position or self.positionAmt != 0.0:
             can_trade = True
 
         if can_trade:
