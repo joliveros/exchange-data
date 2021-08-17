@@ -242,9 +242,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
             for row in levels:
                 df.loc[df.shape[0], :] = row
-            df.to_pickle(str(self.filename))
-            df = None
-            df = pd.read_pickle(str(self.filename))
+
+            if self.cache:
+                df.to_pickle(str(self.filename))
+                df = None
+                df = pd.read_pickle(str(self.filename))
         else:
             df = pd.read_pickle(str(self.filename))
         return df
