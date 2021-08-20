@@ -39,9 +39,4 @@ class FlatTrade(Trade):
 
     def close(self):
         if self.short_reward_enabled:
-            pnl = self.pnl
-            if pnl < 0.0:
-                _pnl = abs(pnl)
-                self.reward = (_pnl ** (1 / 4)) * -1
-            else:
-                self.reward = pnl
+            self.reward_for_pnl()
