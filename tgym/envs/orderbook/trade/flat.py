@@ -37,8 +37,6 @@ class FlatTrade(Trade):
 
         self.append_pnl_history()
 
-        self.reward_for_pnl()
-
     def close(self):
         if self.short_reward_enabled:
             self.reward_for_pnl()
