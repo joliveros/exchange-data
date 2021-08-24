@@ -75,13 +75,15 @@ class BitmexOrderBookEmitter(
             self.on('10s', self.save_measurements)
             self.on('10s', self.metrics)
 
-            # if self.symbol:
-            #     self.on('2s', self.temp)
+            if self.symbol:
+                self.on('2s', self.temp)
 
             for symbol in self.depth_symbols:
+                alog.info(self.channel_suffix(f'{symbol}_depth'))
+
                 self.on(self.channel_suffix(f'{symbol}_depth'), self.message)
-                self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
-                self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
+                # self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
+                # self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
 
     @cached_property
     def queued_symbols(self):
@@ -89,7 +91,7 @@ class BitmexOrderBookEmitter(
 
     def temp(self, timestamp):
             alog.info(self.orderbooks[self.symbol]
-                      .print(depth=20, trades=False))
+                      .print(depth=84, trades=False))
 
     def metrics(self, timestamp):
         now = DateTimeUtils.now()
