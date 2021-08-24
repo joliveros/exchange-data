@@ -111,6 +111,7 @@ class Trade(Logging):
         self.asks = np.append(self.asks, [best_ask])
 
         self.append_pnl_history()
+        # self.reward_for_pnl()
 
         self.total_reward += self.reward
 

@@ -43,10 +43,9 @@ class OrderBookTradingEnv(Logging, Env):
         levels=30,
         summary_interval=120,
         database_name = 'bitmex',
-        eval_mode=False,
         logger=None,
         leverage=1.0,
-        trading_fee=0.125/100.0,
+        trading_fee=4e-4,
         max_loss=-5.0/100.0,
         window_size='2m',
         sample_interval='1s',
@@ -86,7 +85,6 @@ class OrderBookTradingEnv(Logging, Env):
         )
 
         self.min_steps = min_steps
-        self.eval_mode = eval_mode
         self.max_negative_pnl = max_negative_pnl
         self.gain_per_step = gain_per_step
         self.gain_delay = gain_delay
