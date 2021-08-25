@@ -111,7 +111,7 @@ class Trade(Logging):
         self.asks = np.append(self.asks, [best_ask])
 
         self.append_pnl_history()
-        # self.reward_for_pnl()
+        self.reward_for_pnl()
 
         self.total_reward += self.reward
 
@@ -166,9 +166,11 @@ class Trade(Logging):
         self.steps_since_max = 0.0
 
     def reward_for_pnl(self):
-        pnl = self.pnl
-        if pnl < 0.0:
-            _pnl = abs(pnl)
-            self.reward = (_pnl ** (1 / 4)) * -1
-        else:
-            self.reward = pnl
+        self.reward = self.pnl
+
+        # pnl = self.pnl
+        # if pnl < 0.0:
+        #     _pnl = abs(pnl)
+        #     self.reward = (_pnl ** (1 / 4)) * -1
+        # else:
+        #     self.reward = pnl

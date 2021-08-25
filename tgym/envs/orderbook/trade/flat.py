@@ -44,5 +44,4 @@ class FlatTrade(Trade):
 
     def close(self):
         if self.short_reward_enabled:
-            raise Exception()
             self.reward_for_pnl()
