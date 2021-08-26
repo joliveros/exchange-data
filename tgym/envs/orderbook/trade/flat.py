@@ -37,10 +37,10 @@ class FlatTrade(Trade):
 
         self.append_pnl_history()
 
-        # self.reward_for_pnl()
+        self.reward_for_pnl()
 
-    def reward_for_pnl(self):
-        self.reward = self.pnl
+    # def reward_for_pnl(self):
+    #     self.reward = self.pnl
 
     def close(self):
         if self.short_reward_enabled:
