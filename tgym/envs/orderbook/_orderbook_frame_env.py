@@ -80,6 +80,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
+        if self.observations is None:
+            self.observations = self._get_observation()
+
         try:
             timestamp, best_ask, best_bid, frame = next(self.observations)
         except StopIteration:
