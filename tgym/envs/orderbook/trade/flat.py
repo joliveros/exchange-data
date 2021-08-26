@@ -24,10 +24,11 @@ class FlatTrade(Trade):
         else:
             change = self.raw_pnl / self.entry_price
 
-        fee = 0.0
         capital = 1.0
+        pnl = (self.capital * change) * self.leverage
+        fee = self.fee * 2
 
-        return capital * (change * self.leverage)
+        return pnl + fee
 
     def step(self, best_bid: float, best_ask: float):
         self.reward = 0.0
@@ -37,10 +38,15 @@ class FlatTrade(Trade):
 
         self.append_pnl_history()
 
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
     # def reward_for_pnl(self):
-    #     self.reward = self.pnl
+    #     pnl = self.pnl
+    #     if pnl < 0.0:
+    #         _pnl = abs(pnl)
+    #         self.reward = (_pnl ** (1 / 4)) * -1
+    #     else:
+    #         self.reward = pnl
 
     def close(self):
         if self.short_reward_enabled:

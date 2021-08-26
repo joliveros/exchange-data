@@ -11,15 +11,6 @@ class ShortTrade(Trade):
         super().__init__(position_type=Positions.Short, **kwargs)
 
     @property
-    def fee(self):
-        fee = 0.0
-
-        if len(self.pnl_history) == 1 or self.closed:
-            fee = -1 * self.capital * self.leverage * self.trading_fee
-
-        return fee
-
-    @property
     def exit_price(self):
         return self.best_bid
 
