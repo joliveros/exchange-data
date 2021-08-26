@@ -113,7 +113,6 @@ class OrderBookTradingEnv(Logging, Env):
             else action_space
         self.ask_diff = 0.0
         self.bid_diff = 0.0
-        self.capital = capital
         self.closed_plot = False
         self.entry_price = 0.0
         self.exit_price = 0
@@ -206,16 +205,6 @@ class OrderBookTradingEnv(Logging, Env):
         traceback.print_stack()
         self._done = value
 
-    @property
-    def trade_capital(self):
-        self.capital = self.capital - self.trade_size
-
-        if self.capital > 0.0:
-            return self.trade_size
-        else:
-            self.done = True
-            return 0.0
-
     def get_volatile_ranges(self):
         query = f'SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd ' \
             f'from {self.channel_name} GROUP BY time({self.max_episode_length_str})) '\
@@ -232,8 +221,6 @@ class OrderBookTradingEnv(Logging, Env):
         if self.step_count > 0:
             alog.debug('##### reset ######')
             alog.info(alog.pformat(self.summary()))
-
-        capital = self.capital
 
         _kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -493,7 +480,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.reward += trade.reward
 
         if type(trade) != FlatTrade:
-            self.capital = trade.capital
+            self.capital += trade.capital - 1
 
         self.reward += self.current_trade.reward
 

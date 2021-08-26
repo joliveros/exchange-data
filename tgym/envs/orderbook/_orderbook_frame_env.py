@@ -146,8 +146,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.option('--window-size', '-w', default='2m', type=str)
 @click.argument('symbol', type=str)
 def main(test_span, **kwargs):
-    for t in range(100):
-        kwargs['sequence_length'] = random.randrange(10, 100)
+    for t in range(1):
+        # kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
             short_reward_enabled=True,
             is_training=False,
@@ -157,6 +157,8 @@ def main(test_span, **kwargs):
         env.reset()
         for i in range(timeparse(test_span)):
             env.step(random.randint(0, 1))
+
+        raise Exception()
 
 
 if __name__ == '__main__':
