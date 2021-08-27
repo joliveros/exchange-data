@@ -447,7 +447,8 @@ class OrderBookTradingEnv(Logging, Env):
                 step_reward_ratio=self.step_reward_ratio,
                 reward_ratio=self.reward_ratio,
                 step_reward=self.step_reward,
-                min_steps=self.min_steps
+                min_steps=self.min_steps,
+                ** self._args['kwargs']
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 

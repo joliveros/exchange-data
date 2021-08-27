@@ -17,6 +17,7 @@ class Trade(Logging):
         trading_fee: float,
         position_type: Positions,
         min_change: float,
+        max_position_length,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
         step_reward_ratio: float = 1.0,
@@ -25,6 +26,7 @@ class Trade(Logging):
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.max_position_length = max_position_length
         self.trading_fee = trading_fee
         self.min_steps = min_steps
         self.step_reward_ratio = step_reward_ratio
@@ -120,7 +122,9 @@ class Trade(Logging):
         self.asks = np.append(self.asks, [best_ask])
 
         self.append_pnl_history()
-        # self.reward_for_pnl()
+
+        if self.position_length > self.max_position_length:
+            self.reward_for_pnl()
 
         self.total_reward += self.reward
 
