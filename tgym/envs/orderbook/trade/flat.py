@@ -5,12 +5,13 @@ import alog
 
 
 class FlatTrade(Trade):
-    def __init__(self, short_reward_enabled=False, **kwargs):
+    def __init__(self, max_flat_position_length, short_reward_enabled=False,
+                 **kwargs):
         super().__init__(
             position_type=Positions.Flat,
             **kwargs
         )
-
+        self.max_flat_position_length = max_flat_position_length
         self.short_reward_enabled = short_reward_enabled
 
     @property
@@ -38,7 +39,8 @@ class FlatTrade(Trade):
 
         self.append_pnl_history()
 
-        # self.reward_for_pnl()
+        if self.position_length > self.max_flat_position_length:
+            self.reward_for_pnl()
 
     # def reward_for_pnl(self):
     #     pnl = self.pnl
