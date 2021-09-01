@@ -51,6 +51,7 @@ class Trade(Logging):
         self.max_pnl = 0.0
         self._reward = 0.0
         self.total_reward = 0.0
+        self.last_pnl = 0.0
         self.done = False
 
     @property
@@ -180,9 +181,17 @@ class Trade(Logging):
 
     def reward_for_pnl(self):
         pnl = self.pnl
-        if pnl < 0.0:
+
+        if self.last_pnl != 0.0:
+            pnl_diff = self.last_pnl - pnl
+        else:
+            pnl_diff = 0.0001
+
+        if pnl_diff < 0.0:
             # _pnl = abs(pnl)
             # self.reward = (_pnl ** (1 / 4)) * -1
             self.reward = -1.0
         else:
-            self.reward = pnl
+            self.reward = pnl_diff
+
+        self.last_pnl = pnl
