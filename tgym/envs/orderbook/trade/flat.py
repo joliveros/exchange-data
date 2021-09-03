@@ -5,7 +5,7 @@ import alog
 
 
 class FlatTrade(Trade):
-    def __init__(self, max_flat_position_length, short_reward_enabled=False,
+    def __init__(self, max_flat_position_length=2, short_reward_enabled=False,
                  **kwargs):
         super().__init__(
             position_type=Positions.Flat,

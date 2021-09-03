@@ -5,8 +5,6 @@ from tgym.envs.orderbook.trade import Trade
 
 
 class ShortTrade(Trade):
-    fee = 0.0
-
     def __init__(self, **kwargs):
         super().__init__(position_type=Positions.Short, **kwargs)
 
@@ -25,8 +23,8 @@ class ShortTrade(Trade):
 
         pnl = (self.capital * change) * self.leverage
         fee = self.fee * 2
-
-        return pnl + fee
+        pnl = pnl + fee
+        return pnl
 
     def close(self):
         super().close()
