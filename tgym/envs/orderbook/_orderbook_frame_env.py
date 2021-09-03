@@ -13,8 +13,11 @@ import traceback
 
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
+    random_frame_start: bool = False
+
     def __init__(
         self,
+        random_frame_start,
         trial=None,
         num_env=1,
         **kwargs
@@ -28,6 +31,10 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             action_space=Discrete(2),
             **kwargs
         )
+
+        if random_frame_start:
+            self.random_frame_start = random_frame_start
+
         self.trial = trial
         self.num_env = num_env
         kwargs['batch_size'] = 1
@@ -36,9 +43,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.prune_capital = 1.01
         self.total_steps = 0
         self.was_reset = False
-
-    def reset_dataset(self):
-        self.was_reset = True
 
     @property
     def done(self):
@@ -63,14 +67,17 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def frame(self):
         return super().frame
 
+    @property
+    def frame_start(self):
+        if self.random_frame_start:
+            return random.randint(0, len(self.frame))
+        else:
+            return 0
+
     def _get_observation(self):
         self.max_steps = len(self.frame)
 
-        for i in range(len(self.frame)):
-            if self.was_reset:
-                self.was_reset = False
-                break
-
+        for i in range(self.frame_start, len(self.frame)):
             row = self.frame.iloc[i]
             best_ask = row.best_ask
             best_bid = row.best_bid
@@ -152,16 +159,16 @@ def main(test_span, **kwargs):
     for t in range(1):
         # kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
+            random_frame_start=True,
             short_reward_enabled=True,
             is_training=False,
             **kwargs
         )
 
         env.reset()
+
         for i in range(timeparse(test_span)):
             env.step(random.randint(0, 1))
-
-        raise Exception()
 
 
 if __name__ == '__main__':
