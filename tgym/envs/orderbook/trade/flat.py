@@ -16,7 +16,7 @@ class FlatTrade(Trade):
 
     @property
     def exit_price(self):
-        return self.best_ask
+        return self.best_bid
 
     @property
     def pnl(self):
@@ -25,7 +25,6 @@ class FlatTrade(Trade):
         else:
             change = self.raw_pnl / self.entry_price
 
-        capital = 1.0
         pnl = (self.capital * change) * self.leverage
         fee = self.fee * 2
 

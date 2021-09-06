@@ -10,7 +10,7 @@ class ShortTrade(Trade):
 
     @property
     def exit_price(self):
-        return self.best_bid
+        return self.best_ask
 
     @property
     def pnl(self):
