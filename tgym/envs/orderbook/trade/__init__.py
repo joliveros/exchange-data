@@ -56,10 +56,7 @@ class Trade(Logging):
 
     @property
     def fee(self):
-        fee = 0.0
-
-        if len(self.pnl_history) == 1 or self.closed:
-            fee = -1 * self.capital * self.leverage * self.trading_fee
+        fee = -1 * self.capital * self.leverage * self.trading_fee
 
         return fee
 
@@ -179,7 +176,7 @@ class Trade(Logging):
     def clear_steps_since_max(self):
         self.steps_since_max = 0.0
 
-    def reward_for_pnl(self):
+    def reward_for_pnl_old(self):
         pnl = self.pnl
 
         if self.last_pnl != 0.0:
@@ -195,3 +192,14 @@ class Trade(Logging):
             self.reward = pnl_diff
 
         self.last_pnl = pnl
+
+    def reward_for_pnl(self):
+        pnl = self.pnl
+
+        if pnl < 0.0:
+            # _pnl = abs(pnl)
+            # self.reward = (_pnl ** (1 / 4)) * -1
+            self.reward = -1.0
+        else:
+            self.reward = pnl
+

@@ -25,7 +25,6 @@ class TestTradeExecutor(object):
 
         trade.close()
         alog.info(trade.reward)
-
         alog.info(alog.pformat(trade.pnl_history.tolist()))
 
         # assert trade.pnl_history.tolist() == \

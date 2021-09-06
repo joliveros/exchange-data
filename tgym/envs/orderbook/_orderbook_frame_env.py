@@ -17,7 +17,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
-        random_frame_start,
+        random_frame_start=False,
         trial=None,
         num_env=1,
         **kwargs
@@ -159,7 +159,7 @@ def main(test_span, **kwargs):
     for t in range(1):
         # kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
-            random_frame_start=True,
+            random_frame_start=False,
             short_reward_enabled=True,
             is_training=False,
             **kwargs

@@ -441,7 +441,7 @@ class OrderBookTradingEnv(Logging, Env):
             self.current_trade = ShortTrade(
                 leverage=self.leverage,
                 capital=self.capital,
-                entry_price=self.best_ask,
+                entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
                 step_reward_ratio=self.step_reward_ratio,
