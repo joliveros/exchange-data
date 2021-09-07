@@ -53,6 +53,7 @@ class Trade(Logging):
         self.total_reward = 0.0
         self.last_pnl = 0.0
         self.done = False
+        self.reward = 0.0
 
     @property
     def fee(self):
@@ -114,15 +115,16 @@ class Trade(Logging):
         self.pnl_history = np.append(self.pnl_history, [self.pnl])
 
     def step(self, best_bid: float, best_ask: float):
-        self.reward = 0.0
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
         self.append_pnl_history()
 
-        if self.position_length > self.max_position_length:
-            self.reward_for_pnl()
+        # self.reward_for_pnl()
+
+        # if self.position_length > self.max_position_length:
+        #     self.reward_for_pnl()
 
         self.total_reward += self.reward
 
@@ -195,11 +197,16 @@ class Trade(Logging):
 
     def reward_for_pnl(self):
         pnl = self.pnl
+        # if self.last_pnl == 0.0:
+        #     self.last_pnl = pnl
+        #
+        # pnl_diff = pnl - self.last_pnl
+        # self.last_pnl = pnl
+        # self.reward = pnl_diff
 
         if pnl < 0.0:
-            # _pnl = abs(pnl)
-            # self.reward = (_pnl ** (1 / 4)) * -1
-            self.reward = -1.0
+            _pnl = abs(pnl)
+            self.reward = (_pnl ** (1 / 4)) * -1
         else:
             self.reward = pnl
 

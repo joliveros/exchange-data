@@ -31,24 +31,18 @@ class FlatTrade(Trade):
         return pnl + fee
 
     def step(self, best_bid: float, best_ask: float):
-        self.reward = 0.0
         self.position_length += 1
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
         self.append_pnl_history()
 
-        if self.position_length > self.max_flat_position_length:
-            self.reward_for_pnl()
+        # self.reward_for_pnl()
 
-    # def reward_for_pnl(self):
-    #     pnl = self.pnl
-    #     if pnl < 0.0:
-    #         _pnl = abs(pnl)
-    #         self.reward = (_pnl ** (1 / 4)) * -1
-    #     else:
-    #         self.reward = pnl
+        # if self.position_length > self.max_flat_position_length:
+        #     self.reward_for_pnl()
 
     def close(self):
-        if self.short_reward_enabled:
-            self.reward_for_pnl()
+        pass
+        # if self.short_reward_enabled:
+        #     self.reward_for_pnl()
