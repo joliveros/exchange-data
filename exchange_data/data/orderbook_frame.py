@@ -137,19 +137,15 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
-        # if self.quantile == 0.0:
-        #     self.quantile = \
-        #         np.quantile(orderbook_img, self.max_volume_quantile)
-        #     if self.quantile == 0.0:
-        #         self.quantile = 1.0
-        #
-        # alog.info(orderbook_img[-1].tolist())
-        #
-        # orderbook_img = orderbook_img / self.quantile
-        #
-        # orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
-        # alog.info(orderbook_img[-1].tolist())
+        if self.quantile == 0.0:
+            self.quantile = \
+                np.quantile(orderbook_img.flatten(), self.max_volume_quantile)
+            if self.quantile == 0.0:
+                self.quantile = 1.0
 
+        orderbook_img = orderbook_img / self.quantile
+
+        orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
