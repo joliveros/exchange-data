@@ -79,16 +79,16 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        base_filter_size=8,
-        block_filter_factor=6,
-        block_kernel=2,
-        kernel_size=3,
-        max_pooling_kernel=2,
+        base_filter_size=6,
+        block_filter_factor=5,
+        block_kernel=4,
+        kernel_size=6,
+        max_pooling_kernel=4,
         max_pooling_strides=1,
         num_categories=2,
         num_conv=4,
-        padding=2,
-        strides=2,
+        padding=6,
+        strides=7,
         **kwargs
     ):
         alog.info(input_shape)
