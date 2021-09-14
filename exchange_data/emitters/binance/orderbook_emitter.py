@@ -58,6 +58,8 @@ class BitmexOrderBookEmitter(
         self.slices = {}
         self.frame_slice = None
         self.queued_frames = []
+        self.measurements = []
+        self.m_measurements = []
 
         if symbol:
             self.depth_symbols.add(self.symbol)
@@ -196,13 +198,25 @@ class BitmexOrderBookEmitter(
         sys.exit(0)
 
     def save_measurements_1m(self, timestamp):
-        self.save_measurements(timestamp, database=f'{self.database_name}_1m')
+        try:
+            self.save_measurements(timestamp,
+                                   measurements=self.m_measurements,
+                                   database=f'{self.database_name}_1m')
+        except Exception:
+            self.save_measurements_1m(timestamp)
 
-    def save_measurements(self, timestamp, **kwargs):
-        ms = []
+    def save_measurements(self, timestamp, measurements=None, **kwargs):
+        if measurements is None:
+            measurements = self.measurements
+
         for symbol, book in self.orderbooks.items():
-            ms.append(book.measurement())
-        self.write_points(ms, time_precision='s', **kwargs)
+            measurements.append(book.measurement())
+
+        try:
+            self.write_points(measurements, time_precision='s', **kwargs)
+            measurements = []
+        except Exception:
+            self.save_measurements(timestamp, **kwargs)
 
 
 @click.command()
