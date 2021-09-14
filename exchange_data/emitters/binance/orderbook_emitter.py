@@ -46,8 +46,10 @@ class BitmexOrderBookEmitter(
             database_name = 'binance'
 
         super().__init__(
+            retry_on_timeout=True,
+            socket_keepalive=True,
             database_name=database_name,
-            database_batch_size=10,
+            database_batch_size=100,
             stats_prefix=stats_prefix,
             **kwargs
         )
@@ -85,7 +87,7 @@ class BitmexOrderBookEmitter(
 
                 self.on(self.channel_suffix(f'{symbol}_depth'), self.message)
                 # self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
-                # self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
+                self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
 
     @cached_property
     def queued_symbols(self):
