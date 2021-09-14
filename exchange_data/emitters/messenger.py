@@ -1,5 +1,6 @@
 from abc import ABC
 from enum import Enum, auto
+from inspect import signature
 
 from statsd import StatsClient
 
@@ -33,7 +34,12 @@ class Messenger(EventEmitterBase, StatsClient):
 
         StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
         self.decode = decode
-        self.redis_client = Redis(host=host)
+
+        redis_params = [param for param in list(signature(Redis).parameters)]
+        redis_kwargs = {param: kwargs[param] for param in redis_params
+                        if param in kwargs}
+
+        self.redis_client = Redis(host=host, **redis_kwargs)
         self._pubsub = None
 
         if 'channels' in vars(self):
