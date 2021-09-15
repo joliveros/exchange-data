@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import alog
+import zlib
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -35,14 +37,16 @@ class OrderBookWriter(
             retry_on_timeout=True,
             socket_keepalive=True,
             database_name=database_name,
-            database_batch_size=10,
+            database_batch_size=33,
             stats_prefix=stats_prefix,
             **kwargs
         )
 
         while True:
             obj = self.redis_client.blpop(database_name)
-            meas = pickle.loads(obj[1])
+            obj = zlib.decompress(obj[1])
+            meas = pickle.loads(obj)
+            alog.info(alog.pformat(meas))
             self.save_measurements(meas)
 
     def save_measurements(self, measurement, **kwargs):

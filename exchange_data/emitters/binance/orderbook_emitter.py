@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import pickle
 
+import zlib
 from cached_property import cached_property
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -216,7 +217,9 @@ class BitmexOrderBookEmitter(
             database = self.database_name
 
         for symbol, book in self.orderbooks.items():
-            self.redis_client.lpush(database, pickle.dumps(book.measurement()))
+            obj = pickle.dumps(book.measurement())
+            obj = zlib.compress(obj)
+            self.redis_client.lpush(database, obj)
 
 
 @click.command()
