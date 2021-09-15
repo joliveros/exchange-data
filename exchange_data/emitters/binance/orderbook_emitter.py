@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import pickle
+
 from cached_property import cached_property
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
@@ -208,17 +210,13 @@ class BitmexOrderBookEmitter(
             self.save_measurements_1m(timestamp)
 
     def save_measurements(self, timestamp, measurements=None, **kwargs):
-        if measurements is None:
-            measurements = self.measurements
+        if 'database' in kwargs:
+            database = kwargs['database']
+        else:
+            database = self.database_name
 
         for symbol, book in self.orderbooks.items():
-            measurements.append(book.measurement())
-
-        try:
-            self.write_points(measurements, time_precision='s', **kwargs)
-            measurements = []
-        except Exception:
-            self.save_measurements(timestamp, **kwargs)
+            self.redis_client.lpush(database, pickle.dumps(book.measurement()))
 
 
 @click.command()
