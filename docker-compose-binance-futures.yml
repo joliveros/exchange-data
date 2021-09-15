@@ -7,7 +7,7 @@ services:
 
     orderbook:
         deploy:
-            replicas: 8
+            replicas: 2
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -16,7 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 8 -F -m 300"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 2 -F -m 300"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -27,15 +27,47 @@ services:
         networks:
             - public
 
+    orderbook_writer:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/orderbook_writer.py -F"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - redis
+            - influxdb
+        networks:
+            - public
+
+    orderbook_writer_1m:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/orderbook_writer.py -F -s _1m"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - redis
+            - influxdb
+        networks:
+            - public
+
     ticker:
         deploy:
-            replicas: 2
+            replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 2 -F"
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -49,7 +81,7 @@ services:
             resources:
                 limits:
                     cpus: '0.6'
-            replicas: 2
+            replicas: 1
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -58,7 +90,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/symbol_emitter.py -w 2 -F"
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F"
         environment:
             - LOG_LEVEL=INFO
         networks:
