@@ -7,9 +7,7 @@ coveralls
 docker
 flake8
 gax-google-logging-v2
-git+https://github.com/joliveros/gdax-python.git#egg=gdax
 git+https://github.com/joliveros/sec.git#egg=sec
-git+https://github.com/nlsdfnbch/Pysher.git#egg=pysher
 gym
 influxdb
 matplotlib
@@ -18,9 +16,6 @@ opencv-python
 optuna
 pandas==0.25.3
 plotly
-progressbar2
-prometheus_client
-pusherclient
 pytest
 pytest-cov
 pytest-mock
@@ -43,7 +38,6 @@ statsd
 stringcase
 tensorflow-datasets
 tensorflow-gpu==2.5.0
-tensorflow-serving-api
+bintrees
 timestamp
-tqdm
 unicorn-binance-websocket-api
