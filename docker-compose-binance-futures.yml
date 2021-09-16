@@ -7,7 +7,7 @@ services:
 
     orderbook:
         deploy:
-            replicas: 2
+            replicas: 3
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -16,7 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 2 -F -m 300"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 3 -F -m 300"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -29,7 +29,7 @@ services:
 
     orderbook_writer:
         deploy:
-            replicas: 1
+            replicas: 4
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
@@ -45,7 +45,7 @@ services:
 
     orderbook_writer_1m:
         deploy:
-            replicas: 1
+            replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
@@ -61,13 +61,13 @@ services:
 
     ticker:
         deploy:
-            replicas: 1
+            replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F"
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 2 -F"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -81,7 +81,7 @@ services:
             resources:
                 limits:
                     cpus: '0.6'
-            replicas: 1
+            replicas: 3
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -90,7 +90,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F"
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 3 -F"
         environment:
             - LOG_LEVEL=INFO
         networks:
