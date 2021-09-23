@@ -61,6 +61,9 @@ services:
 
     ticker:
         deploy:
+            resources:
+                limits:
+                    cpus: '0.5'
             replicas: 2
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
@@ -80,7 +83,7 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '0.6'
+                    cpus: '0.5'
             replicas: 3
             update_config:
                 parallelism: 2
