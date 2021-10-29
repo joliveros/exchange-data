@@ -23,7 +23,7 @@ services:
         deploy:
           resources:
             limits:
-              memory: 4096M
+              memory: 6144M
         image: registry.rubercubic.com:5001/influxdb
         env_file:
           - ./.env.prod
