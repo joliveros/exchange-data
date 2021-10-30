@@ -93,8 +93,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         try:
             timestamp, best_ask, best_bid, frame = next(self.observations)
         except StopIteration:
-            self.observations = self._get_observation()
-            timestamp, best_ask, best_bid, frame = next(self.observations)
+            self.observations = None
+            return self.get_observation()
 
         self._best_ask = best_ask
         self._best_bid = best_bid
