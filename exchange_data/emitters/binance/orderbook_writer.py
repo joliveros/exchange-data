@@ -1,15 +1,14 @@
 #!/usr/bin/env python
-import time
-
-import alog
-import zlib
 
 from exchange_data import Database
 from exchange_data.emitters import Messenger, SignalInterceptor
 from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.utils import DateTimeUtils
+import alog
 import click
 import pickle
+import time
+import zlib
 
 
 class OrderBookWriter(
@@ -48,11 +47,9 @@ class OrderBookWriter(
             obj = self.redis_client.blpop(database_name)
             obj = zlib.decompress(obj[1])
             meas = pickle.loads(obj)
-            alog.info(alog.pformat(meas))
             self.save_measurements(meas)
 
     def save_measurements(self, measurement, **kwargs):
-        alog.info('save measurement')
         try:
             self._save_measurements(measurement, **kwargs)
         except Exception:
