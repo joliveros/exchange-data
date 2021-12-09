@@ -1,6 +1,7 @@
 FROM registry.rubercubic.com:5001/exchange-data:base
 
 ENV NAME exchange-data
+ENV PATH=/home/${USER}/.local/bin:$PATH
 
 WORKDIR /home/joliveros/src
 
