@@ -26,7 +26,7 @@ datasources:
   # <string> database name, if used
   database: "metrics"
   # <bool> enable/disable basic auth
-  basicAuth: false
+  basicAuth: true
 #  withCredentials:
   # <bool> mark as default datasource. Max one per org
   isDefault: true
@@ -43,4 +43,4 @@ datasources:
 #    tlsClientKey: "..."
   version: 1
   # <bool> allow users to edit datasources from the UI.
-  editable: false
+  editable: true

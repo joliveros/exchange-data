@@ -123,8 +123,8 @@ class Trade(Logging):
 
         # self.reward_for_pnl()
 
-        if self.position_length > self.max_position_length:
-            self.reward_for_pnl()
+        # if self.position_length > self.max_position_length:
+        #     self.reward_for_pnl()
 
         self.total_reward += self.reward
 
@@ -205,8 +205,10 @@ class Trade(Logging):
         # self.reward = pnl_diff
 
         if pnl < 0.0:
+            pass
             _pnl = abs(pnl)
             self.reward = (_pnl ** (1 / 4)) * -1
         else:
-            self.reward = pnl
+            self.reward = (pnl ** (1 / 4))
+            # self.reward = pnl
 

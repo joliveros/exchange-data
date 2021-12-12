@@ -41,7 +41,8 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
         BinanceUtils.__init__(self, **kwargs)
         del kwargs['futures']
         del kwargs['symbol_filter']
-        BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
+        BinanceWebSocketApiManager.__init__(self, exchange="binance.com",
+                                            **kwargs)
         self.limit = limit
 
         self.update_queued_symbols('book_ticker')
@@ -88,12 +89,13 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
                         if lag.total_seconds() > self.max_lag:
                             if self.last_start < DateTimeUtils.now() - \
-                                timedelta(seconds=timeparse('1m')):
+                               timedelta(seconds=timeparse('1m')):
                                 alog.info(
                                     '## acceptable lag has been exceeded ##')
                                 raise ExceededLagException()
 
-                        self.publish(self.channel_for_symbol(symbol), json.dumps(data))
+                        self.publish(self.channel_for_symbol(symbol),
+                                     json.dumps(data))
 
     def channel_for_symbol(self, symbol):
         if self.futures:
