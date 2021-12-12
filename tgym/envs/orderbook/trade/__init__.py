@@ -205,7 +205,6 @@ class Trade(Logging):
         # self.reward = pnl_diff
 
         if pnl < 0.0:
-            pass
             _pnl = abs(pnl)
             self.reward = (_pnl ** (1 / 4)) * -1
         else:
