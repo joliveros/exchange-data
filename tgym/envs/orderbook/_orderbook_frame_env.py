@@ -131,6 +131,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         observation = self.get_observation()
 
         if self.step_count > self.max_steps:
+            alog.info(f'### reached max steps {self.max_steps} ###')
             done = True
 
         reward = self.reset_reward()

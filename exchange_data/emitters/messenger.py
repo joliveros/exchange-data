@@ -48,6 +48,10 @@ class Messenger(EventEmitterBase, StatsClient):
 
         self.on(Events.Message.value, self.handler)
 
+    def _send(self, data):
+        """Send data to statsd."""
+        self._sock.sendto(data.encode('ascii'), self._addr)
+
     def handler(self, msg):
         if MessageType[msg['type']] == MessageType.message:
             channel_str = msg['channel'].decode()

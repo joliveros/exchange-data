@@ -12,21 +12,17 @@ services:
       - ./telegraf/etc/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
       - influxdb
-    links:
-      - influxdb
     ports:
       - '0.0.0.0:8125:8125/udp'
     networks:
       - public
 
   grafana:
-    image: grafana/grafana:7.4.2
+    image: grafana/grafana-oss:8.1.8
     user: "472"
     depends_on:
       - influxdb
     env_file: configuration.env
-    links:
-      - influxdb
     ports:
       - '0.0.0.0:3001:3000'
     volumes:
