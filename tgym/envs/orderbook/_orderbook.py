@@ -480,11 +480,6 @@ class OrderBookTradingEnv(Logging, Env):
 
         self.reward += trade.reward
 
-        if trade.pnl == 0.0 and type(trade) != FlatTrade:
-            alog.info(trade)
-            alog.info((trade.capital, trade.pnl))
-            raise Exception()
-
         if type(trade) != FlatTrade:
             self.capital += trade.capital - 1
 
