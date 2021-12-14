@@ -23,6 +23,7 @@ import time
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
+
 class BinanceUtils(object):
     limit = 0
     max_symbols = None
@@ -49,7 +50,7 @@ class BinanceUtils(object):
     @property
     def symbol_info(self):
         return [info for info in self.get_exchange_info['symbols'] if
-                   info['symbol'] == self.symbol][0]
+                info['symbol'] == self.symbol][0]
 
     @cached_property
     def queued_symbols(self):
@@ -76,7 +77,9 @@ class BinanceUtils(object):
                     alog.info('try to update queued symbols')
                     self.queued_symbols.clear()
                     self.queued_symbols.update(set(self.symbols))
+
                     alog.info(self.queued_symbols)
+                    alog.info(f'number of symbols {len(self.queued_symbols)}')
 
         except RedLockError:
             pass
@@ -122,8 +125,8 @@ class BinanceUtils(object):
     @property
     def price_filter(self):
         return [filter for filter in self.symbol_info['filters'] if
-                        filter[
-            'filterType'] == 'PRICE_FILTER'][0]
+                filter[
+                    'filterType'] == 'PRICE_FILTER'][0]
 
     @property
     def step_size(self):
@@ -157,7 +160,6 @@ class BinanceUtils(object):
         symbols = [symbol for symbol in exchange_info['symbols']
                    if symbol['status'] == 'TRADING']
 
-
         symbol_names = [symbol['symbol'] for symbol in symbols if symbol[
             'symbol']]
 
@@ -185,7 +187,8 @@ class BinanceUtils(object):
                 alog.info(self.max_symbols)
 
         try:
-            while len(self.queued_symbols) > 0 and len(self.depth_symbols) < self.max_symbols:
+            while len(self.queued_symbols) > 0 and len(
+                self.depth_symbols) < self.max_symbols:
                 if self.limit > 0:
                     if len(self.depth_symbols) > self.limit:
                         break
@@ -225,17 +228,17 @@ class BinanceUtils(object):
         except KeyError:
             pass
 
-    def take_lock(self, prefix='', retry_times=60*60, retry_delay=1000):
+    def take_lock(self, prefix='', retry_times=60 * 60, retry_delay=1000):
         lock_name = f'{prefix}_take_lock'
 
         lock = RedLock(lock_name, [dict(
-                host=settings.REDIS_HOST,
-                db=0
-            )],
-            retry_delay=retry_delay,
-            retry_times=retry_times,
-            ttl=timeparse('2m') * 1000
-        )
+            host=settings.REDIS_HOST,
+            db=0
+        )],
+                       retry_delay=retry_delay,
+                       retry_times=retry_times,
+                       ttl=timeparse('2m') * 1000
+                       )
 
         alog.info(lock_name)
 
@@ -252,6 +255,7 @@ class BinanceUtils(object):
             return f'{channel}_futures'
         else:
             return channel
+
 
 class ExceededLagException(Exception):
     pass
