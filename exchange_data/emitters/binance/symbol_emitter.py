@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 from datetime import timedelta
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -92,6 +93,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                         symbol = data['data']["s"]
                         self.publish(self.channel_for_symbol(symbol), data_str)
+            else:
+                time.sleep(100/1000)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
