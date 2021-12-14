@@ -86,7 +86,7 @@ class ResNetTS:
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=16,
+        num_conv=7,
         padding=1,
         strides=14,
         **kwargs
