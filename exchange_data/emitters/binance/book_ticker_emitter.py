@@ -96,6 +96,8 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
                         self.publish(self.channel_for_symbol(symbol),
                                      json.dumps(data))
+            else:
+                time.sleep(100)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
