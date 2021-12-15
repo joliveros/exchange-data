@@ -270,8 +270,9 @@ class OrderBookTradingEnv(Logging, Env):
 
     def print_summary(self):
         if settings.LOG_LEVEL == logging.DEBUG:
-            if self.step_count % self.summary_interval == 0:
-                alog.info(alog.pformat(self.summary()))
+            if self.summary_interval > -1:
+                if self.step_count % self.summary_interval == 0:
+                    alog.info(alog.pformat(self.summary()))
 
     @property
     def best_bid(self):
