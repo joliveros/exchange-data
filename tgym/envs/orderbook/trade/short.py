@@ -18,8 +18,6 @@ class ShortTrade(Trade):
 
         if self.position_length >= self.max_short_position_length and \
             self.max_short_position_length > 0:
-            alog.info(args)
-            alog.info(f'### environment should be done {self.position_length} ###')
             self.done = True
 
     @property
