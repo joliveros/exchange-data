@@ -50,9 +50,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     @done.setter
     def done(self, value):
-        if value:
-            traceback.print_stack()
-
         self._done = value
 
     @property
@@ -111,7 +108,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
-        done = False
+        done = self.done
+        self.done = False
+
         assert self.action_space.contains(action)
 
         self.step_position(action)

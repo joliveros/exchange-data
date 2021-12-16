@@ -202,7 +202,6 @@ class OrderBookTradingEnv(Logging, Env):
 
     @done.setter
     def done(self, value):
-        traceback.print_stack()
         self._done = value
 
     def get_volatile_ranges(self):
