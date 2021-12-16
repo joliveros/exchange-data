@@ -5,12 +5,22 @@ from tgym.envs.orderbook.trade import Trade
 
 
 class ShortTrade(Trade):
-    def __init__(self, **kwargs):
+    def __init__(self, max_short_position_length=-1, **kwargs):
         super().__init__(position_type=Positions.Short, **kwargs)
+        self.max_short_position_length = max_short_position_length
 
     @property
     def exit_price(self):
         return self.best_ask
+
+    def step(self, *args):
+        super().step(*args)
+
+        if self.position_length >= self.max_short_position_length and \
+            self.max_short_position_length > 0:
+            alog.info(args)
+            alog.info(f'### environment should be done {self.position_length} ###')
+            self.done = True
 
     @property
     def pnl(self):
