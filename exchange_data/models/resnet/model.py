@@ -79,16 +79,16 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        base_filter_size=18,
-        block_filter_factor=20,
-        block_kernel=4,
-        kernel_size=12,
+        base_filter_size=7,
+        block_filter_factor=16,
+        block_kernel=2,
+        kernel_size=2,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
         num_conv=7,
-        padding=1,
-        strides=14,
+        padding=4,
+        strides=1,
         **kwargs
     ):
         alog.info(input_shape)
@@ -109,9 +109,9 @@ class ResNetTS:
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
         conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
-        conv = tf.keras.layers.MaxPooling2D(
-            (max_pooling_kernel, max_pooling_kernel),
-            strides=(max_pooling_strides, max_pooling_strides))(conv)
+        # conv = tf.keras.layers.MaxPooling2D(
+        #     (max_pooling_kernel, max_pooling_kernel),
+        #     strides=(max_pooling_strides, max_pooling_strides))(conv)
 
         alog.info(conv.shape)
 
