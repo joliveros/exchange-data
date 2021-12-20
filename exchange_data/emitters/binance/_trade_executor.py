@@ -90,7 +90,6 @@ class TradeExecutor(BinanceUtils, Messenger):
     @cached_property_with_ttl(ttl=timeparse('1m'))
     def client(self) -> Client:
         client = self._client()
-        alog.info(client)
         return client
 
     @staticmethod
@@ -178,7 +177,7 @@ class TradeExecutor(BinanceUtils, Messenger):
 
         alog.info('### prediction ###')
         alog.info(self.position)
-        alog.info((self.quantity))
+        alog.info(self.quantity)
 
         can_trade = False
 
@@ -249,7 +248,7 @@ class TradeExecutor(BinanceUtils, Messenger):
     def account_data(self):
         data = dict(
             # account_status=self.client.get_account_status(),
-            balance=self.client.get_asset_balance(self.base_asset),
+            balance=self.client.futures_account_balance(),
             # account_assets=self.client.get_sub_account_assets()
             # trades=self.client.get_my_trades(symbol=self.symbol)
             # dust_log=self.client.get_dust_log(),
@@ -260,7 +259,13 @@ class TradeExecutor(BinanceUtils, Messenger):
 
     @property
     def balance(self):
-        return float(self.account_data['balance']['free'])
+        balance = [
+           assetBalance for assetBalance in
+           self.account_data['balance']
+           if assetBalance['asset'] == self.base_asset
+        ][0]
+
+        return float(balance['balance'])
 
     @cached_property_with_ttl(ttl=timeparse('10s'))
     def orders(self):
