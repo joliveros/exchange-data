@@ -120,7 +120,7 @@ class TradeExecutor(BinanceUtils, Messenger):
 
             quantity = self.balance / (float(self.bid_price) * (1 + self.fee))
 
-            return self.truncate_quantity(quantity)
+            return self.truncate_quantity(quantity * self.leverage)
 
     @property
     def min_quantity(self):
