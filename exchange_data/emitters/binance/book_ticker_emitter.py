@@ -94,10 +94,13 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
                                     '## acceptable lag has been exceeded ##')
                                 raise ExceededLagException()
 
+                        # alog.info((self.channel_for_symbol(symbol),
+                        #              json.dumps(data)))
+
                         self.publish(self.channel_for_symbol(symbol),
                                      json.dumps(data))
             else:
-                time.sleep(100)
+                time.sleep(100/1000)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
