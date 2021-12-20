@@ -80,7 +80,7 @@ class ResNetTS:
         self,
         input_shape,
         base_filter_size=2,
-        block_filter_factor=4,
+        block_filter_factor=7,
         block_kernel=2,
         kernel_size=2,
         max_pooling_kernel=2,
