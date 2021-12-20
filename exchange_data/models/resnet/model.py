@@ -79,9 +79,9 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        base_filter_size=4,
-        block_filter_factor=14,
-        block_kernel=7,
+        base_filter_size=2,
+        block_filter_factor=4,
+        block_kernel=2,
         kernel_size=2,
         max_pooling_kernel=2,
         max_pooling_strides=2,
