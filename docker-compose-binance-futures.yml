@@ -64,13 +64,13 @@ services:
           # resources:
               #limits:
               #      cpus: '0.5'
-            replicas: 1
+            replicas: 3
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         volumes:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F"
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 3 -F"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -84,7 +84,7 @@ services:
           #resources:
           #      limits:
           #          cpus: '0.5'
-            replicas: 1
+            replicas: 3
             update_config:
                 parallelism: 2
                 delay: 20s
@@ -93,7 +93,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F"
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 3 -F"
         environment:
             - LOG_LEVEL=INFO
         networks:
