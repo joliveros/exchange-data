@@ -73,8 +73,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def _get_observation(self):
         self.max_steps = len(self.frame)
-        import pandas as pd
-        pd.set_option('display.max_rows', len(self.frame) + 1)
 
         for i in range(self.frame_start, len(self.frame)):
             row = self.frame.iloc[i]
