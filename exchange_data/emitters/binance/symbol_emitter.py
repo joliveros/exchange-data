@@ -93,8 +93,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                         symbol = data['data']["s"]
 
-                        # alog.info((self.channel_for_symbol(symbol), data_str))
-
                         self.publish(self.channel_for_symbol(symbol), data_str)
             else:
                 time.sleep(100/1000)
