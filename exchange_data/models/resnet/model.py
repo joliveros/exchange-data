@@ -79,6 +79,7 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
+        gap_enabled=False,
         base_filter_size=8,
         block_filter_factor=2,
         block_kernel=2,
@@ -146,13 +147,12 @@ class ResNetTS:
         for _conv in convs:
             conv = _conv(conv)
 
-        gap = GlobalAveragePooling2D()(conv)
+        if gap_enabled:
+            output = GlobalAveragePooling2D()(conv)
+        else:
+            output = conv
 
-        output = gap
-
-        # output = Dense(num_categories, activation='softmax')(gap)
-
-        alog.info(output.shape)
+        # alog.info(output.shape)
 
         self.model = tf.keras.models.Model(inputs=input, outputs=output)
         self.model.summary()
