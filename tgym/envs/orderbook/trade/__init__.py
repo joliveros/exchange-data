@@ -178,32 +178,9 @@ class Trade(Logging):
     def clear_steps_since_max(self):
         self.steps_since_max = 0.0
 
-    def reward_for_pnl_old(self):
-        pnl = self.pnl
-
-        if self.last_pnl != 0.0:
-            pnl_diff = self.last_pnl - pnl
-        else:
-            pnl_diff = 0.0001
-
-        if pnl_diff < 0.0:
-            # _pnl = abs(pnl)
-            # self.reward = (_pnl ** (1 / 4)) * -1
-            self.reward = -1.0
-        else:
-            self.reward = pnl_diff
-
-        self.last_pnl = pnl
-
     def reward_for_pnl(self):
         pnl = self.pnl
-        # if self.last_pnl == 0.0:
-        #     self.last_pnl = pnl
-        #
-        # pnl_diff = pnl - self.last_pnl
-        # self.last_pnl = pnl
-        # self.reward = pnl_diff
-
+        
         if pnl < self.min_change:
             _pnl = abs(pnl)
             self.reward = _pnl * -1
