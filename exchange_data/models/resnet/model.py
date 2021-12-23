@@ -79,7 +79,7 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        gap_enabled=False,
+        gap_enabled=True,
         base_filter_size=8,
         block_filter_factor=2,
         block_kernel=2,
@@ -87,7 +87,7 @@ class ResNetTS:
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=7,
+        num_conv=3,
         padding=4,
         strides=1,
         **kwargs
