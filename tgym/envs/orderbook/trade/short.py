@@ -16,8 +16,7 @@ class ShortTrade(Trade):
     def step(self, *args):
         super().step(*args)
 
-        if self.position_length >= self.max_short_position_length and \
-            self.max_short_position_length > 0:
+        if self.position_length >= self.max_short_position_length > 0:
             self.done = True
 
     @property

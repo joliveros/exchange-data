@@ -42,6 +42,15 @@ class FlatTrade(Trade):
         # if self.position_length > self.max_flat_position_length:
         #     self.reward_for_pnl()
 
+    def reward_for_pnl(self):
+        pnl = self.pnl
+
+        if pnl < 0:
+            _pnl = abs(pnl)
+            self.reward = (_pnl ** (1 / 4)) * -1
+        else:
+            self.reward = (pnl ** (1 / 4))
+
     def close(self):
         if self.short_reward_enabled:
             self.reward_for_pnl()
