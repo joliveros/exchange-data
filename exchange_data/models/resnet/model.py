@@ -126,7 +126,8 @@ class ResNetTS:
 
         convs = [
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
-            lambda conv: self.conv_block(conv, kernel_size, filters),
+            lambda conv: self.identity_block(conv, kernel_size, filters),
+            lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.conv_block(conv, kernel_size, filters),
             # lambda conv: self.identity_block(conv, kernel_size, filters),
             # lambda conv: self.conv_block(conv, kernel_size, filters2),
@@ -171,7 +172,7 @@ class ResNetTS:
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        conv = Conv2D(filters=filters[2], kernel_size=(1, 1), padding='same',
+        conv = Conv2D(filters=filters[2], padding='same', kernel_size=[1, 1],
                       kernel_initializer='he_normal')(conv)
 
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)

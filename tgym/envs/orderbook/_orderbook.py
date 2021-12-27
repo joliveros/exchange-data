@@ -61,7 +61,7 @@ class OrderBookTradingEnv(Logging, Env):
         action_space=None,
         is_training=True,
         print_ascii_chart=False,
-        min_change=0.00295,
+        min_change=0.005,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
