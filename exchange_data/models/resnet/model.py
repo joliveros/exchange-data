@@ -80,7 +80,7 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=64,
+        base_filter_size=32,
         block_filter_factor=2,
         block_kernel=2,
         kernel_size=2,
@@ -110,7 +110,7 @@ class ResNetTS:
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        # conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
+        conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
         # conv = tf.keras.layers.MaxPooling2D(
         #     (max_pooling_kernel, max_pooling_kernel),
         #     strides=(max_pooling_strides, max_pooling_strides))(conv)
