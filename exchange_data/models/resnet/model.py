@@ -89,7 +89,7 @@ class ResNetTS:
         num_categories=2,
         num_conv=3,
         padding=0,
-        strides=3,
+        strides=1,
         **kwargs
     ):
         alog.info(input_shape)
@@ -109,7 +109,8 @@ class ResNetTS:
 
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
-        conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
+
+        # conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
         # conv = tf.keras.layers.MaxPooling2D(
         #     (max_pooling_kernel, max_pooling_kernel),
         #     strides=(max_pooling_strides, max_pooling_strides))(conv)
