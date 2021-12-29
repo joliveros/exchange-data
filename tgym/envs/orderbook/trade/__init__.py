@@ -182,11 +182,10 @@ class Trade(Logging):
         pnl = self.pnl
 
         if pnl < 0:
-            _pnl = abs(pnl)
-            self.reward = (_pnl ** (1 / 4)) * -1
+            self.reward = -1.0
         elif 0 < pnl < self.min_change:
-            self.reward = 0
+            self.reward = 0.0
         else:
-            self.reward = (pnl ** (1 / 4))
+            self.reward = 1.0
 
 
