@@ -80,7 +80,7 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=32,
+        base_filter_size=16,
         block_filter_factor=2,
         block_kernel=2,
         kernel_size=2,
