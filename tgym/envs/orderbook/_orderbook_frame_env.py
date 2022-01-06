@@ -91,7 +91,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             timestamp, best_ask, best_bid, frame = next(self.observations)
         except StopIteration:
             self.observations = None
-            return self.get_observation()
+            self.done = True
+            return self.last_observation
 
         self._best_ask = best_ask
         self._best_bid = best_bid
@@ -99,6 +100,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.position_history.append(self.position.name[0])
 
         self.last_datetime = str(timestamp)
+
         self._last_datetime = timestamp
 
         self.last_observation = frame
@@ -107,7 +109,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def step(self, action):
         done = self.done
-        self.done = False
 
         assert self.action_space.contains(action)
 
@@ -129,12 +130,14 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         observation = self.get_observation()
 
-        if self.step_count > self.max_steps:
-            done = True
+        if not done:
+            done = self.done
 
         reward = self.reset_reward()
 
         self.print_summary()
+
+        self.done = False
 
         return observation, reward, done, {'capital': self.capital}
 
