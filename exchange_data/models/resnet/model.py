@@ -80,14 +80,14 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=16,
+        base_filter_size=64,
         block_filter_factor=2,
         block_kernel=2,
         kernel_size=2,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=3,
+        num_conv=16,
         padding=0,
         strides=1,
         **kwargs
@@ -117,8 +117,7 @@ class ResNetTS:
 
         alog.info(conv.shape)
 
-        filters = [base_filter_size, base_filter_size, base_filter_size
-                                                * block_filter_factor]
+        filters = [base_filter_size, base_filter_size, base_filter_size]
         kernel_size = (block_kernel, block_kernel)
 
         filters2 = [filter * 2 for filter in filters]
@@ -129,25 +128,24 @@ class ResNetTS:
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.identity_block(conv, kernel_size, filters),
-            lambda conv: self.conv_block(conv, kernel_size, filters),
-            # lambda conv: self.identity_block(conv, kernel_size, filters),
-            # lambda conv: self.conv_block(conv, kernel_size, filters2),
-            # lambda conv: self.identity_block(conv, kernel_size, filters2),
-            # lambda conv: self.identity_block(conv, kernel_size, filters2),
-            # lambda conv: self.identity_block(conv, kernel_size, filters2),
-            # lambda conv: self.conv_block(conv, kernel_size, filters3, [1, 1]),
-            # lambda conv: self.identity_block(conv, kernel_size, filters3),
-            # lambda conv: self.identity_block(conv, kernel_size, filters3),
-            # lambda conv: self.identity_block(conv, kernel_size, filters3),
-            # lambda conv: self.identity_block(conv, kernel_size, filters3),
-            # lambda conv: self.identity_block(conv, kernel_size, filters3),
-            # lambda conv: self.conv_block(conv, kernel_size, filters4),
-            # lambda conv: self.identity_block(conv, kernel_size, filters4),
-            # lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.conv_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.conv_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.identity_block(conv, kernel_size, filters3),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
         ]
         convs = convs[:num_conv]
 
         for _conv in convs:
+            alog.info(conv)
             conv = _conv(conv)
 
         if gap_enabled:
@@ -163,13 +161,13 @@ class ResNetTS:
     def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):
         alog.info(input_tensor.shape)
 
-        conv = Conv2D(filters=filters[0], kernel_size=[1, 1],
+        conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
                       kernel_initializer='he_normal')(input_tensor)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        conv = Conv2D(filters=filters[1], kernel_size=kernel_size, strides=strides,
-                      padding='same', kernel_initializer='he_normal')(conv)
+        conv = Conv2D(filters=filters[1], kernel_size=kernel_size,
+               padding='same', kernel_initializer='he_normal')(conv)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
@@ -180,7 +178,9 @@ class ResNetTS:
 
         alog.info(conv.shape)
 
-        short_cut = Conv2D(filters=filters[2], kernel_size=kernel_size, strides=strides,
+        alog.info(kernel_size)
+
+        short_cut = Conv2D(filters=filters[2], kernel_size=[1, 1], strides=strides,
                            padding='same', kernel_initializer='he_normal')(input_tensor)
 
         short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(short_cut)
