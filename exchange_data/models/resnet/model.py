@@ -80,16 +80,16 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=64,
+        base_filter_size=164,
         block_filter_factor=2,
-        block_kernel=2,
-        kernel_size=2,
+        block_kernel=3,
+        kernel_size=3,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
         num_conv=16,
         padding=0,
-        strides=1,
+        strides=3,
         **kwargs
     ):
         alog.info(input_shape)
@@ -125,7 +125,7 @@ class ResNetTS:
         filters4 = [filter * 8 for filter in filters]
 
         convs = [
-            lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
+            lambda conv: self.conv_block(conv, kernel_size, filters),
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.conv_block(conv, kernel_size, filters2),
@@ -158,7 +158,7 @@ class ResNetTS:
         self.model = tf.keras.models.Model(inputs=input, outputs=output)
         self.model.summary()
 
-    def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):
+    def conv_block(self, input_tensor, kernel_size, filters, strides=[3, 3]):
         alog.info(input_tensor.shape)
 
         conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
@@ -192,7 +192,7 @@ class ResNetTS:
 
         return output
 
-    def identity_block(self, input_tensor, kernel_size, filters, strides=[1, 1]):
+    def identity_block(self, input_tensor, kernel_size, filters, strides=[3, 3]):
         filters1, filters2, filters3 = filters
 
         x = Conv2D(filters1, (1, 1),
