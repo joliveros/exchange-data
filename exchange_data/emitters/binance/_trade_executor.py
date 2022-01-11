@@ -7,7 +7,6 @@ from decimal import Decimal, getcontext
 from exchange_data import settings
 from exchange_data.emitters import binance, Messenger
 from exchange_data.emitters.binance import BinanceUtils
-from exchange_data.models.resnet.study_wrapper import StudyWrapper
 from exchange_data.trading import Positions
 from math import floor
 from pytimeparse.timeparse import timeparse
@@ -16,7 +15,6 @@ from redis_cache import RedisCache
 import alog
 import binance
 import click
-import logging
 import signal
 import sys
 
