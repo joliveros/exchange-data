@@ -72,7 +72,7 @@ class C3D:
     def __init__(
         self,
         input_shape,
-        base_filter_size=64,
+        base_filter_size=32,
         dense_size=64,
         kernel_size=3,
         strides=2,
