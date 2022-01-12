@@ -73,8 +73,8 @@ class C3D:
         self,
         input_shape,
         base_filter_size=32,
-        dense_size=64,
-        kernel_size=5,
+        dense_size=312,
+        kernel_size=2,
         strides=2,
         **kwargs
     ):
