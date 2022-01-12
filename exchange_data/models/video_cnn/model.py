@@ -74,12 +74,16 @@ class C3D:
         input_shape,
         base_filter_size=32,
         dense_size=64,
-        kernel_size=3,
+        kernel_size=5,
         strides=2,
         **kwargs
     ):
         self.kernel_size = kernel_size
         self.strides = strides
+
+        if kernel_size > 4:
+            self.strides = 3
+
         self.conv_count = 0
         self.pool_count = 0
         model = Sequential()
@@ -100,7 +104,7 @@ class C3D:
         # 4th layer group
         # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
-        model.add(self.conv(base_filter_size * 8))
+        # model.add(self.conv(base_filter_size * 8))
         # model.add(self.max_pooling())
 
         # model.add(GlobalAveragePooling3D())
@@ -109,8 +113,8 @@ class C3D:
 
         # FC layers group
         model.add(Dense(dense_size, activation='relu', name='fc6'))
-        # model.add(Dropout(.5))
-        # model.add(Dense(dense_size, activation='relu', name='fc7'))
+        model.add(Dropout(.5))
+        model.add(Dense(dense_size, activation='relu', name='fc7'))
         model.add(Dropout(.5))
         # model.add(Dense(int(dense_size / 2), activation='softmax', name='fc8'))
 
