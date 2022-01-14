@@ -101,6 +101,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
     @property
     def frame(self):
+        if self.cache and self.filename.exists():
+            return pd.read_pickle(str(self.filename))
+
         df = self._frame()
 
         orderbook_img = df.orderbook_img.to_numpy().tolist()
@@ -151,6 +154,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
         ]
 
+        self.cache_frame(df)
+
         return df
 
     @property
@@ -178,7 +183,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             window_size=self.window_size
         )
 
-        df = self.cache_frame(levels)
+        df = pd.DataFrame(
+            columns=['timestamp', 'best_ask', 'best_bid', 'orderbook_img'])
+
+        for row in levels:
+            df.loc[df.shape[0], :] = row
 
         orderbook_imgs = deque(maxlen=self.sequence_length)
 
@@ -237,21 +246,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         return df
 
-    def cache_frame(self, levels):
-        if not self.filename.exists() or not self.cache:
-            df = pd.DataFrame(
-                columns=['timestamp', 'best_ask', 'best_bid', 'orderbook_img'])
-
-            for row in levels:
-                df.loc[df.shape[0], :] = row
-
-            if self.cache:
-                df.to_pickle(str(self.filename))
-                df = None
-                df = pd.read_pickle(str(self.filename))
-        else:
-            df = pd.read_pickle(str(self.filename))
-        return df
+    def cache_frame(self, df):
+        df.to_pickle(str(self.filename))
 
     def group_price_levels(self, orderbook_side):
         groups = dict()
