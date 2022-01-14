@@ -62,6 +62,7 @@ class OrderBookTradingEnv(Logging, Env):
         is_training=True,
         print_ascii_chart=False,
         min_change=0.002,
+        max_change=0.01,
         max_negative_pnl=-0.05,
         frame_width=224,
         reward_ratio=1.0,
@@ -98,6 +99,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.position_pnl_diff_history = np.array([])
         self._done = False
         self.min_change = min_change
+        self.max_change = max_change
         self.logger = logger
         self.summary_interval = summary_interval
         self.max_n_noops = 10
@@ -424,6 +426,7 @@ class OrderBookTradingEnv(Logging, Env):
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
+                max_change=self.max_change,
                 reward_ratio=self.reward_ratio,
                 step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
@@ -444,6 +447,7 @@ class OrderBookTradingEnv(Logging, Env):
                 entry_price=self.best_bid,
                 trading_fee=self.trading_fee,
                 min_change=self.min_change,
+                max_change=self.max_change,
                 step_reward_ratio=self.step_reward_ratio,
                 reward_ratio=self.reward_ratio,
                 step_reward=self.step_reward,

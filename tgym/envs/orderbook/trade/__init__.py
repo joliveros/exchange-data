@@ -17,6 +17,7 @@ class Trade(Logging):
         trading_fee: float,
         position_type: Positions,
         min_change: float,
+        max_change: float,
         max_position_length=2,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
@@ -35,6 +36,7 @@ class Trade(Logging):
         self.postive_pnl_reward = (1 - self.reward_ratio)
         self.leverage = leverage
         self.min_change = min_change
+        self.max_change = max_change
         self.max_increase_reward = 1.0
         self.max_steps_reward = 3
         self.positive_close_reward = 1.0
@@ -194,7 +196,9 @@ class Trade(Logging):
             self.reward = (_pnl ** (1 / 4)) * -1
         elif 0 < pnl < self.min_change:
             self.reward = (_pnl ** (1 / 4)) * -1
-        else:
+        elif pnl < self.max_change:
             self.reward = (pnl ** (1 / 4))
+        else:
+            self.reward = 0.0
 
 
