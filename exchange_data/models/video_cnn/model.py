@@ -37,7 +37,7 @@ def Model(
     **kwargs
 ):
     if not input_shape:
-        input_shape = (6, sequence_length, depth * 2, 1)
+        input_shape = (4, sequence_length, depth * 2, 1)
 
     inputs = Input(shape=input_shape)
 
@@ -74,8 +74,8 @@ class C3D:
         input_shape,
         base_filter_size=32,
         dense_size=312,
-        kernel_size=2,
-        strides=2,
+        kernel_size=3,
+        strides=3,
         **kwargs
     ):
         self.kernel_size = kernel_size
@@ -102,7 +102,7 @@ class C3D:
         # model.add(self.max_pooling())
 
         # 4th layer group
-        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
+        model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
         # model.add(self.conv(base_filter_size * 8))
         # model.add(self.max_pooling())
@@ -116,7 +116,9 @@ class C3D:
         model.add(Dropout(.5))
         model.add(Dense(dense_size, activation='relu', name='fc7'))
         model.add(Dropout(.5))
-        # model.add(Dense(int(dense_size / 2), activation='softmax', name='fc8'))
+        model.add(Dense(dense_size, activation='relu', name='fc8'))
+        model.add(Dropout(.5))
+        # model.add(Dense(dense_size, activation='relu', name='fc9'))
 
         for layer in model.layers:
             layer.trainable = True
