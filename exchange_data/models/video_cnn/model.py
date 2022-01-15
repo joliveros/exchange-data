@@ -8,24 +8,6 @@ from tensorflow.keras.layers import Conv3D, MaxPooling3D, ZeroPadding3D, \
     Flatten, Dense, Dropout, GlobalAveragePooling3D
 from tensorflow.keras.models import Sequential
 
-# Activation = tf.keras.layers.Activation
-# BatchNormalization = tf.keras.layers.BatchNormalization
-# Conv1D = tf.keras.layers.Conv1D
-# Conv2D = tf.keras.layers.Conv2D
-# ConvLSTM2D = tf.keras.layers.ConvLSTM2D
-# Dense = tf.keras.layers.Dense
-# Dropout = tf.keras.layers.Dropout
-# Flatten = tf.keras.layers.Flatten
-# GlobalAveragePooling1D = tf.keras.layers.GlobalAveragePooling1D
-# GlobalAveragePooling2D = tf.keras.layers.GlobalAveragePooling2D
-# Input = tf.keras.Input
-# LeakyReLU = tf.keras.layers.LeakyReLU
-# LSTM = tf.keras.layers.LSTM
-# MaxPooling2D = tf.keras.layers.MaxPooling2D
-# Reshape = tf.keras.layers.Reshape
-# Sequential = tf.keras.models.Sequential
-# TimeDistributed = tf.keras.layers.TimeDistributed
-
 
 def Model(
     depth,
@@ -73,9 +55,9 @@ class C3D:
         self,
         input_shape,
         base_filter_size=32,
-        dense_size=312,
-        kernel_size=3,
-        strides=3,
+        dense_size=256,
+        kernel_size=2,
+        strides=2,
         **kwargs
     ):
         self.kernel_size = kernel_size
@@ -98,13 +80,15 @@ class C3D:
 
         # 3rd layer group
         model.add(self.conv(base_filter_size * 4))
-        model.add(self.conv(base_filter_size * 4))
+        # model.add(self.conv(base_filter_size * 4))
+        # model.add(self.conv(base_filter_size * 4))
+
         # model.add(self.max_pooling())
 
         # 4th layer group
-        model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
+        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
-        # model.add(self.conv(base_filter_size * 8))
+        model.add(self.conv(base_filter_size * 8))
         # model.add(self.max_pooling())
 
         # model.add(GlobalAveragePooling3D())
@@ -114,10 +98,10 @@ class C3D:
         # FC layers group
         model.add(Dense(dense_size, activation='relu', name='fc6'))
         model.add(Dropout(.5))
-        model.add(Dense(dense_size, activation='relu', name='fc7'))
-        model.add(Dropout(.5))
-        model.add(Dense(dense_size, activation='relu', name='fc8'))
-        model.add(Dropout(.5))
+        # model.add(Dense(dense_size, activation='relu', name='fc7'))
+        # model.add(Dropout(.5))
+        # model.add(Dense(dense_size, activation='relu', name='fc8'))
+        # model.add(Dropout(.5))
         # model.add(Dense(dense_size, activation='relu', name='fc9'))
 
         for layer in model.layers:
