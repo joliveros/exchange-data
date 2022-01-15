@@ -17,7 +17,7 @@ class Trade(Logging):
         trading_fee: float,
         position_type: Positions,
         min_change: float,
-        max_change: float,
+        max_change: float = 0.0,
         max_position_length=2,
         leverage: float = 1.0,
         reward_ratio: float = 1.0,
