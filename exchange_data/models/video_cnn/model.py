@@ -97,9 +97,9 @@ class C3D:
 
         # FC layers group
         model.add(Dense(dense_size, activation='relu', name='fc6'))
-        # model.add(Dropout(.5))
+        model.add(Dropout(.1))
         model.add(Dense(dense_size, activation='relu', name='fc7'))
-        # model.add(Dropout(.5))
+        model.add(Dropout(.1))
         # model.add(Dense(dense_size, activation='relu', name='fc8'))
         # model.add(Dropout(.5))
         # model.add(Dense(dense_size, activation='relu', name='fc9'))
