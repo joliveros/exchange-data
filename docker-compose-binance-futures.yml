@@ -101,6 +101,40 @@ services:
         depends_on:
             - redis
 
+    trade:
+        deploy:
+            replicas: 3
+            update_config:
+                parallelism: 2
+                delay: 20s
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/trade_emitter.py -w 3 -F"
+        environment:
+            - LOG_LEVEL=INFO
+        networks:
+            - public
+        depends_on:
+            - redis
+
+    trade_writer:
+        deploy:
+            replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data:latest'
+        command: >-
+            bash -c "source ~/.bashrc &&
+            ./exchange_data/emitters/binance/trade_writer.py -F -b 2500"
+        secrets:
+            - DB
+            - ROLLBAR_API_KEY
+        depends_on:
+            - redis
+            - influxdb
+        networks:
+            - public
 secrets:
     BITMEX_API_KEY:
         external: true

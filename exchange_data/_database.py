@@ -71,9 +71,13 @@ class Database(EventEmitterBase):
             chunked=False,
             *args, **kwargs)
 
-    def write_points(self, points, *args, **kwargs):
+    def write_points(self, points, consistency='one', *args, **kwargs):
         self.points += points
 
         if len(self.points) >= self.batch_size:
-            self.influxdb_client.write_points(self.points, consistency='one', *args, **kwargs)
+            points = self.points
             self.points = []
+
+            self.influxdb_client.write_points(points, batch_size=self.batch_size,
+                                              consistency=consistency, *args, **kwargs)
+

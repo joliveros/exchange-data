@@ -41,3 +41,4 @@ tensorflow-datasets
 tensorflow-gpu==2.5.1
 timestamp
 unicorn-binance-websocket-api
+unicorn_fy
