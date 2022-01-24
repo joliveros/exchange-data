@@ -126,7 +126,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/trade_writer.py -F -b 2500"
+            ./exchange_data/emitters/binance/trade_writer.py -F -b 3000"
         secrets:
             - DB
             - ROLLBAR_API_KEY
