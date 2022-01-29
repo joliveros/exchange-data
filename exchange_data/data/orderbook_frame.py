@@ -58,6 +58,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
+        trade_volume_max=0.0,
         cache=False,
         **kwargs
     ):
@@ -70,6 +71,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             sequence_length=sequence_length,
             **kwargs)
 
+        self.trade_volume_max = None
         self.offset_interval = offset_interval
         self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
         self.max_volume_quantile = max_volume_quantile
@@ -162,21 +164,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         )
 
         orderbook_img = np.absolute(orderbook_img)
-        new_shape = list(orderbook_img.shape)
-        new_shape[2] = new_shape[2] + 3
-
-        alog.info(orderbook_img.shape)
-        orderbook_img = np.resize(orderbook_img, new_shape)
-        alog.info(orderbook_img.shape)
-
-        alog.info(orderbook_img[0][0])
 
         for frame_ix in range(orderbook_img.shape[0]):
             orderbook = orderbook_img[frame_ix]
             shape = orderbook.shape
             new_ob = np.zeros((shape[0], shape[1], 1))
-
-            alog.info(new_ob.shape)
 
             last_frame = orderbook[-1]
             last_frame_price = np.sort(last_frame[:, 0])
@@ -196,8 +188,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
             orderbook_img[frame_ix] = new_ob
 
-            raise Exception()
-
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         if self.quantile == 0.0:
@@ -210,6 +200,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
 
+        orderbook_img = self.add_trade_volume(orderbook_img)
+
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
         ]
@@ -217,6 +209,24 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.cache_frame(df)
 
         return df
+
+    def add_trade_volume(self, orderbook_img):
+        # add trade volume
+        trades = self.trade_volume_frame.reset_index(drop=True)
+        new_shape = list(orderbook_img.shape)
+        new_shape[2] = new_shape[2] + 1
+        orderbook_img = np.resize(orderbook_img, new_shape)
+        trades = np.squeeze(trades.to_numpy())
+        self.trade_volume_max = np.quantile(trades, 1.0)
+        trades = trades / self.trade_volume_max
+        for index in range(len(trades)):
+            ord_img = orderbook_img[index]
+            frame_size = len(ord_img)
+
+            for i in range(frame_size):
+                trade_index = index - frame_size + i
+                ord_img[i][-1] = [trades[trade_index]]
+        return orderbook_img
 
     @property
     def intervals(self):
