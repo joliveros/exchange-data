@@ -14,6 +14,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from exchange_data.utils import DateTimeUtils
+
 pd.options.plotting.backend = 'plotly'
 
 
@@ -99,6 +101,49 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         return df
 
+    def trade_volume_query(self):
+        start_date = self.start_date
+        end_date = self.end_date
+
+        start_date = self.format_date_query(start_date)
+        end_date = self.format_date_query(end_date)
+        channel_name = f'{self.symbol}_trade'
+
+        query = f'SELECT sum(quantity) AS volume FROM {channel_name} ' \
+            f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
+                f'time({self.group_by});'
+
+        trades = self.query(query)
+
+        df = pd.DataFrame(columns=['time', 'volume'])
+
+        for data in trades.get_points(channel_name):
+            timestamp = DateTimeUtils.parse_db_timestamp(
+                data['time'])
+            data['time'] = timestamp
+            df.loc[df.shape[0], :] = data
+
+        return df
+
+    @property
+    def trade_volume_frame(self):
+        frames = []
+
+        for interval in self.intervals:
+            self.start_date = interval[0]
+            self.end_date = interval[1]
+            frames.append(self.trade_volume_query())
+
+        df = pd.concat(frames)
+
+        df.drop_duplicates(subset=['time'], inplace=True)
+
+        df = df.set_index('time')
+        df = df.sort_index()
+        df.dropna(how='any', inplace=True)
+
+        return df
+
     @property
     def frame(self):
         if self.cache and self.filename.exists():
@@ -117,11 +162,22 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         )
 
         orderbook_img = np.absolute(orderbook_img)
+        new_shape = list(orderbook_img.shape)
+        new_shape[2] = new_shape[2] + 3
+
+        alog.info(orderbook_img.shape)
+        orderbook_img = np.resize(orderbook_img, new_shape)
+        alog.info(orderbook_img.shape)
+
+        alog.info(orderbook_img[0][0])
 
         for frame_ix in range(orderbook_img.shape[0]):
             orderbook = orderbook_img[frame_ix]
             shape = orderbook.shape
             new_ob = np.zeros((shape[0], shape[1], 1))
+
+            alog.info(new_ob.shape)
+
             last_frame = orderbook[-1]
             last_frame_price = np.sort(last_frame[:, 0])
 
@@ -136,7 +192,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                         last_frame_index = np.where(last_frame_price == price)
                         new_ob[i, last_frame_index[0]] = np.asarray([volume])
 
+            # alog.info(new_ob)
+
             orderbook_img[frame_ix] = new_ob
+
+            raise Exception()
 
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
@@ -175,7 +235,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
-            depth=self.depth   ,
+            depth=self.depth,
             end_date=self.end_date,
             group_by=self.group_by,
             start_date=self.start_date,
@@ -281,6 +341,7 @@ def main(**kwargs):
     df = OrderBookFrame(**kwargs).frame
 
     pd.set_option('display.max_rows', len(df) + 1)
+
     alog.info(df)
 
     # alog.info(alog.pformat(df.iloc[-1].orderbook_img[-1].tolist()))
