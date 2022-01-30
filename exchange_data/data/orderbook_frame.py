@@ -71,7 +71,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             sequence_length=sequence_length,
             **kwargs)
 
-        self.trade_volume_max = None
+        self.trade_volume_max = trade_volume_max
         self.offset_interval = offset_interval
         self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
         self.max_volume_quantile = max_volume_quantile
@@ -149,7 +149,10 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
     @property
     def frame(self):
         if self.cache and self.filename.exists():
-            return pd.read_pickle(str(self.filename))
+            df = pd.read_pickle(str(self.filename))
+            self.quantile = df.attrs['quantile']
+            self.trade_volume_max = df.attrs['trade_volume_max']
+            return df
 
         df = self._frame()
 
@@ -206,6 +209,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
         ]
 
+        df.attrs['trade_volume_max'] = self.trade_volume_max
+        df.attrs['quantile'] = self.quantile
+
         self.cache_frame(df)
 
         return df
@@ -217,7 +223,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         new_shape[2] = new_shape[2] + 1
         orderbook_img = np.resize(orderbook_img, new_shape)
         trades = np.squeeze(trades.to_numpy())
-        self.trade_volume_max = np.quantile(trades, 1.0)
+        if self.trade_volume_max == 0.0:
+            self.trade_volume_max = np.quantile(trades, 1.0)
         trades = trades / self.trade_volume_max
 
         for index in range(len(trades)):
