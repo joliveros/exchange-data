@@ -42,7 +42,7 @@ def Model(
 
     if include_last:
         model.compile(
-            loss='sparse_categorical_crossentropy',
+            loss='mse',
             metrics=['accuracy'],
             optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
                                                    clipnorm=1.0)
