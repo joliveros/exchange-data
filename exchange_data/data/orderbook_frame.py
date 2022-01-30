@@ -219,13 +219,16 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         trades = np.squeeze(trades.to_numpy())
         self.trade_volume_max = np.quantile(trades, 1.0)
         trades = trades / self.trade_volume_max
-        for index in range(len(trades)):
-            ord_img = orderbook_img[index]
-            frame_size = len(ord_img)
 
-            for i in range(frame_size):
-                trade_index = index - frame_size + i
-                ord_img[i][-1] = [trades[trade_index]]
+        for index in range(len(trades)):
+            if index <= len(orderbook_img) - 1:
+                ord_img = orderbook_img[index]
+                frame_size = len(ord_img)
+
+                for i in range(frame_size):
+                    trade_index = index - frame_size + i
+                    ord_img[i][-1] = [trades[trade_index]]
+
         return orderbook_img
 
     @property
