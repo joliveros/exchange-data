@@ -168,28 +168,34 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         orderbook_img = np.absolute(orderbook_img)
 
+        count = 0
         for frame_ix in range(orderbook_img.shape[0]):
             orderbook = orderbook_img[frame_ix]
             shape = orderbook.shape
             new_ob = np.zeros((shape[0], shape[1], 1))
 
-            last_frame = orderbook[-1]
-            last_frame_price = np.sort(last_frame[:, 0])
+            last_frame_price = orderbook[-1][:, 0]
 
             for i in range(shape[0]):
                 frame = orderbook[i]
 
+                # alog.info(np.squeeze(frame))
+
                 for l in range(frame.shape[0]):
                     level = frame[l]
 
-                    if level.shape == (2,):
-                        price, volume = level
-                        last_frame_index = np.where(last_frame_price == price)
-                        new_ob[i, last_frame_index[0]] = np.asarray([volume])
+                    price, volume = level
 
-            # alog.info(new_ob)
+                    last_frame_index = np.where(last_frame_price == price)
+
+                    new_ob[i, last_frame_index[0], 0] = np.asarray([volume])
 
             orderbook_img[frame_ix] = new_ob
+
+        # alog.info(np.squeeze(orderbook_img[0]).tolist())
+        # alog.info(orderbook_img[0].shape)
+        # alog.info(orderbook_img[0].tolist())
+        # raise Exception()
 
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
@@ -230,11 +236,14 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         for index in range(len(trades)):
             if index <= len(orderbook_img) - 1:
                 ord_img = orderbook_img[index]
+
                 frame_size = len(ord_img)
 
                 for i in range(frame_size):
                     trade_index = index - frame_size + i
                     ord_img[i][-1] = [trades[trade_index]]
+
+                # alog.info(np.squeeze(ord_img))
 
         return orderbook_img
 
@@ -364,7 +373,11 @@ def main(**kwargs):
 
     alog.info(df)
 
-    # alog.info(alog.pformat(df.iloc[-1].orderbook_img[-1].tolist()))
+    obook = df.orderbook_img.to_numpy()
+
+    obook = np.squeeze(obook[-1])
+
+    alog.info(obook)
 
 
 if __name__ == '__main__':
