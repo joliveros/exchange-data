@@ -30,7 +30,7 @@ def Model(
     dense_out = Dense(
         num_categories, activation='softmax',
         use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
+        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 0.99])
     )
 
     out = dense_out(conv)
@@ -87,7 +87,7 @@ class C3D:
         # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
         model.add(self.conv(base_filter_size * 8))
-        model.add(self.max_pooling())
+        # model.add(self.max_pooling())
 
         # 4th layer group
         # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
@@ -104,8 +104,8 @@ class C3D:
         model.add(Dropout(.1))
         model.add(Dense(dense_size, activation='relu', name='fc7'))
         model.add(Dropout(.1))
-        model.add(Dense(dense_size, activation='relu', name='fc8'))
-        model.add(Dropout(.1))
+        # model.add(Dense(dense_size, activation='relu', name='fc8'))
+        # model.add(Dropout(.1))
         model.add(Dense(dense_size, activation='relu', name='fc9'))
 
         for layer in model.layers:
