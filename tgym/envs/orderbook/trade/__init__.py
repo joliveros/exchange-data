@@ -123,11 +123,12 @@ class Trade(Logging):
 
         self.append_pnl_history()
 
-        # self.reward_for_pnl()
+        self.reward_for_pnl()
 
         # if self.position_length > self.max_position_length:
         #     self.reward_for_pnl()
 
+        self.reward = 0.0
         self.total_reward += self.reward
 
     def plot(self):

@@ -37,5 +37,6 @@ class ShortTrade(Trade):
         super().close()
 
         self.reward_for_pnl()
+        self.reward += self.total_reward
 
         self.capital += self.pnl
