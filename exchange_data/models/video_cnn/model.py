@@ -5,9 +5,8 @@ import click
 import tensorflow as tf
 from tensorflow.keras import Input
 from tensorflow.keras.layers import Conv3D, MaxPooling3D, ZeroPadding3D, \
-    Flatten, Dense, Dropout, GlobalAveragePooling3D
+    Flatten, Dense, Dropout, GlobalAveragePooling3D, LeakyReLU
 from tensorflow.keras.models import Sequential
-
 
 def Model(
     depth,
@@ -29,8 +28,8 @@ def Model(
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 0.99])
+        use_bias=False,
+        # bias_initializer=tf.keras.initializers.Constant(value=[0.0, 0.99])
     )
 
     out = dense_out(conv)
@@ -84,10 +83,10 @@ class C3D:
         model.add(self.max_pooling())
 
         # 4th layer group
-        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
+        model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
         model.add(self.conv(base_filter_size * 8))
-        # model.add(self.max_pooling())
+        model.add(self.max_pooling())
 
         # 4th layer group
         # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
@@ -130,10 +129,10 @@ class C3D:
 
         conv = Conv3D(
             base_filter_size, (kernel_size, kernel_size, kernel_size),
-            activation="relu",
+            activation=LeakyReLU(),
             name=f'conv_{self.conv_count}',
             padding="same",
-            strides=(strides, strides, strides),
+            strides=(self.strides, self.strides, self.strides),
             **kwargs
         )
 

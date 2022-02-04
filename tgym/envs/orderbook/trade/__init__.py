@@ -123,13 +123,8 @@ class Trade(Logging):
 
         self.append_pnl_history()
 
-        self.reward_for_pnl()
-
         # if self.position_length > self.max_position_length:
         #     self.reward_for_pnl()
-
-        self.reward = 0.0
-        self.total_reward += self.reward
 
     def plot(self):
         fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
@@ -184,16 +179,15 @@ class Trade(Logging):
     def reward_for_pnl(self):
         pnl = self.pnl
 
-        _pnl = abs(pnl)
-
         if pnl < 0.0:
-            self.reward = (_pnl ** (1 / 4)) * -1
+            self.reward = pnl
         elif 0 < pnl < self.min_change:
             self.reward = 0
-            # self.reward = (_pnl ** (1 / 4)) * -1
         elif pnl < self.max_change:
-            self.reward = (pnl ** (1 / 4))
+            self.reward = pnl
         else:
             self.reward = 0.0
 
+        if self.reward > 0.0:
+            self.reward = self.reward / self.position_length
 
