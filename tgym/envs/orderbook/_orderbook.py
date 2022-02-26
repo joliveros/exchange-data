@@ -152,13 +152,15 @@ class OrderBookTradingEnv(Logging, Env):
         self.reset_count = 0
         self.levels = levels
 
+        frame_shape = (sequence_length, (depth * 2) + 1, 1)
+
         high = np.full(
-            (sequence_length, depth * 2, 1),
+            frame_shape,
             1.0,
             dtype=np.float32
         )
         low = np.full(
-            (sequence_length, depth * 2, 1),
+            frame_shape,
             0.0,
             dtype=np.float32
         )

@@ -168,7 +168,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         orderbook_img = np.absolute(orderbook_img)
 
-        count = 0
         for frame_ix in range(orderbook_img.shape[0]):
             orderbook = orderbook_img[frame_ix]
             shape = orderbook.shape
@@ -192,11 +191,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
             orderbook_img[frame_ix] = new_ob
 
-        # alog.info(np.squeeze(orderbook_img[0]).tolist())
-        # alog.info(orderbook_img[0].shape)
-        # alog.info(orderbook_img[0].tolist())
-        # raise Exception()
-
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         if self.quantile == 0.0:
@@ -210,6 +204,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
 
         orderbook_img = self.add_trade_volume(orderbook_img)
+
+        # alog.info(alog.pformat(orderbook_img[0].tolist()))
+        # raise Exception()
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
