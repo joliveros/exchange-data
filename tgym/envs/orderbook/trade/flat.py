@@ -7,7 +7,7 @@ import alog
 class FlatTrade(Trade):
     def __init__(
         self,
-        min_flat_change,
+        min_flat_change=0.0,
         max_flat_position_length=2,
         short_reward_enabled=False,
         **kwargs
@@ -41,25 +41,11 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
+        # self.reward_for_pnl()
+
         self.append_pnl_history()
 
-        # if self.position_length > self.max_flat_position_length:
-        #     self.reward_for_pnl()
-
-    def reward_for_pnl(self):
-        pnl = self.pnl
-
-        if pnl < 0.0 < self.min_flat_change:
-            self.reward = pnl
-        elif pnl > 0.0:
-            self.reward = pnl
-        else:
-            self.reward = 0.0
-
-        if self.reward > 0.0:
-            self.reward = self.reward / self.position_length
-
     def close(self):
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
         self.reward += self.total_reward

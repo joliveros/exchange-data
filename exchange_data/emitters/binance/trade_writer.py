@@ -47,6 +47,12 @@ class OrderBookWriter(
         list_name = f'{database_name}_trades'
 
         while True:
+            batch_size = int(self.redis_client.llen(list_name) * 0.99)
+            if batch_size > 0:
+                self.batch_size = batch_size
+            else:
+                self.batch_size = 1000
+
             obj = self.redis_client.blpop(list_name)
             obj = zlib.decompress(obj[1])
             meas = pickle.loads(obj)
@@ -77,7 +83,7 @@ class OrderBookWriter(
 @click.command()
 @click.option('--futures', '-F', is_flag=True)
 @click.option('--db-suffix', '-s', type=str, default='')
-@click.option('--batch-size', '-b', type=int, default=100)
+@click.option('--batch-size', '-b', type=int, default=1000)
 def main(**kwargs):
     OrderBookWriter(
         **kwargs

@@ -17,6 +17,7 @@ class ShortTrade(Trade):
         super().step(*args)
 
         if self.position_length >= self.max_short_position_length > 0:
+            raise Exception()
             self.done = True
 
     @property

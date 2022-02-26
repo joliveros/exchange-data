@@ -55,7 +55,7 @@ class C3D:
         input_shape,
         base_filter_size=32,
         dense_size=256,
-        kernel_size=2,
+        kernel_size=1,
         strides=1,
         **kwargs
     ):
@@ -70,10 +70,12 @@ class C3D:
         model = Sequential()
 
         # 1st layer group
+        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size, input_shape=input_shape))
-        model.add(self.max_pooling(pool_size=(1, 2, 2)))
+        model.add(self.max_pooling())
 
         # 2nd layer group
+        model.add(self.conv(base_filter_size * 2))
         model.add(self.conv(base_filter_size * 2))
         model.add(self.max_pooling())
 
@@ -83,29 +85,29 @@ class C3D:
         model.add(self.max_pooling())
 
         # 4th layer group
-        model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
+        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
         model.add(self.conv(base_filter_size * 8))
         model.add(self.conv(base_filter_size * 8))
         model.add(self.max_pooling())
 
         # 4th layer group
-        # model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
-        # model.add(self.conv(base_filter_size * 8))
-        # model.add(self.conv(base_filter_size * 8))
-        # model.add(self.max_pooling())
+        model.add(ZeroPadding3D(padding=(0, 1, 1), input_shape=input_shape))
+        model.add(self.conv(base_filter_size * 8))
+        model.add(self.conv(base_filter_size * 8))
+        model.add(self.max_pooling())
 
-        # model.add(GlobalAveragePooling3D())
+        model.add(GlobalAveragePooling3D())
 
-        model.add(Flatten())
+        # model.add(Flatten())
 
         # FC layers group
         model.add(Dense(dense_size, activation='relu', name='fc6'))
         model.add(Dropout(.1))
-        model.add(Dense(dense_size, activation='relu', name='fc7'))
-        model.add(Dropout(.1))
+        # model.add(Dense(dense_size, activation='relu', name='fc7'))
+        # model.add(Dropout(.1))
         # model.add(Dense(dense_size, activation='relu', name='fc8'))
         # model.add(Dropout(.1))
-        model.add(Dense(dense_size, activation='relu', name='fc9'))
+        # model.add(Dense(dense_size, activation='relu', name='fc9'))
 
         for layer in model.layers:
             layer.trainable = True
@@ -113,7 +115,7 @@ class C3D:
         self.model = model
         self.model.summary()
 
-    def max_pooling(self, pool_size=(2, 2, 2), **kwargs):
+    def max_pooling(self, pool_size=(1, 2, 2), **kwargs):
         layer = MaxPooling3D(
             pool_size=pool_size,
             strides=(1, 2, 2),

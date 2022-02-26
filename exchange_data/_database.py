@@ -78,6 +78,7 @@ class Database(EventEmitterBase):
             points = self.points
             self.points = []
 
-            self.influxdb_client.write_points(points, batch_size=self.batch_size,
-                                              consistency=consistency, *args, **kwargs)
+            return self.influxdb_client\
+                .write_points(points, batch_size=self.batch_size,
+                              consistency=consistency, *args, **kwargs)
 
