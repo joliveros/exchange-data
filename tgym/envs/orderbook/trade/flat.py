@@ -41,9 +41,12 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # self.reward_for_pnl()
+        self.reward_for_pnl()
 
         self.append_pnl_history()
+
+        if self.position_length >= self.max_flat_position_length > 0:
+            self.done = True
 
     def close(self):
         # self.reward_for_pnl()

@@ -151,6 +151,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         if self.cache and self.filename.exists():
             df = pd.read_pickle(str(self.filename))
             self.quantile = df.attrs['quantile']
+
+            alog.info(f'#### {self.quantile} ####')
+
             self.trade_volume_max = df.attrs['trade_volume_max']
             return df
 
