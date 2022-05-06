@@ -179,12 +179,11 @@ class Trade(Logging):
         pnl = self.pnl
 
         pnl_diff = pnl - self.last_pnl
-        reward = 0.1
 
         if pnl_diff > 0:
-            self.reward = reward
+            self.reward = pnl_diff
         else:
-            self.reward = -1 * reward
+            self.reward = pnl_diff
 
         self.last_pnl = pnl
 

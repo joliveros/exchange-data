@@ -17,7 +17,6 @@ class ShortTrade(Trade):
         super().step(*args)
 
         if self.position_length >= self.max_short_position_length > 0:
-            raise Exception()
             self.done = True
 
     @property
@@ -37,6 +36,6 @@ class ShortTrade(Trade):
     def close(self):
         super().close()
 
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
         self.capital += self.pnl
