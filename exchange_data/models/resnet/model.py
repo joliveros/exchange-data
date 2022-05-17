@@ -43,11 +43,20 @@ def Model(
 
     dense = Flatten()(conv)
 
+    # dense = Dropout(0.1)(dense)
+    dense = Dense(32)(dense)
+    # dense = Dropout(0.1)(dense)
+    dense = Dense(32)(dense)
+    # dense = Dropout(0.1)(dense)
+    dense = Dense(32)(dense)
+
     dense_out = Dense(
         num_categories, activation='softmax',
         # use_bias=True,
         # bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
+
+    dense_out.trainable = True
 
     out = dense_out(dense)
 
@@ -87,7 +96,7 @@ class ResNetTS:
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=3,
+        num_conv=0,
         padding=0,
         strides=1,
         **kwargs
@@ -128,9 +137,9 @@ class ResNetTS:
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.identity_block(conv, kernel_size, filters),
-            # lambda conv: self.conv_block(conv, kernel_size, filters2),
-            # lambda conv: self.identity_block(conv, kernel_size, filters2),
-            # lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.conv_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            lambda conv: self.identity_block(conv, kernel_size, filters2),
             # lambda conv: self.identity_block(conv, kernel_size, filters2),
             # lambda conv: self.conv_block(conv, kernel_size, filters3),
             # lambda conv: self.identity_block(conv, kernel_size, filters3),
@@ -142,7 +151,9 @@ class ResNetTS:
             # lambda conv: self.identity_block(conv, kernel_size, filters4),
             # lambda conv: self.identity_block(conv, kernel_size, filters4),
         ]
-        convs = convs[:num_conv]
+
+        if num_conv > 0:
+            convs = convs[:num_conv]
 
         for _conv in convs:
             alog.info(conv)
@@ -154,8 +165,11 @@ class ResNetTS:
             output = conv
 
         # alog.info(output.shape)
-
         self.model = tf.keras.models.Model(inputs=input, outputs=output)
+
+        for layer in self.model.layers:
+            layer.trainable = True
+
         self.model.summary()
 
     def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):

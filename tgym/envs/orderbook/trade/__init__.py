@@ -180,10 +180,11 @@ class Trade(Logging):
 
         pnl_diff = pnl - self.last_pnl
 
-        if pnl_diff > 0:
+        if pnl_diff > 0.0 and pnl > 0.0:
             self.reward = pnl_diff
-        else:
-            self.reward = pnl_diff
+
+        if pnl_diff < 0.0:
+            self.reward = pnl_diff * 2
 
         self.last_pnl = pnl
 
