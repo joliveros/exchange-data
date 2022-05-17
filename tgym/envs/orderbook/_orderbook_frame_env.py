@@ -137,8 +137,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self.print_summary()
 
-        self.done = False
-
         return observation, reward, done, {'capital': self.capital}
 
 

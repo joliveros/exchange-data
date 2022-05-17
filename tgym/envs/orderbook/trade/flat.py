@@ -41,7 +41,7 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
         self.append_pnl_history()
 
@@ -49,6 +49,4 @@ class FlatTrade(Trade):
             self.done = True
 
     def close(self):
-        # self.reward_for_pnl()
-
-        self.reward += self.total_reward
+        pass
