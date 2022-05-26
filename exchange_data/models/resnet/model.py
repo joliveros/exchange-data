@@ -135,11 +135,11 @@ class ResNetTS:
 
         convs = [
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
-            lambda conv: self.identity_block(conv, kernel_size, filters),
+            # lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.identity_block(conv, kernel_size, filters),
             lambda conv: self.conv_block(conv, kernel_size, filters2),
             lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
+            # lambda conv: self.identity_block(conv, kernel_size, filters2),
             # lambda conv: self.identity_block(conv, kernel_size, filters2),
             # lambda conv: self.conv_block(conv, kernel_size, filters3),
             # lambda conv: self.identity_block(conv, kernel_size, filters3),
