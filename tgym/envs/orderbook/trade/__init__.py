@@ -121,7 +121,7 @@ class Trade(Logging):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
         self.append_pnl_history()
 
@@ -177,14 +177,7 @@ class Trade(Logging):
 
     def reward_for_pnl(self):
         pnl = self.pnl
-
-        pnl_diff = pnl - self.last_pnl
-
-        if pnl_diff > 0.0 and pnl > 0.0:
-            self.reward = pnl_diff
-
-        if pnl_diff < 0.0:
-            self.reward = pnl_diff * 2
+        self.reward = pnl
 
         self.last_pnl = pnl
 
