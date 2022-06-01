@@ -29,7 +29,7 @@ class ShortTrade(Trade):
             change = diff / self.entry_price
 
         pnl = (self.capital * change) * self.leverage
-        fee = self.fee * 2
+        fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
         pnl = pnl + fee
         return pnl
 
@@ -37,5 +37,9 @@ class ShortTrade(Trade):
         super().close()
 
         self.reward_for_pnl()
+
+        if self.total_reward == 0.0:
+            self.reward = -0.001
+            self.total_reward = self.reward
 
         self.capital += self.pnl

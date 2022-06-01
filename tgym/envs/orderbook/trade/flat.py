@@ -32,7 +32,8 @@ class FlatTrade(Trade):
             change = self.raw_pnl / self.entry_price
 
         pnl = (self.capital * change) * self.leverage
-        fee = self.fee * 2
+
+        fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
 
         return pnl + fee
 
@@ -41,7 +42,7 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # self.reward_for_pnl()
+        self.reward_for_pnl()
 
         self.append_pnl_history()
 
@@ -49,4 +50,8 @@ class FlatTrade(Trade):
             self.done = True
 
     def close(self):
-        pass
+        self.reward_for_pnl()
+        
+        if self.total_reward == 0.0:
+            # self.reward = -0.001
+            self.total_reward = self.reward
