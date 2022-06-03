@@ -25,6 +25,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    dense_width=32,
     include_last=False,
     input_shape=None,
     learning_rate=5e-5,
@@ -43,12 +44,9 @@ def Model(
 
     dense = Flatten()(conv)
 
-    # dense = Dropout(0.1)(dense)
-    dense = Dense(32)(dense)
-    # dense = Dropout(0.1)(dense)
-    dense = Dense(32)(dense)
-    # dense = Dropout(0.1)(dense)
-    dense = Dense(32)(dense)
+    dense = Dense(dense_width)(dense)
+    dense = Dense(dense_width)(dense)
+    dense = Dense(dense_width)(dense)
 
     dense_out = Dense(
         num_categories, activation='softmax',
