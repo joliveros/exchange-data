@@ -25,13 +25,15 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
-    dense_width=32,
+    dense_width=62,
     include_last=False,
     input_shape=None,
     learning_rate=5e-5,
     num_categories=2,
     **kwargs
 ):
+    alog.info(alog.pformat((dense_width, kwargs)))
+
     if not input_shape:
         input_shape = (1, sequence_length, depth * 2, 1)
 
@@ -87,7 +89,7 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=8,
+        base_filter_size=4,
         block_filter_factor=2,
         block_kernel=2,
         kernel_size=2,
