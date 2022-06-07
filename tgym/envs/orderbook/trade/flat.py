@@ -33,9 +33,9 @@ class FlatTrade(Trade):
 
         pnl = (self.capital * change) * self.leverage
 
-        fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
+        # fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
 
-        return pnl + fee
+        return pnl
 
     def step(self, best_bid: float, best_ask: float):
         self.position_length += 1
