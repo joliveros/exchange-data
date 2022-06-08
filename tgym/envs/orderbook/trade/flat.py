@@ -9,6 +9,7 @@ class FlatTrade(Trade):
         self,
         min_flat_change=0.0,
         max_flat_position_length=2,
+        fee_ratio=1.0,
         short_reward_enabled=False,
         **kwargs
     ):
@@ -16,6 +17,7 @@ class FlatTrade(Trade):
             position_type=Positions.Flat,
             **kwargs
         )
+        self.fee_ratio = fee_ratio
         self.min_flat_change = min_flat_change
         self.max_flat_position_length = max_flat_position_length
         self.short_reward_enabled = short_reward_enabled
@@ -33,9 +35,9 @@ class FlatTrade(Trade):
 
         pnl = (self.capital * change) * self.leverage
 
-        # fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
+        fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
 
-        return pnl
+        return pnl + ( fee * self.fee_ratio )
 
     def step(self, best_bid: float, best_ask: float):
         self.position_length += 1
