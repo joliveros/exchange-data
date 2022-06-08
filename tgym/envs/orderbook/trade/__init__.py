@@ -99,16 +99,6 @@ class Trade(Logging):
     def reward(self, value):
         self._reward = value
 
-    @property
-    def min_profit(self):
-
-        change = self.min_change / self.exit_price
-
-        pnl = (self.capital * change) + \
-                   (-1 * self.capital * self.trading_fee)
-
-        return pnl
-
     def close(self):
         self.closed = True
         self.append_pnl_history()
@@ -177,7 +167,11 @@ class Trade(Logging):
 
     def reward_for_pnl(self):
         pnl = self.pnl
-        self.reward = pnl
+
+        if pnl > self.min_change:
+            self.reward = pnl
+        else:
+            self.reward = pnl * -1
         
         self.total_reward += self.reward
 
