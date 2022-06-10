@@ -17,6 +17,10 @@ class FlatTrade(Trade):
             position_type=Positions.Flat,
             **kwargs
         )
+
+        if self.is_test:
+            max_flat_position_length = 0
+
         self.fee_ratio = fee_ratio
         self.min_flat_change = min_flat_change
         self.max_flat_position_length = max_flat_position_length
@@ -53,7 +57,7 @@ class FlatTrade(Trade):
 
     def close(self):
         self.reward_for_pnl()
-        
+
         if self.total_reward == 0.0:
             # self.reward = -0.001
             self.total_reward = self.reward

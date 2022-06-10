@@ -17,6 +17,7 @@ class Trade(Logging):
         trading_fee: float,
         position_type: Positions,
         min_change: float,
+        is_test: bool,
         max_change: float = 0.0,
         max_position_length=2,
         leverage: float = 1.0,
@@ -27,6 +28,7 @@ class Trade(Logging):
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.is_test = is_test
         self.max_position_length = max_position_length
         self.trading_fee = trading_fee
         self.min_steps = min_steps
@@ -175,7 +177,7 @@ class Trade(Logging):
                 self.reward = pnl * -1
             else:
                 self.reward = pnl
-        
+
         self.total_reward += self.reward
 
         self.last_pnl = pnl
