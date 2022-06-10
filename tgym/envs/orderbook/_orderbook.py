@@ -506,13 +506,14 @@ class OrderBookTradingEnv(Logging, Env):
 
     def summary(self):
         summary_keys = [
+            'is_test',
             '_best_ask',
             '_best_bid',
             'capital',
             'leverage',
             'last_datetime',
             'step_count',
-            'total_reward'
+            'total_reward',
         ]
 
         summary = {key: self.__dict__[key] for key in
