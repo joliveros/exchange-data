@@ -89,14 +89,14 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=4,
+        base_filter_size=8,
         block_filter_factor=2,
         block_kernel=2,
         kernel_size=2,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=0,
+        num_conv=4,
         padding=0,
         strides=1,
         **kwargs
@@ -162,7 +162,7 @@ class ResNetTS:
         if gap_enabled:
             output = GlobalAveragePooling2D()(conv)
         else:
-            output = conv
+            output = Flatten()(conv)
 
         # alog.info(output.shape)
         self.model = tf.keras.models.Model(inputs=input, outputs=output)
