@@ -240,8 +240,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                 frame_size = len(ord_img)
 
                 for i in range(frame_size):
-                    trade_index = index - frame_size + i
-                    ord_img[i][-1] = [trades[trade_index]]
+                    if index >= frame_size + i:
+                        trade_index = index - frame_size + i
+                        ord_img[i][-1] = [trades[trade_index]]
 
                 # alog.info(np.squeeze(ord_img))
 
