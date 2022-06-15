@@ -25,6 +25,7 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 def Model(
     depth,
     sequence_length,
+    batch_size,
     dense_width=62,
     include_last=False,
     input_shape=None,
@@ -35,7 +36,7 @@ def Model(
     alog.info(alog.pformat((dense_width, kwargs)))
 
     if not input_shape:
-        input_shape = (1, sequence_length, depth * 2, 1)
+        input_shape = (batch_size, sequence_length, depth * 2, 1)
 
     inputs = Input(shape=input_shape)
 
@@ -89,15 +90,15 @@ class ResNetTS:
         self,
         input_shape,
         gap_enabled=True,
-        base_filter_size=8,
+        base_filter_size=4,
         block_filter_factor=2,
-        block_kernel=2,
+        block_kernel=3,
         kernel_size=2,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=4,
-        padding=0,
+        num_conv=3,
+        padding=3,
         strides=1,
         **kwargs
     ):
@@ -159,6 +160,8 @@ class ResNetTS:
             alog.info(conv)
             conv = _conv(conv)
 
+        alog.info(conv.shape)
+
         if gap_enabled:
             output = GlobalAveragePooling2D()(conv)
         else:
@@ -173,10 +176,8 @@ class ResNetTS:
         self.model.summary()
 
     def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):
-        alog.info(input_tensor.shape)
-
         conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
-                      kernel_initializer='he_normal')(input_tensor)
+                      kernel_initializer='he_normal', padding='valid')(input_tensor)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
@@ -185,7 +186,7 @@ class ResNetTS:
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        conv = Conv2D(filters=filters[2], padding='same', kernel_size=[1, 1],
+        conv = Conv2D(filters=filters[2], padding='valid', kernel_size=[1, 1],
                       kernel_initializer='he_normal')(conv)
 
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
@@ -195,7 +196,7 @@ class ResNetTS:
         alog.info(kernel_size)
 
         short_cut = Conv2D(filters=filters[2], kernel_size=[1, 1], strides=strides,
-                           padding='same', kernel_initializer='he_normal')(input_tensor)
+                           padding='valid', kernel_initializer='he_normal')(input_tensor)
 
         short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(short_cut)
 
@@ -210,7 +211,7 @@ class ResNetTS:
         filters1, filters2, filters3 = filters
 
         x = Conv2D(filters1, (1, 1),
-                          kernel_initializer='he_normal')(input_tensor)
+                          kernel_initializer='he_normal', padding='valid')(input_tensor)
         x = BatchNormalization(axis=self.bn_axis)(x)
         x = Activation('relu')(x)
 
@@ -221,7 +222,7 @@ class ResNetTS:
         x = Activation('relu')(x)
 
         x = Conv2D(filters3, (1, 1),
-                          kernel_initializer='he_normal')(x)
+                          kernel_initializer='he_normal', padding='valid')(x)
         x = BatchNormalization(axis=self.bn_axis)(x)
 
         x = tf.keras.layers.add([x, input_tensor])
