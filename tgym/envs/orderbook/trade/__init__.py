@@ -1,3 +1,5 @@
+from collections import deque
+
 from exchange_data.trading import Positions
 from matplotlib import pyplot as plt
 from skimage import color
@@ -28,6 +30,7 @@ class Trade(Logging):
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.diffs = list()
         self.is_test = is_test
         self.max_position_length = max_position_length
         self.trading_fee = trading_fee
@@ -151,6 +154,7 @@ class Trade(Logging):
         summary['entry_price'] = float(self.entry_price)
         summary['position_type'] = str(self.position_type)
         summary['capital'] = float(self.capital)
+        summary['diffs'] = self.diffs
 
         return summary
 
@@ -172,6 +176,7 @@ class Trade(Logging):
 
         if self.last_pnl != 0.0:
             diff = pnl - self.last_pnl
+            self.diffs.append(diff)
             if pnl > 0.0 and diff > 0.0:
                 self.reward += diff
 

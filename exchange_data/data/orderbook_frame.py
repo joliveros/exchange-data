@@ -277,6 +277,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             columns=['timestamp', 'best_ask', 'best_bid', 'orderbook_img'])
 
         for row in levels:
+            alog.info(row)
             df.loc[df.shape[0], :] = row
 
         orderbook_imgs = deque(maxlen=self.sequence_length)
@@ -352,6 +353,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         return result
 
+
+# chokidar "**/*.py" "$PYENV_VIRTUAL_ENV/**/*.py" -c \
+#     './exchange_data/data/orderbook_frame.py --depth 18 -l 12 -i 1h -D 4 LRCUSDT'
 
 @click.command()
 @click.option('--database_name', '-d', default='binance', type=str)
