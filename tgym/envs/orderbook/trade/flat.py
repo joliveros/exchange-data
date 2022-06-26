@@ -53,7 +53,8 @@ class FlatTrade(Trade):
         self.append_pnl_history()
 
         if self.position_length >= self.max_flat_position_length > 0:
-            self.done = True
+            self.reward += -0.005
+            # self.done = True
 
     def close(self):
         self.reward_for_pnl()

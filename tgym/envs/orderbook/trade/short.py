@@ -17,8 +17,8 @@ class ShortTrade(Trade):
         super().step(*args)
 
         if self.position_length >= self.max_short_position_length > 0:
-            self.reward = -0.005
-            self.done = True
+            self.reward += -0.005
+            # self.done = True
 
     @property
     def pnl(self):
@@ -40,7 +40,7 @@ class ShortTrade(Trade):
         self.reward_for_pnl()
 
         if self.total_reward == 0.0:
-            self.reward = -0.001
+            self.reward += -0.001
             self.total_reward += self.reward
 
         self.capital += self.pnl

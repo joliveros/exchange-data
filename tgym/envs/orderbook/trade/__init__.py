@@ -186,12 +186,12 @@ class Trade(Logging):
         pnl = self.pnl
 
         if pnl > self.min_change:
-            self.reward = pnl
+            self.reward += pnl
         else:
             if pnl > 0.0:
-                self.reward = pnl * -1
+                self.reward += pnl * -1
             else:
-                self.reward = pnl
+                self.reward += pnl
 
         self.total_reward += self.reward
 
