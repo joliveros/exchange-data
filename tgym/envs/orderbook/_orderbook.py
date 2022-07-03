@@ -45,7 +45,7 @@ class OrderBookTradingEnv(Logging, Env):
         database_name = 'bitmex',
         logger=None,
         leverage=1.0,
-        trading_fee=0.003,
+        trading_fee=0.0004,
         max_loss=-5.0/100.0,
         window_size='2m',
         sample_interval='1s',

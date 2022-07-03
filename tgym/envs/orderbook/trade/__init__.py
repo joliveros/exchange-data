@@ -183,7 +183,7 @@ class Trade(Logging):
         self.last_pnl = pnl
 
     def reward_for_pnl(self):
-        pnl = self.pnl
+        pnl = self.pnl / self.position_length
 
         if pnl > self.min_change:
             self.reward += pnl
