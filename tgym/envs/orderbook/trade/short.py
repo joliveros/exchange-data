@@ -16,10 +16,6 @@ class ShortTrade(Trade):
     def step(self, *args):
         super().step(*args)
 
-        if self.position_length >= self.max_short_position_length > 0:
-            self.reward += -0.005
-            # self.done = True
-
     @property
     def pnl(self):
         diff = self.entry_price - self.exit_price
@@ -44,3 +40,22 @@ class ShortTrade(Trade):
             self.total_reward += self.reward
 
         self.capital += self.pnl
+
+    def reward_for_pnl(self):
+        if self.position_length > self.max_short_position_length:
+            pnl = self.pnl / self.position_length
+        else:
+            pnl = self.pnl
+
+
+        if pnl > self.min_change:
+            self.reward += pnl
+        else:
+            if pnl > 0.0:
+                self.reward += pnl * -1
+            else:
+                self.reward += pnl
+
+        self.total_reward += self.reward
+
+        self.last_pnl = pnl
