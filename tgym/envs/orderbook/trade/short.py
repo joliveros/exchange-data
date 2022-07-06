@@ -16,6 +16,9 @@ class ShortTrade(Trade):
     def step(self, *args):
         super().step(*args)
 
+        if self.position_length > self.max_short_position_length:
+            self.done = True
+
     @property
     def pnl(self):
         diff = self.entry_price - self.exit_price
