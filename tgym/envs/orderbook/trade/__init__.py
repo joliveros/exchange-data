@@ -185,13 +185,7 @@ class Trade(Logging):
     def reward_for_pnl(self):
         pnl = self.pnl / self.position_length
 
-        if pnl > self.min_change:
-            self.reward += pnl
-        else:
-            if pnl > 0.0:
-                self.reward += pnl * -1
-            else:
-                self.reward += pnl
+        self.reward += pnl
 
         self.total_reward += self.reward
 
