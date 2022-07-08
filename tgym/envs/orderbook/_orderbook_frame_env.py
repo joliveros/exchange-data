@@ -137,7 +137,10 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self.print_summary()
 
-        return observation, reward, done, {'capital': self.capital}
+        return observation, reward, done, {
+                'capital': self.capital,
+                'trades': len(self.trades)
+                }
 
 
 @click.command()
