@@ -42,6 +42,7 @@ class TradeExecutor(BinanceUtils, Messenger):
         symbol,
         quantity,
         trading_enabled,
+        once,
         trade_min=False,
         fee=0.0075,
         **kwargs
@@ -50,6 +51,8 @@ class TradeExecutor(BinanceUtils, Messenger):
             futures=futures,
             **kwargs
         )
+
+        self.once = once
         self._quantity = quantity
         self.trade_min = trade_min
         self.leverage = leverage
@@ -74,11 +77,17 @@ class TradeExecutor(BinanceUtils, Messenger):
         if log_requests:
             self.log_requests()
 
-        self.on(self.prediction_channel, self.trade)
         self.on(self.ticker_channel, self.ticker)
+
+        if not once:
+            self.on(self.prediction_channel, self.trade)
 
     def ticker(self, data):
         self.bid_price = float(data['b'])
+
+        if self.once:
+            self.once = False
+            self.trade(1)
 
     @staticmethod
     @cache.cache(ttl=60 * 60)
@@ -111,14 +120,11 @@ class TradeExecutor(BinanceUtils, Messenger):
 
     @property
     def quantity(self):
-        if self._quantity > 0.0:
-            return self._quantity
-        else:
-            getcontext().prec = self.precision
+        getcontext().prec = self.precision
 
-            quantity = self.balance / (float(self.bid_price) * (1 + self.fee))
+        quantity = self.balance / (float(self.bid_price) * (1 + self.fee))
 
-            return self.truncate_quantity(quantity * self.leverage)
+        return self.truncate_quantity(quantity * self.leverage)
 
     @property
     def min_quantity(self):
@@ -163,7 +169,7 @@ class TradeExecutor(BinanceUtils, Messenger):
 
         return position
 
-    @cached_property_with_ttl(ttl=2)
+    @property
     def positionAmt(self):
         return float(self.exchange_position['positionAmt'])
 
@@ -178,8 +184,9 @@ class TradeExecutor(BinanceUtils, Messenger):
         alog.info(self.quantity)
 
         can_trade = False
+        positionAmt = self.positionAmt
 
-        if self.position != self.current_position or self.positionAmt != 0.0:
+        if self.position != self.current_position or positionAmt != 0.0:
             can_trade = True
 
         if can_trade:
@@ -188,7 +195,7 @@ class TradeExecutor(BinanceUtils, Messenger):
             if len(self.orders) == 0 and self.quantity > 0  and self.position == \
                 Positions.Short and self.asset_quantity < self.min_quantity:
                 # add limit orders
-                if self.positionAmt == 0.0:
+                if positionAmt == 0.0:
                     self.sell()
 
             if self.order:
@@ -202,14 +209,17 @@ class TradeExecutor(BinanceUtils, Messenger):
 
                     self.client.cancel_order(**params)
 
-                    if self.position == Positions.Short and self.positionAmt == 0.0:
+                    positionAmt = self.positionAmt
+
+                    if self.position == Positions.Short and positionAmt == 0.0:
                         self.sell()
 
+            positionAmt = self.positionAmt
             alog.info((self.position, self.asset_quantity))
-            alog.info(self.positionAmt)
+            alog.info(positionAmt)
 
-            if self.position == Positions.Flat and self.positionAmt < 0.0:
-                self.buy(abs(self.positionAmt))
+            if self.position == Positions.Flat and positionAmt < 0.0:
+                self.buy(abs(positionAmt))
 
             self.current_position = self.position
 
@@ -287,6 +297,7 @@ class TradeExecutor(BinanceUtils, Messenger):
 @click.option('--log-requests', '-l', is_flag=True)
 @click.option('--trading-enabled', '-e', is_flag=True)
 @click.option('--trade-min', is_flag=True)
+@click.option('--once', is_flag=True)
 @click.argument('symbol', type=str)
 def main(**kwargs):
     emitter = TradeExecutor(**kwargs)
