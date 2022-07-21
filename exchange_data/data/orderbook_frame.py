@@ -59,6 +59,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         max_volume_quantile=0.99,
         quantile=0.0,
         trade_volume_max=0.0,
+        change_max=0.0,
         cache=False,
         **kwargs
     ):
@@ -71,6 +72,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             sequence_length=sequence_length,
             **kwargs)
 
+        self.change_max = change_max
         self.trade_volume_max = trade_volume_max
         self.offset_interval = offset_interval
         self.group_by_delta = pd.Timedelta(seconds=timeparse(self.group_by))
@@ -84,6 +86,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.sequence_length = sequence_length
         self.cache = cache
         self.filename = Path(self.directory / f'{interval}_{offset_interval}.pickle')
+        self._intervals = None
 
     def _frame(self):
         frames = []
@@ -100,6 +103,32 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         df = df.set_index('time')
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
+
+        self.intervals = [(df.index[0].to_pydatetime(), df.index[-1].to_pydatetime())]
+
+        return df
+
+    def price_change_query(self):
+        start_date = self.start_date
+        end_date = self.end_date
+
+        start_date = self.format_date_query(start_date)
+        end_date = self.format_date_query(end_date)
+        channel_name = f'{self.symbol}_OrderBookFrame'
+
+        query = f'SELECT difference(first(best_ask)) AS change FROM {channel_name} ' \
+            f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
+                f'time({self.group_by});'
+
+        trades = self.query(query)
+
+        df = pd.DataFrame(columns=['time', 'change'])
+
+        for data in trades.get_points(channel_name):
+            timestamp = DateTimeUtils.parse_db_timestamp(
+                data['time'])
+            data['time'] = timestamp
+            df.loc[df.shape[0], :] = data
 
         return df
 
@@ -128,6 +157,25 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         return df
 
     @property
+    def price_change_frame(self):
+        frames = []
+
+        for interval in self.intervals:
+            self.start_date = interval[0]
+            self.end_date = interval[1]
+            frames.append(self.price_change_query())
+
+        df = pd.concat(frames)
+
+        df.drop_duplicates(subset=['time'], inplace=True)
+
+        df = df.set_index('time')
+        df = df.sort_index()
+        df.dropna(how='any', inplace=True)
+
+        return df
+
+    @property
     def trade_volume_frame(self):
         frames = []
 
@@ -151,16 +199,16 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         if self.cache and self.filename.exists():
             df = pd.read_pickle(str(self.filename))
             self.quantile = df.attrs['quantile']
-
-            alog.info(f'#### {self.quantile} ####')
-
             self.trade_volume_max = df.attrs['trade_volume_max']
+            self.change_max = df.attrs['change_max']
             return df
 
         df = self._frame()
 
         orderbook_img = df.orderbook_img.to_numpy().tolist()
+
         df.drop(['orderbook_img'], axis=1)
+
         orderbook_img = np.asarray(orderbook_img)
 
         orderbook_img = np.concatenate((
@@ -180,8 +228,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
             for i in range(shape[0]):
                 frame = orderbook[i]
-
-                # alog.info(np.squeeze(frame))
 
                 for l in range(frame.shape[0]):
                     level = frame[l]
@@ -205,30 +251,61 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         orderbook_img = orderbook_img / self.quantile
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
-
-        orderbook_img = self.add_trade_volume(orderbook_img)
-
-        # alog.info(alog.pformat(orderbook_img[0].tolist()))
-        # raise Exception()
+        orderbook_img = self.add_price_change(df, orderbook_img)
+        orderbook_img = self.add_trade_volume(df, orderbook_img)
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
         ]
 
         df.attrs['trade_volume_max'] = self.trade_volume_max
+        df.attrs['change_max'] = self.change_max
         df.attrs['quantile'] = self.quantile
 
         self.cache_frame(df)
 
         return df
 
-    def add_trade_volume(self, orderbook_img):
-        # add trade volume
-        trades = self.trade_volume_frame.reset_index(drop=True)
+    def add_price_change(self, df, orderbook_img):
         new_shape = list(orderbook_img.shape)
         new_shape[2] = new_shape[2] + 1
-        orderbook_img = np.resize(orderbook_img, new_shape)
-        trades = np.squeeze(trades.to_numpy())
+        new_orderbook_img = np.zeros(new_shape)
+        old_shape = orderbook_img.shape
+        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2], :old_shape[3]] = orderbook_img
+        orderbook_img = new_orderbook_img
+
+        df = df.join(self.price_change_frame).fillna(0.0)
+
+        # change = self.price_change_frame.reset_index(drop=True)
+        change = np.squeeze(df.change.to_numpy())
+
+        if self.change_max == 0.0:
+            self.change_max = np.quantile(change, 1.0)
+
+        change = change / self.change_max
+
+        for index in range(len(change)):
+            if index <= len(orderbook_img) - 1:
+                ord_img = orderbook_img[index]
+                frame_size = len(ord_img)
+                for i in range(frame_size):
+                    change_index = index - i
+                    ord_img[i][-1] = [change[change_index]]
+
+                orderbook_img[index] = ord_img
+
+        return orderbook_img
+
+    def add_trade_volume(self, df, orderbook_img):
+        df = df.join(self.trade_volume_frame).fillna(0.0)
+        trades = df.volume.to_numpy()
+        new_shape = list(orderbook_img.shape)
+        new_shape[2] = new_shape[2] + 1
+        new_orderbook_img = np.zeros(new_shape)
+        old_shape = orderbook_img.shape
+        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2], :old_shape[3]] = orderbook_img
+        orderbook_img = new_orderbook_img
+
         if self.trade_volume_max == 0.0:
             self.trade_volume_max = np.quantile(trades, 1.0)
         trades = trades / self.trade_volume_max
@@ -236,26 +313,31 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         for index in range(len(trades)):
             if index <= len(orderbook_img) - 1:
                 ord_img = orderbook_img[index]
-
                 frame_size = len(ord_img)
-
                 for i in range(frame_size):
-                    if index >= frame_size + i:
-                        trade_index = index - frame_size + i
-                        ord_img[i][-1] = [trades[trade_index]]
+                    trade_index = index - i
+                    ord_img[i][-1] = [trades[trade_index]]
 
-                # alog.info(np.squeeze(ord_img))
+                orderbook_img[index] = ord_img
 
         return orderbook_img
 
     @property
     def intervals(self):
-        self.reset_interval()
-        offset_interval = timedelta(seconds=timeparse(self.offset_interval))
-        start_date = self.start_date - offset_interval
-        end_date = self.end_date - offset_interval
+        if not self._intervals:
+            self.reset_interval()
+            offset_interval = timedelta(seconds=timeparse(self.offset_interval))
+            start_date = self.start_date - offset_interval
+            end_date = self.end_date - offset_interval
+            self._intervals = [(start_date, end_date)]
 
-        return [(start_date, end_date)]
+            return self._intervals
+        else:
+            return self._intervals
+
+    @intervals.setter
+    def intervals(self, value):
+        self._intervals = value
 
     def load_frames(self):
         frames = []
@@ -376,7 +458,9 @@ def main(**kwargs):
 
     obook = df.orderbook_img.to_numpy()
 
-    obook = np.squeeze(obook[-1])
+    alog.info(obook.shape)
+
+    obook = np.squeeze(obook[0])
 
     alog.info(obook)
 

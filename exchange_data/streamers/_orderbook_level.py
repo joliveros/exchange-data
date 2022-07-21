@@ -40,6 +40,7 @@ class OrderBookLevelStreamer(BitmexStreamer):
 
     def get_orderbook_frames(self):
         orderbook = self.orderbook_frame_query()
+
         for data in orderbook.get_points(self.channel_name):
             timestamp = DateTimeUtils.parse_db_timestamp(
                 data['time'])

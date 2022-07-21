@@ -28,7 +28,6 @@ class Database(EventEmitterBase):
         database = conn_params.path[1:]
 
         if len(database) == 0:
-
             database = database_name
 
         if database is None:
@@ -78,7 +77,6 @@ class Database(EventEmitterBase):
             points = self.points
             self.points = []
 
-            return self.influxdb_client\
+            return self.influxdb_client \
                 .write_points(points, batch_size=self.batch_size,
                               consistency=consistency, *args, **kwargs)
-
