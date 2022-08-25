@@ -33,7 +33,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_writer.py -F"
+            ./exchange_data/emitters/binance/orderbook_writer.py -F -b 2"
         secrets:
             - DB
             - ROLLBAR_API_KEY

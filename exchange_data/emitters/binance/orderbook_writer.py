@@ -20,6 +20,7 @@ class OrderBookWriter(
 ):
     def __init__(
         self,
+        batch_size,
         db_suffix,
         **kwargs
     ):
@@ -34,12 +35,12 @@ class OrderBookWriter(
         if len(db_suffix) > 0:
             database_name = database_name + db_suffix
 
+
         super().__init__(
             retry_on_timeout=True,
             socket_keepalive=True,
             database_name=database_name,
-            database_batch_size=1,
-            # database_batch_size=99,
+            database_batch_size=batch_size,
             stats_prefix=stats_prefix,
             **kwargs
         )
@@ -63,6 +64,7 @@ class OrderBookWriter(
 @click.command()
 @click.option('--futures', '-F', is_flag=True)
 @click.option('--db-suffix', '-s', type=str, default='')
+@click.option('--batch-size', '-b', type=int, default=1000)
 def main(**kwargs):
     OrderBookWriter(
         **kwargs
