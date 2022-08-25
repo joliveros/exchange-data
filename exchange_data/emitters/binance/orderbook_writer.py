@@ -38,7 +38,8 @@ class OrderBookWriter(
             retry_on_timeout=True,
             socket_keepalive=True,
             database_name=database_name,
-            database_batch_size=99,
+            database_batch_size=1,
+            # database_batch_size=99,
             stats_prefix=stats_prefix,
             **kwargs
         )
