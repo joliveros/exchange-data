@@ -32,7 +32,7 @@ class OrderBookLevelStreamer(BitmexStreamer):
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT first(*) AS data FROM {self.channel_name} ' \
+        query = f'SELECT last(*) AS data FROM {self.channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.group_by});'
 

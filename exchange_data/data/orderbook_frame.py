@@ -116,7 +116,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         end_date = self.format_date_query(end_date)
         channel_name = f'{self.symbol}_OrderBookFrame'
 
-        query = f'SELECT difference(first(best_ask)) AS change FROM {channel_name} ' \
+        query = f'SELECT difference(last(best_ask)) AS change FROM {channel_name} ' \
             f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.group_by});'
 
