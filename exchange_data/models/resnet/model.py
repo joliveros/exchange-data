@@ -26,6 +26,7 @@ def Model(
     depth,
     sequence_length,
     batch_size,
+    num_dense=3,
     dense_width=240,
     include_last=False,
     input_shape=None,
@@ -47,9 +48,9 @@ def Model(
 
     dense = Flatten()(conv)
 
-    dense = Dense(dense_width)(dense)
-    dense = Dense(dense_width)(dense)
-    dense = Dense(dense_width)(dense)
+    if num_dense > 0:
+        for i in range(num_dense):
+            dense = Dense(dense_width)(dense)
 
     dense_out = Dense(
         num_categories, activation='softmax',
