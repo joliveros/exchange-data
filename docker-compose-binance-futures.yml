@@ -16,7 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 1 -F -m 300 --symbol-filter UNFIUSDT"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 1 -F -m 1000 --symbol-filter UNFIUSDT"
         secrets:
             - DB
             - ROLLBAR_API_KEY
