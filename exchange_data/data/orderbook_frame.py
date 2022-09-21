@@ -290,7 +290,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                 frame_size = len(ord_img)
                 for i in range(frame_size):
                     change_index = index - i
-                    ord_img[i][-1] = [change[change_index]]
+                    if change_index >= 0:
+                        ord_img[i][-1] = [change[change_index]]
 
                 orderbook_img[index] = ord_img
 
@@ -316,7 +317,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                 frame_size = len(ord_img)
                 for i in range(frame_size):
                     trade_index = index - i
-                    ord_img[i][-1] = [trades[trade_index]]
+                    if trade_index >= 0:
+                        ord_img[i][-1] = [trades[trade_index]]
 
                 orderbook_img[index] = ord_img
 
