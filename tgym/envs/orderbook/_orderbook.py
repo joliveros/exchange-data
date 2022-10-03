@@ -1,14 +1,13 @@
 from collections import deque
-from datetime import timedelta
+
+from tensorflow.python.framework.random_seed import set_random_seed
+
 from exchange_data import settings
 from exchange_data.trading import Positions
 from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
-
-from exchange_data.utils import DateTimeUtils
-from tgym.envs.orderbook._plot_orderbook import PlotOrderbook
 from tgym.envs.orderbook.utils import Logging
 from tgym.envs.orderbook.trade import Trade
 from tgym.envs.orderbook.trade.long import LongTrade
@@ -174,6 +173,7 @@ class OrderBookTradingEnv(Logging, Env):
     def seed(self, seed):
         random.seed(seed)
         np.random.seed(seed)
+        set_random_seed(seed)
 
     @property
     def position(self):
