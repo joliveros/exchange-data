@@ -90,6 +90,8 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
+        num_lstm,
+        lstm_size,
         gap_enabled=True,
         base_filter_size=4,
         block_filter_factor=2,
@@ -162,6 +164,9 @@ class ResNetTS:
             conv = _conv(conv)
 
         alog.info(conv.shape)
+
+        for l in range(num_lstm):
+            conv = LSTM(lstm_size)(conv)
 
         if gap_enabled:
             output = GlobalAveragePooling2D()(conv)
