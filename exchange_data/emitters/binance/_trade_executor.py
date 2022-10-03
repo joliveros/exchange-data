@@ -227,7 +227,10 @@ class TradeExecutor(BinanceUtils, Messenger):
         if self.trade_min:
             quantity = self.min_quantity
         else:
-            quantity = self.quantity
+            if self._quantity == 0:
+                quantity = self.quantity
+            else:
+                quantity = self._quantity
 
         params = dict(
             symbol=self.symbol,
