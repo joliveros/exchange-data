@@ -37,6 +37,7 @@ def Model(
     **kwargs
 ):
     alog.info(alog.pformat((dense_width, kwargs)))
+    tf.compat.v1.experimental.output_all_intermediates(True)
 
     if not input_shape:
         input_shape = (batch_size, sequence_length, depth * 2, 1)
