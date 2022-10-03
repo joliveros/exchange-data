@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.5.1-gpu
+FROM tensorflow/tensorflow:2.10.0-gpu
 
 RUN apt-key del 7fa2af80
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
