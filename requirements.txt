@@ -14,7 +14,7 @@ matplotlib
 mock
 numpy==1.20
 opencv-python
-optuna==2.10.0
+optuna
 pandas==1.1.5
 plotly
 pytest
