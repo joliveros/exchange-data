@@ -36,7 +36,7 @@ class StudyWrapper(object):
     def create_study(self, db_conn_str):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
-            storage=db_conn_str)
+            storage=db_conn_str, sampler=optuna.samplers.CmaEsSampler)
 
     def save_best_params(self):
         self.best_study_params = vars(self.study.best_trial)
