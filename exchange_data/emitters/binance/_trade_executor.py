@@ -88,6 +88,7 @@ class TradeExecutor(BinanceUtils, Messenger):
         if self.once:
             self.once = False
             self.trade(1)
+            self.stop()
 
     @staticmethod
     @cache.cache(ttl=60 * 60)
@@ -179,7 +180,7 @@ class TradeExecutor(BinanceUtils, Messenger):
         if self.bid_price is None:
             return
 
-        alog.info('### prediction ###')
+        alog.info('### begin trade step ###')
         alog.info(self.position)
         alog.info(self.quantity)
 
@@ -199,6 +200,8 @@ class TradeExecutor(BinanceUtils, Messenger):
                     self.sell()
 
             if self.order:
+                alog.info('## order exists ##')
+
                 price = Decimal(self.order['price'])
                 if price != self.bid_price:
                     params = dict(symbol=self.order['symbol'],
