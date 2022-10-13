@@ -85,7 +85,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.symbol = symbol
         self.sequence_length = sequence_length
         self.cache = cache
-        self.filename = Path(self.directory / f'{interval}_{offset_interval}.pickle')
+        self.filename = Path(self.directory / f'{interval}_{offset_interval}_{self.round_decimals}.pickle')
         self._intervals = None
 
     def _frame(self):
