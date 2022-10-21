@@ -190,4 +190,3 @@ class Trade(Logging):
         self.total_reward += self.reward
 
         self.last_pnl = pnl
-
