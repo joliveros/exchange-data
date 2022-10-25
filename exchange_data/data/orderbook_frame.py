@@ -464,7 +464,7 @@ def main(**kwargs):
 
     obook = np.squeeze(obook[0])
 
-    alog.info(obook)
+    alog.info(obook.tolist())
 
 
 if __name__ == '__main__':
