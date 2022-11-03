@@ -19,6 +19,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
         self.four_minute_counter = 0
         self.five_minute_counter = 0
         self.seven_minute_counter = 0
+        self.nine_minute_counter = 0
         self.three_minute_counter = 0
         self.two_minute_counter = 0
         self.two_second_counter = 0
@@ -48,6 +49,7 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 self.four_minute_counter += 1
                 self.five_minute_counter += 1
                 self.seven_minute_counter += 1
+                self.nine_minute_counter += 1
                 self.minute_counter += 1
                 self.three_minute_counter += 1
                 self.two_minute_counter += 1
@@ -90,6 +92,10 @@ class TimeEmitter(Messenger, DateTimeUtils):
                 if self.seven_minute_counter % (60 * 7) == 0:
                     self.publish('7m', t)
                     self.seven_minute_counter = 0
+
+                if self.nine_minute_counter % (60 * 9) == 0:
+                    self.publish('9m', t)
+                    self.nine_minute_counter = 0
 
                 if self.minute_counter % 30 == 0:
                     self.publish('30s', t)
