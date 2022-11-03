@@ -260,8 +260,8 @@ class OrderBookTradingEnv(Logging, Env):
 
         self.step_count += 1
 
-        if self.step_count >= self.max_episode_length:
-            self.done = True
+        # if self.step_count >= self.max_episode_length:
+        #    self.done = True
 
         observation = self.get_observation()
 
