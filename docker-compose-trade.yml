@@ -15,7 +15,7 @@ services:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
           bash -c "source ~/.bashrc &&
-          ./exchange_data/emitters/binance/_trade_executor.py UNFI -b USDT --leverage 2 -F -q 1.0 -e"
+          ./exchange_data/emitters/binance/_trade_executor.py UNFI -b USDT --leverage 2 -F -q 2.0 -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
