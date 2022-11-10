@@ -29,9 +29,6 @@ class ShortTrade(Trade):
         fee = (self.fee * self.capital) + (self.fee * (self.capital * (1 + change)))
         pnl = pnl + fee
 
-        if pnl < 0:
-            pnl = pnl * self.reward_ratio
-
         return pnl
 
     def close(self):
@@ -51,15 +48,18 @@ class ShortTrade(Trade):
         else:
             pnl = self.pnl / self.position_length
 
-
+        if pnl < 0:
+            reward = pnl * self.reward_ratio
+        else:
+            reward = pnl
 
         if self.pnl > self.min_change:
-            self.reward += pnl
+            self.reward += reward
         else:
             if pnl > 0.0:
-                self.reward += pnl * -1
+                self.reward += reward * -1
             else:
-                self.reward += pnl
+                self.reward += reward
 
         self.total_reward += self.reward
 
