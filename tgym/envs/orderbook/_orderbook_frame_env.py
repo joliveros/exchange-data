@@ -121,12 +121,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         if self.trial:
             self.trial.report(self.capital, self.step_count)
 
-        if self.capital < self.min_capital and not self.is_test:
-            done = True
-
-        if self.current_trade and not self.is_test:
-            if self.current_trade.pnl <= self.max_negative_pnl:
-                done = True
+        # if self.current_trade and not self.is_test:
+        #     if self.current_trade.pnl <= self.max_negative_pnl:
+        #       done = True
 
         observation = self.get_observation()
 
@@ -138,9 +135,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.print_summary()
 
         return observation, reward, done, {
-                'capital': self.capital,
-                'trades': self.trades
-                }
+            'capital': self.capital,
+            'trades': self.trades
+        }
 
 
 @click.command()
