@@ -43,6 +43,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.prune_capital = 1.01
         self.total_steps = 0
         self.was_reset = False
+        self.macd_diff = None
 
     @property
     def done(self):
@@ -79,16 +80,18 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             best_ask = row.best_ask
             best_bid = row.best_bid
             frame = row.orderbook_img
+            macd_diff = row.macd_diff
             timestamp = row.name.to_pydatetime()
 
-            yield timestamp, best_ask, best_bid, frame
+            yield timestamp, best_ask, best_bid, frame, macd_diff
 
     def get_observation(self):
         if self.observations is None:
             self.observations = self._get_observation()
 
         try:
-            timestamp, best_ask, best_bid, frame = next(self.observations)
+            timestamp, best_ask, best_bid, frame, macd_diff = \
+                next(self.observations)
         except StopIteration:
             self.observations = None
             self.done = True
@@ -96,6 +99,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self._best_ask = best_ask
         self._best_bid = best_bid
+
+        self.macd_diff = macd_diff
 
         self.position_history.append(self.position.name[0])
 
@@ -108,9 +113,16 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return self.last_observation
 
     def step(self, action):
+        # if macd is negative then assume position should be flat otherwise
+        # use provided by prediction
+
         done = self.done
 
         assert self.action_space.contains(action)
+        action_before = action
+
+        if self.macd_diff > 0:
+            action = 0
 
         self.step_position(action)
 

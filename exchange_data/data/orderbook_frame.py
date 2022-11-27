@@ -3,6 +3,7 @@
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
+from exchange_data.data.macd_frame import MacdFrame
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
 from pathlib import Path
@@ -104,7 +105,18 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
 
-        self.intervals = [(df.index[0].to_pydatetime(), df.index[-1].to_pydatetime())]
+        macd_df = MacdFrame(
+            database_name=self.database_name,
+            end_date=self.end_date,
+            group_by=self.group_by,
+            start_date=self.start_date,
+            symbol=self.symbol
+        ).frame()
+
+        df['macd_diff'] = macd_df.macd_diff
+
+        self.intervals = [(df.index[0].to_pydatetime(),
+                           df.index[-1].to_pydatetime())]
 
         return df
 
