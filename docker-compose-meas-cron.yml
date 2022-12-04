@@ -14,7 +14,7 @@ services:
             replicas: 0
             restart_policy:
                 condition: none
-        image: "192.168.100.254:5001/exchange-data:latest"
+        image: "registry.rubercubic.com:5001/exchange-data:latest"
         command: bash -c "source ~/.bashrc && ./tfserving/config.py"
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
@@ -34,7 +34,7 @@ services:
             replicas: 0
             restart_policy:
                 condition: none
-        image: "192.168.100.254:5001/exchange-data:latest"
+        image: "registry.rubercubic.com:5001/exchange-data:latest"
         command: bash -c "source ~/.bashrc && ./exchange_data/proxies.py -r 1.0 -t 10"
         env_file:
             - ./.env.prod
