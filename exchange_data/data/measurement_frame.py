@@ -43,9 +43,10 @@ class MeasurementFrame(MeasurementMeta):
         else:
             self.interval = interval
 
-        self._end_date = end_date
-
         self.original_interval = (start_date, end_date)
+
+        self.start_date = start_date
+        self.end_date = end_date
 
     def reset_interval(self):
         self.start_date = self.original_interval[0]

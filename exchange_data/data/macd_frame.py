@@ -39,6 +39,7 @@ class MacdFrame(MeasurementFrame):
                 f'time <= {self.formatted_end_date} GROUP BY time(' \
                 f'{self.group_by})'
 
+        alog.info(query)
         frames = []
 
         for data in self.query(query).get_points(self.name):

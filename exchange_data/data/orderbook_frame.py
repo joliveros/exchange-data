@@ -8,6 +8,7 @@ from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
+from copy import copy
 
 import alog
 import click
@@ -91,11 +92,13 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
     def _frame(self):
         frames = []
-
         for interval in self.intervals:
             self.start_date = interval[0]
             self.end_date = interval[1]
             frames.append(self.load_frames())
+
+        start_date = copy(self.start_date)
+        end_date = copy(self.end_date)
 
         df = pd.concat(frames)
 
@@ -107,9 +110,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         macd_df = MacdFrame(
             database_name=self.database_name,
-            end_date=self.end_date,
+            end_date=end_date,
             group_by=self.group_by,
-            start_date=self.start_date,
+            start_date=start_date,
             symbol=self.symbol
         ).frame()
 
