@@ -118,7 +118,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         done = self.done
 
-        assert self.action_space.contains(action)
+        # assert self.action_space.contains(action)
         action_before = action
 
         if self.macd_diff > 0 and self.is_test:
@@ -149,7 +149,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         return observation, reward, done, {
             'capital': self.capital,
-            'trades': self.trades
+            'trades': self.trades,
+            'action': action
         }
 
 
