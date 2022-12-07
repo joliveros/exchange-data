@@ -36,7 +36,7 @@ def Model(
     num_categories=2,
     **kwargs
 ):
-    alog.info(alog.pformat((dense_width, kwargs)))
+    # alog.info(alog.pformat((dense_width, kwargs)))
     tf.compat.v1.experimental.output_all_intermediates(True)
 
     if not input_shape:
