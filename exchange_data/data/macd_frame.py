@@ -16,9 +16,9 @@ pd.options.plotting.backend = 'plotly'
 class MacdFrame(MeasurementFrame):
     def __init__(self,
                  symbol,
-                 window_slow=26*3,
-                 window_fast=12*3,
-                 window_sign=9*3,
+                 window_slow=26,
+                 window_fast=12,
+                 window_sign=9,
                  **kwargs):
 
         super().__init__( **kwargs)
