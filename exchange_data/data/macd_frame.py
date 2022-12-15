@@ -19,7 +19,7 @@ class MacdFrame(MeasurementFrame):
                  window_slow=26,
                  window_fast=12,
                  window_sign=9,
-                 window_factor=1
+                 window_factor=1,
                  **kwargs):
 
         super().__init__( **kwargs)
