@@ -19,14 +19,15 @@ class MacdFrame(MeasurementFrame):
                  window_slow=26,
                  window_fast=12,
                  window_sign=9,
+                 window_factor=1
                  **kwargs):
 
         super().__init__( **kwargs)
 
         self.symbol = symbol
-        self.window_slow = window_slow
-        self.window_fast = window_fast
-        self.window_sign = window_sign
+        self.window_slow = window_slow * window_factor
+        self.window_fast = window_fast * window_factor
+        self.window_sign = window_sign * window_factor
 
     @property
     def name(self):
