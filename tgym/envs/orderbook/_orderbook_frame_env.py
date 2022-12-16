@@ -122,7 +122,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         action_before = action
 
         if self.macd_diff > 0 and self.is_test:
-            alog.info((action, '### macd diff is greater than 0 ###'))
             action = 0
 
         self.step_position(action)
