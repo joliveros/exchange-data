@@ -4,6 +4,7 @@ from redis_collections import Dict
 
 import alog
 import optuna
+from optuna.storages import RDBStorage
 
 
 
@@ -22,7 +23,7 @@ class StudyWrapper(object):
         self.study_db_path = \
             f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
         self.study_db_path = Path(self.study_db_path)
-        db_conn_str = f'sqlite:///{self.study_db_path}'
+        db_conn_str = f'postgresql://postgres:postgres@postgres:5432/keras_data'
 
         if not self.study_db_path.exists():
             self.create_study(db_conn_str)
