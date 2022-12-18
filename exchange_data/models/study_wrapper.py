@@ -1,3 +1,4 @@
+from os import environ
 from pathlib import Path
 from optuna import load_study
 from redis_collections import Dict
@@ -7,12 +8,7 @@ import optuna
 from optuna.storages import RDBStorage
 
 
-
-
-
 class StudyWrapper(object):
-    study_db_path: Path = None
-
     def __init__(self, symbol, **kwargs):
         self.symbol = symbol
         self.base_path = f'{Path.home()}/.exchange-data/models/'
@@ -20,24 +16,19 @@ class StudyWrapper(object):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
-        self.study_db_path = \
-            f'{Path.home()}/.exchange-data/models/{self.symbol}.db'
-        self.study_db_path = Path(self.study_db_path)
-        db_conn_str = f'postgresql://postgres:postgres@postgres:5432/keras_data'
+        db_conn_str = environ.get('KERAS_DB')
+        storage = RDBStorage(db_conn_str)
 
-        if not self.study_db_path.exists():
-            self.create_study(db_conn_str)
-        else:
-            try:
-                self.study = \
-                    load_study(study_name=self.symbol, storage=db_conn_str)
-            except KeyError:
-                self.create_study(db_conn_str)
+        try:
+            self.study = \
+                load_study(study_name=self.symbol, storage=storage)
+        except KeyError:
+            self.create_study(storage=storage)
 
-    def create_study(self, db_conn_str):
+    def create_study(self, **kwargs):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
-            storage=db_conn_str, sampler=optuna.samplers.CmaEsSampler)
+            sampler=optuna.samplers.CmaEsSampler, **kwargs)
 
     def save_best_params(self):
         self.best_study_params = vars(self.study.best_trial)
