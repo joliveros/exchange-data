@@ -5,6 +5,7 @@ from redis_collections import Dict
 
 import alog
 import optuna
+import sec
 from optuna.storages import RDBStorage
 
 
@@ -16,7 +17,10 @@ class StudyWrapper(object):
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
                              f'/{self.symbol}'
 
-        db_conn_str = environ.get('KERAS_DB')
+        db_conn_str = sec.load('KERAS_DB', lowercase=False)
+
+        alog.info(db_conn_str)
+
         storage = RDBStorage(db_conn_str)
 
         try:
