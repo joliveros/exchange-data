@@ -15,13 +15,20 @@ class StudyWrapper(object):
         self.base_path = f'{Path.home()}/.exchange-data/models/'
 
         self.base_model_dir = f'{Path.home()}/.exchange-data/models' \
-                             f'/{self.symbol}'
+                              f'/{self.symbol}'
 
         db_conn_str = sec.load('KERAS_DB', lowercase=False)
 
         alog.info(db_conn_str)
 
-        storage = RDBStorage(db_conn_str)
+        storage = RDBStorage(db_conn_str,
+                             pool_pre_ping=True,
+                             engine_kwargs={
+                                 "keepalives": 1,
+                                 "keepalives_idle": 30,
+                                 "keepalives_interval": 10,
+                                 "keepalives_count": 5,
+                             })
 
         try:
             self.study = \
@@ -44,4 +51,5 @@ class StudyWrapper(object):
     @best_study_params.setter
     def best_study_params(self, values):
         self._best_study_params = \
-            Dict(key=f'best_key_{self.symbol}', data=values, redis=self.redis_client)
+            Dict(key=f'best_key_{self.symbol}', data=values,
+                 redis=self.redis_client)
