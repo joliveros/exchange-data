@@ -22,7 +22,6 @@ class StudyWrapper(object):
         alog.info(db_conn_str)
 
         storage = RDBStorage(db_conn_str,
-                             pool_pre_ping=True,
                              engine_kwargs={
                                  "keepalives": 1,
                                  "keepalives_idle": 30,
