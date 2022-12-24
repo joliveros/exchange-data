@@ -148,7 +148,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         return observation, reward, done, {
             'capital': self.capital,
-            # 'trades': self.trades,
+            'trades': self.trades,
             'action': action
         }
 
