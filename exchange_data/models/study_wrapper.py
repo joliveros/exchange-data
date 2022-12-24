@@ -23,10 +23,13 @@ class StudyWrapper(object):
 
         storage = RDBStorage(db_conn_str,
                              engine_kwargs={
-                                 "keepalives": 1,
-                                 "keepalives_idle": 30,
-                                 "keepalives_interval": 10,
-                                 "keepalives_count": 5,
+                                 "pool_pre_ping": True,
+                                 "connect_args": {
+                                     "keepalives": 1,
+                                     "keepalives_idle": 30,
+                                     "keepalives_interval": 10,
+                                     "keepalives_count": 5,
+                                 }
                              })
 
         try:
