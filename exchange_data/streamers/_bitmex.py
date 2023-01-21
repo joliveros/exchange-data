@@ -82,8 +82,7 @@ class BitmexStreamer(Database, DateTimeUtils, Generator):
 
         if end_date:
             self.end_date = end_date
-            self.stop_date = self.end_date + timedelta(seconds=timeparse(
-                self.group_by) * 4)
+            self.stop_date = self.end_date + timedelta(seconds=self.window_size)
 
         if start_date is not None:
             if self.start_date > start_date:
