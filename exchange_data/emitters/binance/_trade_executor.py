@@ -284,7 +284,8 @@ class TradeExecutor(BinanceUtils, Messenger):
             alog.info(alog.pformat(response))
 
         client: Client = self.client
-        client.futures_cancel_orders(symbol=self.symbol)
+
+        client.futures_cancel_all_open_orders(symbol=self.symbol)
 
     @cached_property_with_ttl(ttl=3)
     def account_data(self):
