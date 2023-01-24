@@ -116,9 +116,9 @@ class StudyWrapper(object):
         if len(df) == 0:
             raise NotEnoughTrialsException()
 
-        # row_id = df[['value']].idxmax()['value']
+        row_id = df[['value']].idxmax()['value']
 
-        trial_id = int(df.iloc[-1]['number']) + 1
+        trial_id = int(df.iloc[row_id]['number']) + 1
 
         alog.info(df)
 
