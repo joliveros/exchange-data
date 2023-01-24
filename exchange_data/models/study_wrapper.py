@@ -76,6 +76,8 @@ class StudyWrapper(object):
     def best_tuned_trial_params(self):
         trial = Trial(trial_id=self.best_tuned_trial_id, study=self.study)
 
+        alog.info(alog.pformat(trial.__dict__))
+
         params = {**trial.params, **trial.user_attrs}
 
         return params
