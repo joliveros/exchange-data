@@ -264,7 +264,7 @@ class TradeExecutor(BinanceUtils, Messenger):
             side=SIDE_BUY,
             type=binance.enums.FUTURE_ORDER_TYPE_STOP_MARKET,
             closePosition=True,
-            stopPrice=round(self.bid_price * 1.002, 3),
+            stopPrice=round(self.bid_price * 1.003, 3),
         )
 
         alog.info(alog.pformat(params))
