@@ -59,8 +59,9 @@ class TradeExecutor(BinanceUtils, Messenger):
         self.symbol = f'{symbol}{base_asset}'
         self._symbol = symbol
         self.trading_enabled = trading_enabled
+        self.short_enabled = True
         self.fee = fee
-
+        self.position = None
         self.base_asset = base_asset
         self.asset = None
         self.ticker_channel = self.channel_suffix(f'{symbol}{self.base_asset}_book_ticker')
@@ -175,7 +176,12 @@ class TradeExecutor(BinanceUtils, Messenger):
         return float(self.exchange_position['positionAmt'])
 
     def trade(self, position):
-        self.position = Positions(position)
+        position = Positions(position)
+
+        if self.position != position:
+            self.short_enabled = True
+
+        self.position = position
 
         if self.bid_price is None:
             return
@@ -238,13 +244,32 @@ class TradeExecutor(BinanceUtils, Messenger):
         params = dict(
             symbol=self.symbol,
             side=SIDE_SELL,
-            type=ORDER_TYPE_MARKET,
+            type=binance.enums.FUTURE_ORDER_TYPE_MARKET,
             quantity=quantity,
         )
 
         alog.info(alog.pformat(params))
 
-        if self.trading_enabled:
+        if self.trading_enabled and self.short_enabled:
+            response = self.client.futures_create_order(**params)
+            alog.info(alog.pformat(response))
+
+        self.short_stop_loss()
+
+        self.short_enabled = False
+
+    def short_stop_loss(self):
+        params = dict(
+            symbol=self.symbol,
+            side=SIDE_BUY,
+            type=binance.enums.FUTURE_ORDER_TYPE_STOP_MARKET,
+            closePosition=True,
+            stopPrice=round(self.bid_price * 1.002, 3),
+        )
+
+        alog.info(alog.pformat(params))
+
+        if self.trading_enabled and self.short_enabled:
             response = self.client.futures_create_order(**params)
             alog.info(alog.pformat(response))
 
@@ -257,6 +282,9 @@ class TradeExecutor(BinanceUtils, Messenger):
                 quantity=quantity,
             )
             alog.info(alog.pformat(response))
+
+        client: Client = self.client
+        client.futures_cancel_orders(symbol=self.symbol)
 
     @cached_property_with_ttl(ttl=3)
     def account_data(self):
