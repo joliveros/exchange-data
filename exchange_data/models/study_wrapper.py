@@ -120,7 +120,7 @@ class StudyWrapper(object):
 
         row_id = df[['value']].idxmax()['value']
 
-        trial_id = int(df.iloc[row_id]['number']) + 1
+        trial_id = int(df.loc[row_id]['number']) + 1
 
         alog.info(df)
 
