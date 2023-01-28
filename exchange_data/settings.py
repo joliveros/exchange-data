@@ -54,3 +54,4 @@ TICK_INTERVAL = '1s'
 
 PROMETHEUS_HOST = environ.get('PROMETHEUS_HOST')
 
+SLACK_TOKEN = sec.load('SLACK_TOKEN', lowercase=False)

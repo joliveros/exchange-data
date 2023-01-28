@@ -44,3 +44,4 @@ unicorn-binance-websocket-api
 unicorn_fy
 ta
 psycopg2-binary
+slack_sdk

@@ -6,6 +6,7 @@ from cached_property import cached_property_with_ttl
 from decimal import Decimal, getcontext
 from exchange_data import settings
 from exchange_data.emitters import binance, Messenger
+from exchange_data.emitters.SlackEmitter import SlackEmitter
 from exchange_data.emitters.binance import BinanceUtils
 from exchange_data.trading import Positions
 from math import floor
@@ -27,7 +28,7 @@ def truncate(n, decimals=0):
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 
-class TradeExecutor(BinanceUtils, Messenger):
+class TradeExecutor(BinanceUtils, SlackEmitter, Messenger):
     measurements = []
     current_position = Positions.Flat
     symbol = None
@@ -49,6 +50,7 @@ class TradeExecutor(BinanceUtils, Messenger):
     ):
         super().__init__(
             futures=futures,
+            channel='trades',
             **kwargs
         )
 
@@ -252,7 +254,9 @@ class TradeExecutor(BinanceUtils, Messenger):
 
         if self.trading_enabled and self.short_enabled:
             response = self.client.futures_create_order(**params)
+
             alog.info(alog.pformat(response))
+            self.message(alog.pformat(response))
 
         self.short_stop_loss()
 
@@ -282,6 +286,7 @@ class TradeExecutor(BinanceUtils, Messenger):
                 quantity=quantity,
             )
             alog.info(alog.pformat(response))
+            self.message(alog.pformat(response))
 
         client: Client = self.client
 
