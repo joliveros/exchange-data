@@ -165,6 +165,18 @@ class ResNetTS:
             lambda conv: self.conv_block(conv, kernel_size, filters4),
             lambda conv: self.identity_block(conv, kernel_size, filters4),
             lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.conv_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
+            lambda conv: self.identity_block(conv, kernel_size, filters4),
         ]
 
         if num_conv > 0:
