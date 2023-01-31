@@ -46,7 +46,10 @@ class ShortTrade(Trade):
         if self.position_length <= self.max_short_position_length:
             pnl = self.pnl
         else:
-            pnl = self.pnl / self.position_length
+            if self.pnl > 0:
+                pnl = self.pnl / self.position_length
+            else:
+                pnl = self.pnl
 
         if pnl < 0:
             reward = pnl * self.reward_ratio
@@ -57,7 +60,7 @@ class ShortTrade(Trade):
             self.reward += reward
         else:
             if pnl > 0.0:
-                self.reward += reward * -1
+                self.reward += reward * -1 * self.reward_ratio
             else:
                 self.reward += reward
 

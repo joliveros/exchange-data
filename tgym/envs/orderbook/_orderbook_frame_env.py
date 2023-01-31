@@ -17,6 +17,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
+        macd_diff_enabled=True,
         random_frame_start=False,
         trial=None,
         num_env=1,
@@ -38,7 +39,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         self.trial = trial
         self.num_env = num_env
         kwargs['batch_size'] = 1
-
+        self.macd_diff_enabled = macd_diff_enabled
         self.observations = None
         self.prune_capital = 1.01
         self.total_steps = 0
@@ -120,9 +121,10 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         # assert self.action_space.contains(action)
         action_before = action
-
-        if self.macd_diff > 0:
-            action = 0
+        
+        if self.macd_diff_enabled:
+            if self.macd_diff > 0:
+                action = 0
 
         self.step_position(action)
 
