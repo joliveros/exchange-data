@@ -63,7 +63,13 @@ class StudyWrapper(object):
         best_trial_id = self.best_trial_id
 
         return Trial(trial_id=best_trial_id, study=self.study)
+    
+    @property
+    def best_tuned_trial(self):
+        best_trial_id = self.best_tuned_trial_id
 
+        return Trial(trial_id=best_trial_id, study=self.study)
+    
     @cached_property_with_ttl(ttl=60)
     def best_trial_params(self):
         trial = self.best_trial
