@@ -85,6 +85,8 @@ class TradeExecutor(BinanceUtils, SlackEmitter, Messenger):
         if not once:
             self.on(self.prediction_channel, self.trade)
 
+        self.message('### starting up trade executor ###')
+
     def ticker(self, data):
         self.bid_price = float(data['b'])
 

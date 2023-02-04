@@ -10,6 +10,7 @@ class SlackEmitter(object):
             **kwargs
         )
         self.channel = channel
+        alog.info(settings.SLACK_TOKEN)
         self.slack_client = WebClient(token=settings.SLACK_TOKEN)
 
     def message(self, msg: str):

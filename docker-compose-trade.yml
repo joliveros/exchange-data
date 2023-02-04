@@ -15,7 +15,7 @@ services:
             - ${HOME}/.exchange-data/:${HOME}/.exchange-data/
         command: >-
           bash -c "source ~/.bashrc &&
-          ./exchange_data/emitters/binance/_trade_executor.py UNFI -b USDT --leverage 2 -F -q 7 -e"
+          ./exchange_data/emitters/binance/_trade_executor.py UNFI -b USDT --leverage 2 -F -q 1 -e"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -28,6 +28,7 @@ services:
             - DB
             - BINANCE_API_KEY
             - BINANCE_API_SECRET
+            - SLACK_TOKEN
 
 
 secrets:
@@ -36,4 +37,6 @@ secrets:
     BINANCE_API_KEY:
         external: true
     BINANCE_API_SECRET:
+        external: true
+    SLACK_TOKEN:
         external: true
