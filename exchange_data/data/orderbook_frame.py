@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
@@ -395,7 +394,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                 right = orderbook_img[1].swapaxes(1, 0)
 
                 left = np.sort(self.group_price_levels(left), axis=0)
+
                 right = np.sort(self.group_price_levels(right), axis=0)
+
                 right = np.flip(right, 0)
 
                 orderbook_img = np.zeros(max_shape)
@@ -409,7 +410,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                     right_len = self.output_depth
 
                 if left.shape != (0,) and right.shape != (0,):
-                    orderbook_img[0, :left_len, :2] = left[:left_len, :2]
+                    left = left[::-1]
+                    orderbook_img[0, :left_len, :2] = left[-left_len:, :2]
                     orderbook_img[1, :right_len, :2] = right[:right_len, :2]
                     orderbook_imgs.append(orderbook_img)
 
@@ -438,7 +440,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
     def cache_frame(self, df):
         df.to_pickle(str(self.filename))
 
-    def group_price_levels(self, orderbook_side):
+    @staticmethod
+    def group_price_levels(orderbook_side):
         groups = dict()
 
         for price_vol in orderbook_side.tolist():
@@ -467,17 +470,14 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
+
     df = OrderBookFrame(**kwargs).frame
 
     pd.set_option('display.max_rows', len(df) + 1)
 
-    alog.info(df)
-
     obook = df.orderbook_img.to_numpy()
 
-    alog.info(obook.shape)
-
-    obook = np.squeeze(obook[0])
+    obook = np.squeeze(obook[-1])
 
     alog.info(obook.tolist())
 
