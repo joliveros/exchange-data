@@ -265,8 +265,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         orderbook_img = orderbook_img / self.quantile
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
-        orderbook_img = self.add_price_change(df, orderbook_img)
-        orderbook_img = self.add_trade_volume(df, orderbook_img)
+        # orderbook_img = self.add_price_change(df, orderbook_img)
+        # orderbook_img = self.add_trade_volume(df, orderbook_img)
 
         df['orderbook_img'] = [
             orderbook_img[i] for i in range(0, orderbook_img.shape[0])
@@ -312,10 +312,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         return orderbook_img
 
     def add_trade_volume(self, df, orderbook_img):
+        height = 6
         df = df.join(self.trade_volume_frame).fillna(0.0)
         trades = df.volume.to_numpy()
         new_shape = list(orderbook_img.shape)
-        new_shape[2] = new_shape[2] + 1
+        new_shape[2] = new_shape[2] + height
         new_orderbook_img = np.zeros(new_shape)
         old_shape = orderbook_img.shape
         new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2], :old_shape[3]] = orderbook_img
@@ -323,7 +324,27 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         if self.trade_volume_max == 0.0:
             self.trade_volume_max = np.quantile(trades, 1.0)
+
         trades = trades / self.trade_volume_max
+
+        expanded_trades = []
+
+        for vol in trades:
+            vol = vol * height
+            expanded_vol = np.zeros([height, 1])
+
+            for e in range(expanded_vol.shape[0]):
+                if vol > e:
+                    expanded_vol[e][0] = 1.0
+
+            expanded_trades.append(expanded_vol)
+
+        trades = np.asarray(expanded_trades)
+        trades = np.flip(trades, 1)
+
+        # alog.info(trades)
+        # alog.info(orderbook_img.shape)
+        # raise Exception()
 
         for index in range(len(trades)):
             if index <= len(orderbook_img) - 1:
@@ -332,7 +353,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                 for i in range(frame_size):
                     trade_index = index - i
                     if trade_index >= 0:
-                        ord_img[i][-1] = [trades[trade_index]]
+                        # alog.info(ord_img[i])
+                        ord_img[i][-height:] = trades[trade_index]
 
                 orderbook_img[index] = ord_img
 
