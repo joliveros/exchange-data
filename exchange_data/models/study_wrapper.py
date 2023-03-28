@@ -44,7 +44,7 @@ class StudyWrapper(object):
     def create_study(self, **kwargs):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
-            sampler=optuna.samplers.NSGAIISampler, **kwargs)
+            sampler=optuna.samplers.TPESampler, **kwargs)
 
     def save_best_params(self):
         self.best_study_params = vars(self.study.best_trial)
@@ -63,13 +63,13 @@ class StudyWrapper(object):
         best_trial_id = self.best_trial_id
 
         return Trial(trial_id=best_trial_id, study=self.study)
-    
+
     @property
     def best_tuned_trial(self):
         best_trial_id = self.best_tuned_trial_id
 
         return Trial(trial_id=best_trial_id, study=self.study)
-    
+
     @cached_property_with_ttl(ttl=60)
     def best_trial_params(self):
         trial = self.best_trial

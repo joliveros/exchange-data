@@ -183,7 +183,7 @@ class OrderBookTradingEnv(Logging, Env):
             return Positions.Flat
 
     @position.setter
-    def position(self, action: np.float):
+    def position(self, action):
         self.last_position = self.position
 
         if self.should_change_position(action):

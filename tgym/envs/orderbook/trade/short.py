@@ -5,7 +5,7 @@ from tgym.envs.orderbook.trade import Trade
 
 
 class ShortTrade(Trade):
-    def __init__(self, max_short_position_length=-1, **kwargs):
+    def __init__(self, max_short_position_length=0, **kwargs):
         super().__init__(position_type=Positions.Short, **kwargs)
         self.max_short_position_length = max_short_position_length
 
@@ -43,27 +43,18 @@ class ShortTrade(Trade):
         self.capital += self.pnl
 
     def reward_for_pnl(self):
-        if self.position_length <= self.max_short_position_length:
-            pnl = self.pnl
-        else:
-            if self.pnl > 0:
-                pnl = self.pnl / self.position_length
-            else:
-                pnl = self.pnl
+        # if self.position_length <= self.max_short_position_length:
+        #     pnl = self.pnl
+        # else:
+        #     pnl = self.pnl / self.position_length
+
+        pnl = self.pnl
 
         if pnl < 0:
             reward = pnl * self.reward_ratio
         else:
             reward = pnl
 
-        if self.pnl > self.min_change:
-            self.reward += reward
-        else:
-            if pnl > 0.0:
-                self.reward += reward * -1 * self.reward_ratio
-            else:
-                self.reward += reward
-
-        self.total_reward += self.reward
+        self.total_reward += reward
 
         self.last_pnl = pnl

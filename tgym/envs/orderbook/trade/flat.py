@@ -8,7 +8,7 @@ class FlatTrade(Trade):
     def __init__(
         self,
         min_flat_change=0.0,
-        max_flat_position_length=2,
+        max_flat_position_length=0,
         fee_ratio=1.0,
         short_reward_enabled=False,
         **kwargs
@@ -53,10 +53,11 @@ class FlatTrade(Trade):
         self.append_pnl_history()
 
     def reward_for_pnl(self):
-        if self.position_length <= self.max_flat_position_length:
-            pnl = self.pnl
-        else:
-            pnl = self.pnl / self.position_length
+        # if self.position_length <= self.max_flat_position_length:
+        #     pnl = self.pnl
+        # else:
+        #     pnl = self.pnl / self.position_length
+        pnl = self.pnl
 
         self.reward += pnl
 

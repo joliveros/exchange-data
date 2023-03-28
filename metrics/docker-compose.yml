@@ -18,8 +18,8 @@ services:
       - public
 
   grafana:
-    image: grafana/grafana-oss:8.1.8
-    user: "472"
+    image: grafana/grafana-oss
+    user: "0"
     depends_on:
       - influxdb
     env_file: configuration.env
