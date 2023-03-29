@@ -132,9 +132,9 @@ class ResNetTS:
         conv = Activation('relu')(conv)
 
         conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
-        # conv = tf.keras.layers.MaxPooling2D(
-        #     (max_pooling_kernel, max_pooling_kernel),
-        #     strides=(max_pooling_strides, max_pooling_strides))(conv)
+        conv = tf.keras.layers.MaxPooling2D(
+            (max_pooling_kernel, max_pooling_kernel),
+            strides=(max_pooling_strides, max_pooling_strides))(conv)
 
         alog.info(conv.shape)
 
