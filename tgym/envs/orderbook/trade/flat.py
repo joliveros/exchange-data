@@ -61,7 +61,7 @@ class FlatTrade(Trade):
 
         self.reward += pnl
 
-        self.total_reward += self.reward
+        self.total_reward += self.reward * self.reward_ratio
 
         self.last_pnl = pnl
 

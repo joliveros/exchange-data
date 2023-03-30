@@ -51,10 +51,10 @@ class ShortTrade(Trade):
         pnl = self.pnl
 
         if pnl < 0:
-            reward = pnl * self.reward_ratio
+            reward = pnl
         else:
             reward = pnl
 
-        self.total_reward += reward
+        self.total_reward += reward * self.reward_ratio
 
         self.last_pnl = pnl

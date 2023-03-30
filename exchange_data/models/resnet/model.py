@@ -100,6 +100,7 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
+        max_pooling_enabled,
         gap_enabled=True,
         base_filter_size=4,
         block_filter_factor=2,
@@ -132,9 +133,10 @@ class ResNetTS:
         conv = Activation('relu')(conv)
 
         conv = tf.keras.layers.ZeroPadding2D(padding=(1, 1))(conv)
-        conv = tf.keras.layers.MaxPooling2D(
-            (max_pooling_kernel, max_pooling_kernel),
-            strides=(max_pooling_strides, max_pooling_strides))(conv)
+        if max_pooling_enabled:
+            conv = tf.keras.layers.MaxPooling2D(
+                (max_pooling_kernel, max_pooling_kernel),
+                strides=(max_pooling_strides, max_pooling_strides))(conv)
 
         alog.info(conv.shape)
 
