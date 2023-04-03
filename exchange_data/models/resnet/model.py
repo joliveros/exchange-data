@@ -22,6 +22,7 @@ Reshape = tf.keras.layers.Reshape
 Sequential = tf.keras.models.Sequential
 TimeDistributed = tf.keras.layers.TimeDistributed
 
+
 def Model(
     depth,
     sequence_length,
@@ -124,7 +125,6 @@ class ResNetTS:
         self.bn_axis = 3
         self.conv_block_strides = conv_block_strides
 
-
         conv = tf.keras.layers.ZeroPadding2D(padding=(padding, padding))(input)
         alog.info(conv.shape)
         conv = Conv2D(filters=base_filter_size,
@@ -150,41 +150,58 @@ class ResNetTS:
         filters3 = [filter * 4 for filter in filters]
         filters4 = [filter * 8 for filter in filters]
 
+        layer_keys = sorted([key for key in kwargs.keys() if 'conv_layer_'])
+
         convs = [
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
-            lambda conv: self.identity_block(conv, kernel_size, filters),
-            lambda conv: self.identity_block(conv, kernel_size, filters),
-            lambda conv: self.conv_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.identity_block(conv, kernel_size, filters2),
-            lambda conv: self.conv_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.identity_block(conv, kernel_size, filters3),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.conv_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
-            lambda conv: self.identity_block(conv, kernel_size, filters4),
         ]
 
-        if num_conv > 0:
+        if len(layer_keys) > 0:
+            for key in layer_keys:
+                if kwargs[key] == 'conv':
+                    convs.append(lambda conv: self.conv_block(conv, kernel_size,
+                                                              filters2))
+                elif kwargs[key] == 'identity':
+                    convs.append(
+                        lambda conv: self.identity_block(conv, kernel_size,
+                                                         filters))
+        else:
+            convs = [
+                lambda conv: self.conv_block(conv, kernel_size, filters,
+                                             [1, 1]),
+                lambda conv: self.identity_block(conv, kernel_size, filters),
+                lambda conv: self.identity_block(conv, kernel_size, filters),
+                lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters2),
+                lambda conv: self.conv_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.identity_block(conv, kernel_size, filters4),
+            ]
+
+        if num_conv > 0 and layer_keys == 0:
             convs = convs[:num_conv]
 
         for _conv in convs:
@@ -211,11 +228,13 @@ class ResNetTS:
             strides = self.conv_block_strides
 
         conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
-                      kernel_initializer='he_normal', padding='valid')(input_tensor)
+                      kernel_initializer='he_normal', padding='valid')(
+            input_tensor)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        conv = Conv2D(filters=filters[1], kernel_size=kernel_size, padding='same',
+        conv = Conv2D(filters=filters[1], kernel_size=kernel_size,
+                      padding='same',
                       kernel_initializer='he_normal')(conv)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
@@ -229,10 +248,13 @@ class ResNetTS:
 
         alog.info(kernel_size)
 
-        short_cut = Conv2D(filters=filters[2], kernel_size=[1, 1], strides=strides,
-                           padding='valid', kernel_initializer='he_normal')(input_tensor)
+        short_cut = Conv2D(filters=filters[2], kernel_size=[1, 1],
+                           strides=strides,
+                           padding='valid', kernel_initializer='he_normal')(
+            input_tensor)
 
-        short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(short_cut)
+        short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(
+            short_cut)
 
         alog.info(short_cut.shape)
 
@@ -245,29 +267,35 @@ class ResNetTS:
         filters1, filters2, filters3 = filters
 
         x = Conv2D(filters1, (1, 1),
-                          kernel_initializer='he_normal', padding='valid')(input_tensor)
+                   kernel_initializer='he_normal', padding='valid')(
+            input_tensor)
         x = BatchNormalization(axis=self.bn_axis)(x)
         x = Activation('relu')(x)
 
         x = Conv2D(filters2, kernel_size, (1, 1),
-                          padding='same',
-                          kernel_initializer='he_normal')(x)
+                   padding='same',
+                   kernel_initializer='he_normal')(x)
         x = BatchNormalization(axis=self.bn_axis)(x)
         x = Activation('relu')(x)
 
         x = Conv2D(filters3, (1, 1),
-                          kernel_initializer='he_normal', padding='valid')(x)
+                   kernel_initializer='he_normal', padding='valid')(x)
         x = BatchNormalization(axis=self.bn_axis)(x)
 
         x = tf.keras.layers.add([x, input_tensor])
         x = Activation('relu')(x)
         return x
 
+
 @click.command()
 @click.option('--batch-size', '-b', type=int, default=1)
 @click.option('--depth', type=int, default=40)
 @click.option('--sequence-length', type=int, default=48)
 def main(**kwargs):
+    kwargs['conv_layer_0'] = 'conv'
+    kwargs['conv_layer_1'] = 'identity'
+    kwargs['conv_layer_2'] = None
+
     Model(**kwargs)
 
 
