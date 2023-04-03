@@ -150,14 +150,15 @@ class ResNetTS:
         filters3 = [filter * 4 for filter in filters]
         filters4 = [filter * 8 for filter in filters]
 
-        layer_keys = sorted([key for key in kwargs.keys() if 'conv_layer_'])
+        layer_keys = [(int(key.split('conv_layer_')[1]), key)
+                      for key in kwargs.keys() if 'conv_layer_' in key]
 
         convs = [
             lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
         ]
 
         if len(layer_keys) > 0:
-            for key in layer_keys:
+            for ix, key in layer_keys:
                 if kwargs[key] == 'conv':
                     convs.append(lambda conv: self.conv_block(conv, kernel_size,
                                                               filters2))
@@ -206,7 +207,11 @@ class ResNetTS:
 
         for _conv in convs:
             alog.info(conv)
-            conv = _conv(conv)
+
+            try:
+                conv = _conv(conv)
+            except ValueError:
+                pass
 
         alog.info(conv.shape)
 
