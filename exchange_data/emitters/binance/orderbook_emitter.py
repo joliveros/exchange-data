@@ -79,7 +79,7 @@ class BitmexOrderBookEmitter(
 
         if self.subscriptions_enabled:
             self.on('1m', self.save_measurements_1m)
-            self.on('10s', self.save_measurements)
+            self.on('2s', self.save_measurements)
             self.on('10s', self.metrics)
 
             if self.symbol:
@@ -147,8 +147,8 @@ class BitmexOrderBookEmitter(
             try:
                 book.bids.remove_price(price)
             except PriceDoesNotExistException:
-                pass
-            # alog.info(f'removed {price}')
+                # pass
+                alog.info(f'removed {price}')
 
         prices_remove = [price for price in book.asks.price_map.keys() if price
                          < best_ask]
@@ -157,8 +157,9 @@ class BitmexOrderBookEmitter(
             try:
                 book.asks.remove_price(price)
             except PriceDoesNotExistException:
-                pass
-            # alog.info(f'removed {price}')
+                # pass
+                alog.info(f'removed {price}')
+
         self.last_book_ticker_update[symbol] = DateTimeUtils.now()
 
     def depth_reset(self, data):

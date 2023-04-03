@@ -475,4 +475,4 @@ class OrderBook(object):
         return str(summary)
 
     def __str__(self):
-        return self.print(depth=25, trades=False)
+        return self.print(depth=10, trades=False)
