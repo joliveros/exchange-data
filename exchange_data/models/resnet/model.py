@@ -23,11 +23,11 @@ Sequential = tf.keras.models.Sequential
 TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
-    num_lstm,
-    lstm_size,
     depth,
     sequence_length,
     batch_size,
+    lstm_size=2,
+    num_lstm=2,
     num_dense=3,
     dense_width=240,
     include_last=False,
@@ -100,7 +100,8 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        max_pooling_enabled,
+        conv_block_strides=2,
+        max_pooling_enabled=False,
         gap_enabled=True,
         base_filter_size=4,
         block_filter_factor=2,
@@ -121,6 +122,8 @@ class ResNetTS:
         alog.info(input)
 
         self.bn_axis = 3
+        self.conv_block_strides = conv_block_strides
+
 
         conv = tf.keras.layers.ZeroPadding2D(padding=(padding, padding))(input)
         alog.info(conv.shape)
@@ -203,14 +206,17 @@ class ResNetTS:
 
         self.model.summary()
 
-    def conv_block(self, input_tensor, kernel_size, filters, strides=[2, 2]):
+    def conv_block(self, input_tensor, kernel_size, filters, strides=None):
+        if strides is None:
+            strides = self.conv_block_strides
+
         conv = Conv2D(filters=filters[0], kernel_size=[1, 1], strides=strides,
                       kernel_initializer='he_normal', padding='valid')(input_tensor)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
-        conv = Conv2D(filters=filters[1], kernel_size=kernel_size,
-               padding='same', kernel_initializer='he_normal')(conv)
+        conv = Conv2D(filters=filters[1], kernel_size=kernel_size, padding='same',
+                      kernel_initializer='he_normal')(conv)
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
         conv = Activation('relu')(conv)
 
@@ -235,7 +241,7 @@ class ResNetTS:
 
         return output
 
-    def identity_block(self, input_tensor, kernel_size, filters, strides=[1, 1]):
+    def identity_block(self, input_tensor, kernel_size, filters):
         filters1, filters2, filters3 = filters
 
         x = Conv2D(filters1, (1, 1),
@@ -243,7 +249,7 @@ class ResNetTS:
         x = BatchNormalization(axis=self.bn_axis)(x)
         x = Activation('relu')(x)
 
-        x = Conv2D(filters2, kernel_size, strides,
+        x = Conv2D(filters2, kernel_size, (1, 1),
                           padding='same',
                           kernel_initializer='he_normal')(x)
         x = BatchNormalization(axis=self.bn_axis)(x)
