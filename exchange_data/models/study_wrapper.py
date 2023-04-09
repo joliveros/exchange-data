@@ -45,7 +45,7 @@ class StudyWrapper(object):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
             sampler=optuna.samplers.
-            NSGAIISampler(population_size=200, mutation_prob=0.5), **kwargs)
+            NSGAIISampler(population_size=5), **kwargs)
 
     def save_best_params(self):
         self.best_study_params = vars(self.study.best_trial)

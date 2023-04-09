@@ -205,13 +205,10 @@ class ResNetTS:
         if num_conv > 0 and layer_keys == 0:
             convs = convs[:num_conv]
 
+        layers_skipped = 0
         for _conv in convs:
             alog.info(conv)
-
-            try:
-                conv = _conv(conv)
-            except ValueError:
-                pass
+            conv = _conv(conv)
 
         alog.info(conv.shape)
 
