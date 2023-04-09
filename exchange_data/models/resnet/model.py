@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import inspect
 
 import alog
 import click
@@ -206,9 +207,14 @@ class ResNetTS:
             convs = convs[:num_conv]
 
         layers_skipped = 0
+        last_identity_block = None
         for _conv in convs:
-            alog.info(conv)
-            conv = _conv(conv)
+            if 'conv_block' in inspect.getsource(_conv):
+                last_identity_block = _conv
+            try:
+                conv = _conv(conv)
+            except ValueError:
+                conv = last_identity_block(conv)
 
         alog.info(conv.shape)
 
