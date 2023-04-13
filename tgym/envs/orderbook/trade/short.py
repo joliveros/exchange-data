@@ -53,7 +53,7 @@ class ShortTrade(Trade):
         if pnl > self.min_change:
             reward = pnl
         else:
-            reward = 0
+            reward = abs(pnl) * -1
 
         self.total_reward += reward * self.reward_ratio
 
