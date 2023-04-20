@@ -1,6 +1,8 @@
 
 # Order Book Tradying Gym
 
+![tgym-plot](https://user-images.githubusercontent.com/5973528/233504661-0fe96bf2-cf66-4a58-abe2-84bdd7dabd16.gif)
+
 `OrderBookFrameEnv` inherits from `OrderBookFrame` which enables it to load the necessary data from the time series database.
 
 ## Example Usage:
