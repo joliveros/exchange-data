@@ -1,6 +1,6 @@
 # exchange-data
 
-![Order Book Levels](./cover.png"Order Book Levels")
+```shell![Order Book Levels](https://user-images.githubusercontent.com/5973528/233488784-78a93f32-2cb3-4340-8f81-ce11f4b3d78c.png)
 
 Saves bitmex data in realtime to influxdb
 
@@ -8,7 +8,7 @@ Saves bitmex data in realtime to influxdb
 
 1. Set `DB` environment variable with your credentials for InfluxDB instance:
 
-```shell
+
 `DB=http://USER:PASSWORD@influxdb:28736/`
 ```
 
