@@ -495,7 +495,9 @@ def main(**kwargs):
 
     df = OrderBookFrame(**kwargs).frame
 
-    pd.set_option('display.max_rows', len(df) + 1)
+    alog.info(df)
+
+    # pd.set_option('display.max_rows', len(df) + 1)
 
     obook = df.orderbook_img.to_numpy()
 
