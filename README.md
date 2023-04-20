@@ -1,6 +1,6 @@
 # exchange-data
 
-```shell![Order Book Levels](https://user-images.githubusercontent.com/5973528/233488784-78a93f32-2cb3-4340-8f81-ce11f4b3d78c.png)
+[Order Book Levels](https://user-images.githubusercontent.com/5973528/233488784-78a93f32-2cb3-4340-8f81-ce11f4b3d78c.png)
 
 Saves bitmex data in realtime to influxdb
 
@@ -9,7 +9,8 @@ Saves bitmex data in realtime to influxdb
 1. Set `DB` environment variable with your credentials for InfluxDB instance:
 
 
-`DB=http://USER:PASSWORD@influxdb:28736/`
+```shell
+DB=http://USER:PASSWORD@influxdb:28736/`
 ```
 
 1. Get a dataframe with `best_bid`, `best_ask` and `orderbook_img` which is an array of the orderbook levels.
