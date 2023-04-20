@@ -2,7 +2,7 @@
 
 ![Order Book Levels](https://user-images.githubusercontent.com/5973528/233488784-78a93f32-2cb3-4340-8f81-ce11f4b3d78c.png?raw=true)
 
-Saves bitmex data in realtime to influxdb
+Binance Order Book Data Aggregator
 
 # Dataframe
 
