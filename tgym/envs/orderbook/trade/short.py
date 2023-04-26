@@ -14,6 +14,9 @@ class ShortTrade(Trade):
         return self.best_ask
 
     def step(self, *args):
+        if self.position_length >= self.max_short_position_length:
+            self.done = True
+
         super().step(*args)
 
     @property
@@ -51,10 +54,13 @@ class ShortTrade(Trade):
         pnl = self.pnl
 
         if pnl > self.min_change:
-            reward = pnl
+            reward = pnl / self.position_length
         else:
             reward = abs(pnl) * -1
 
         self.total_reward += reward * self.reward_ratio
 
         self.last_pnl = pnl
+
+        if self.position_length >= self.max_short_position_length:
+            self.done = True

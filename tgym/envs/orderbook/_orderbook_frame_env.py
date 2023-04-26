@@ -121,7 +121,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         # assert self.action_space.contains(action)
         action_before = action
-        
+
         if self.macd_diff_enabled:
             if self.macd_diff > 0:
                 action = 0
