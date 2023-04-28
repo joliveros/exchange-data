@@ -248,7 +248,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.position = action
         self.current_trade.step(self.best_bid, self.best_ask)
 
-        if self.current_trade.done:
+        if self.current_trade.done and not self.is_test:
             self.done = True
 
     def step(self, action):
