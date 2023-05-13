@@ -160,13 +160,21 @@ class ResNetTS:
 
         if len(layer_keys) > 0:
             for ix, key in layer_keys:
+                _filters = filters.copy()
+
+                if ix > 2 and ix <= 5:
+                    _filters = [filter * 2 for filter in _filters]
+
+                if ix > 5:
+                    _filters = [filter * 4 for filter in _filters]
+
                 if kwargs[key] == 'conv':
                     convs.append(lambda conv: self.conv_block(conv, kernel_size,
-                                                              filters2))
+                                                              _filters))
                 elif kwargs[key] == 'identity':
                     convs.append(
                         lambda conv: self.identity_block(conv, kernel_size,
-                                                         filters))
+                                                         _filters))
         else:
             convs = [
                 lambda conv: self.conv_block(conv, kernel_size, filters,
