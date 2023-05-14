@@ -45,6 +45,8 @@ services:
             replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: bash -c "source ~/.bashrc && ./exchange_data/emitters/time_emitter.py"
+        environment:
+            - LOG_LEVEL=INFO
         networks:
             - public
         depends_on:

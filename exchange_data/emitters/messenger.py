@@ -31,7 +31,9 @@ class Messenger(EventEmitterBase, StatsClient):
         host = settings.REDIS_HOST
         super().__init__(**kwargs)
 
-        StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
+        if settings.METRICS_ENABLED:
+            StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
+
         self.decode = decode
 
         redis_params = [param for param in list(signature(Redis).parameters)]
@@ -50,7 +52,8 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def _send(self, data):
         """Send data to statsd."""
-        self._sock.sendto(data.encode('ascii'), self._addr)
+        if settings.METRICS_ENABLED:
+            self._sock.sendto(data.encode('ascii'), self._addr)
 
     def handler(self, msg):
         if MessageType[msg['type']] == MessageType.message:
