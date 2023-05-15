@@ -155,7 +155,6 @@ class OrderBookTradingEnv(Logging, Env):
         self.should_penalize_even_trade = should_penalize_even_trade
         self.step_count = 0
         self.total_pnl = 0.0
-        self.total_reward = 0
         self.trades = []
         self.pnl = 0.0
         self.trading_fee = trading_fee
@@ -417,7 +416,6 @@ class OrderBookTradingEnv(Logging, Env):
 
     def reset_reward(self):
         reward = self.reward
-        self.total_reward += reward
         self.reward = 0.0
         return reward
 
@@ -536,8 +534,7 @@ class OrderBookTradingEnv(Logging, Env):
             'capital',
             'leverage',
             'last_datetime',
-            'step_count',
-            'total_reward',
+            'step_count'
         ]
 
         summary = {key: self.__dict__[key] for key in
