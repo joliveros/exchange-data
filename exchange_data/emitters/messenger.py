@@ -86,3 +86,11 @@ class Messenger(EventEmitterBase, StatsClient):
     def stop(self, *args, **kwargs):
         self._pubsub.close()
         sys.exit(0)
+
+    def gauge(self, *args, **kwargs):
+        if settings.METRICS_ENABLED:
+            super().gauge(*args, **kwargs)
+
+    def incr(self, *args, **kwargs):
+        if settings.METRICS_ENABLED:
+            super().incr(*args, **kwargs)
