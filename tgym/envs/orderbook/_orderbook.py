@@ -1,19 +1,23 @@
+#!/usr/bin/env python
+
 from collections import deque
-
-from tensorflow.python.framework.random_seed import set_random_seed
-
 from exchange_data import settings
 from exchange_data.trading import Positions
 from gym import Env
 from gym.spaces import Discrete, Box
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
-from tgym.envs.orderbook.utils import Logging
-from tgym.envs.orderbook.trade import Trade
-from tgym.envs.orderbook.trade.long import LongTrade
-from tgym.envs.orderbook.trade.flat import FlatTrade
-from tgym.envs.orderbook.trade.short import ShortTrade
+from tensorflow.python.framework.random_seed import set_random_seed
 from tgym.envs.orderbook.ascii_image import AsciiImage
+from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.flat import FlatTrade
+from tgym.envs.orderbook.trade.flat_reward_pnl_diff import \
+    FlatRewardPnlDiffTrade
+from tgym.envs.orderbook.trade.long import LongTrade
+from tgym.envs.orderbook.trade.short import ShortTrade
+from tgym.envs.orderbook.trade.short_reward_pnl_diff import \
+    ShortRewardPnlDiffTrade
+from tgym.envs.orderbook.utils import Logging
 
 import alog
 import click
@@ -21,7 +25,6 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-import traceback
 
 
 class OrderBookIncompleteException(Exception):
@@ -36,6 +39,8 @@ class OrderBookTradingEnv(Logging, Env):
 
     def __init__(
         self,
+        short_class_str,
+        flat_class_str,
         sequence_length=12,
         depth=24,
         min_steps=10,
@@ -75,6 +80,7 @@ class OrderBookTradingEnv(Logging, Env):
         kwargs['sample_interval'] = sample_interval
 
         self._args = locals()
+        self.flat_class_str = flat_class_str
         self.is_test = is_test
         self.last_observation = None
         self.last_timestamp = 0
@@ -83,6 +89,20 @@ class OrderBookTradingEnv(Logging, Env):
         super().__init__(
             **kwargs
         )
+
+        if short_class_str == ShortTrade.__name__:
+            self.short_class = ShortTrade
+        elif short_class_str == ShortRewardPnlDiffTrade.__name__:
+            self.short_class = ShortRewardPnlDiffTrade
+        else:
+            raise Exception()
+
+        if flat_class_str == FlatTrade.__name__:
+            self.flat_class = FlatTrade
+        elif flat_class_str == FlatRewardPnlDiffTrade.__name__:
+            self.flat_class = FlatRewardPnlDiffTrade
+        else:
+            raise Exception()
 
         self.min_steps = min_steps
         self.max_negative_pnl = max_negative_pnl
@@ -445,7 +465,7 @@ class OrderBookTradingEnv(Logging, Env):
             raise Exception('Already Long')
 
         if self.current_trade is None:
-            self.current_trade = ShortTrade(
+            self.current_trade = self.short_class(
                 leverage=self.leverage,
                 capital=self.capital,
                 entry_price=self.best_bid,
@@ -468,7 +488,7 @@ class OrderBookTradingEnv(Logging, Env):
             raise Exception('Already Flat')
 
         if self.current_trade is None:
-            self.current_trade = FlatTrade(
+            self.current_trade = self.flat_class(
                 capital=self.trade_size,
                 # entry_price=self.best_bid,
                 entry_price=self.best_ask,

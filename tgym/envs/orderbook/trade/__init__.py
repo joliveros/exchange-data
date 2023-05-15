@@ -54,7 +54,6 @@ class Trade(Logging):
         self._pnl = None
         self.max_pnl = 0.0
         self._reward = 0.0
-        self.total_reward = 0.0
         self.last_pnl = 0.0
         self.done = False
         self.reward = 0.0
@@ -159,7 +158,7 @@ class Trade(Logging):
 
     def __repr__(self):
         return f'{self.position_type}/{self.pnl}/{self.entry_price}/{self.exit_price}/' \
-            f'{self.total_reward}/{self.position_length}'
+            f'{self.reward}/{self.position_length}'
 
     def clear_pnl(self):
         self._pnl = None
@@ -178,7 +177,7 @@ class Trade(Logging):
             if diff < 0.0:
                 self.reward += diff
 
-        self.total_reward += self.reward
+        self.reward += self.reward
 
         self.last_pnl = pnl
 
@@ -186,7 +185,5 @@ class Trade(Logging):
         pnl = self.pnl / self.position_length
 
         self.reward += pnl
-
-        self.total_reward += self.reward
 
         self.last_pnl = pnl
