@@ -7,6 +7,7 @@ class ShortRewardPnlDiffTrade(ShortTrade):
 
     def step(self, *args, **kwargs):
         super().step(*args, **kwargs)
+
         self.reward_for_pnl()
 
     def reward_for_pnl(self):
