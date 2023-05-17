@@ -544,7 +544,7 @@ class OrderBookTradingEnv(Logging, Env):
             ''.join(self.position_history[-1 * self.max_summary:])
 
         summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
-                             if type(trade) != FlatTrade]
+            if type(trade) != FlatTrade or type(trade) != FlatRewardPnlDiffTrade]
 
         return summary
 
