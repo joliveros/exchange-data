@@ -1,4 +1,5 @@
 from tgym.envs.orderbook.trade.short import ShortTrade
+import alog
 
 
 class ShortRewardPnlDiffTrade(ShortTrade):
@@ -11,7 +12,7 @@ class ShortRewardPnlDiffTrade(ShortTrade):
         self.reward_for_pnl()
 
     def reward_for_pnl(self):
-        if self.position_length < self. max_short_position_length \
+        if self.position_length < self.max_short_position_length \
                 or self.max_short_position_length == 0:
             pnl = self.pnl
             diff = pnl - self.last_pnl
