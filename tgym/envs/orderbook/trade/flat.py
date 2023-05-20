@@ -48,8 +48,6 @@ class FlatTrade(Trade):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # self.reward_for_pnl()
-
         if self.position_length >= self.max_flat_position_length and \
             self.max_flat_position_length > 0:
             self.done = True
@@ -63,7 +61,7 @@ class FlatTrade(Trade):
             self.max_flat_position_length > 0:
             reward = pnl / self.position_length
         else:
-            reward = pnl
+            reward = 0
 
         self.reward += reward * self.reward_ratio
 

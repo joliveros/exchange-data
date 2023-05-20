@@ -14,7 +14,7 @@ class FlatRewardPnlDiffTrade(FlatTrade):
     def step(self, *args, **kwargs):
         super().step(*args, **kwargs)
 
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
     def reward_for_pnl(self):
         if self.position_length < self.max_flat_position_length \
@@ -22,7 +22,11 @@ class FlatRewardPnlDiffTrade(FlatTrade):
             pnl = self.pnl
             diff = pnl - self.last_pnl
 
-            self.reward = diff * self.reward_ratio
+            if diff > 0 and pnl > self.last_pnl:
+                self.reward = diff * self.reward_ratio
+            else:
+                self.reward = 0
+
             self.total_reward += self.reward
 
             self.last_pnl = pnl
