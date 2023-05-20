@@ -62,7 +62,7 @@ class FlatTrade(Trade):
             reward = 0
 
         self.reward += reward * self.reward_ratio
-
+        self.total_reward += self.reward
         self.last_pnl = pnl
 
     def close(self):

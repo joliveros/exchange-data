@@ -49,4 +49,6 @@ class ShortTrade(Trade):
 
         self.reward += reward * self.reward_ratio
 
+        self.total_reward += self.reward
+
         self.last_pnl = pnl
