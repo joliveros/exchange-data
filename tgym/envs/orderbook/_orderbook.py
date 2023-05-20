@@ -511,8 +511,6 @@ class OrderBookTradingEnv(Logging, Env):
         if type(trade) != FlatTrade:
             self.capital += trade.capital - 1
 
-        self.reward += self.current_trade.reward
-
         self.trades.append(trade)
         self.current_trade = None
 

@@ -14,8 +14,7 @@ class ShortTrade(Trade):
         return self.best_ask
 
     def step(self, *args):
-        if self.position_length >= self.max_short_position_length and \
-            self.max_short_position_length > 0:
+        if self.position_length >= self.max_short_position_length > 0:
             self.done = True
 
         super().step(*args)
@@ -36,17 +35,14 @@ class ShortTrade(Trade):
         return pnl
 
     def close(self):
-        super().close()
-
         self.reward_for_pnl()
-
         self.capital += self.pnl
+        super().close()
 
     def reward_for_pnl(self):
         pnl = self.pnl
 
-        if self.position_length >= self.max_short_position_length and \
-            self.max_short_position_length > 0:
+        if self.position_length >= self.max_short_position_length > 0:
             reward = pnl / self.position_length
         else:
             reward = 0
@@ -54,7 +50,3 @@ class ShortTrade(Trade):
         self.reward += reward * self.reward_ratio
 
         self.last_pnl = pnl
-
-        # if self.position_length >= self.max_short_position_length and \
-        #     self.max_short_position_length > 0:
-        #     self.done = True
