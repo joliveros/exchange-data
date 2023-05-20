@@ -174,18 +174,17 @@ def main(test_span, **kwargs):
     for t in range(1):
         # kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
-            short_class_str='ShortRewardPnlDiffTrade',
-            flat_class_str='FlatRewardPnlDiffTrade',
             random_frame_start=False,
             short_reward_enabled=True,
             is_training=False,
+            max_short_position_length=450,
             **kwargs
         )
 
         env.reset()
 
         for i in range(timeparse(test_span)):
-            actions = [0] * 1 + [1] * 9
+            actions = [0] * 1 + [1] * 39
 
             env.step(random.choice(actions))
 

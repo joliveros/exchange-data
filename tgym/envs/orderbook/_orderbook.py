@@ -39,8 +39,8 @@ class OrderBookTradingEnv(Logging, Env):
 
     def __init__(
         self,
-        short_class_str='ShortRewardPnlDiffTrade',
-        flat_class_str='FlatRewardPnlDiffTrade',
+        short_class_str='ShortTrade',
+        flat_class_str='FlatTrade',
         sequence_length=12,
         depth=24,
         min_steps=10,

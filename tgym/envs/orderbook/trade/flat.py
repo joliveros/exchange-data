@@ -56,7 +56,7 @@ class FlatTrade(Trade):
     def reward_for_pnl(self):
         pnl = self.pnl / self.position_length
 
-        if self.position_length >= self.max_flat_position_length > 0:
+        if self.position_length <= self.max_flat_position_length > 0:
             reward = pnl / self.position_length
         else:
             reward = 0
