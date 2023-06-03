@@ -22,10 +22,8 @@ class FlatRewardPnlDiffTrade(FlatTrade):
             pnl = self.pnl
             diff = pnl - self.last_pnl
 
-            if diff > 0 and pnl > self.last_pnl:
+            if diff > 0:
                 self.reward = diff * self.reward_ratio
-            else:
-                self.reward = 0
 
             self.total_reward += self.reward
 

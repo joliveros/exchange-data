@@ -66,8 +66,8 @@ def Model(
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        # use_bias=True,
-        # bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+        use_bias=True,
+        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
     dense_out.trainable = True
