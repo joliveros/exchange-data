@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import inspect
+from copy import copy
 
 import alog
 import click
@@ -154,33 +155,23 @@ class ResNetTS:
         layer_keys = [(int(key.split('conv_layer_')[1]), key)
                       for key in kwargs.keys() if 'conv_layer_' in key]
 
-        convs = [
-            lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
-        ]
+        def _filters(conv_ix, interval=2):
+            scale = int(conv_ix / interval) + 1
+
+            f = [filter * scale for filter in filters]
+            return f
+
+        conv = self.conv_block(conv, kernel_size, _filters(0), [1, 1])
 
         if len(layer_keys) > 0:
             for ix, key in layer_keys:
-                _filters = filters.copy()
-
-                if ix > 1 and ix <=3:
-                    _filters = [filter * 2 for filter in _filters]
-
-                if ix > 3 and ix <= 5:
-                    _filters = [filter * 4 for filter in _filters]
-
-                if ix > 5 and ix <= 7:
-                    _filters = [filter * 8 for filter in _filters]
-
-                if ix > 7:
-                    _filters = [filter * 16 for filter in _filters]
-
-                if kwargs[key] == 'conv':
-                    convs.append(lambda conv: self.conv_block(conv, kernel_size,
-                                                              _filters))
-                elif kwargs[key] == 'identity':
-                    convs.append(
-                        lambda conv: self.identity_block(conv, kernel_size,
-                                                         _filters))
+                try:
+                    if kwargs[key] == 'conv':
+                        conv = self.conv_block(conv, kernel_size, _filters(ix))
+                    elif kwargs[key] == 'identity':
+                        conv = self.identity_block(conv, kernel_size, _filters(ix))
+                except ValueError:
+                    conv = self.conv_block(conv, kernel_size, _filters(ix))
         else:
             convs = [
                 lambda conv: self.conv_block(conv, kernel_size, filters,
@@ -217,20 +208,19 @@ class ResNetTS:
                 lambda conv: self.identity_block(conv, kernel_size, filters4),
             ]
 
-        if num_conv > 0 and layer_keys == 0:
-            convs = convs[:num_conv]
+            if num_conv > 0 and layer_keys == 0:
+                convs = convs[:num_conv]
 
-        layers_skipped = 0
-        last_identity_block = None
-        for _conv in convs:
-            if 'conv_block' in inspect.getsource(_conv):
-                last_identity_block = _conv
-            try:
-                conv = _conv(conv)
-            except ValueError:
-                conv = last_identity_block(conv)
+            last_identity_block = None
+            for _conv in convs:
+                if 'conv_block' in inspect.getsource(_conv):
+                    last_identity_block = _conv
+                try:
+                    conv = _conv(conv)
+                except ValueError:
+                    conv = last_identity_block(conv)
 
-        alog.info(conv.shape)
+                alog.info(conv.shape)
 
         if gap_enabled:
             output = GlobalAveragePooling2D()(conv)
@@ -266,10 +256,6 @@ class ResNetTS:
 
         conv = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(conv)
 
-        alog.info(conv.shape)
-
-        alog.info(kernel_size)
-
         short_cut = Conv2D(filters=filters[2], kernel_size=[1, 1],
                            strides=strides,
                            padding='valid', kernel_initializer='he_normal')(
@@ -277,8 +263,6 @@ class ResNetTS:
 
         short_cut = tf.keras.layers.BatchNormalization(axis=self.bn_axis)(
             short_cut)
-
-        alog.info(short_cut.shape)
 
         output = tf.keras.layers.add([conv, short_cut])
         output = Activation('relu')(output)
@@ -316,7 +300,13 @@ class ResNetTS:
 def main(**kwargs):
     kwargs['conv_layer_0'] = 'conv'
     kwargs['conv_layer_1'] = 'identity'
-    kwargs['conv_layer_2'] = None
+    kwargs['conv_layer_2'] = 'identity'
+    kwargs['conv_layer_3'] = 'conv'
+    kwargs['conv_layer_4'] = 'identity'
+    kwargs['conv_layer_5'] = 'identity'
+    kwargs['conv_layer_6'] = 'conv'
+    kwargs['conv_layer_7'] = 'identity'
+    kwargs['conv_layer_8'] = 'identity'
 
     Model(**kwargs)
 
