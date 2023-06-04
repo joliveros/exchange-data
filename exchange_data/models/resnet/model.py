@@ -162,11 +162,17 @@ class ResNetTS:
             for ix, key in layer_keys:
                 _filters = filters.copy()
 
-                if ix > 2 and ix <= 5:
+                if ix > 1 and ix <=3:
                     _filters = [filter * 2 for filter in _filters]
 
-                if ix > 5:
+                if ix > 3 and ix <= 5:
                     _filters = [filter * 4 for filter in _filters]
+
+                if ix > 5 and ix <= 7:
+                    _filters = [filter * 8 for filter in _filters]
+
+                if ix > 7:
+                    _filters = [filter * 16 for filter in _filters]
 
                 if kwargs[key] == 'conv':
                     convs.append(lambda conv: self.conv_block(conv, kernel_size,
