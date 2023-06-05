@@ -32,7 +32,7 @@ class FlatTrade(Trade):
 
     @property
     def pnl(self):
-        if self.entry_price == 0.0:
+        if self.entry_price == 0.0 or self.exit_price == 0.0:
             change = 0.0
         else:
             change = self.raw_pnl / self.entry_price
@@ -60,7 +60,7 @@ class FlatTrade(Trade):
 
         if pnl > 0:
             self.reward += pnl
-        
+
         self.total_reward += self.reward
         self.last_pnl = pnl
 
