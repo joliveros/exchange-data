@@ -155,10 +155,11 @@ class ResNetTS:
         layer_keys = [(int(key.split('conv_layer_')[1]), key)
                       for key in kwargs.keys() if 'conv_layer_' in key]
 
-        def _filters(conv_ix, interval=2):
+        def _filters(conv_ix, interval=4):
             scale = int(conv_ix / interval) + 1
 
-            f = [filter * scale for filter in filters]
+            f = [filter * (2 ** scale) for filter in filters]
+            alog.info(f)
             return f
 
         conv = self.conv_block(conv, kernel_size, _filters(0), [1, 1])
@@ -169,6 +170,8 @@ class ResNetTS:
                     if kwargs[key] == 'conv':
                         conv = self.conv_block(conv, kernel_size, _filters(ix))
                     elif kwargs[key] == 'identity':
+                        conv = self.identity_block(conv, kernel_size, _filters(ix))
+                        conv = self.identity_block(conv, kernel_size, _filters(ix))
                         conv = self.identity_block(conv, kernel_size, _filters(ix))
                 except ValueError:
                     conv = self.conv_block(conv, kernel_size, _filters(ix))
