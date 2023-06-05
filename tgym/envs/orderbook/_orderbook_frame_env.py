@@ -174,6 +174,8 @@ def main(test_span, **kwargs):
     for t in range(1):
         # kwargs['sequence_length'] = random.randrange(10, 100)
         env = OrderBookFrameEnv(
+            short_class_str='ShortRewardPnlDiffTrade',
+            flat_class_str='FlatRewardPnlDiffTrade',
             random_frame_start=False,
             short_reward_enabled=True,
             is_training=False,

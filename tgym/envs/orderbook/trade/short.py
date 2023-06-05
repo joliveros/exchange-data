@@ -25,7 +25,7 @@ class ShortTrade(Trade):
     def pnl(self):
         diff = self.entry_price - self.exit_price
 
-        if self.entry_price == 0.0:
+        if self.entry_price == 0.0 or self.exit_price == 0.0:
             change = 0.0
         else:
             change = diff / self.entry_price
@@ -43,7 +43,7 @@ class ShortTrade(Trade):
 
     def reward_for_pnl(self):
         pnl = self.pnl
-        
+
         if pnl >= self.min_change:
             self.reward = pnl
 

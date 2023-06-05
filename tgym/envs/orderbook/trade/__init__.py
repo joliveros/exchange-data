@@ -10,6 +10,7 @@ import numpy as np
 
 class Trade(Logging):
     closed = False
+    diffs = []
 
     def __init__(
         self,
@@ -113,8 +114,6 @@ class Trade(Logging):
         self.bids = np.append(self.bids, [best_bid])
         self.asks = np.append(self.asks, [best_ask])
 
-        # self.reward_for_pnl()
-
         self.append_pnl_history()
 
     def plot(self):
@@ -159,7 +158,7 @@ class Trade(Logging):
 
     def __repr__(self):
         return f'{self.position_type}/{self.pnl}/{self.entry_price}/{self.exit_price}/' \
-            f'{self.total_reward}/{self.position_length}'
+            f'{self.total_reward}/{self.position_length}/{self.diffs}'
 
     def clear_pnl(self):
         self._pnl = None

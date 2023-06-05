@@ -6,6 +6,7 @@ class ShortRewardPnlDiffTrade(ShortTrade):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+
     def step(self, *args, **kwargs):
         super().step(*args, **kwargs)
 
