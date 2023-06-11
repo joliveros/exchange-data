@@ -186,7 +186,7 @@ def main(test_span, **kwargs):
         env.reset()
 
         for i in range(timeparse(test_span)):
-            actions = [0] * 1 + [1] * 39
+            actions = [0] * 39 + [1] * 10
 
             env.step(random.choice(actions))
 
