@@ -14,6 +14,7 @@ from tgym.envs.orderbook.trade.flat import FlatTrade
 from tgym.envs.orderbook.trade.flat_reward_pnl_diff import \
     FlatRewardPnlDiffTrade
 from tgym.envs.orderbook.trade.long import LongTrade
+from tgym.envs.orderbook.trade.no_reward_flat import NoRewardFlatTrade
 from tgym.envs.orderbook.trade.short import ShortTrade
 from tgym.envs.orderbook.trade.short_reward_pnl_diff import \
     ShortRewardPnlDiffTrade
@@ -101,6 +102,8 @@ class OrderBookTradingEnv(Logging, Env):
             self.flat_class = FlatTrade
         elif flat_class_str == FlatRewardPnlDiffTrade.__name__:
             self.flat_class = FlatRewardPnlDiffTrade
+        elif flat_class_str == NoRewardFlatTrade.__name__:
+            self.flat_class = NoRewardFlatTrade
         else:
             raise Exception()
 
