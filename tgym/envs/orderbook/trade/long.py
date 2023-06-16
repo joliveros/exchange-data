@@ -1,5 +1,5 @@
 from exchange_data.trading import Positions
-from tgym.envs.orderbook.trade import Trade
+from tgym.envs.orderbook.trade.trade import Trade
 
 import alog
 

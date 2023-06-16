@@ -1,3 +1,4 @@
+import alog
 import yaml
 from yaml.representer import SafeRepresenter
 
@@ -8,4 +9,12 @@ class Logging(object):
         yaml.add_representer(float, SafeRepresenter.represent_float)
 
     def yaml(self, value: dict):
-        return yaml.dump(value)
+        alog.info(yaml.dump(value))
+
+
+def import_by_string(name):
+    components = name.split('.')
+    mod = __import__(components[0])
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod

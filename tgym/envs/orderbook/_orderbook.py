@@ -9,16 +9,11 @@ from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
 from tensorflow.python.framework.random_seed import set_random_seed
 from tgym.envs.orderbook.ascii_image import AsciiImage
-from tgym.envs.orderbook.trade import Trade
 from tgym.envs.orderbook.trade.flat import FlatTrade
-from tgym.envs.orderbook.trade.flat_reward_pnl_diff import \
-    FlatRewardPnlDiffTrade
 from tgym.envs.orderbook.trade.long import LongTrade
-from tgym.envs.orderbook.trade.no_reward_flat import NoRewardFlatTrade
 from tgym.envs.orderbook.trade.short import ShortTrade
-from tgym.envs.orderbook.trade.short_reward_pnl_diff import \
-    ShortRewardPnlDiffTrade
-from tgym.envs.orderbook.utils import Logging
+from tgym.envs.orderbook.trade.trade import Trade
+from tgym.envs.orderbook.utils import Logging, import_by_string
 
 import alog
 import click
@@ -48,7 +43,6 @@ class OrderBookTradingEnv(Logging, Env):
         levels=30,
         summary_interval=120,
         database_name = 'bitmex',
-        logger=None,
         leverage=1.0,
         trading_fee=0.0004,
         max_loss=-5.0/100.0,
@@ -86,26 +80,17 @@ class OrderBookTradingEnv(Logging, Env):
         self.last_observation = None
         self.last_timestamp = 0
         self.reset_class = OrderBookTradingEnv
+        self.logger = Logging()
 
         super().__init__(
             **kwargs
         )
 
-        if short_class_str == ShortTrade.__name__:
-            self.short_class = ShortTrade
-        elif short_class_str == ShortRewardPnlDiffTrade.__name__:
-            self.short_class = ShortRewardPnlDiffTrade
-        else:
-            raise Exception()
+        self.short_class=\
+            import_by_string(f'tgym.envs.orderbook.trade.{short_class_str}')
 
-        if flat_class_str == FlatTrade.__name__:
-            self.flat_class = FlatTrade
-        elif flat_class_str == FlatRewardPnlDiffTrade.__name__:
-            self.flat_class = FlatRewardPnlDiffTrade
-        elif flat_class_str == NoRewardFlatTrade.__name__:
-            self.flat_class = NoRewardFlatTrade
-        else:
-            raise Exception()
+        self.flat_class=\
+            import_by_string(f'tgym.envs.orderbook.trade.{flat_class_str}')
 
         self.min_steps = min_steps
         self.max_negative_pnl = max_negative_pnl
@@ -122,7 +107,6 @@ class OrderBookTradingEnv(Logging, Env):
         self._done = False
         self.min_change = min_change
         self.max_change = max_change
-        self.logger = logger
         self.summary_interval = summary_interval
         self.max_n_noops = 10
         self.last_spread = 0.0
@@ -298,6 +282,7 @@ class OrderBookTradingEnv(Logging, Env):
             if self.summary_interval > -1:
                 if self.step_count % self.summary_interval == 0:
                     alog.info(alog.pformat(self.summary()))
+                    # self.logger.yaml(self.summary())
 
     @property
     def best_bid(self):
@@ -551,18 +536,6 @@ class OrderBookTradingEnv(Logging, Env):
         #     if type(trade) != FlatTrade and type(trade) != FlatRewardPnlDiffTrade]
 
         return summary
-
-    def log_trades(self):
-        trade_count = len(self.trades)
-        self.logger.logkv('trades/count', trade_count)
-
-        if trade_count > 0:
-            self.logger.logkv('trades/mean_pnl',
-                              sum([trade.pnl for trade in self.trades]) / trade_count)
-            self.logger.logkv(
-                'trades/mean_len',
-                sum([trade.position_length for trade in self.trades]) / trade_count
-            )
 
 @click.command()
 @click.option('--test-span', default='5m')
