@@ -1,10 +1,8 @@
-from exchange_data.trading import Positions
-from tgym.envs.orderbook.trade import Trade
-import numpy as np
+from tgym.envs.orderbook.trade.flat import FlatTrade
 import alog
 
 
-class NoRewardFlatTrade(Trade):
+class NoRewardFlatTrade(FlatTrade):
     def __init__(
         self,
         **kwargs
