@@ -13,9 +13,11 @@ class ShortRewardMinLength(ShortTrade):
         self.reward_for_pnl()
 
     def reward_for_pnl(self):
+        pnl = self.pnl
+
         if self.position_length > self.min_position_length \
                 or self.min_position_length == 0:
-            pnl = self.pnl
+
             diff = pnl - self.last_pnl
 
             if diff > 0 and pnl > 0:
