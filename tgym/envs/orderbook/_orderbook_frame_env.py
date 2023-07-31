@@ -1,15 +1,23 @@
 #!/usr/bin/env python
+import json
 
+from skimage import color
+from matplotlib import pyplot as plt
 from cached_property import cached_property
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
+from PIL import Image
+import cv2
 
 import alog
 import click
 import random
 import traceback
+import numpy as np
+
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
@@ -17,6 +25,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
+        frame_width=48,
         macd_diff_enabled=True,
         random_frame_start=False,
         trial=None,
@@ -29,9 +38,12 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         )
         OrderBookTradingEnv.__init__(
             self,
+            frame_width=frame_width,
             action_space=Discrete(2),
             **kwargs
         )
+
+        self.plot_count = 0
 
         if random_frame_start:
             self.random_frame_start = random_frame_start
@@ -109,9 +121,82 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self._last_datetime = timestamp
 
-        self.last_observation = frame
+        if self.current_trade:
+            self.position_pnl_history.append(self.current_trade.pnl)
 
-        return self.last_observation
+        ob_img = self.plot_orderbook(frame)
+        pnl_img = self.plot_pnl()
+
+        alog.info([ob_img.shape, pnl_img.shape])
+
+        ob_pnl = np.concatenate([ob_img, pnl_img]) / 255
+
+        self.last_observation = ob_pnl
+
+        return ob_pnl
+
+    def plot_orderbook(self, data):
+        fig, frame = plt.subplots(1, 1, figsize=(2, 1),
+                                        dpi=self.frame_width)
+
+        # frame.imshow(np.rot90(np.fliplr(self.last_observation)))
+
+        plt.autoscale(tight=True)
+        frame.axis('off')
+        fig.patch.set_visible(False)
+        frame.imshow(data)
+        fig.canvas.draw()
+        img = fig.canvas.renderer._renderer
+
+        plt.close(fig)
+
+        img = np.array(img)
+
+        num_colors = 14
+        img = Image.fromarray(np.uint8(img * 255)).quantize(num_colors)
+
+        return np.asarray(img)
+
+        # print(str(AsciiImage(img, new_width=21)) + '\n')
+
+    def plot_pnl(self):
+        pnl = np.asarray(self.position_pnl_history)
+
+        if pnl.shape[0] > 0:
+            num_colors = 14
+
+            fig, price_frame = plt.subplots(1, 1, figsize=(2, 1),
+                                            dpi=self.frame_width)
+
+            min = abs(pnl.min())
+            pnl = pnl + min
+
+            pnl_frame = price_frame.twinx()
+            pnl_frame.plot(pnl, color='black')
+            # pnl_frame = price_frame.twinx()
+            # pnl_frame.plot(self.pnl_history, color='green')
+
+            plt.fill_between(range(pnl.shape[0]), pnl, color='black')
+
+            plt.autoscale(tight=True)
+            pnl_frame.axis('off')
+            fig.patch.set_visible(False)
+            fig.canvas.draw()
+
+            img = fig.canvas.renderer._renderer
+            img = np.array(img)
+
+            plt.close(fig)
+            img = Image.fromarray(np.uint8(img * 255)).quantize(num_colors)
+
+            img = np.asarray(img)
+            shape = img.shape
+
+            return img
+        else:
+            return np.zeros([self.frame_width, self.frame_width * 2])
+
+        # return str(AsciiImage(img, new_width=21)) + '\n'
 
     def step(self, action):
         # if macd is negative then assume position should be flat otherwise
@@ -147,6 +232,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         reward = self.reset_reward()
 
         self.print_summary()
+        alog.info('## in here ##')
+        alog.info(observation.shape)
+        raise Exception()
 
         return observation, reward, done, {
             'capital': self.capital,
@@ -154,6 +242,35 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             'action': action
         }
 
+    # def reset(self, **kwargs):
+    #     alog.info('### reset ###')
+    #
+    #     self.reset_count += 1
+    #     reset_count = self.reset_count
+    #
+    #     if self.step_count > 0:
+    #         alog.debug('##### reset ######')
+    #         alog.debug(alog.pformat(self.summary()))
+    #
+    #     _kwargs = self._args['kwargs']
+    #     del self._args['kwargs']
+    #     _kwargs = {**self._args, **_kwargs, **kwargs}
+    #     del _kwargs['self']
+    #     new_instance = self.reset_class(**_kwargs)
+    #
+    #     self.__dict__ = {**self.__dict__, **new_instance.__dict__}
+    #     self.reset_count = reset_count
+    #
+    #     self.observations = self._get_observation()
+    #
+    #     try:
+    #         self.get_observation()
+    #         alog.info(self.last_observation.shape)
+    #     except StopIteration:
+    #         self.observations = self._get_observation()
+    #         self.get_observation()
+    #
+    #     return self.last_observation
 
 @click.command()
 @click.option('--cache', is_flag=True)
@@ -179,16 +296,22 @@ def main(test_span, **kwargs):
             random_frame_start=False,
             short_reward_enabled=True,
             is_training=False,
-            max_short_position_length=450,
+            max_short_position_length=0,
             **kwargs
         )
 
-        env.reset()
+        obs = env.reset()
 
-        for i in range(timeparse(test_span)):
-            actions = [0] * 39 + [1] * 10
-
-            env.step(random.choice(actions))
+        # test_length = timeparse(test_span)
+        # step_reset = int(test_length / 2)
+        #
+        # for i in range(test_length):
+        #     if i == step_reset:
+        #         env.reset()
+        #
+        #     actions = [1] * 39 + [0] * 10
+        #
+        #     env.step(random.choice(actions))
 
 
 if __name__ == '__main__':

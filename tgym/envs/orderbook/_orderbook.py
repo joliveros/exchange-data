@@ -75,6 +75,8 @@ class OrderBookTradingEnv(Logging, Env):
         kwargs['sample_interval'] = sample_interval
 
         self._args = locals()
+        self.asks = None
+        self.bids = None
         self.flat_class_str = flat_class_str
         self.is_test = is_test
         self.last_observation = None
@@ -102,7 +104,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.leverage = leverage
         self.capital = capital
         self.frame_width = frame_width
-        self.position_pnl_history = np.array([])
+        self.position_pnl_history = []
         self.position_pnl_diff_history = np.array([])
         self._done = False
         self.min_change = min_change
@@ -224,12 +226,14 @@ class OrderBookTradingEnv(Logging, Env):
         return DataFrame(ranges).set_index('time')
 
     def reset(self, **kwargs):
+        alog.info('### reset ###')
+
         self.reset_count += 1
         reset_count = self.reset_count
 
         if self.step_count > 0:
             alog.debug('##### reset ######')
-            alog.info(alog.pformat(self.summary()))
+            alog.debug(alog.pformat(self.summary()))
 
         _kwargs = self._args['kwargs']
         del self._args['kwargs']
@@ -357,7 +361,6 @@ class OrderBookTradingEnv(Logging, Env):
         self.frames.append(plot)
 
         self.last_observation = np.copy(self.frames)
-
         return self.last_observation
 
     def plot_orderbook(self):

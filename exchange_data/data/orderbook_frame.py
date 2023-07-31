@@ -269,7 +269,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         # orderbook_img = self.add_trade_volume(df, orderbook_img)
 
         df['orderbook_img'] = [
-            orderbook_img[i] for i in range(0, orderbook_img.shape[0])
+            np.rot90(np.fliplr(orderbook_img[i])) for i in range(0, orderbook_img.shape[0])
         ]
 
         df.attrs['trade_volume_max'] = self.trade_volume_max
