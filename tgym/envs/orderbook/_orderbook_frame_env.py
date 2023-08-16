@@ -137,8 +137,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         fig, frame = plt.subplots(1, 1, figsize=(2, 1),
                                         dpi=self.frame_width)
 
-        # frame.imshow(np.rot90(np.fliplr(self.last_observation)))
-
         plt.autoscale(tight=True)
         frame.axis('off')
         fig.patch.set_visible(False)
@@ -165,8 +163,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
             pnl_frame = price_frame.twinx()
             pnl_frame.plot(pnl, color='black')
-            # pnl_frame = price_frame.twinx()
-            # pnl_frame.plot(self.pnl_history, color='green')
 
             plt.fill_between(range(pnl.shape[0]), pnl, color='black')
 
@@ -184,8 +180,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             return img
         else:
             return np.zeros([self.frame_width, self.frame_width * 2])
-
-        # return str(AsciiImage(img, new_width=21)) + '\n'
 
     def step(self, action):
         # if macd is negative then assume position should be flat otherwise
