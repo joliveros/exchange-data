@@ -127,13 +127,11 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         ob_img = self.plot_orderbook(frame)
         pnl_img = self.plot_pnl()
 
-        alog.info([ob_img.shape, pnl_img.shape])
-
         ob_pnl = np.concatenate([ob_img, pnl_img]) / 255
 
-        self.last_observation = ob_pnl
+        self.last_observation = np.expand_dims(ob_pnl, axis=2)
 
-        return ob_pnl
+        return self.last_observation
 
     def plot_orderbook(self, data):
         fig, frame = plt.subplots(1, 1, figsize=(2, 1),
@@ -232,9 +230,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         reward = self.reset_reward()
 
         self.print_summary()
-        alog.info('## in here ##')
-        alog.info(observation.shape)
-        raise Exception()
 
         return observation, reward, done, {
             'capital': self.capital,
@@ -242,35 +237,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             'action': action
         }
 
-    # def reset(self, **kwargs):
-    #     alog.info('### reset ###')
-    #
-    #     self.reset_count += 1
-    #     reset_count = self.reset_count
-    #
-    #     if self.step_count > 0:
-    #         alog.debug('##### reset ######')
-    #         alog.debug(alog.pformat(self.summary()))
-    #
-    #     _kwargs = self._args['kwargs']
-    #     del self._args['kwargs']
-    #     _kwargs = {**self._args, **_kwargs, **kwargs}
-    #     del _kwargs['self']
-    #     new_instance = self.reset_class(**_kwargs)
-    #
-    #     self.__dict__ = {**self.__dict__, **new_instance.__dict__}
-    #     self.reset_count = reset_count
-    #
-    #     self.observations = self._get_observation()
-    #
-    #     try:
-    #         self.get_observation()
-    #         alog.info(self.last_observation.shape)
-    #     except StopIteration:
-    #         self.observations = self._get_observation()
-    #         self.get_observation()
-    #
-    #     return self.last_observation
 
 @click.command()
 @click.option('--cache', is_flag=True)
@@ -302,16 +268,16 @@ def main(test_span, **kwargs):
 
         obs = env.reset()
 
-        # test_length = timeparse(test_span)
-        # step_reset = int(test_length / 2)
-        #
-        # for i in range(test_length):
-        #     if i == step_reset:
-        #         env.reset()
-        #
-        #     actions = [1] * 39 + [0] * 10
-        #
-        #     env.step(random.choice(actions))
+        test_length = timeparse(test_span)
+        step_reset = int(test_length / 2)
+
+        for i in range(test_length):
+            if i == step_reset:
+                env.reset()
+
+            actions = [1] * 39 + [0] * 10
+
+            env.step(random.choice(actions))
 
 
 if __name__ == '__main__':
