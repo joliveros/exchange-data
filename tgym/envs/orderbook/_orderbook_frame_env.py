@@ -149,20 +149,14 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         plt.close(fig)
 
         img = np.array(img)
-
-        num_colors = 14
-        img = Image.fromarray(np.uint8(img * 255)).quantize(num_colors)
+        img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
         return np.asarray(img)
-
-        # print(str(AsciiImage(img, new_width=21)) + '\n')
 
     def plot_pnl(self):
         pnl = np.asarray(self.position_pnl_history)
 
         if pnl.shape[0] > 0:
-            num_colors = 14
-
             fig, price_frame = plt.subplots(1, 1, figsize=(2, 1),
                                             dpi=self.frame_width)
 
@@ -185,10 +179,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             img = np.array(img)
 
             plt.close(fig)
-            img = Image.fromarray(np.uint8(img * 255)).quantize(num_colors)
-
-            img = np.asarray(img)
-            shape = img.shape
+            img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
             return img
         else:
