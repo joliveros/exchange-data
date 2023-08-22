@@ -2,6 +2,9 @@
 import json
 
 from skimage import color
+import matplotlib
+matplotlib.use('agg')
+
 from matplotlib import pyplot as plt
 from cached_property import cached_property
 from exchange_data.data.orderbook_frame import OrderBookFrame

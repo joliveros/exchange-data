@@ -26,12 +26,10 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 
 def Model(
-    depth,
-    sequence_length,
-    batch_size,
+    batch_size=16,
     lstm_size=2,
-    num_lstm=2,
-    num_dense=3,
+    num_lstm=0,
+    num_dense=0,
     dense_width=240,
     include_last=False,
     input_shape=None,
@@ -42,15 +40,12 @@ def Model(
     # alog.info(alog.pformat((dense_width, kwargs)))
     tf.compat.v1.experimental.output_all_intermediates(True)
 
-    if not input_shape:
-        input_shape = (batch_size, sequence_length, depth * 2, 1)
-
     inputs = Input(shape=input_shape)
 
-    conv = TimeDistributed(ResNetTS(
-        input_shape[1:],
+    conv = ResNetTS(
+        input_shape,
         **kwargs
-    ).model)(inputs)
+    ).model(inputs)
 
     alog.info(conv.shape)
 

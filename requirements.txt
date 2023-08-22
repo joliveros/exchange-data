@@ -12,7 +12,7 @@ gym~=0.26.2
 influxdb~=5.3.1
 matplotlib~=3.7.1
 mock~=5.0.2
-numpy==1.20.0
+numpy==1.22.0
 opencv-python~=4.7.0.72
 optuna~=3.1.1
 pandas==1.1.5
@@ -37,7 +37,10 @@ sortedcontainers
 statsd~=4.0.1
 stringcase
 tensorflow-datasets
+
+# tensorflow==2.13.0
 tensorflow-gpu==2.10.0
+
 timestamp
 unicorn-binance-websocket-api
 unicorn_fy
