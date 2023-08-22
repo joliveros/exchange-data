@@ -38,8 +38,7 @@ statsd~=4.0.1
 stringcase
 tensorflow-datasets
 
-# tensorflow==2.13.0
-tensorflow-gpu==2.10.0
+tensorflow==2.13.0
 
 timestamp
 unicorn-binance-websocket-api
@@ -54,3 +53,4 @@ python-dateutil~=2.8.2
 requests~=2.30.0
 urllib3~=1.26.15
 pyee~=9.1.0
+wandb
