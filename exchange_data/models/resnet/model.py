@@ -63,7 +63,7 @@ def Model(
     dense_out = Dense(
         num_categories, activation='softmax',
         use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+        bias_initializer=tf.keras.initializers.Constant(value=[1.0, 0.0])
     )
 
     dense_out.trainable = True
@@ -101,15 +101,14 @@ class ResNetTS:
         conv_block_strides=2,
         max_pooling_enabled=False,
         gap_enabled=True,
-        base_filter_size=4,
-        block_filter_factor=2,
-        block_kernel=3,
-        kernel_size=2,
+        base_filter_size=12,
+        block_kernel=8,
+        kernel_size=8,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=3,
-        padding=3,
+        num_conv=9,
+        padding=1,
         strides=1,
         **kwargs
     ):
@@ -172,14 +171,15 @@ class ResNetTS:
                     conv = self.conv_block(conv, kernel_size, _filters(ix))
         else:
             convs = [
-                lambda conv: self.conv_block(conv, kernel_size, filters,
-                                             [1, 1]),
+                lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.conv_block(conv, kernel_size, filters2),
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
-                lambda conv: self.identity_block(conv, kernel_size, filters2),
+                lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.conv_block(conv, kernel_size, filters2),
                 lambda conv: self.conv_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
@@ -206,7 +206,7 @@ class ResNetTS:
                 lambda conv: self.identity_block(conv, kernel_size, filters4),
             ]
 
-            if num_conv > 0 and layer_keys == 0:
+            if num_conv > 0 and len(layer_keys) == 0:
                 convs = convs[:num_conv]
 
             last_identity_block = None

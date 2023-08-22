@@ -38,7 +38,7 @@ statsd~=4.0.1
 stringcase
 tensorflow-datasets
 
-tensorflow==2.13.0
+tensorflow==2.10.0
 
 timestamp
 unicorn-binance-websocket-api
