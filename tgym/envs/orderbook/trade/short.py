@@ -14,9 +14,6 @@ class ShortTrade(Trade):
         return self.best_ask
 
     def step(self, *args):
-        # if self.position_length >= self.max_short_position_length > 0:
-        #    self.done = True
-
         self.reward_for_pnl()
 
         super().step(*args)
