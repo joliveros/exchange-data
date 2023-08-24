@@ -62,8 +62,8 @@ def Model(
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[1.0, 0.0])
+        # use_bias=True,
+        # bias_initializer=tf.keras.initializers.Constant(value=[1.0, 0.0])
     )
 
     dense_out.trainable = True
@@ -101,13 +101,13 @@ class ResNetTS:
         conv_block_strides=1,
         max_pooling_enabled=False,
         gap_enabled=True,
-        base_filter_size=21,
+        base_filter_size=64,
         block_kernel=5,
         kernel_size=5,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=9,
+        num_conv=11,
         padding=1,
         strides=1,
         **kwargs
