@@ -41,7 +41,7 @@ class ShortTrade(Trade):
     def reward_for_pnl(self):
         pnl = self.pnl
 
-        self.reward = pnl
+        self.reward = pnl * 10
 
         self.total_reward += self.reward
 
