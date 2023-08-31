@@ -27,10 +27,10 @@ TimeDistributed = tf.keras.layers.TimeDistributed
 
 def Model(
     batch_size=16,
-    lstm_size=2,
+    lstm_size=16,
     num_lstm=0,
     num_dense=0,
-    dense_width=240,
+    dense_width=32,
     include_last=False,
     input_shape=None,
     learning_rate=5e-5,
@@ -62,8 +62,8 @@ def Model(
 
     dense_out = Dense(
         num_categories, activation='softmax',
-        # use_bias=True,
-        # bias_initializer=tf.keras.initializers.Constant(value=[1.0, 0.0])
+        use_bias=True,
+        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
     )
 
     dense_out.trainable = True
@@ -86,8 +86,8 @@ def Model(
 
     if include_last:
         model.compile(
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy'],
+            # loss='sparse_categorical_crossentropy',
+            # metrics=['accuracy'],
             optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
                                                    clipnorm=1.0)
         )
@@ -98,16 +98,16 @@ class ResNetTS:
     def __init__(
         self,
         input_shape,
-        conv_block_strides=1,
+        conv_block_strides=2,
         max_pooling_enabled=False,
         gap_enabled=True,
-        base_filter_size=64,
+        base_filter_size=48,
         block_kernel=5,
         kernel_size=5,
         max_pooling_kernel=2,
         max_pooling_strides=2,
         num_categories=2,
-        num_conv=11,
+        num_conv=16,
         padding=1,
         strides=1,
         **kwargs
@@ -175,35 +175,18 @@ class ResNetTS:
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
-                lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
                 lambda conv: self.conv_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
-                lambda conv: self.identity_block(conv, kernel_size, filters3),
-                lambda conv: self.identity_block(conv, kernel_size, filters3),
-                lambda conv: self.identity_block(conv, kernel_size, filters3),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.conv_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
-                lambda conv: self.identity_block(conv, kernel_size, filters4),
+                lambda conv: self.conv_block(conv, kernel_size, filters3)
             ]
 
             if num_conv > 0 and len(layer_keys) == 0:
