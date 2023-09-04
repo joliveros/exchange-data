@@ -54,7 +54,7 @@ class FlatTrade(Trade):
     def reward_for_pnl(self):
         pnl = self.pnl
 
-        self.reward = pnl * 10
+        self.reward = pnl
 
         self.total_reward += self.reward
         self.last_pnl = pnl
