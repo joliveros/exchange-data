@@ -88,8 +88,8 @@ def Model(
         model.compile(
             # loss='sparse_categorical_crossentropy',
             # metrics=['accuracy'],
-            optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
-                                                   clipnorm=1.0)
+            # optimizer=tf.keras.optimizers.Adadelta(learning_rate=learning_rate,
+            #                                        clipnorm=1.0)
         )
     return model
 
