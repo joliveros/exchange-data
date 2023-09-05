@@ -63,7 +63,7 @@ def Model(
     dense_out = Dense(
         num_categories, activation='softmax',
         use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.0, 1.0])
+        bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
     )
 
     dense_out.trainable = True
@@ -101,7 +101,7 @@ class ResNetTS:
         conv_block_strides=2,
         max_pooling_enabled=False,
         gap_enabled=True,
-        base_filter_size=24,
+        base_filter_size=27,
         block_kernel=7,
         kernel_size=7,
         max_pooling_kernel=2,
