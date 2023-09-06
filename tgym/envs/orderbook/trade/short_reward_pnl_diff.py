@@ -17,6 +17,9 @@ class ShortRewardPnlDiffTrade(ShortTrade):
         #         or self.max_short_position_length == 0:
         pnl = self.pnl
 
+        if pnl <= self.min_change:
+            self.done = True
+
         if self.last_pnl != 0.0:
             diff = pnl - self.last_pnl
 
