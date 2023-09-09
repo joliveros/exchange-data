@@ -523,7 +523,8 @@ class OrderBookTradingEnv(Logging, Env):
             'capital',
             'leverage',
             'last_datetime',
-            'step_count'
+            'step_count',
+            'pnl'
         ]
 
         summary = {key: self.__dict__[key] for key in
