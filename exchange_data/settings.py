@@ -2,7 +2,6 @@ from os import environ
 
 import alog
 import logging
-import rollbar
 import sec
 
 LOG_LEVEL = environ.get('LOG_LEVEL')
@@ -29,11 +28,6 @@ BITMEX_API_SECRET = sec.load('BITMEX_API_SECRET', lowercase=False)
 BINANCE_API_KEY = sec.load('BINANCE_API_KEY', lowercase=False)
 BINANCE_API_SECRET = sec.load('BINANCE_API_SECRET', lowercase=False)
 
-if RUN_ENV != 'development':
-    ROLLBAR_API_KEY = sec.load('ROLLBAR_API_KEY', lowercase=False)
-
-    if ROLLBAR_API_KEY:
-        rollbar.init(ROLLBAR_API_KEY, 'production')
 
 MEASUREMENT_BATCH_SIZE = environ.get('BATCH_SIZE')
 
