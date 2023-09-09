@@ -12,7 +12,6 @@ from gym.spaces import Discrete
 from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 from PIL import Image
-import cv2
 
 import alog
 import click

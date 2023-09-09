@@ -96,7 +96,7 @@ def Model(
 
 class ResNetTS:
     def __init__(
-        self,
+    self,
         input_shape,
         conv_block_strides=2,
         max_pooling_enabled=False,
@@ -164,14 +164,18 @@ class ResNetTS:
                     if kwargs[key] == 'conv':
                         conv = self.conv_block(conv, kernel_size, _filters(ix))
                     elif kwargs[key] == 'identity':
-                        conv = self.identity_block(conv, kernel_size, _filters(ix))
-                        conv = self.identity_block(conv, kernel_size, _filters(ix))
-                        conv = self.identity_block(conv, kernel_size, _filters(ix))
+                        conv = self.identity_block(conv, kernel_size,
+                                                   _filters(ix))
+                        conv = self.identity_block(conv, kernel_size,
+                                                   _filters(ix))
+                        conv = self.identity_block(conv, kernel_size,
+                                                   _filters(ix))
                 except ValueError:
                     conv = self.conv_block(conv, kernel_size, _filters(ix))
         else:
             convs = [
-                lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
+                lambda conv: self.conv_block(conv, kernel_size, filters,
+                                             [1, 1]),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),

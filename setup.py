@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 
 setup(
-    name='exchange-data',
+    name='exchange_data',
     version='0.2.0',
     url='https://github.com/joliveros/exchange-data',
     license='No License',
@@ -19,7 +19,7 @@ setup(
     platforms='any',
     entry_points={
         'console_scripts': [
-            'exchange-data = cli',
+            'exchange_data = cli',
         ],
     },
     classifiers=[
