@@ -101,7 +101,7 @@ class ResNetTS:
         conv_block_strides=2,
         max_pooling_enabled=False,
         gap_enabled=True,
-        base_filter_size=64,
+        base_filter_size=32,
         block_kernel=2,
         kernel_size=2,
         max_pooling_kernel=2,
