@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from collections import deque
+from copy import copy
+
 from exchange_data import settings
 from exchange_data.trading import Positions
 from gym import Env
@@ -14,6 +16,9 @@ from tgym.envs.orderbook.trade.long import LongTrade
 from tgym.envs.orderbook.trade.short import ShortTrade
 from tgym.envs.orderbook.trade.trade import Trade
 from tgym.envs.orderbook.utils import Logging, import_by_string
+from decimal import *
+
+getcontext().prec = 4
 
 import alog
 import click
@@ -518,6 +523,13 @@ class OrderBookTradingEnv(Logging, Env):
         elif action == Positions.Flat.value:
             self.flat()
 
+    @staticmethod
+    def truncate_float(n, decimals=4):
+        f = copy(n)
+        f = Decimal(str(f))
+        multiplier = 10 ** decimals
+        return int(f * multiplier) / multiplier
+
     def summary(self):
         summary_keys = [
             'is_test',
@@ -534,8 +546,8 @@ class OrderBookTradingEnv(Logging, Env):
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
 
-        summary_floats = {key: float(summary[key]) for key in summary.keys()
-                          if isinstance(summary[key], np.floating)}
+        summary_floats = {key: OrderBookTradingEnv.truncate_float(summary[key]) for key in
+                          summary.keys() if isinstance(summary[key], np.floating)}
 
         summary = {**summary, **summary_floats}
 
