@@ -48,7 +48,7 @@ class OrderBookTradingEnv(Logging, Env):
         max_loss=-5.0/100.0,
         window_size='2m',
         sample_interval='1s',
-        max_summary=10,
+        max_summary=20,
         max_frames=2,
         volatile_ranges=None,
         use_volatile_ranges=False,
@@ -68,12 +68,16 @@ class OrderBookTradingEnv(Logging, Env):
         gain_per_step=1.0,
         gain_delay=30,
         is_test=False,
+        custom_summary_keys=[],
         **kwargs
     ):
+        for k in kwargs.keys():
+            self.__dict__[k] = kwargs[k]
+
         kwargs['database_name'] = database_name
         kwargs['window_size'] = window_size
         kwargs['sample_interval'] = sample_interval
-
+        self.custom_summary_keys = custom_summary_keys
         self._args = locals()
         self.asks = None
         self.bids = None
@@ -285,8 +289,7 @@ class OrderBookTradingEnv(Logging, Env):
         if settings.LOG_LEVEL == logging.DEBUG:
             if self.summary_interval > -1:
                 if self.step_count % self.summary_interval == 0:
-                    alog.info(alog.pformat(self.summary()))
-                    # self.logger.yaml(self.summary())
+                    self.yaml(self.summary())
 
     @property
     def best_bid(self):
@@ -526,14 +529,20 @@ class OrderBookTradingEnv(Logging, Env):
             'step_count',
             'pnl'
         ]
+        summary_keys += self.custom_summary_keys
 
         summary = {key: self.__dict__[key] for key in
                    summary_keys}
 
+        summary_floats = {key: float(summary[key]) for key in summary.keys()
+                          if isinstance(summary[key], np.floating)}
+
+        summary = {**summary, **summary_floats}
+
         summary['position_history'] = \
             ''.join(self.position_history[-1 * self.max_summary:])
 
-        summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]
+        summary['trades'] = [trade for trade in self.trades[-1 * int(self.max_summary/3):]
             if type(trade) != FlatTrade]
 
         # summary['trades'] = [trade for trade in self.trades[-1 * self.max_summary:]

@@ -1,3 +1,6 @@
+from copy import copy
+
+import alog
 import numpy as np
 from matplotlib import pyplot as plt
 from skimage import color
@@ -5,7 +8,9 @@ from skimage import color
 from exchange_data.trading import Positions
 from tgym.envs.orderbook.ascii_image import AsciiImage
 from tgym.envs.orderbook.utils import Logging
+from decimal import *
 
+getcontext().prec = 4
 
 class Trade(Logging):
     closed = False
@@ -28,6 +33,7 @@ class Trade(Logging):
         **kwargs
     ):
         super().__init__(**kwargs)
+
         self.is_test = is_test
         self.max_position_length = max_position_length
         self.trading_fee = trading_fee
@@ -155,9 +161,31 @@ class Trade(Logging):
     def hide_ticks_and_values(self, frame):
         frame.axis('off')
 
+
+    @staticmethod
+    def truncate_float(n, decimals=4):
+        f = copy(n)
+        f = Decimal(str(f))
+        multiplier = 10 ** decimals
+        return int(f * multiplier) / multiplier
+
     def __repr__(self):
-        return f'{self.position_type}/{self.pnl}/{self.entry_price}/{self.exit_price}/' \
-            f'{self.total_reward}/{self.position_length}/{self.diffs}'
+        position_type = None
+        if self.position_type == Positions.Short:
+           position_type = 'S'
+
+        if self.position_type == Positions.Flat:
+           position_type = 'F'
+
+        pnl = Trade.truncate_float(self.pnl)
+        entry_price = Trade.truncate_float(self.entry_price)
+        exit_price = Trade.truncate_float(self.exit_price)
+        total_reward = Trade.truncate_float(self.total_reward)
+
+        return (f'{position_type}/{pnl}'
+                f'/{entry_price}'
+                f'/{exit_price}/'
+                f'{total_reward}/{self.position_length}')
 
     def clear_pnl(self):
         self._pnl = None

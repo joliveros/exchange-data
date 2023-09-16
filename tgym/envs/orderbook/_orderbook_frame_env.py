@@ -44,7 +44,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             action_space=Discrete(2),
             **kwargs
         )
-
         self.plot_count = 0
 
         if random_frame_start:
