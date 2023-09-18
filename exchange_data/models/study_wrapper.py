@@ -2,18 +2,24 @@ from cached_property import cached_property_with_ttl
 from optuna import Trial
 from optuna import load_study
 from optuna.storages import RDBStorage
+from optuna.pruners import MedianPruner
 from os import environ
 from pathlib import Path
 from redis_collections import Dict
 
 import alog
+import logging
 import optuna
-import sec
 import pandas as pd
+import sec
+import sys
 
 
 class StudyWrapper(object):
     def __init__(self, symbol, **kwargs):
+        optuna.logging.get_logger("optuna")\
+            .addHandler(logging.StreamHandler(sys.stdout))
+
         self.symbol = symbol
         self.base_path = f'{Path.home()}/.exchange-data/models/'
 
@@ -37,12 +43,15 @@ class StudyWrapper(object):
             self.study = \
                 load_study(study_name=self.symbol, storage=storage)
         except KeyError:
-            self.create_study(storage=storage)
+            self.create_study(storage=storage,
+                              pruner=MedianPruner())
 
     def create_study(self, **kwargs):
         self.study = optuna.create_study(
             study_name=self.symbol, direction='maximize',
-            sampler=optuna.samplers.NSGAIISampler(population_size=7), **kwargs)
+            sampler=optuna.samplers.TPESampler(n_startup_trials=4,
+                                               n_ei_candidates=4,
+                                               multivariate=True), **kwargs)
 
     def save_best_params(self):
         self.best_study_params = vars(self.study.best_trial)
