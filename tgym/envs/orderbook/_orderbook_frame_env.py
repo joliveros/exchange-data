@@ -28,7 +28,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def __init__(
         self,
         frame_width=48,
-        macd_diff_enabled=True,
+        macd_diff_enabled=False,
         random_frame_start=False,
         trial=None,
         num_env=1,

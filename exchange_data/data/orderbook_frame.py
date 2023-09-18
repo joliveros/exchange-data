@@ -91,9 +91,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         self.kwargs=kwargs
 
-        if self.kwargs['worker_name'] == 'worker_0':
-            alog.info(['## init OrderbookFrame ##', self.start_date])
-
     def _frame(self):
         frames = []
 
@@ -371,10 +368,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         if not self._intervals:
             self.reset_interval()
             offset_interval = timedelta(seconds=timeparse(self.offset_interval))
-            if self.kwargs['worker_name'] == 'worker_0':
-                alog.info(alog.pformat(self.kwargs))
-                alog.info(alog.pformat(self.__dict__))
-                alog.info([self.start_date, offset_interval])
             start_date = self.start_date - offset_interval
             end_date = self.end_date - offset_interval
             self._intervals = [(start_date, end_date)]
