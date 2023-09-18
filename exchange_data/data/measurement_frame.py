@@ -3,6 +3,7 @@ from exchange_data import Measurement, Database
 from exchange_data.utils import DateTimeUtils
 from pandas import DataFrame
 from pytimeparse.timeparse import timeparse
+from copy import copy
 import alog
 import json
 import pandas as pd
@@ -19,9 +20,6 @@ class MeasurementMeta(Database, DateTimeUtils):
 
 
 class MeasurementFrame(MeasurementMeta):
-    _start_date = None
-    _end_date = None
-
     def __init__(
         self,
         interval='1h',
@@ -30,23 +28,19 @@ class MeasurementFrame(MeasurementMeta):
         end_date=None,
         **kwargs
     ):
-        kwargs['start_date'] = start_date
-        kwargs['end_date'] = end_date
-
         super().__init__(**kwargs)
 
+        self._start_date = None
+        self._end_date = None
         self.group_by = group_by
         self.interval_str = interval
 
-        if type(interval) == str:
-            self.interval = timedelta(seconds=timeparse(interval))
-        else:
-            self.interval = interval
+        self.interval = timedelta(seconds=timeparse(interval))
 
-        self.original_interval = (start_date, end_date)
+        self.start_date = DateTimeUtils.now() - self.interval
+        self.end_date = DateTimeUtils.now()
 
-        self.start_date = start_date
-        self.end_date = end_date
+        self.original_interval = (copy(self.start_date), copy(self.end_date))
 
     def reset_interval(self):
         self.start_date = self.original_interval[0]
@@ -57,17 +51,6 @@ class MeasurementFrame(MeasurementMeta):
         return re.sub(r'(?<!^)(?=[A-Z])', '_', type(self).__name__).lower()
 
     @property
-    def start_date(self):
-        if self._start_date:
-            return self._start_date
-        else:
-            return DateTimeUtils.now() - self.interval
-
-    @start_date.setter
-    def start_date(self, value):
-        self._start_date = value
-
-    @property
     def formatted_start_date(self):
         return self.format_date_query(self.start_date)
 
@@ -76,14 +59,20 @@ class MeasurementFrame(MeasurementMeta):
         return self.format_date_query(self.end_date)
 
     @property
+    def start_date(self):
+        return self._start_date
+    @start_date.setter
+    def start_date(self, value):
+        if value is None:
+            raise Exception()
+        self._start_date = value
+    @property
     def end_date(self):
-        if self._end_date:
-            return self._end_date
-        else:
-            return DateTimeUtils.now()
-
+        return self._end_date
     @end_date.setter
     def end_date(self, value):
+        if value is None:
+            raise Exception()
         self._end_date = value
 
     def frame(self):

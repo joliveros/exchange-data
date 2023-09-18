@@ -89,8 +89,14 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.filename = Path(self.directory / f'{interval}_{offset_interval}_{self.round_decimals}.pickle')
         self._intervals = None
 
+        self.kwargs=kwargs
+
+        if self.kwargs['worker_name'] == 'worker_0':
+            alog.info(['## init OrderbookFrame ##', self.start_date])
+
     def _frame(self):
         frames = []
+
         for interval in self.intervals:
             self.start_date = interval[0]
             self.end_date = interval[1]
@@ -365,6 +371,10 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         if not self._intervals:
             self.reset_interval()
             offset_interval = timedelta(seconds=timeparse(self.offset_interval))
+            if self.kwargs['worker_name'] == 'worker_0':
+                alog.info(alog.pformat(self.kwargs))
+                alog.info(alog.pformat(self.__dict__))
+                alog.info([self.start_date, offset_interval])
             start_date = self.start_date - offset_interval
             end_date = self.end_date - offset_interval
             self._intervals = [(start_date, end_date)]

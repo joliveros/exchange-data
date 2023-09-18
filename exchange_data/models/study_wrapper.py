@@ -22,8 +22,6 @@ class StudyWrapper(object):
 
         db_conn_str = sec.load('KERAS_DB', lowercase=False)
 
-        alog.info(db_conn_str)
-
         storage = RDBStorage(db_conn_str,
                              engine_kwargs={
                                  "pool_pre_ping": True,

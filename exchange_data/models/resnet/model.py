@@ -47,12 +47,8 @@ def Model(
         **kwargs
     ).model(inputs)
 
-    alog.info(conv.shape)
-
     for l in range(num_lstm):
         conv = LSTM(lstm_size, return_sequences=l < num_lstm - 1)(conv)
-        alog.info(l)
-        alog.info(conv.shape)
 
     dense = Flatten()(conv)
 
@@ -70,14 +66,10 @@ def Model(
 
     out = dense_out(dense)
 
-    alog.info(out.shape)
-
     # if include_last:
     #     out = dense_out(dense)
     # else:
     #     out = dense
-
-    alog.info(out.shape)
 
     if out.shape.as_list() != [None, 2] and include_last:
         raise Exception()
@@ -112,17 +104,12 @@ class ResNetTS:
         strides=1,
         **kwargs
     ):
-        alog.info(input_shape)
-
         input = Input(input_shape)
-
-        alog.info(input)
 
         self.bn_axis = 3
         self.conv_block_strides = conv_block_strides
 
         conv = tf.keras.layers.ZeroPadding2D(padding=(padding, padding))(input)
-        alog.info(conv.shape)
         conv = Conv2D(filters=base_filter_size,
                       kernel_size=(kernel_size, kernel_size),
                       strides=(strides, strides),
@@ -136,8 +123,6 @@ class ResNetTS:
             conv = tf.keras.layers.MaxPooling2D(
                 (max_pooling_kernel, max_pooling_kernel),
                 strides=(max_pooling_strides, max_pooling_strides))(conv)
-
-        alog.info(conv.shape)
 
         filters = [base_filter_size, base_filter_size, base_filter_size]
         kernel_size = (block_kernel, block_kernel)
@@ -153,7 +138,6 @@ class ResNetTS:
             scale = int(conv_ix / interval) + 1
 
             f = [filter * (2 ** scale) for filter in filters]
-            alog.info(f)
             return f
 
         conv = self.conv_block(conv, kernel_size, _filters(0), [1, 1])
@@ -205,7 +189,7 @@ class ResNetTS:
                 except ValueError:
                     conv = last_identity_block(conv)
 
-                alog.info(conv.shape)
+                # alog.info(conv.shape)
 
         if gap_enabled:
             output = GlobalAveragePooling2D()(conv)
@@ -218,7 +202,7 @@ class ResNetTS:
         for layer in self.model.layers:
             layer.trainable = True
 
-        self.model.summary()
+        # self.model.summary()
 
     def conv_block(self, input_tensor, kernel_size, filters, strides=None):
         if strides is None:
