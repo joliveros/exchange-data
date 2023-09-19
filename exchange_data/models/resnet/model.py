@@ -50,22 +50,24 @@ def Model(
     for l in range(num_lstm):
         conv = LSTM(lstm_size, return_sequences=l < num_lstm - 1)(conv)
 
-    dense = Flatten()(conv)
+    # dense = Flatten()(conv)
 
     if num_dense > 0:
         for i in range(num_dense):
             dense = Dense(dense_width)(dense)
 
-    dense_out = Dense(
-        num_categories,
-        activation='softmax',
-        use_bias=True,
-        bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
-    )
+    # dense_out = Dense(
+    #    num_categories,
+    #    activation='softmax',
+    #    use_bias=True,
+    #    bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
+    # )
 
-    dense_out.trainable = True
+    # dense_out.trainable = True
 
-    out = dense_out(dense)
+    #out = dense_out(dense)
+
+    out = conv
 
     # if include_last:
     #     out = dense_out(dense)

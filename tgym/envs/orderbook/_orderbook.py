@@ -206,8 +206,8 @@ class OrderBookTradingEnv(Logging, Env):
         if self.should_change_position(action):
             self.change_position(action)
 
-        if self.current_trade is None:
-            raise Exception()
+        # if self.current_trade is None:
+        #    raise Exception()
 
     @property
     def reward_ratio(self):
