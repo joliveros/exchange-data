@@ -113,7 +113,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.leverage = leverage
         self.capital = capital
         self.frame_width = frame_width
-        self.position_pnl_history = []
+        self.position_pnl_history = deque(maxlen=sequence_length)
         self.position_pnl_diff_history = np.array([])
         self._done = False
         self.min_change = min_change

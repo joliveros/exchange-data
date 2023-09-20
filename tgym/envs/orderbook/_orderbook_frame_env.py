@@ -1,33 +1,32 @@
 #!/usr/bin/env python
-import json
 
-from skimage import color
-import matplotlib
-matplotlib.use('agg')
-
-from matplotlib import pyplot as plt
+from PIL import Image
 from cached_property import cached_property
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from gym.spaces import Discrete
+from matplotlib import pyplot as plt
 from pytimeparse.timeparse import timeparse
+from skimage import color
 from tgym.envs.orderbook import OrderBookTradingEnv
-from PIL import Image
+from tgym.envs.orderbook.ascii_image import AsciiImage
 
 import alog
 import click
+import json
+import matplotlib
+import numpy as np
 import random
 import traceback
-import numpy as np
+import cv2
 
-from tgym.envs.orderbook.ascii_image import AsciiImage
-
+# matplotlib.use('agg')
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     random_frame_start: bool = False
 
     def __init__(
         self,
-        frame_width=48,
+        frame_width=96,
         macd_diff_enabled=False,
         random_frame_start=False,
         trial=None,
@@ -137,15 +136,14 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def plot_orderbook(self, data):
         fig, frame = plt.subplots(1, 1, figsize=(2, 1),
                                         dpi=self.frame_width)
-
+        frame.axis('off')
+        frame = frame.twinx()
         plt.autoscale(tight=True)
         frame.axis('off')
         fig.patch.set_visible(False)
         frame.imshow(data)
         fig.canvas.draw()
         img = fig.canvas.renderer._renderer
-
-        plt.close(fig)
 
         img = np.array(img)
         img = Image.fromarray(np.uint8(img * 255)).convert('L')
@@ -162,7 +160,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             min = abs(pnl.min())
             pnl = pnl + min
 
-            pnl_frame = price_frame.twinx()
+            # pnl_frame = price_frame.twinx()
+            pnl_frame = price_frame
             pnl_frame.plot(pnl, color='black')
 
             plt.fill_between(range(pnl.shape[0]), pnl, color='black')
@@ -172,15 +171,21 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             fig.patch.set_visible(False)
             fig.canvas.draw()
 
-            img = fig.canvas.renderer._renderer
-            img = np.array(img)
+            _img = fig.canvas.renderer._renderer
 
-            plt.close(fig)
+            img = np.array(_img)
             img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
             return img
         else:
             return np.zeros([self.frame_width, self.frame_width * 2])
+
+    def show_img(self, img):
+        img = np.array(
+            Image.fromarray(np.uint8(np.array(img) * 255)).convert('RGB'))
+
+        cv2.imshow('image', img)
+        cv2.waitKey(1)
 
     def step(self, action):
         # if macd is negative then assume position should be flat otherwise
