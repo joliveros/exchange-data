@@ -35,7 +35,7 @@ setuptools>=41.0.0
 sortedcontainers
 statsd~=4.0.1
 stringcase
-tensorflow==2.10.0
+tensorflow==2.10.1
 protobuf < 4
 timestamp
 unicorn-binance-websocket-api

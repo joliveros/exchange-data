@@ -47,25 +47,17 @@ def Model(
         **kwargs
     ).model(inputs)
 
-    for l in range(num_lstm):
-        conv = LSTM(lstm_size, return_sequences=l < num_lstm - 1)(conv)
-
-    dense = Flatten()(conv)
-
-    if num_dense > 0:
-        for i in range(num_dense):
-            dense = Dense(dense_width)(dense)
 
     dense_out = Dense(
        num_categories,
        # activation='softmax',
        use_bias=True,
-       bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
+       bias_initializer=tf.keras.initializers.Constant(value=[0.6, 0.5])
     )
 
     dense_out.trainable = True
 
-    out = dense_out(dense)
+    out = dense_out(conv)
 
     # if include_last:
     #     out = dense_out(dense)
@@ -159,8 +151,7 @@ class ResNetTS:
                     conv = self.conv_block(conv, kernel_size, _filters(ix))
         else:
             convs = [
-                lambda conv: self.conv_block(conv, kernel_size, filters,
-                                             [1, 1]),
+                lambda conv: self.conv_block(conv, kernel_size, filters, [1, 1]),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.identity_block(conv, kernel_size, filters),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
@@ -170,6 +161,9 @@ class ResNetTS:
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.identity_block(conv, kernel_size, filters2),
                 lambda conv: self.conv_block(conv, kernel_size, filters2),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.identity_block(conv, kernel_size, filters3),
+                lambda conv: self.conv_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
                 lambda conv: self.identity_block(conv, kernel_size, filters3),
                 lambda conv: self.conv_block(conv, kernel_size, filters3),
@@ -191,11 +185,14 @@ class ResNetTS:
                     conv = last_identity_block(conv)
 
                 # alog.info(conv.shape)
+            
+        output = GlobalAveragePooling2D()(conv)
+ 
 
-        if gap_enabled:
-            output = GlobalAveragePooling2D()(conv)
-        else:
-            output = Flatten()(conv)
+        #if gap_enabled:
+        #    output = GlobalAveragePooling2D()(conv)
+        #else:
+        #    output = Flatten()(conv)
 
         # alog.info(output.shape)
         self.model = tf.keras.models.Model(inputs=input, outputs=output)
@@ -203,7 +200,7 @@ class ResNetTS:
         for layer in self.model.layers:
             layer.trainable = True
 
-        # self.model.summary()
+        self.model.summary()
 
     def conv_block(self, input_tensor, kernel_size, filters, strides=None):
         if strides is None:

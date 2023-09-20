@@ -14,7 +14,7 @@ class ShortTrade(Trade):
         return self.best_ask
 
     def step(self, *args):
-        self.reward_for_pnl()
+        # self.reward_for_pnl()
 
         super().step(*args)
 
@@ -41,7 +41,7 @@ class ShortTrade(Trade):
     def reward_for_pnl(self):
         pnl = self.pnl
 
-        self.reward = pnl * 10
+        self.reward = pnl
 
         self.total_reward += self.reward
 
