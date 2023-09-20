@@ -50,7 +50,7 @@ def Model(
 
     dense_out = Dense(
        num_categories,
-       # activation='softmax',
+       activation='softmax',
        use_bias=True,
        bias_initializer=tf.keras.initializers.Constant(value=[0.6, 0.5])
     )
