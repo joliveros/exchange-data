@@ -145,6 +145,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         fig.canvas.draw()
         img = fig.canvas.renderer._renderer
 
+        plt.close()
+
         img = np.array(img)
         img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
@@ -172,6 +174,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             fig.canvas.draw()
 
             _img = fig.canvas.renderer._renderer
+
+            plt.close()
 
             img = np.array(_img)
             img = Image.fromarray(np.uint8(img * 255)).convert('L')
