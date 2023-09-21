@@ -52,7 +52,7 @@ def Model(
        num_categories,
        activation='softmax',
        use_bias=True,
-       bias_initializer=tf.keras.initializers.Constant(value=[0.6, 0.5])
+       bias_initializer=tf.keras.initializers.Constant(value=[0.5, 0.5])
     )
 
     dense_out.trainable = True
