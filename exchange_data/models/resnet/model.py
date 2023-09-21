@@ -38,7 +38,7 @@ def Model(
     **kwargs
 ):
     # alog.info(alog.pformat((dense_width, kwargs)))
-    tf.compat.v1.experimental.output_all_intermediates(True)
+    # tf.compat.v1.experimental.output_all_intermediates(True)
 
     inputs = Input(shape=input_shape)
 
