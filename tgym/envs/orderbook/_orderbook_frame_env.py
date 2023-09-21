@@ -19,7 +19,7 @@ import random
 import traceback
 import cv2
 
-# matplotlib.use('agg')
+matplotlib.use('agg')
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     random_frame_start: bool = False
