@@ -17,9 +17,11 @@ class FlatRewardPnlDiffTrade(FlatTrade):
         self.reward_for_pnl()
 
     def reward_for_pnl(self):
-        if self.position_length < self.max_flat_position_length \
-                or self.max_flat_position_length == 0:
-            pnl = self.pnl
+        # if self.position_length < self.max_flat_position_length \
+        #         or self.max_flat_position_length == 0:
+        pnl = self.pnl
+
+        if self.last_pnl != 0.0:
             diff = pnl - self.last_pnl
 
             if diff > 0 and pnl > 0:
