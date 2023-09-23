@@ -168,7 +168,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.reset_count = 0
         self.levels = levels
 
-        frame_shape = (frame_width * 2, frame_width * 2, 1)
+        frame_shape = (frame_width, frame_width, 1)
 
         high = np.full(
             frame_shape,

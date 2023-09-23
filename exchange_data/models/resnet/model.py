@@ -186,7 +186,7 @@ class ResNetTS:
 
                 # alog.info(conv.shape)
             
-        output = GlobalAveragePooling2D()(conv)
+        output = Flatten()(conv)
  
 
         #if gap_enabled:
