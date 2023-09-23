@@ -128,7 +128,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         ob_pnl = ob_img / 255
 
-        self.show_img(ob_img)
+        # self.show_img(ob_img)
 
         self.last_observation = np.expand_dims(ob_pnl, axis=2)
 
