@@ -26,7 +26,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
-        frame_width=96,
+        frame_width=96*2,
         macd_diff_enabled=False,
         random_frame_start=False,
         trial=None,
@@ -93,17 +93,17 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             best_ask = row.best_ask
             best_bid = row.best_bid
             frame = row.orderbook_img
-            macd_diff = row.macd_diff
+            # macd_diff = row.macd_diff
             timestamp = row.name.to_pydatetime()
 
-            yield timestamp, best_ask, best_bid, frame, macd_diff
+            yield timestamp, best_ask, best_bid, frame
 
     def get_observation(self):
         if self.observations is None:
             self.observations = self._get_observation()
 
         try:
-            timestamp, best_ask, best_bid, frame, macd_diff = \
+            timestamp, best_ask, best_bid, frame = \
                 next(self.observations)
         except StopIteration:
             self.observations = None
@@ -112,8 +112,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self._best_ask = best_ask
         self._best_bid = best_bid
-
-        self.macd_diff = macd_diff
 
         self.position_history.append(self.position.name[0])
 
@@ -125,16 +123,19 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.position_pnl_history.append(self.current_trade.pnl)
 
         ob_img = self.plot_orderbook(frame)
-        pnl_img = self.plot_pnl()
+        # pnl_img = self.plot_pnl()
+        # ob_pnl = np.concatenate([ob_img, pnl_img]) / 255
 
-        ob_pnl = np.concatenate([ob_img, pnl_img]) / 255
+        ob_pnl = ob_img / 255
+
+        self.show_img(ob_img)
 
         self.last_observation = np.expand_dims(ob_pnl, axis=2)
 
         return self.last_observation
 
     def plot_orderbook(self, data):
-        fig, frame = plt.subplots(1, 1, figsize=(2, 1),
+        fig, frame = plt.subplots(1, 1, figsize=(1, 1),
                                         dpi=self.frame_width)
         frame.axis('off')
         frame = frame.twinx()
@@ -180,7 +181,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             img = np.array(_img)
             img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
-            return img
+            return np.array(img)
         else:
             return np.zeros([self.frame_width, self.frame_width * 2])
 
@@ -245,34 +246,33 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.option('--round-decimals', '-D', default=4, type=int)
 @click.option('--sequence-length', '-l', default=48, type=int)
 @click.option('--summary-interval', '-s', default=1, type=int)
-@click.option('--test-span', default='20s')
 @click.option('--window-size', '-w', default='2m', type=str)
 @click.argument('symbol', type=str)
-def main(test_span, **kwargs):
-    for t in range(1):
-        # kwargs['sequence_length'] = random.randrange(10, 100)
-        env = OrderBookFrameEnv(
-            short_class_str='ShortRewardPnlDiffTrade',
-            flat_class_str='NoRewardFlatTrade',
-            random_frame_start=False,
-            short_reward_enabled=True,
-            is_training=False,
-            max_short_position_length=0,
-            **kwargs
-        )
+def main(**kwargs):
+    env = OrderBookFrameEnv(
+        short_class_str='ShortRewardPnlDiffTrade',
+        flat_class_str='FlatRewardPnlDiffTrade',
+        random_frame_start=False,
+        short_reward_enabled=True,
+        is_training=False,
+        max_short_position_length=0,
+        min_change=-0.5,
+        **kwargs
+    )
+    interval_ticks = (timeparse(kwargs['interval']) \
+                      / timeparse(kwargs['group_by']))
 
-        obs = env.reset()
+    env.reset()
 
-        test_length = timeparse(test_span)
-        step_reset = int(test_length / 2)
+    choice_args = dict(a=[0, 1], p=[0.9, 0.1])
 
-        for i in range(test_length):
-            if i == step_reset:
-                env.reset()
+    _done = False
+    step = 0
 
-            actions = [1] * 39 + [0] * 10
-
-            env.step(random.choice(actions))
+    while not _done:
+        state, reward, done, summary = env.step(np.random.choice(**choice_args))
+        step += 1
+        _done = done
 
 
 if __name__ == '__main__':

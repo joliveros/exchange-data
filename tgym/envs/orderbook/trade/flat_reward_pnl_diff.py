@@ -29,5 +29,5 @@ class FlatRewardPnlDiffTrade(FlatTrade):
 
             self.total_reward += self.reward
 
-            self.last_pnl = pnl
+        self.last_pnl = pnl
 

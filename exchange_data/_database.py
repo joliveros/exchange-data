@@ -62,6 +62,7 @@ class Database(EventEmitterBase):
 
     def query(self, query: str, *args, **kwargs) -> ResultSet:
         alog.debug(query)
+
         return self.influxdb_client.query(
             database=self.database_name,
             query=query,

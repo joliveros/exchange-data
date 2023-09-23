@@ -2,13 +2,14 @@
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
-from exchange_data.data.macd_frame import MacdFrame
+from exchange_data.data.orderbook_frame_directory_info import \
+    OrderBookFrameDirectoryInfo
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
-from copy import copy
 
+import hashlib
 import alog
 import click
 import json
@@ -17,30 +18,7 @@ import pandas as pd
 
 from exchange_data.utils import DateTimeUtils
 
-pd.options.plotting.backend = 'plotly'
-
-
-class OrderBookFrameDirectoryInfo(object):
-    def __init__(
-        self,
-        directory_name=None,
-        directory=None,
-        **kwargs
-    ):
-        if directory_name is None:
-            raise Exception()
-
-        if directory is None:
-            directory = \
-                f'{Path.home()}/.exchange-data/orderbook_frame/{directory_name}'
-
-        self.directory_name = directory_name
-        self.directory = Path(directory)
-
-        if not self.directory.exists():
-            self.directory.mkdir(parents=True)
-
-        super().__init__(**kwargs)
+# pd.options.plotting.backend = 'plotly'
 
 
 class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
@@ -86,10 +64,22 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.symbol = symbol
         self.sequence_length = sequence_length
         self.cache = cache
-        self.filename = Path(self.directory / f'{interval}_{offset_interval}_{self.round_decimals}.pickle')
+
+        file_dict = dict(
+            interval=interval,
+            offset_interval=offset_interval,
+            symbol=self.symbol,
+            round_decimals=self.round_decimals,
+            depth=self.depth,
+            sequence_length=self.sequence_length
+        )
+
+        hash = hashlib.sha256(bytes(json.dumps(file_dict), 'utf8')).hexdigest()
+
+        self.filename = Path(self.directory / f'{hash}.pickle')
         self._intervals = None
 
-        self.kwargs=kwargs
+        self.kwargs = kwargs
 
     def _frame(self):
         frames = []
@@ -97,10 +87,12 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         for interval in self.intervals:
             self.start_date = interval[0]
             self.end_date = interval[1]
+            # alog.info([
+            #     str(self.start_date),
+            #     str(self.end_date),
+            #     str(self.end_date - self.start_date)
+            # ])
             frames.append(self.load_frames())
-
-        start_date = copy(self.start_date)
-        end_date = copy(self.end_date)
 
         df = pd.concat(frames)
 
@@ -109,16 +101,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         df = df.set_index('time')
         df = df.sort_index()
         df.dropna(how='any', inplace=True)
-
-        macd_df = MacdFrame(
-            database_name=self.database_name,
-            end_date=end_date,
-            group_by=self.group_by,
-            start_date=start_date,
-            symbol=self.symbol
-        ).frame()
-
-        df['macd_diff'] = macd_df.macd_diff
 
         self.intervals = [(df.index[0].to_pydatetime(),
                            df.index[-1].to_pydatetime())]
@@ -134,7 +116,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         channel_name = f'{self.symbol}_OrderBookFrame'
 
         query = f'SELECT difference(last(best_ask)) AS change FROM {channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
+                f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.group_by});'
 
         trades = self.query(query)
@@ -158,7 +140,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         channel_name = f'{self.symbol}_trade'
 
         query = f'SELECT sum(quantity) AS volume FROM {channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
+                f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
                 f'time({self.group_by});'
 
         trades = self.query(query)
@@ -272,7 +254,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         # orderbook_img = self.add_trade_volume(df, orderbook_img)
 
         df['orderbook_img'] = [
-            np.rot90(np.fliplr(orderbook_img[i])) for i in range(0, orderbook_img.shape[0])
+            np.rot90(np.fliplr(orderbook_img[i])) for i in
+            range(0, orderbook_img.shape[0])
         ]
 
         df.attrs['trade_volume_max'] = self.trade_volume_max
@@ -288,7 +271,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         new_shape[2] = new_shape[2] + 1
         new_orderbook_img = np.zeros(new_shape)
         old_shape = orderbook_img.shape
-        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2], :old_shape[3]] = orderbook_img
+        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2],
+        :old_shape[3]] = orderbook_img
         orderbook_img = new_orderbook_img
 
         df = df.join(self.price_change_frame).fillna(0.0)
@@ -322,7 +306,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         new_shape[2] = new_shape[2] + height
         new_orderbook_img = np.zeros(new_shape)
         old_shape = orderbook_img.shape
-        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2], :old_shape[3]] = orderbook_img
+        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2],
+        :old_shape[3]] = orderbook_img
         orderbook_img = new_orderbook_img
 
         if self.trade_volume_max == 0.0:
@@ -495,7 +480,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 @click.option('--window-size', '-w', default='3m', type=str)
 @click.argument('symbol', type=str)
 def main(**kwargs):
-
     df = OrderBookFrame(**kwargs).frame
 
     alog.info(df)
