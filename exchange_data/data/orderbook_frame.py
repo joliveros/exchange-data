@@ -71,6 +71,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             symbol=self.symbol,
             round_decimals=self.round_decimals,
             depth=self.depth,
+            group_by=self.group_by,
             sequence_length=self.sequence_length
         )
 

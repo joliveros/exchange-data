@@ -137,10 +137,14 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     def plot_orderbook(self, data):
         fig, frame = plt.subplots(1, 1, figsize=(1, 1),
                                         dpi=self.frame_width)
-        frame.axis('off')
+        # frame.axis('off')
         frame = frame.twinx()
         plt.autoscale(tight=True)
         frame.axis('off')
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                            hspace=0, wspace=0)
+        plt.margins(0, 0)
+
         fig.patch.set_visible(False)
         frame.imshow(data)
         fig.canvas.draw()
