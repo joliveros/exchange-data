@@ -31,8 +31,7 @@ class Messenger(EventEmitterBase, StatsClient):
         host = settings.REDIS_HOST
         super().__init__(**kwargs)
 
-        if settings.METRICS_ENABLED:
-            StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
+        StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
 
         self.decode = decode
 
