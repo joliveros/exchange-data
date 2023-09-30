@@ -168,7 +168,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.reset_count = 0
         self.levels = levels
 
-        frame_shape = (frame_width, frame_width, 1)
+        frame_shape = (frame_width, frame_width, 3)
 
         high = np.full(
             frame_shape,
@@ -558,6 +558,7 @@ class OrderBookTradingEnv(Logging, Env):
                              self.trades[-1 * int(self.max_summary/3):]]
 
         return summary
+
 
 @click.command()
 @click.option('--test-span', default='5m')

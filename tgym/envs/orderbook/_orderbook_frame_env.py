@@ -26,7 +26,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
-        frame_width=96*2,
+        frame_width=224,
         macd_diff_enabled=False,
         random_frame_start=False,
         trial=None,
@@ -123,14 +123,10 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.position_pnl_history.append(self.current_trade.pnl)
 
         ob_img = self.plot_orderbook(frame)
-        # pnl_img = self.plot_pnl()
-        # ob_pnl = np.concatenate([ob_img, pnl_img]) / 255
+        ob_img = ob_img[:, :, :3]
+        ob_img = np.expand_dims(ob_img, axis=0) / 255
 
-        ob_pnl = ob_img / 255
-
-        # self.show_img(ob_img)
-
-        self.last_observation = np.expand_dims(ob_pnl, axis=2)
+        self.last_observation = ob_img
 
         return self.last_observation
 
@@ -153,7 +149,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         plt.close()
 
         img = np.array(img)
-        img = Image.fromarray(np.uint8(img * 255)).convert('L')
 
         return np.asarray(img)
 
