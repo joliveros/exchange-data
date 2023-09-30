@@ -22,7 +22,7 @@ pytest-cov
 pytest-mock
 pytest-mypy
 pytest-recording
-# python-binance
+python-binance
 python-redis-cache
 pytimeparse~=1.1.8
 pytz

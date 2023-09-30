@@ -3,7 +3,6 @@ from datetime import datetime
 
 import docker
 import math
-from binance.exceptions import BinanceAPIException
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
 from pytimeparse.timeparse import timeparse
