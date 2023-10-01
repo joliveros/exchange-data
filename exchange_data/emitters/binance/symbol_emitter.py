@@ -66,32 +66,35 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         self.stream_id = self.create_stream(["depth"], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
-            data = None
 
-            try:
+            if data_str:
                 data = json.loads(data_str)
-            except TypeError as e:
-                pass
 
-            if data:
-                if "data" in data:
-                    if "s" in data["data"]:
-                        timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
+                if data:
+                    self.handle_data(data, data_str)
+                else:
+                    time.sleep(2 / 10)
 
-                        lag = DateTimeUtils.now() - timestamp
+    def handle_data(self, data, data_str):
+        if "data" in data:
+            if "s" in data["data"]:
+                symbol = data["data"]["s"]
+                timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
 
-                        if lag.total_seconds() > self.max_lag:
-                            if self.last_start < DateTimeUtils.now() - timedelta(
-                                seconds=timeparse("1m")
-                            ):
-                                alog.info("## acceptable lag has been exceeded ##")
-                                raise ExceededLagException()
+                lag = DateTimeUtils.now() - timestamp
 
-                        symbol = data["data"]["s"]
+                self.timing(f"{self.channel_for_symbol(symbol)}_lag", lag)
 
-                        self.publish(self.channel_for_symbol(symbol), data_str)
-            else:
-                time.sleep(2 / 10)
+                if lag.total_seconds() > self.max_lag:
+                    # if self.last_start < DateTimeUtils.now() - timedelta(
+                    #     seconds=timeparse("1m")
+                    # ):
+                    alog.info("## acceptable lag has been exceeded ##")
+                    raise ExceededLagException()
+
+                self.publish(self.channel_for_symbol(symbol), data_str)
+        else:
+            alog.info(data)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
