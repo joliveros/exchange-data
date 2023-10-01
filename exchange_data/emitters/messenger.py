@@ -1,4 +1,5 @@
 from abc import ABC
+from datetime import datetime
 from enum import Enum, auto
 from inspect import signature
 
@@ -17,7 +18,7 @@ import sys
 
 
 class Events(NoValue):
-    Message = 'message'
+    Message = "message"
 
 
 class MessageType(NoValue):
@@ -26,40 +27,44 @@ class MessageType(NoValue):
 
 
 class Messenger(EventEmitterBase, StatsClient):
-
     def __init__(self, decode=True, stats_prefix=None, **kwargs):
+        self.last_channel_msg = dict()
         host = settings.REDIS_HOST
         super().__init__(**kwargs)
 
-        StatsClient.__init__(self, host='telegraf', prefix=stats_prefix)
+        StatsClient.__init__(self, host="telegraf", prefix=stats_prefix)
 
         self.decode = decode
 
         redis_params = [param for param in list(signature(Redis).parameters)]
-        redis_kwargs = {param: kwargs[param] for param in redis_params
-                        if param in kwargs}
+        redis_kwargs = {
+            param: kwargs[param] for param in redis_params if param in kwargs
+        }
 
         self.redis_client = Redis(host=host, **redis_kwargs)
         self._pubsub = None
 
-        if 'channels' in vars(self):
+        if "channels" in vars(self):
             self.channels += []
         else:
             self.channels = []
+
+        for channel in self.channels:
+            self.last_channel_msg[channel] = datetime.now()
 
         self.on(Events.Message.value, self.handler)
 
     def _send(self, data):
         """Send data to statsd."""
-        self._sock.sendto(data.encode('ascii'), self._addr)
+        self._sock.sendto(data.encode("ascii"), self._addr)
 
     def handler(self, msg):
-        if MessageType[msg['type']] == MessageType.message:
-            channel_str = msg['channel'].decode()
+        if MessageType[msg["type"]] == MessageType.message:
+            channel_str = msg["channel"].decode()
             if self.decode:
-                self.emit(channel_str, json.loads(msg['data']))
+                self.emit(channel_str, json.loads(msg["data"]))
             else:
-                self.emit(channel_str, msg['data'])
+                self.emit(channel_str, msg["data"])
 
     def sub(self, channels: List):
         _channels = [
@@ -68,6 +73,9 @@ class Messenger(EventEmitterBase, StatsClient):
         ]
 
         alog.info(_channels)
+
+        for channel in _channels:
+            self.last_channel_msg[channel] = datetime.now()
 
         self._pubsub = self.redis_client.pubsub()
 
@@ -79,7 +87,15 @@ class Messenger(EventEmitterBase, StatsClient):
     def publish(self, channel, msg):
         if settings.LOG_LEVEL == logging.DEBUG:
             alog.debug(alog.pformat(locals()))
+
+        if channel not in self.last_channel_msg:
+            self.last_channel_msg[channel] = datetime.now()
+
+        since_last_msg = datetime.now() - self.last_channel_msg[channel]
+
+        self.timing(f"{channel}_last_message", since_last_msg)
         self.redis_client.publish(channel, msg)
+        self.last_channel_msg[channel] = datetime.now()
 
     def stop(self, *args, **kwargs):
         self._pubsub.close()

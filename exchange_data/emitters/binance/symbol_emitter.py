@@ -26,36 +26,31 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     last_queue_check = None
     stream_id = None
 
-    def __init__(
-        self,
-        limit,
-        workers,
-        **kwargs
-    ):
-        if kwargs['futures']:
-            exchange = 'binance.com-futures'
+    def __init__(self, limit, workers, **kwargs):
+        if kwargs["futures"]:
+            exchange = "binance.com-futures"
         else:
-            exchange = 'binance.com'
+            exchange = "binance.com"
 
         super().__init__(exchange=exchange, **kwargs)
         BinanceUtils.__init__(self, **kwargs)
 
-        del kwargs['symbol_filter']
-        del kwargs['futures']
+        del kwargs["symbol_filter"]
+        del kwargs["futures"]
 
         BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
 
         self.limit = limit
 
-        self.update_queued_symbols('symbol')
+        self.update_queued_symbols("symbol")
 
-        self.take_symbols(prefix='symbol_emitter', workers=workers)
+        self.take_symbols(prefix="symbol_emitter", workers=workers)
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = timeparse('5s')
+        self.max_lag = timeparse("5s")
 
-        self.on('start', self.start_stream)
+        self.on("start", self.start_stream)
 
         self.start_stream()
 
@@ -64,11 +59,11 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
             self._start_stream()
         except ExceededLagException as e:
             self.stop_stream(self.stream_id)
-            self.emit('start')
+            self.emit("start")
 
     def _start_stream(self):
         self.last_start = DateTimeUtils.now()
-        self.stream_id = self.create_stream(['depth'], self.depth_symbols)
+        self.stream_id = self.create_stream(["depth"], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
@@ -79,43 +74,42 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                 pass
 
             if data:
-                if 'data' in data:
-                    if 's' in data['data']:
-                        timestamp = DateTimeUtils.parse_db_timestamp(
-                            data['data']['E']
-                        )
+                if "data" in data:
+                    if "s" in data["data"]:
+                        timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
 
                         lag = DateTimeUtils.now() - timestamp
 
                         if lag.total_seconds() > self.max_lag:
-                            if self.last_start < DateTimeUtils.now() - \
-                                timedelta(seconds=timeparse('1m')):
-                                alog.info('## acceptable lag has been exceeded ##')
+                            if self.last_start < DateTimeUtils.now() - timedelta(
+                                seconds=timeparse("1m")
+                            ):
+                                alog.info("## acceptable lag has been exceeded ##")
                                 raise ExceededLagException()
 
-                        symbol = data['data']["s"]
+                        symbol = data["data"]["s"]
 
                         self.publish(self.channel_for_symbol(symbol), data_str)
             else:
-                time.sleep(100/1000)
+                time.sleep(2 / 10)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
-            return f'{symbol}_depth_futures'
+            return f"{symbol}_depth_futures"
         else:
-            return f'{symbol}_depth'
+            return f"{symbol}_depth"
 
 
 @click.command()
-@click.option('--workers', '-w', default=8, type=int)
-@click.option('--limit', '-l', default=0, type=int)
-@click.option('--symbol-filter', default=None, type=str)
-@click.option('--futures', '-F', is_flag=True)
+@click.option("--workers", "-w", default=8, type=int)
+@click.option("--limit", "-l", default=0, type=int)
+@click.option("--symbol-filter", default=None, type=str)
+@click.option("--futures", "-F", is_flag=True)
 def main(**kwargs):
     SymbolEmitter(**kwargs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda *args: exit(0))
     signal.signal(signal.SIGTERM, lambda *args: exit(0))
     main()
