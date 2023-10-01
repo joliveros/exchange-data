@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+from collections import deque
 from datetime import timedelta
 from exchange_data import settings
 from exchange_data.emitters import Messenger
@@ -27,6 +28,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     stream_id = None
 
     def __init__(self, limit, workers, **kwargs):
+        self.lag_records = deque(maxlen=100)
         if kwargs["futures"]:
             exchange = "binance.com-futures"
         else:
@@ -48,7 +50,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = timeparse("5s")
+        self.max_lag = 0.5
 
         self.on("start", self.start_stream)
 
@@ -72,8 +74,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                 if data:
                     self.handle_data(data, data_str)
-                else:
-                    time.sleep(2 / 10)
+            else:
+                time.sleep(self.max_lag)
 
     def handle_data(self, data, data_str):
         if "data" in data:
@@ -85,10 +87,11 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                 self.timing(f"{self.channel_for_symbol(symbol)}_lag", lag)
 
-                if lag.total_seconds() > self.max_lag:
-                    # if self.last_start < DateTimeUtils.now() - timedelta(
-                    #     seconds=timeparse("1m")
-                    # ):
+                self.lag_records.append(lag.total_seconds())
+
+                avg_lag = sum(self.lag_records) / len(self.lag_records)
+
+                if avg_lag > self.max_lag and len(self.lag_records) > 20:
                     alog.info("## acceptable lag has been exceeded ##")
                     raise ExceededLagException()
 
