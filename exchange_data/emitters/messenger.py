@@ -51,8 +51,7 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def _send(self, data):
         """Send data to statsd."""
-        if settings.METRICS_ENABLED:
-            self._sock.sendto(data.encode('ascii'), self._addr)
+        self._sock.sendto(data.encode('ascii'), self._addr)
 
     def handler(self, msg):
         if MessageType[msg['type']] == MessageType.message:
@@ -87,9 +86,7 @@ class Messenger(EventEmitterBase, StatsClient):
         sys.exit(0)
 
     def gauge(self, *args, **kwargs):
-        if settings.METRICS_ENABLED:
-            super().gauge(*args, **kwargs)
+        super().gauge(*args, **kwargs)
 
     def incr(self, *args, **kwargs):
-        if settings.METRICS_ENABLED:
-            super().incr(*args, **kwargs)
+        super().incr(*args, **kwargs)
