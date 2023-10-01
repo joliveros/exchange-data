@@ -6,17 +6,12 @@ from exchange_data.data.orderbook_frame import OrderBookFrame
 from gym.spaces import Discrete
 from matplotlib import pyplot as plt
 from pytimeparse.timeparse import timeparse
-from skimage import color
 from tgym.envs.orderbook import OrderBookTradingEnv
-from tgym.envs.orderbook.ascii_image import AsciiImage
 
-import alog
 import click
-import json
 import matplotlib
 import numpy as np
 import random
-import traceback
 import cv2
 
 matplotlib.use('agg')
