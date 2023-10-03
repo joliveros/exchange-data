@@ -63,11 +63,14 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
             data_str = self.pop_stream_data_from_stream_buffer()
 
             if data_str:
+                self.reset_empty_msg_count()
                 data = json.loads(data_str)
 
                 if data:
                     self.handle_data(data, data_str)
             else:
+                self.increase_empty_msg_count()
+                self.empty_msg_count += 1
                 time.sleep(self.max_lag)
 
     def handle_data(self, data, data_str):

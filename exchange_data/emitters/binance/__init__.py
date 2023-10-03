@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 
-import docker
 import math
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
@@ -28,13 +27,7 @@ class BinanceUtils(object):
     max_symbols = None
     last_start = None
 
-    def __init__(
-        self,
-        futures,
-        log_requests=False,
-        symbol_filter='BNB',
-        **kwargs
-    ):
+    def __init__(self, futures, log_requests=False, symbol_filter="BNB", **kwargs):
         super().__init__(**kwargs)
         self.futures = futures
         self.symbol_filter = symbol_filter
@@ -48,37 +41,37 @@ class BinanceUtils(object):
 
     @property
     def symbol_info(self):
-        return [info for info in self.get_exchange_info['symbols'] if
-                info['symbol'] == self.symbol][0]
+        return [
+            info
+            for info in self.get_exchange_info["symbols"]
+            if info["symbol"] == self.symbol
+        ][0]
 
     @cached_property
     def queued_symbols(self):
-        return Set(key='queued_symbols', redis=self.redis_client)
+        return Set(key="queued_symbols", redis=self.redis_client)
 
     @property
     def symbols(self):
         symbols = self._get_symbols()
 
         if self.symbol_filter:
-            return [
-                symbol for symbol in symbols
-                if symbol.endswith(self.symbol_filter)
-            ]
+            return [symbol for symbol in symbols if symbol.endswith(self.symbol_filter)]
         else:
             return symbols
 
     def update_queued_symbols(self, prefix):
         try:
-            with self.take_lock(prefix=f'{prefix}_symbol_update',
-                                retry_times=1,
-                                retry_delay=300):
+            with self.take_lock(
+                prefix=f"{prefix}_symbol_update", retry_times=1, retry_delay=300
+            ):
                 with self.take_lock(prefix=prefix):
-                    alog.info('try to update queued symbols')
+                    alog.info("try to update queued symbols")
                     self.queued_symbols.clear()
                     self.queued_symbols.update(set(self.symbols))
 
                     alog.info(self.queued_symbols)
-                    alog.info(f'number of symbols {len(self.queued_symbols)}')
+                    alog.info(f"number of symbols {len(self.queued_symbols)}")
 
         except RedLockError:
             pass
@@ -118,58 +111,71 @@ class BinanceUtils(object):
 
     @property
     def lot_size(self):
-        return [filter for filter in self.symbol_info['filters'] if filter[
-            'filterType'] == 'LOT_SIZE'][0]
+        return [
+            filter
+            for filter in self.symbol_info["filters"]
+            if filter["filterType"] == "LOT_SIZE"
+        ][0]
 
     @property
     def price_filter(self):
-        return [filter for filter in self.symbol_info['filters'] if
-                filter[
-                    'filterType'] == 'PRICE_FILTER'][0]
+        return [
+            filter
+            for filter in self.symbol_info["filters"]
+            if filter["filterType"] == "PRICE_FILTER"
+        ][0]
 
     @property
     def step_size(self):
-        return float(self.lot_size['stepSize'])
+        return float(self.lot_size["stepSize"])
 
     @property
     def precision(self):
-        return self.symbol_info.get('quoteAssetPrecision', None) or \
-               self.symbol_info.get('quotePrecision', None)
+        return self.symbol_info.get(
+            "quoteAssetPrecision", None
+        ) or self.symbol_info.get("quotePrecision", None)
 
     @property
     def tick_size(self):
-        return float(self.price_filter['tickSize'])
+        return float(self.price_filter["tickSize"])
 
     @property
     def bracket(self):
-        return [bracket for bracket in self.leverage_brackets()
-                if bracket['symbol'] == self.symbol][0]
+        return [
+            bracket
+            for bracket in self.leverage_brackets()
+            if bracket["symbol"] == self.symbol
+        ][0]
 
     @property
     def max_leverage(self):
         if self.futures:
-            return max([bracket['initialLeverage']
-                        for bracket in self.bracket['brackets']])
+            return max(
+                [bracket["initialLeverage"] for bracket in self.bracket["brackets"]]
+            )
         else:
-            raise Exception('only available for futures.')
+            raise Exception("only available for futures.")
 
     def _get_symbols(self):
         exchange_info = self.get_exchange_info
 
-        symbols = [symbol for symbol in exchange_info['symbols']
-                   if symbol['status'] == 'TRADING']
+        symbols = [
+            symbol
+            for symbol in exchange_info["symbols"]
+            if symbol["status"] == "TRADING"
+        ]
 
-        symbol_names = [symbol['symbol'] for symbol in symbols if symbol[
-            'symbol']]
+        symbol_names = [symbol["symbol"] for symbol in symbols if symbol["symbol"]]
 
         return symbol_names
 
     def sleep_during_embargo(self, e):
         if e.status_code == 418:
-            embargo_timestamp = int(re.search('\d+', e.message)[0])
-            embargo_timestamp = datetime.fromtimestamp(embargo_timestamp / 1000) \
-                .replace(tzinfo=tz.tzlocal())
-            alog.info(f'banned until {embargo_timestamp}')
+            embargo_timestamp = int(re.search("\d+", e.message)[0])
+            embargo_timestamp = datetime.fromtimestamp(
+                embargo_timestamp / 1000
+            ).replace(tzinfo=tz.tzlocal())
+            alog.info(f"banned until {embargo_timestamp}")
             diff = embargo_timestamp - DateTimeUtils.now()
 
             sleep_seconds = diff.total_seconds()
@@ -177,8 +183,8 @@ class BinanceUtils(object):
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
 
-    def take_symbols(self, *args, workers, prefix='', **kwargs):
-        kwargs['workers'] = workers
+    def take_symbols(self, *args, workers, prefix="", **kwargs):
+        kwargs["workers"] = workers
 
         if self.max_symbols is None:
             with self.queued_symbols as queued_symbols:
@@ -186,8 +192,10 @@ class BinanceUtils(object):
                 alog.info(self.max_symbols)
 
         try:
-            while len(self.queued_symbols) > 0 and len(
-                self.depth_symbols) < self.max_symbols:
+            while (
+                len(self.queued_symbols) > 0
+                and len(self.depth_symbols) < self.max_symbols
+            ):
                 if self.limit > 0:
                     if len(self.depth_symbols) > self.limit:
                         break
@@ -199,7 +207,7 @@ class BinanceUtils(object):
             self.take_symbols(*args, prefix=prefix, **kwargs)
 
     def _take_symbols(self, *args, workers=8, **kwargs):
-        alog.info('### take symbols ##')
+        alog.info("### take symbols ##")
         with self.queued_symbols as queued_symbols:
             len_queued_symbols = len(queued_symbols)
             take_count = int(math.ceil(self.max_symbols / 2))
@@ -210,7 +218,7 @@ class BinanceUtils(object):
             symbols = queued_symbols.random_sample(k=take_count)
 
             for symbol in symbols:
-                alog.info(f'### taking {symbol} ###')
+                alog.info(f"### taking {symbol} ###")
 
                 self.remove_symbol_queue(symbol)
 
@@ -227,31 +235,29 @@ class BinanceUtils(object):
         except KeyError:
             pass
 
-    def take_lock(self, prefix='', retry_times=60 * 60, retry_delay=1000):
-        lock_name = f'{prefix}_take_lock'
+    def take_lock(self, prefix="", retry_times=60 * 60, retry_delay=1000):
+        lock_name = f"{prefix}_take_lock"
 
-        lock = RedLock(lock_name, [dict(
-            host=settings.REDIS_HOST,
-            db=0
-        )],
-                       retry_delay=retry_delay,
-                       retry_times=retry_times,
-                       ttl=timeparse('2m') * 1000
-                       )
+        lock = RedLock(
+            lock_name,
+            [dict(host=settings.REDIS_HOST, db=0)],
+            retry_delay=retry_delay,
+            retry_times=retry_times,
+            ttl=timeparse("2m") * 1000,
+        )
 
         alog.info(lock_name)
 
         return lock
 
     def log_requests(self):
-        loggers = [logging.getLogger(name) for name in
-                   logging.root.manager.loggerDict]
-        logger = [logger for logger in loggers if logger.name == 'urllib3'][0]
+        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+        logger = [logger for logger in loggers if logger.name == "urllib3"][0]
         logger.setLevel(logging.DEBUG)
 
     def channel_suffix(self, channel):
         if self.futures:
-            return f'{channel}_futures'
+            return f"{channel}_futures"
         else:
             return channel
 

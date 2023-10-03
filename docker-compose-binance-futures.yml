@@ -66,8 +66,6 @@ services:
               #      cpus: '0.5'
             replicas: 1
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F --symbol-filter UNFIUSDT"
@@ -89,8 +87,6 @@ services:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F --symbol-filter UNFIUSDT"
@@ -108,8 +104,6 @@ services:
                 parallelism: 2
                 delay: 20s
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
             ./exchange_data/emitters/binance/trade_emitter.py -w 1 -F --symbol-filter UNFIUSDT"

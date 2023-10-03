@@ -31,45 +31,36 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
     last_queue_check = None
     stream_id = None
 
-    def __init__(
-        self,
-        limit,
-        workers,
-        **kwargs
-    ):
+    def __init__(self, limit, workers, **kwargs):
         super().__init__(exchange="binance.com", **kwargs)
         BinanceUtils.__init__(self, **kwargs)
-        del kwargs['futures']
-        del kwargs['symbol_filter']
-        BinanceWebSocketApiManager.__init__(self, exchange="binance.com",
-                                            **kwargs)
+        del kwargs["futures"]
+        del kwargs["symbol_filter"]
+        BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
         self.limit = limit
 
-        self.update_queued_symbols('book_ticker')
+        self.update_queued_symbols("book_ticker")
 
-        self.take_symbols(prefix='book_ticker_emitter', workers=workers)
+        self.take_symbols(prefix="book_ticker_emitter", workers=workers)
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = timeparse('5s')
-        self.on('start', self.start_stream)
+        self.max_lag = timeparse("5s")
+        self.on("start", self.start_stream)
 
         self.start_stream()
 
     @cached_property
     def queued_symbols(self):
-        return Set(key='book_ticker_queued_symbols', redis=self.redis_client)
+        return Set(key="book_ticker_queued_symbols", redis=self.redis_client)
 
     def start_stream(self, *args):
-        try:
-            self._start_stream()
-        except ExceededLagException as e:
-            self.stop_stream(self.stream_id)
-            self.emit('start')
+        self._start_stream()
+        self.emit("start")
 
     def _start_stream(self):
         self.last_start = DateTimeUtils.now()
-        self.stream_id = self.create_stream(['ticker'], self.depth_symbols)
+        self.stream_id = self.create_stream(["ticker"], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
@@ -80,45 +71,46 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
                 pass
 
             if data:
-                if 'data' in data:
-                    data = data['data']
-                    if 's' in data:
+                if "data" in data:
+                    data = data["data"]
+                    if "s" in data:
+                        self.reset_empty_msg_count()
                         symbol = data["s"]
-                        timestamp = DateTimeUtils.parse_db_timestamp(data['E'])
+                        timestamp = DateTimeUtils.parse_db_timestamp(data["E"])
                         lag = DateTimeUtils.now() - timestamp
 
                         if lag.total_seconds() > self.max_lag:
-                            if self.last_start < DateTimeUtils.now() - \
-                               timedelta(seconds=timeparse('1m')):
-                                alog.info(
-                                    '## acceptable lag has been exceeded ##')
+                            if self.last_start < DateTimeUtils.now() - timedelta(
+                                seconds=timeparse("1m")
+                            ):
+                                alog.info("## acceptable lag has been exceeded ##")
                                 raise ExceededLagException()
 
                         # alog.info((self.channel_for_symbol(symbol),
                         #              json.dumps(data)))
 
-                        self.publish(self.channel_for_symbol(symbol),
-                                     json.dumps(data))
+                        self.publish(self.channel_for_symbol(symbol), json.dumps(data))
             else:
-                time.sleep(100/1000)
+                self.increase_empty_msg_count()
+                time.sleep(100 / 1000)
 
     def channel_for_symbol(self, symbol):
         if self.futures:
-            return f'{symbol}_book_ticker_futures'
+            return f"{symbol}_book_ticker_futures"
         else:
-            return f'{symbol}_book_ticker'
+            return f"{symbol}_book_ticker"
 
 
 @click.command()
-@click.option('--limit', '-l', default=0, type=int)
-@click.option('--workers', '-w', default=8, type=int)
-@click.option('--symbol-filter', default=None, type=str)
-@click.option('--futures', '-F', is_flag=True)
+@click.option("--limit", "-l", default=0, type=int)
+@click.option("--workers", "-w", default=8, type=int)
+@click.option("--symbol-filter", default=None, type=str)
+@click.option("--futures", "-F", is_flag=True)
 def main(**kwargs):
     BookTickerEmitter(**kwargs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda *args: exit(0))
     signal.signal(signal.SIGTERM, lambda *args: exit(0))
     main()

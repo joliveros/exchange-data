@@ -5,7 +5,7 @@ bitmex-websocket==0.2.78
 cached-property
 click~=8.1.7
 coveralls
-docker~=6.1.2
+# docker~=6.1.2
 flake8
 git+https://github.com/joliveros/sec.git#egg=sec
 gym~=0.26.2

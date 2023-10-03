@@ -34,6 +34,7 @@ class Messenger(EventEmitterBase, StatsClient):
 
         StatsClient.__init__(self, host="telegraf", prefix=stats_prefix)
 
+        self.empty_msg_count = 0
         self.decode = decode
 
         redis_params = [param for param in list(signature(Redis).parameters)]
@@ -106,3 +107,12 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def incr(self, *args, **kwargs):
         super().incr(*args, **kwargs)
+
+    def reset_empty_msg_count(self):
+        self.empty_msg_count = 0
+
+    def increase_empty_msg_count(self):
+        if self.empty_msg_count > 5:
+            raise Exception("Empty message count exceeded")
+
+        self.empty_msg_count += 1
