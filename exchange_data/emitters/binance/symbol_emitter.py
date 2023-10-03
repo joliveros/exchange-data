@@ -57,13 +57,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         self.start_stream()
 
     def start_stream(self, *args):
-        try:
-            self._start_stream()
-        except ExceededLagException as e:
-            self.stop_stream(self.stream_id)
-            self.emit("start")
-
-    def _start_stream(self):
         self.last_start = DateTimeUtils.now()
         self.stream_id = self.create_stream(["depth"], self.depth_symbols)
         while True:

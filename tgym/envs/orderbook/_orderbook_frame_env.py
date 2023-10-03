@@ -13,30 +13,26 @@ import matplotlib
 import numpy as np
 import random
 import cv2
+import alog
 
-matplotlib.use('agg')
+matplotlib.use("agg")
+
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
     random_frame_start: bool = False
 
     def __init__(
         self,
-        frame_width=224,
+        frame_width=399,
         macd_diff_enabled=False,
         random_frame_start=False,
         trial=None,
         num_env=1,
         **kwargs
     ):
-        super().__init__(
-            action_space=Discrete(2),
-            **kwargs
-        )
+        super().__init__(action_space=Discrete(2), **kwargs)
         OrderBookTradingEnv.__init__(
-            self,
-            frame_width=frame_width,
-            action_space=Discrete(2),
-            **kwargs
+            self, frame_width=frame_width, action_space=Discrete(2), **kwargs
         )
         self.plot_count = 0
 
@@ -45,7 +41,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self.trial = trial
         self.num_env = num_env
-        kwargs['batch_size'] = 1
+        kwargs["batch_size"] = 1
         self.macd_diff_enabled = macd_diff_enabled
         self.observations = None
         self.prune_capital = 1.01
@@ -98,8 +94,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.observations = self._get_observation()
 
         try:
-            timestamp, best_ask, best_bid, frame = \
-                next(self.observations)
+            timestamp, best_ask, best_bid, frame = next(self.observations)
         except StopIteration:
             self.observations = None
             self.done = True
@@ -118,6 +113,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.position_pnl_history.append(self.current_trade.pnl)
 
         ob_img = self.plot_orderbook(frame)
+        # self.show_img(ob_img)
         ob_img = ob_img[:, :, :3]
         ob_img = np.expand_dims(ob_img, axis=0) / 255
 
@@ -126,14 +122,12 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         return self.last_observation
 
     def plot_orderbook(self, data):
-        fig, frame = plt.subplots(1, 1, figsize=(1, 1),
-                                        dpi=self.frame_width)
+        fig, frame = plt.subplots(1, 1, figsize=(1, 1), dpi=self.frame_width)
         # frame.axis('off')
         frame = frame.twinx()
         plt.autoscale(tight=True)
-        frame.axis('off')
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
-                            hspace=0, wspace=0)
+        frame.axis("off")
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.margins(0, 0)
 
         fig.patch.set_visible(False)
@@ -151,20 +145,19 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         pnl = np.asarray(self.position_pnl_history)
 
         if pnl.shape[0] > 0:
-            fig, price_frame = plt.subplots(1, 1, figsize=(2, 1),
-                                            dpi=self.frame_width)
+            fig, price_frame = plt.subplots(1, 1, figsize=(2, 1), dpi=self.frame_width)
 
             min = abs(pnl.min())
             pnl = pnl + min
 
             # pnl_frame = price_frame.twinx()
             pnl_frame = price_frame
-            pnl_frame.plot(pnl, color='black')
+            pnl_frame.plot(pnl, color="black")
 
-            plt.fill_between(range(pnl.shape[0]), pnl, color='black')
+            plt.fill_between(range(pnl.shape[0]), pnl, color="black")
 
             plt.autoscale(tight=True)
-            pnl_frame.axis('off')
+            pnl_frame.axis("off")
             fig.patch.set_visible(False)
             fig.canvas.draw()
 
@@ -173,17 +166,16 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             plt.close()
 
             img = np.array(_img)
-            img = Image.fromarray(np.uint8(img * 255)).convert('L')
+            img = Image.fromarray(np.uint8(img * 255)).convert("L")
 
             return np.array(img)
         else:
             return np.zeros([self.frame_width, self.frame_width * 2])
 
     def show_img(self, img):
-        img = np.array(
-            Image.fromarray(np.uint8(np.array(img) * 255)).convert('RGB'))
+        img = np.array(Image.fromarray(np.uint8(np.array(img) * 255)).convert("RGB"))
 
-        cv2.imshow('image', img)
+        cv2.imshow("image", img)
         cv2.waitKey(1)
 
     def step(self, action):
@@ -221,31 +213,32 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         self.print_summary()
 
-        return observation, reward, done, {
-            'capital': self.capital,
-            'trades': self.trades,
-            'action': action
-        }
+        return (
+            observation,
+            reward,
+            done,
+            {"capital": self.capital, "trades": self.trades, "action": action},
+        )
 
 
 @click.command()
-@click.option('--cache', is_flag=True)
-@click.option('--database_name', '-d', default='binance', type=str)
-@click.option('--depth', default=72, type=int)
-@click.option('--group-by', '-g', default='30s', type=str)
-@click.option('--interval', '-i', default='10m', type=str)
-@click.option('--leverage', default=1.0, type=float)
-@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
-@click.option('--offset-interval', '-o', default='0h', type=str)
-@click.option('--round-decimals', '-D', default=4, type=int)
-@click.option('--sequence-length', '-l', default=48, type=int)
-@click.option('--summary-interval', '-s', default=1, type=int)
-@click.option('--window-size', '-w', default='2m', type=str)
-@click.argument('symbol', type=str)
+@click.option("--cache", is_flag=True)
+@click.option("--database_name", "-d", default="binance", type=str)
+@click.option("--depth", default=72, type=int)
+@click.option("--group-by", "-g", default="30s", type=str)
+@click.option("--interval", "-i", default="10m", type=str)
+@click.option("--leverage", default=1.0, type=float)
+@click.option("--max-volume-quantile", "-m", default=0.99, type=float)
+@click.option("--offset-interval", "-o", default="0h", type=str)
+@click.option("--round-decimals", "-D", default=4, type=int)
+@click.option("--sequence-length", "-l", default=48, type=int)
+@click.option("--summary-interval", "-s", default=1, type=int)
+@click.option("--window-size", "-w", default="2m", type=str)
+@click.argument("symbol", type=str)
 def main(**kwargs):
     env = OrderBookFrameEnv(
-        short_class_str='ShortRewardPnlDiffTrade',
-        flat_class_str='FlatRewardPnlDiffTrade',
+        short_class_str="ShortRewardPnlDiffTrade",
+        flat_class_str="FlatRewardPnlDiffTrade",
         random_frame_start=False,
         short_reward_enabled=True,
         is_training=False,
@@ -253,8 +246,7 @@ def main(**kwargs):
         min_change=-0.5,
         **kwargs
     )
-    interval_ticks = (timeparse(kwargs['interval']) \
-                      / timeparse(kwargs['group_by']))
+    interval_ticks = timeparse(kwargs["interval"]) / timeparse(kwargs["group_by"])
 
     env.reset()
 
@@ -269,5 +261,5 @@ def main(**kwargs):
         _done = done
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
