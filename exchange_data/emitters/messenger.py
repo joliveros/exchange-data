@@ -113,6 +113,6 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def increase_empty_msg_count(self):
         if self.empty_msg_count > 5:
-            raise Exception("Empty message count exceeded")
+            sys.exit(-1)
 
         self.empty_msg_count += 1
