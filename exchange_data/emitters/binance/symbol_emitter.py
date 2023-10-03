@@ -40,7 +40,9 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         del kwargs["symbol_filter"]
         del kwargs["futures"]
 
-        BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
+        BinanceWebSocketApiManager.__init__(
+            self, throw_exception_if_unrepairable=True, exchange=exchange, **kwargs
+        )
 
         self.limit = limit
 
