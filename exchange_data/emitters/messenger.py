@@ -1,5 +1,7 @@
+import asyncio
 from abc import ABC
 from datetime import datetime
+import time
 from enum import Enum, auto
 from inspect import signature
 
@@ -115,15 +117,11 @@ class Messenger(EventEmitterBase, StatsClient):
     def increase_empty_msg_count(self):
         if self.empty_msg_count > self.max_empty_msg_count:
             alog.info("### exiting due to excess lag ##")
-            self.exit()
+            self.stream_is_crashing(self.stream_id)
 
         self.empty_msg_count += 1
 
     def stream_is_crashing(self, stream_id, error_msg=False):
-        alog.info("## stream_is_crashing ##")
-        self.stop_manager_with_all_streams()
-        sys.exit(-1)
+        alog.debug(f"## restart stream {stream_id} ##")
+        self.set_restart_request(stream_id)
 
-    def exit(self):
-        self.stop_manager_with_all_streams()
-        sys.exit(-1)
