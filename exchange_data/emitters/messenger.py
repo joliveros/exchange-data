@@ -124,4 +124,3 @@ class Messenger(EventEmitterBase, StatsClient):
     def stream_is_crashing(self, stream_id, error_msg=False):
         alog.debug(f"## restart stream {stream_id} ##")
         self.set_restart_request(stream_id)
-
