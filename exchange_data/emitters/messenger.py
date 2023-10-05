@@ -113,6 +113,7 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def increase_empty_msg_count(self):
         if self.empty_msg_count > 5:
+            alog.info('### exiting due to excess lag ##')
             sys.exit(-1)
 
         self.empty_msg_count += 1

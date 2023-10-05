@@ -41,7 +41,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         del kwargs["futures"]
 
         BinanceWebSocketApiManager.__init__(
-            self, throw_exception_if_unrepairable=True, exchange=exchange, **kwargs
+            self, exchange=exchange, **kwargs
         )
 
         self.limit = limit
@@ -72,7 +72,6 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                     self.handle_data(data, data_str)
             else:
                 self.increase_empty_msg_count()
-                self.empty_msg_count += 1
                 time.sleep(self.max_lag)
 
     def handle_data(self, data, data_str):
