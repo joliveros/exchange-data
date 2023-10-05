@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from collections import deque
 
 from cached_property import cached_property
 from datetime import timedelta
@@ -47,6 +48,8 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         del kwargs["futures"]
         BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
 
+        self.lag_records = deque(maxlen=100)
+
         self.limit = limit
 
         self.update_queued_symbols("trade")
@@ -92,12 +95,15 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     def is_lag_acceptable(self, data):
         timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
         lag = DateTimeUtils.now() - timestamp
-        if lag.total_seconds() > self.max_lag:
-            if self.last_start < DateTimeUtils.now() - timedelta(
-                seconds=timeparse("1m")
-            ):
-                alog.info("## acceptable lag has been exceeded ##")
-                raise ExceededLagException()
+
+        self.timing("trades_lag", lag)
+        self.lag_records.append(lag.total_seconds())
+
+        avg_lag = sum(self.lag_records) / len(self.lag_records)
+
+        if avg_lag > self.max_lag and len(self.lag_records) > 20:
+            alog.info("## acceptable lag has been exceeded ##")
+            self.exit()
 
     def channel_for_symbol(self, symbol):
         if self.futures:

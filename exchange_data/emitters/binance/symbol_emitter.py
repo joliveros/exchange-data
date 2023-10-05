@@ -41,9 +41,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         del kwargs["symbol_filter"]
         del kwargs["futures"]
 
-        BinanceWebSocketApiManager.__init__(
-            self, exchange=exchange, **kwargs
-        )
+        BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
 
         self.limit = limit
 
@@ -91,7 +89,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                 if avg_lag > self.max_lag and len(self.lag_records) > 20:
                     alog.info("## acceptable lag has been exceeded ##")
-                    raise ExceededLagException()
+                    self.exit()
 
                 self.publish(self.channel_for_symbol(symbol), data_str)
         else:

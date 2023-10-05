@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from collections import deque
 from datetime import timedelta
 
 from cached_property import cached_property
@@ -37,6 +38,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
         del kwargs["futures"]
         del kwargs["symbol_filter"]
         BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
+        self.lag_records = deque(maxlen=100)
         self.limit = limit
 
         self.update_queued_symbols("book_ticker")
@@ -65,34 +67,33 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
             data_str = self.pop_stream_data_from_stream_buffer()
             data = None
 
-            try:
+            if data_str:
                 data = json.loads(data_str)
-            except TypeError as e:
-                pass
-
-            if data:
-                if "data" in data:
-                    data = data["data"]
-                    if "s" in data:
-                        self.reset_empty_msg_count()
-                        symbol = data["s"]
-                        timestamp = DateTimeUtils.parse_db_timestamp(data["E"])
-                        lag = DateTimeUtils.now() - timestamp
-
-                        if lag.total_seconds() > self.max_lag:
-                            if self.last_start < DateTimeUtils.now() - timedelta(
-                                seconds=timeparse("1m")
-                            ):
-                                alog.info("## acceptable lag has been exceeded ##")
-                                raise ExceededLagException()
-
-                        # alog.info((self.channel_for_symbol(symbol),
-                        #              json.dumps(data)))
-
-                        self.publish(self.channel_for_symbol(symbol), json.dumps(data))
+                if data:
+                    if "data" in data:
+                        self.handle_data(data)
             else:
                 self.increase_empty_msg_count()
                 time.sleep(100 / 1000)
+
+    def handle_data(self, data):
+        data = data["data"]
+        if "s" in data:
+            self.reset_empty_msg_count()
+            symbol = data["s"]
+            timestamp = DateTimeUtils.parse_db_timestamp(data["E"])
+            lag = DateTimeUtils.now() - timestamp
+            self.timing(f"{self.channel_for_symbol(symbol)}_book_ticker_lag", lag)
+
+            self.lag_records.append(lag.total_seconds())
+
+            avg_lag = sum(self.lag_records) / len(self.lag_records)
+
+            if avg_lag > self.max_lag and len(self.lag_records) > 20:
+                alog.info("## acceptable lag has been exceeded ##")
+                self.exit()
+
+            self.publish(self.channel_for_symbol(symbol), json.dumps(data))
 
     def channel_for_symbol(self, symbol):
         if self.futures:
