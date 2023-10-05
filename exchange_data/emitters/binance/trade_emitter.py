@@ -72,26 +72,22 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     def _start_stream(self):
         self.last_start = DateTimeUtils.now()
         self.stream_id = self.create_stream(["trade"], self.depth_symbols)
+
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
-            data = None
-
-            try:
+            if data_str:
                 data = json.loads(data_str)
-            except TypeError as e:
-                pass
-
-            if data:
-                if "data" in data:
-                    if "s" in data["data"]:
-                        self.reset_empty_msg_count()
-                        self.is_lag_acceptable(data)
-                        obj = pickle.dumps(data["data"])
-                        obj = zlib.compress(obj)
-                        self.redis_client.lpush(f"{self.database_name}_trades", obj)
-            else:
-                self.increase_empty_msg_count()
-                time.sleep(100 / 1000)
+                if data:
+                    if "data" in data:
+                        if "s" in data["data"]:
+                            self.reset_empty_msg_count()
+                            self.is_lag_acceptable(data)
+                            obj = pickle.dumps(data["data"])
+                            obj = zlib.compress(obj)
+                            self.redis_client.lpush(f"{self.database_name}_trades", obj)
+                else:
+                    self.increase_empty_msg_count()
+                    time.sleep(self.max_lag)
 
     def is_lag_acceptable(self, data):
         timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])

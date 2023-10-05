@@ -113,13 +113,13 @@ class Messenger(EventEmitterBase, StatsClient):
 
     def increase_empty_msg_count(self):
         if self.empty_msg_count > 5:
-            alog.info('### exiting due to excess lag ##')
+            alog.info("### exiting due to excess lag ##")
             self.exit()
 
         self.empty_msg_count += 1
 
     def stream_is_crashing(self, stream_id, error_msg=False):
-        alog.info('## stream_is_crashing ##')
+        alog.info("## stream_is_crashing ##")
         self.stop_manager_with_all_streams()
         sys.exit(-1)
 
