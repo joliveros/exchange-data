@@ -58,7 +58,7 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = 4/10
+        self.max_lag = 4 / 10
 
         self.on("start", self.start_stream)
 
@@ -83,13 +83,11 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                 if data:
                     if "data" in data:
                         if "s" in data["data"]:
-                            self.reset_empty_msg_count()
                             self.is_lag_acceptable(data)
                             obj = pickle.dumps(data["data"])
                             obj = zlib.compress(obj)
                             self.redis_client.lpush(f"{self.database_name}_trades", obj)
             else:
-                self.increase_empty_msg_count()
                 time.sleep(self.max_lag)
 
     def is_lag_acceptable(self, data):
