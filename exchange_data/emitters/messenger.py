@@ -126,6 +126,3 @@ class Messenger(EventEmitterBase, StatsClient):
     def exit(self):
         self.stop_manager_with_all_streams()
         sys.exit(-1)
-
-    def stop_manager_with_all_streams(self):
-        raise NotImplementedError()
