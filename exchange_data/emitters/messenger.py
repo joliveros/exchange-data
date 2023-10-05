@@ -27,7 +27,8 @@ class MessageType(NoValue):
 
 
 class Messenger(EventEmitterBase, StatsClient):
-    def __init__(self, decode=True, stats_prefix=None, **kwargs):
+    def __init__(self, max_empty_msg_count=5, decode=True, stats_prefix=None, **kwargs):
+        self.max_empty_msg_count = max_empty_msg_count
         self.last_channel_msg = dict()
         host = settings.REDIS_HOST
         super().__init__(**kwargs)
@@ -112,7 +113,7 @@ class Messenger(EventEmitterBase, StatsClient):
         self.empty_msg_count = 0
 
     def increase_empty_msg_count(self):
-        if self.empty_msg_count > 5:
+        if self.empty_msg_count > self.max_empty_msg_count:
             alog.info("### exiting due to excess lag ##")
             self.exit()
 

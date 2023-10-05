@@ -65,7 +65,6 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
         self.stream_id = self.create_stream(["ticker"], self.depth_symbols)
         while True:
             data_str = self.pop_stream_data_from_stream_buffer()
-            data = None
 
             if data_str:
                 data = json.loads(data_str)
@@ -73,13 +72,11 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
                     if "data" in data:
                         self.handle_data(data)
             else:
-                self.increase_empty_msg_count()
-                time.sleep(100 / 1000)
+                time.sleep(1 / 10)
 
     def handle_data(self, data):
         data = data["data"]
         if "s" in data:
-            self.reset_empty_msg_count()
             symbol = data["s"]
             timestamp = DateTimeUtils.parse_db_timestamp(data["E"])
             lag = DateTimeUtils.now() - timestamp
