@@ -2,14 +2,8 @@ from tgym.envs.orderbook.trade.flat import FlatTrade
 
 
 class FlatRewardPnlDiffTrade(FlatTrade):
-
-    def __init__(
-        self,
-        **kwargs
-    ):
-        super().__init__(
-            **kwargs
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def step(self, *args, **kwargs):
         super().step(*args, **kwargs)
@@ -24,10 +18,12 @@ class FlatRewardPnlDiffTrade(FlatTrade):
         if self.last_pnl != 0.0:
             diff = pnl - self.last_pnl
 
+            if pnl <= self.max_loss:
+                self.done = True
+
             if diff > 0 and pnl > 0:
                 self.reward = diff
 
             self.total_reward += self.reward
 
         self.last_pnl = pnl
-

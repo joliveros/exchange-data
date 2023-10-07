@@ -21,6 +21,7 @@ class Trade(Logging):
         entry_price: float,
         trading_fee: float,
         position_type: Positions,
+        max_loss: float,
         min_change: float,
         is_test: bool,
         max_change: float = 0.0,
@@ -34,6 +35,7 @@ class Trade(Logging):
     ):
         super().__init__(**kwargs)
 
+        self.max_loss = max_loss
         self.is_test = is_test
         self.max_position_length = max_position_length
         self.trading_fee = trading_fee

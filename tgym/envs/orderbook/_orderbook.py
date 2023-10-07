@@ -474,6 +474,7 @@ class OrderBookTradingEnv(Logging, Env):
                 step_reward=self.step_reward,
                 min_steps=self.min_steps,
                 is_test=self.is_test,
+                max_loss=self.max_loss,
                 ** self._args['kwargs']
             )
             self.current_trade.step(self.best_bid, self.best_ask)
@@ -497,6 +498,7 @@ class OrderBookTradingEnv(Logging, Env):
                 step_reward_ratio=self.step_reward_ratio,
                 trading_fee=self.trading_fee,
                 is_test=self.is_test,
+                max_loss=self.max_loss,
                 **self._args['kwargs']
             )
             self.current_trade.step(self.best_bid, self.best_ask)
