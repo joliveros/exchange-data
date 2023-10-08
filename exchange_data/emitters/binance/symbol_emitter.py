@@ -38,7 +38,8 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
         super().__init__(exchange=exchange, **kwargs)
         BinanceUtils.__init__(self, **kwargs)
 
-        del kwargs["symbol_filter"]
+        # del kwargs["symbol_filter"]
+        del kwargs["symbols"]
         del kwargs["futures"]
 
         BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
@@ -89,7 +90,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
                 if avg_lag > self.max_lag and len(self.lag_records) > 20:
                     alog.info("## acceptable lag has been exceeded ##")
-                    self.exit()
+                    self.stream_is_crashing(self.stream_id)
 
                 self.publish(self.channel_for_symbol(symbol), data_str)
         else:
@@ -105,7 +106,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 @click.command()
 @click.option("--workers", "-w", default=8, type=int)
 @click.option("--limit", "-l", default=0, type=int)
-@click.option("--symbol-filter", default=None, type=str)
+@click.option("--symbols", "-s", nargs=4, type=str)
 @click.option("--futures", "-F", is_flag=True)
 def main(**kwargs):
     SymbolEmitter(**kwargs)

@@ -36,7 +36,8 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
         super().__init__(exchange="binance.com", **kwargs)
         BinanceUtils.__init__(self, **kwargs)
         del kwargs["futures"]
-        del kwargs["symbol_filter"]
+        del kwargs["symbols"]
+        # del kwargs["symbol_filter"]
         BinanceWebSocketApiManager.__init__(self, exchange="binance.com", **kwargs)
         self.lag_records = deque(maxlen=100)
         self.limit = limit
@@ -72,7 +73,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
                     if "data" in data:
                         self.handle_data(data)
             else:
-                time.sleep(1 / 10)
+                time.sleep(2 / 10)
 
     def handle_data(self, data):
         data = data["data"]
@@ -88,7 +89,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
             if avg_lag > self.max_lag and len(self.lag_records) > 20:
                 alog.info("## acceptable lag has been exceeded ##")
-                self.exit()
+                self.stream_is_crashing(self.stream_id)
 
             self.publish(self.channel_for_symbol(symbol), json.dumps(data))
 
@@ -102,7 +103,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 @click.command()
 @click.option("--limit", "-l", default=0, type=int)
 @click.option("--workers", "-w", default=8, type=int)
-@click.option("--symbol-filter", default=None, type=str)
+@click.option("--symbols", "-s", nargs=4, type=str)
 @click.option("--futures", "-F", is_flag=True)
 def main(**kwargs):
     BookTickerEmitter(**kwargs)

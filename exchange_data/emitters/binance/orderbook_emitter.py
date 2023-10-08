@@ -36,17 +36,17 @@ class BitmexOrderBookEmitter(
         symbol: str = None,
         save_data: bool = True,
         subscriptions_enabled: bool = True,
-        **kwargs
+        **kwargs,
     ):
         self.subscriptions_enabled = subscriptions_enabled
 
         stats_prefix = None
 
-        if kwargs['futures']:
-            database_name = 'binance_futures'
-            stats_prefix = 'futures'
+        if kwargs["futures"]:
+            database_name = "binance_futures"
+            stats_prefix = "futures"
         else:
-            database_name = 'binance'
+            database_name = "binance"
 
         super().__init__(
             retry_on_timeout=True,
@@ -54,7 +54,7 @@ class BitmexOrderBookEmitter(
             database_name=database_name,
             database_batch_size=100,
             stats_prefix=stats_prefix,
-            **kwargs
+            **kwargs,
         )
 
         self.symbol = symbol
@@ -68,123 +68,127 @@ class BitmexOrderBookEmitter(
 
         if symbol:
             self.depth_symbols.add(self.symbol)
-            self.orderbooks[symbol] = \
-                BinanceOrderBook(symbol, max_depth=max_depth)
+            self.orderbooks[symbol] = BinanceOrderBook(symbol, max_depth=max_depth)
         else:
-            self.update_queued_symbols('orderbook')
-            self.take_symbols(prefix='orderbook', workers=workers)
+            self.update_queued_symbols("orderbook")
+            self.take_symbols(prefix="orderbook", workers=workers)
             for symbol in self.depth_symbols:
-                self.orderbooks[symbol] = \
-                    BinanceOrderBook(symbol, max_depth=max_depth)
+                self.orderbooks[symbol] = BinanceOrderBook(symbol, max_depth=max_depth)
 
         if self.subscriptions_enabled:
-            self.on('1m', self.save_measurements_1m)
-            self.on('2s', self.save_measurements)
-            self.on('10s', self.metrics)
+            self.on("1m", self.save_measurements_1m)
+            self.on("2s", self.save_measurements)
+            self.on("10s", self.metrics)
 
             if self.symbol:
-                self.on('2s', self.temp)
+                self.on("2s", self.temp)
 
             for symbol in self.depth_symbols:
-                alog.info(self.channel_suffix(f'{symbol}_depth'))
+                alog.info(self.channel_suffix(f"{symbol}_depth"))
 
-                self.on(self.channel_suffix(f'{symbol}_depth'), self.message)
+                self.on(self.channel_suffix(f"{symbol}_depth"), self.message)
                 # self.on(self.channel_suffix(f'{symbol}_depth_reset'), self.depth_reset)
-                self.on(self.channel_suffix(f'{symbol}_book_ticker'), self.book_ticker)
+                self.on(self.channel_suffix(f"{symbol}_book_ticker"), self.book_ticker)
 
     @cached_property
     def queued_symbols(self):
-        return Set(key='orderbook_queued_symbols', redis=self.redis_client)
+        return Set(key="orderbook_queued_symbols", redis=self.redis_client)
 
     def temp(self, timestamp):
-            alog.info(self.orderbooks[self.symbol]
-                      .print(depth=84, trades=False))
+        alog.info(self.orderbooks[self.symbol].print(depth=84, trades=False))
 
     def metrics(self, timestamp):
         now = DateTimeUtils.now()
         for symbol in self.last_book_ticker_update.keys():
             secs = (now - self.last_book_ticker_update[symbol]).total_seconds()
-            self.gauge('last_book_ticker_update', secs)
+            self.gauge("last_book_ticker_update", secs)
 
             if secs <= 60.0:
-                self.incr('last_book_ticker_update_count')
+                self.incr("last_book_ticker_update_count")
 
         orderbook: BinanceOrderBook
         for symbol, orderbook in self.orderbooks.items():
             secs = (now - orderbook.last_timestamp).total_seconds()
-            self.gauge('last_orderbook_update', secs)
+            self.gauge("last_orderbook_update", secs)
 
             if secs <= 60.0:
-                self.incr('last_orderbook_update_count')
+                self.incr("last_orderbook_update_count")
 
-            self.incr('orderbook_count')
+            self.incr("orderbook_count")
 
     def message(self, data):
-        if 'data' in data:
-            symbol = data['data']['s']
-            data = data['data']
+        if "data" in data:
+            symbol = data["data"]["s"]
+            data = data["data"]
             self.orderbooks[symbol].message(data)
 
     def book_ticker(self, data):
-        best_ask = float(data['a'])
-        best_ask_qty = float(data['A'])
-        best_bid = float(data['b'])
-        best_bid_qty = float(data['B'])
-        symbol = data['s']
+        best_ask = float(data["a"])
+        best_ask_qty = float(data["A"])
+        best_bid = float(data["b"])
+        best_bid_qty = float(data["B"])
+        symbol = data["s"]
 
         book: BinanceOrderBook = self.orderbooks[symbol]
 
-        book.update_price(best_bid, best_bid_qty, OrderBookSide.BID,
-                          DateTimeUtils.now())
+        book.update_price(
+            best_bid, best_bid_qty, OrderBookSide.BID, DateTimeUtils.now()
+        )
 
-        book.update_price(best_ask, best_ask_qty, OrderBookSide.ASK,
-                          DateTimeUtils.now())
+        book.update_price(
+            best_ask, best_ask_qty, OrderBookSide.ASK, DateTimeUtils.now()
+        )
 
-        prices_remove = [price for price in book.bids.price_map.keys() if price
-                         > best_bid]
+        prices_remove = [
+            price for price in book.bids.price_map.keys() if price > best_bid
+        ]
 
         for price in prices_remove:
             try:
                 book.bids.remove_price(price)
             except PriceDoesNotExistException:
                 # pass
-                alog.info(f'removed {price}')
+                alog.info(f"removed {price}")
 
-        prices_remove = [price for price in book.asks.price_map.keys() if price
-                         < best_ask]
+        prices_remove = [
+            price for price in book.asks.price_map.keys() if price < best_ask
+        ]
 
         for price in prices_remove:
             try:
                 book.asks.remove_price(price)
             except PriceDoesNotExistException:
                 # pass
-                alog.info(f'removed {price}')
+                alog.info(f"removed {price}")
 
         self.last_book_ticker_update[symbol] = DateTimeUtils.now()
 
     def depth_reset(self, data):
-        data = data['data']
-        symbol = data['s']
+        data = data["data"]
+        symbol = data["s"]
         self.orderbooks[symbol] = BinanceOrderBook(symbol)
 
         self.orderbooks[symbol].message(data)
 
     def spot_channels(self):
-        depth_channels = [f'{symbol}_depth' for symbol in self.depth_symbols]
+        depth_channels = [f"{symbol}_depth" for symbol in self.depth_symbols]
         depth_reset_channels = [
-            f'{symbol}_depth_reset' for symbol in self.depth_symbols]
-        depth_reset_channels += [f'{symbol}_book_ticker' for symbol in
-                                self.depth_symbols]
+            f"{symbol}_depth_reset" for symbol in self.depth_symbols
+        ]
+        depth_reset_channels += [
+            f"{symbol}_book_ticker" for symbol in self.depth_symbols
+        ]
         channels = depth_channels + depth_reset_channels
         return channels
 
     def futures_channels(self):
-        depth_channels = [
-            f'{symbol}_depth_futures' for symbol in self.depth_symbols]
+        depth_channels = [f"{symbol}_depth_futures" for symbol in self.depth_symbols]
         depth_reset_channels = [
-            f'{symbol}_depth_reset_futures' for symbol in self.depth_symbols]
+            f"{symbol}_depth_reset_futures" for symbol in self.depth_symbols
+        ]
         depth_reset_channels += [
-            f'{symbol}_book_ticker_futures' for symbol in self.depth_symbols]
+            f"{symbol}_book_ticker_futures" for symbol in self.depth_symbols
+        ]
         return depth_channels + depth_reset_channels
 
     def start(self, channels=[]):
@@ -193,11 +197,14 @@ class BitmexOrderBookEmitter(
         else:
             channels = channels + self.spot_channels()
 
-        self.sub([
-            '1m',
-            '10s',
-            '2s',
-        ] + channels)
+        self.sub(
+            [
+                "1m",
+                "10s",
+                "2s",
+            ]
+            + channels
+        )
 
     def exit(self, *args):
         self.stop()
@@ -205,15 +212,17 @@ class BitmexOrderBookEmitter(
 
     def save_measurements_1m(self, timestamp):
         try:
-            self.save_measurements(timestamp,
-                                   measurements=self.m_measurements,
-                                   database=f'{self.database_name}_1m')
+            self.save_measurements(
+                timestamp,
+                measurements=self.m_measurements,
+                database=f"{self.database_name}_1m",
+            )
         except Exception:
             self.save_measurements_1m(timestamp)
 
     def save_measurements(self, timestamp, measurements=None, **kwargs):
-        if 'database' in kwargs:
-            database = kwargs['database']
+        if "database" in kwargs:
+            database = kwargs["database"]
         else:
             database = self.database_name
 
@@ -224,22 +233,19 @@ class BitmexOrderBookEmitter(
 
 
 @click.command()
-@click.option('--futures', '-F', is_flag=True)
-@click.option('--limit', '-l', default=0, type=int)
-@click.option('--log-requests', is_flag=True)
-@click.option('--max-depth', '-m', default=8, type=int)
-@click.option('--save-data/--no-save-data', default=True)
-@click.option('--symbol', default=None, type=str)
-@click.option('--symbol-filter', default=None, type=str)
-@click.option('--workers', '-w', default=8, type=int)
+@click.option("--futures", "-F", is_flag=True)
+@click.option("--limit", "-l", default=0, type=int)
+@click.option("--log-requests", is_flag=True)
+@click.option("--max-depth", "-m", default=8, type=int)
+@click.option("--save-data/--no-save-data", default=True)
+@click.option("--symbol", default=None, type=str)
+@click.option("--symbols", "-s", nargs=4, type=str)
+@click.option("--workers", "-w", default=8, type=int)
 def main(**kwargs):
-    recorder = BitmexOrderBookEmitter(
-        subscriptions_enabled=True,
-        **kwargs
-    )
+    recorder = BitmexOrderBookEmitter(subscriptions_enabled=True, **kwargs)
 
     recorder.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

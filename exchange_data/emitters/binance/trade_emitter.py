@@ -44,7 +44,9 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         super().__init__(exchange=exchange, **kwargs)
         BinanceUtils.__init__(self, **kwargs)
-        del kwargs["symbol_filter"]
+        # del kwargs["symbol_filter"]
+
+        del kwargs["symbols"]
         del kwargs["futures"]
         BinanceWebSocketApiManager.__init__(self, exchange=exchange, **kwargs)
 
@@ -58,7 +60,7 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = 4 / 10
+        self.max_lag = 5 / 10
 
         self.on("start", self.start_stream)
 
@@ -88,7 +90,7 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                             obj = zlib.compress(obj)
                             self.redis_client.lpush(f"{self.database_name}_trades", obj)
             else:
-                time.sleep(self.max_lag)
+                time.sleep(1 / 10)
 
     def is_lag_acceptable(self, data):
         timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
@@ -113,7 +115,7 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 @click.command()
 @click.option("--workers", "-w", default=8, type=int)
 @click.option("--limit", "-l", default=0, type=int)
-@click.option("--symbol-filter", default=None, type=str)
+@click.option("--symbols", "-s", nargs=4, type=str)
 @click.option("--futures", "-F", is_flag=True)
 def main(**kwargs):
     TradeEmitter(**kwargs)

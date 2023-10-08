@@ -98,6 +98,9 @@ class Messenger(EventEmitterBase, StatsClient):
         since_last_msg = datetime.now() - self.last_channel_msg[channel]
 
         self.timing(f"{channel}_last_message", since_last_msg)
+
+        alog.debug(channel)
+
         self.redis_client.publish(channel, msg)
         self.last_channel_msg[channel] = datetime.now()
 
@@ -124,3 +127,5 @@ class Messenger(EventEmitterBase, StatsClient):
     def stream_is_crashing(self, stream_id, error_msg=False):
         alog.debug(f"## restart stream {stream_id} ##")
         self.set_restart_request(stream_id)
+
+

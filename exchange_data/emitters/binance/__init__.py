@@ -27,10 +27,13 @@ class BinanceUtils(object):
     max_symbols = None
     last_start = None
 
-    def __init__(self, futures, log_requests=False, symbol_filter="BNB", **kwargs):
+    def __init__(
+        self, futures, symbols=None, log_requests=False, symbol_filter="BNB", **kwargs
+    ):
         super().__init__(**kwargs)
         self.futures = futures
         self.symbol_filter = symbol_filter
+        self._symbols = symbols
 
         if log_requests:
             self.log_requests()
@@ -53,12 +56,13 @@ class BinanceUtils(object):
 
     @property
     def symbols(self):
-        symbols = self._get_symbols()
-
-        if self.symbol_filter:
-            return [symbol for symbol in symbols if symbol.endswith(self.symbol_filter)]
-        else:
-            return symbols
+        return self._symbols
+        # symbols = self._get_symbols()
+        #
+        # if self.symbol_filter:
+        #     return [symbol for symbol in symbols if symbol.endswith(self.symbol_filter)]
+        # else:
+        #     return symbols
 
     def update_queued_symbols(self, prefix):
         try:
