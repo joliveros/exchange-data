@@ -36,23 +36,24 @@ class OrderBookTradingEnv(Logging, Env):
     """
     Orderbook based trading environment.
     """
+
     window_size: str
 
     def __init__(
         self,
-        short_class_str='ShortTrade',
-        flat_class_str='FlatTrade',
+        short_class_str="ShortTrade",
+        flat_class_str="FlatTrade",
         sequence_length=12,
         depth=24,
         min_steps=10,
         levels=30,
         summary_interval=120,
-        database_name = 'bitmex',
+        database_name="bitmex",
         leverage=1.0,
         trading_fee=0.0004,
-        max_loss=-5.0/100.0,
-        window_size='2m',
-        sample_interval='1s',
+        max_loss=-5.0 / 100.0,
+        window_size="2m",
+        sample_interval="1s",
         max_summary=20,
         max_frames=2,
         volatile_ranges=None,
@@ -74,14 +75,14 @@ class OrderBookTradingEnv(Logging, Env):
         gain_delay=30,
         is_test=False,
         custom_summary_keys=[],
-        **kwargs
+        **kwargs,
     ):
         for k in kwargs.keys():
             self.__dict__[k] = kwargs[k]
 
-        kwargs['database_name'] = database_name
-        kwargs['window_size'] = window_size
-        kwargs['sample_interval'] = sample_interval
+        kwargs["database_name"] = database_name
+        kwargs["window_size"] = window_size
+        kwargs["sample_interval"] = sample_interval
         self.custom_summary_keys = custom_summary_keys
         self._args = locals()
         self.asks = None
@@ -93,15 +94,15 @@ class OrderBookTradingEnv(Logging, Env):
         self.reset_class = OrderBookTradingEnv
         self.logger = Logging()
 
-        super().__init__(
-            **kwargs
+        super().__init__(**kwargs)
+
+        self.short_class = import_by_string(
+            f"tgym.envs.orderbook.trade.{short_class_str}"
         )
 
-        self.short_class=\
-            import_by_string(f'tgym.envs.orderbook.trade.{short_class_str}')
-
-        self.flat_class=\
-            import_by_string(f'tgym.envs.orderbook.trade.{flat_class_str}')
+        self.flat_class = import_by_string(
+            f"tgym.envs.orderbook.trade.{flat_class_str}"
+        )
 
         self.min_steps = min_steps
         self.max_negative_pnl = max_negative_pnl
@@ -128,8 +129,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.long_pnl_history = []
         self._best_ask = 0.0
         self._best_bid = 0.0
-        self.action_space = Discrete(2) if action_space is None \
-            else action_space
+        self.action_space = Discrete(2) if action_space is None else action_space
         self.ask_diff = 0.0
         self.bid_diff = 0.0
         self.closed_plot = False
@@ -142,7 +142,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.last_index = None
         self.last_orderbook = None
         self.last_price_diff = 0.0
-        self.max_episode_length_str = '10m'
+        self.max_episode_length_str = "10m"
         self.max_episode_length = timeparse(self.max_episode_length_str)
         self.max_summary = max_summary
         self.max_loss = max_loss
@@ -164,28 +164,20 @@ class OrderBookTradingEnv(Logging, Env):
         self.long_pnl = 0.0
         self.print_ascii_chart = print_ascii_chart
         self.position_repeat = 0
-        self.trade_size = self.capital * (10/100)
+        self.trade_size = self.capital * (10 / 100)
         self.reset_count = 0
         self.levels = levels
 
         frame_shape = (frame_width, frame_width, 3)
 
-        high = np.full(
-            frame_shape,
-            1.0,
-            dtype=np.float32
-        )
-        low = np.full(
-            frame_shape,
-            0.0,
-            dtype=np.float32
-        )
+        high = np.full(frame_shape, 1.0, dtype=np.float32)
+        low = np.full(frame_shape, 0.0, dtype=np.float32)
 
         self.observation_space = Box(low, high, dtype=np.float32)
 
     @staticmethod
     def get_action_meanings():
-        return ['NOOP']
+        return ["NOOP"]
 
     def seed(self, seed):
         random.seed(seed)
@@ -226,28 +218,30 @@ class OrderBookTradingEnv(Logging, Env):
         self._done = value
 
     def get_volatile_ranges(self):
-        query = f'SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd ' \
-            f'from {self.channel_name} GROUP BY time({self.max_episode_length_str})) '\
-            f'WHERE bbd > {self.min_std_dev};'
+        query = (
+            f"SELECT bbd FROM (SELECT STDDEV(best_bid) as bbd "
+            f"from {self.channel_name} GROUP BY time({self.max_episode_length_str})) "
+            f"WHERE bbd > {self.min_std_dev};"
+        )
 
         ranges = self.query(query).get_points(self.channel_name)
 
-        return DataFrame(ranges).set_index('time')
+        return DataFrame(ranges).set_index("time")
 
     def reset(self, **kwargs):
-        alog.info('### reset ###')
+        alog.info("### reset ###")
 
         self.reset_count += 1
         reset_count = self.reset_count
 
         if self.step_count > 0:
-            alog.debug('##### reset ######')
+            alog.debug("##### reset ######")
             alog.debug(alog.pformat(self.summary()))
 
-        _kwargs = self._args['kwargs']
-        del self._args['kwargs']
+        _kwargs = self._args["kwargs"]
+        del self._args["kwargs"]
         _kwargs = {**self._args, **_kwargs, **kwargs}
-        del _kwargs['self']
+        del _kwargs["self"]
         new_instance = self.reset_class(**_kwargs)
 
         self.__dict__ = {**self.__dict__, **new_instance.__dict__}
@@ -304,17 +298,16 @@ class OrderBookTradingEnv(Logging, Env):
     @property
     def position_data(self):
         data_keys = [
-            '_best_bid',
-            '_best_ask',
-            'ask_diff',
-            'bid_diff',
+            "_best_bid",
+            "_best_ask",
+            "ask_diff",
+            "bid_diff",
             # 'short_pnl',
             # 'long_pnl',
-            'last_spread'
+            "last_spread",
         ]
 
-        data = {key: self.__dict__[key] for key in
-                   data_keys}
+        data = {key: self.__dict__[key] for key in data_keys}
 
         # data['position'] = self.position.value
 
@@ -332,7 +325,7 @@ class OrderBookTradingEnv(Logging, Env):
     @staticmethod
     def normalized(a, axis=-1, order=2):
         l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
-        l2[l2==0] = 1
+        l2[l2 == 0] = 1
         return a / np.expand_dims(l2, axis)
 
     def get_observation(self):
@@ -371,7 +364,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.last_observation = np.copy(self.frames)
         return self.last_observation
 
-    def plot_orderbook(self):
+    def plot_orderbook(self, data=None):
         self.ax1.clear()
         ax1 = self.ax1
         fig = self.fig
@@ -379,10 +372,10 @@ class OrderBookTradingEnv(Logging, Env):
         asks = self.asks
 
         for price, volume in bids:
-            ax1.bar(price, volume, color='red', width=0.45)
+            ax1.bar(price, volume, color="red", width=0.45)
 
         for price, volume in asks:
-            ax1.bar(price, volume, color='blue', width=0.45)
+            ax1.bar(price, volume, color="blue", width=0.45)
 
         plt.ylim(0, self.top_limit)
 
@@ -436,7 +429,7 @@ class OrderBookTradingEnv(Logging, Env):
         if isinstance(self.current_trade, Trade):
             self.close_trade()
         if isinstance(self.current_trade, LongTrade):
-            raise Exception('Already Long')
+            raise Exception("Already Long")
 
         if self.current_trade is None:
             self.current_trade = LongTrade(
@@ -450,8 +443,8 @@ class OrderBookTradingEnv(Logging, Env):
                 step_reward_ratio=self.step_reward_ratio,
                 step_reward=self.step_reward,
                 min_steps=self.min_steps,
-                is_test = self.is_test,
-                ** self._args['kwargs']
+                is_test=self.is_test,
+                **self._args["kwargs"],
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -459,7 +452,7 @@ class OrderBookTradingEnv(Logging, Env):
         if isinstance(self.current_trade, Trade):
             self.close_trade()
         if isinstance(self.current_trade, ShortTrade):
-            raise Exception('Already Long')
+            raise Exception("Already Long")
 
         if self.current_trade is None:
             self.current_trade = self.short_class(
@@ -475,7 +468,7 @@ class OrderBookTradingEnv(Logging, Env):
                 min_steps=self.min_steps,
                 is_test=self.is_test,
                 max_loss=self.max_loss,
-                ** self._args['kwargs']
+                **self._args["kwargs"],
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -483,7 +476,7 @@ class OrderBookTradingEnv(Logging, Env):
         if isinstance(self.current_trade, Trade):
             self.close_trade()
         if isinstance(self.current_trade, FlatTrade):
-            raise Exception('Already Flat')
+            raise Exception("Already Flat")
 
         if self.current_trade is None:
             self.current_trade = self.flat_class(
@@ -499,7 +492,7 @@ class OrderBookTradingEnv(Logging, Env):
                 trading_fee=self.trading_fee,
                 is_test=self.is_test,
                 max_loss=self.max_loss,
-                **self._args['kwargs']
+                **self._args["kwargs"],
             )
             self.current_trade.step(self.best_bid, self.best_ask)
 
@@ -529,49 +522,53 @@ class OrderBookTradingEnv(Logging, Env):
     def truncate_float(n, decimals=4):
         f = copy(n)
         f = Decimal(str(f))
-        multiplier = 10 ** decimals
+        multiplier = 10**decimals
         return int(f * multiplier) / multiplier
 
     def summary(self):
         summary_keys = [
-            'is_test',
-            '_best_ask',
-            '_best_bid',
-            'capital',
-            'leverage',
-            'last_datetime',
-            'step_count',
-            'pnl'
+            "is_test",
+            "_best_ask",
+            "_best_bid",
+            "capital",
+            "leverage",
+            "last_datetime",
+            "step_count",
+            "pnl",
         ]
         summary_keys += self.custom_summary_keys
 
-        summary = {key: self.__dict__[key] for key in
-                   summary_keys}
+        summary = {key: self.__dict__[key] for key in summary_keys}
 
-        summary_floats = {key: OrderBookTradingEnv.truncate_float(summary[key]) for key in
-                          summary.keys() if isinstance(summary[key], np.floating)}
+        summary_floats = {
+            key: OrderBookTradingEnv.truncate_float(summary[key])
+            for key in summary.keys()
+            if isinstance(summary[key], np.floating)
+        }
 
         summary = {**summary, **summary_floats}
 
-        summary['position_history'] = \
-            ''.join(self.position_history[-1 * self.max_summary:])
+        summary["position_history"] = "".join(
+            self.position_history[-1 * self.max_summary :]
+        )
 
-        summary['trades'] = [trade for trade in
-                             self.trades[-1 * int(self.max_summary/3):]]
+        summary["trades"] = [
+            trade for trade in self.trades[-1 * int(self.max_summary / 3) :]
+        ]
 
         return summary
 
 
 @click.command()
-@click.option('--test-span', default='5m')
-@click.option('--summary-interval', '-s', default=120, type=int)
+@click.option("--test-span", default="5m")
+@click.option("--summary-interval", "-s", default=120, type=int)
 def main(test_span, **kwargs):
     env = OrderBookTradingEnv(
         use_volatile_ranges=False,
-        window_size='30s',
+        window_size="30s",
         is_training=False,
         print_ascii_chart=True,
-        **kwargs
+        **kwargs,
     )
 
     env.reset()
@@ -587,5 +584,5 @@ def main(test_span, **kwargs):
     alog.info(alog.pformat(env.summary()))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

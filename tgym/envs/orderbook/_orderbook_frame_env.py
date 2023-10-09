@@ -5,7 +5,6 @@ from cached_property import cached_property
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from gym.spaces import Discrete
 from matplotlib import pyplot as plt
-from pytimeparse.timeparse import timeparse
 from tgym.envs.orderbook import OrderBookTradingEnv
 
 import click
@@ -113,7 +112,9 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             self.position_pnl_history.append(self.current_trade.pnl)
 
         ob_img = self.plot_orderbook(frame)
+
         # self.show_img(ob_img)
+
         ob_img = ob_img[:, :, :3]
         ob_img = np.expand_dims(ob_img, axis=0) / 255
 
@@ -137,9 +138,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         plt.close()
 
-        img = np.array(img)
-
-        return np.asarray(img)
+        return np.array(img)
 
     def plot_pnl(self):
         pnl = np.asarray(self.position_pnl_history)
@@ -173,7 +172,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
             return np.zeros([self.frame_width, self.frame_width * 2])
 
     def show_img(self, img):
-        img = np.array(Image.fromarray(np.uint8(np.array(img) * 255)).convert("RGB"))
+        # img = np.array(Image.fromarray(np.uint8(np.array(img) * 255))
+        #     .convert("RGB"))
 
         cv2.imshow("image", img)
         cv2.waitKey(1)
@@ -185,7 +185,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         done = self.done
 
         # assert self.action_space.contains(action)
-        action_before = action
 
         if self.macd_diff_enabled:
             if self.macd_diff > 0:
@@ -246,7 +245,6 @@ def main(**kwargs):
         min_change=-0.5,
         **kwargs
     )
-    interval_ticks = timeparse(kwargs["interval"]) / timeparse(kwargs["group_by"])
 
     env.reset()
 

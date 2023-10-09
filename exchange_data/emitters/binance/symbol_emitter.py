@@ -1,22 +1,24 @@
 #!/usr/bin/env python
-import sys
-import time
+
 from collections import deque
 from datetime import timedelta
 from exchange_data import settings
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils, ExceededLagException
+from exchange_data.utils import DateTimeUtils
 from pytimeparse.timeparse import timeparse
 from redis import Redis
 from redis_cache import RedisCache
 from unicorn_binance_websocket_api import BinanceWebSocketApiManager
 
-import alog
+
 import click
 import json
 import signal
+import sys
+import time
+import alog
 
-from exchange_data.utils import DateTimeUtils
 
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 

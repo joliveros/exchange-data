@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-import math
+
 from cached_property import cached_property_with_ttl, cached_property
 from dateutil.tz import tz
 from pytimeparse.timeparse import timeparse
@@ -10,6 +10,7 @@ from redis_cache import RedisCache
 from redis_collections import Set
 from redlock import RedLock, RedLockError
 from retry import retry
+import math
 
 from exchange_data import settings
 from exchange_data.emitters.binance.proxied_client import ProxiedClient
