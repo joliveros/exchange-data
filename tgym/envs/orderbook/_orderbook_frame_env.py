@@ -210,6 +210,8 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         reward = self.reset_reward()
 
+        alog.info((reward, self.reward, self.current_trade.reward))
+
         self.print_summary()
 
         return (

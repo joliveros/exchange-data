@@ -270,6 +270,7 @@ class OrderBookTradingEnv(Logging, Env):
         self.step_position(action)
 
         self.reward += self.current_trade.reward
+        self.current_trade.reward = 0
 
         self.step_count += 1
 
@@ -407,6 +408,7 @@ class OrderBookTradingEnv(Logging, Env):
         return time, orderbook
 
     def reset_reward(self):
+        self.current_trade.reward = 0
         reward = self.reward
         self.reward = 0.0
         return reward
