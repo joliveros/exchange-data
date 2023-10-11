@@ -179,12 +179,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
         cv2.waitKey(1)
 
     def step(self, action):
-        # if macd is negative then assume position should be flat otherwise
-        # use provided by prediction
-
         done = self.done
-
-        # assert self.action_space.contains(action)
 
         if self.macd_diff_enabled:
             if self.macd_diff > 0:
@@ -198,10 +193,6 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         if self.trial:
             self.trial.report(self.capital, self.step_count)
-
-        # if self.current_trade and not self.is_test:
-        #     if self.current_trade.pnl <= self.max_negative_pnl:
-        #       done = True
 
         observation = self.get_observation()
 

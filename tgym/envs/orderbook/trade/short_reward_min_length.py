@@ -23,6 +23,9 @@ class ShortRewardMinLength(ShortTrade):
             if diff > 0 and pnl > 0:
                 self.reward = diff
 
+            if diff <= self.max_loss:
+                self.done = True
+
             self.total_reward += self.reward
 
             self.last_pnl = pnl
