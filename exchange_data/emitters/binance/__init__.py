@@ -269,3 +269,8 @@ class BinanceUtils(object):
 
 class ExceededLagException(Exception):
     pass
+
+
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return int(n * multiplier) / multiplier
