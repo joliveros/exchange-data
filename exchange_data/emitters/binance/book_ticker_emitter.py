@@ -25,7 +25,7 @@ from exchange_data.utils import DateTimeUtils
 cache = RedisCache(redis_client=Redis(host=settings.REDIS_HOST))
 
 
-class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
+class BookTickerEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
     create_at = None
     depth_symbols = set()
     last_lock_ix = 0
@@ -49,6 +49,7 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
         alog.info(self.depth_symbols)
 
         self.max_lag = timeparse("5s")
+
         self.on("start", self.start_stream)
 
         self.start_stream()
@@ -87,8 +88,11 @@ class BookTickerEmitter(Messenger, BinanceWebSocketApiManager, BinanceUtils):
 
             avg_lag = sum(self.lag_records) / len(self.lag_records)
 
+            # alog.info((len(self.lag_records), avg_lag))
+
             if avg_lag > self.max_lag and len(self.lag_records) > 20:
                 alog.info("## acceptable lag has been exceeded ##")
+                self.lag_records.clear()
                 self.stream_is_crashing(self.stream_id)
 
             self.publish(self.channel_for_symbol(symbol), json.dumps(data))

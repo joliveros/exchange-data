@@ -60,7 +60,7 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         alog.info(self.depth_symbols)
 
-        self.max_lag = 5 / 10
+        self.max_lag = 2
 
         self.on("start", self.start_stream)
 
@@ -101,8 +101,11 @@ class TradeEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
 
         avg_lag = sum(self.lag_records) / len(self.lag_records)
 
+        # alog.info((len(self.lag_records), avg_lag))
+
         if avg_lag > self.max_lag and len(self.lag_records) > 20:
             alog.info("## acceptable lag has been exceeded ##")
+            self.lag_records.clear()
             self.stream_is_crashing(self.stream_id)
 
     def channel_for_symbol(self, symbol):

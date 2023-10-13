@@ -14,7 +14,7 @@ import random
 import cv2
 import alog
 
-matplotlib.use("agg")
+
 
 
 class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
@@ -22,6 +22,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
     def __init__(
         self,
+        show_img=False,
         frame_width=224,
         macd_diff_enabled=False,
         random_frame_start=False,
@@ -37,6 +38,10 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         if random_frame_start:
             self.random_frame_start = random_frame_start
+        self._show_img = show_img
+
+        if not self._show_img:
+            matplotlib.use("agg")
 
         self.trial = trial
         self.num_env = num_env
@@ -113,10 +118,11 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         ob_img = self.plot_orderbook(frame)
 
-        # self.show_img(ob_img)
+        if self._show_img:
+            self.show_img(ob_img)
 
         ob_img = ob_img[:, :, :3]
-        ob_img = np.expand_dims(ob_img, axis=0) / 255
+        ob_img = np.expand_dims(ob_img, axis=0)
 
         self.last_observation = ob_img
 
@@ -201,7 +207,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 
         reward = self.reset_reward()
 
-        alog.info((reward, self.reward, self.current_trade.reward))
+        # alog.info((reward, self.reward, self.current_trade.reward))
 
         self.print_summary()
 
@@ -229,6 +235,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.argument("symbol", type=str)
 def main(**kwargs):
     env = OrderBookFrameEnv(
+                show_img=True,
         short_class_str="ShortRewardPnlDiffTrade",
         flat_class_str="FlatRewardPnlDiffTrade",
         random_frame_start=False,

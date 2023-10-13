@@ -16,8 +16,7 @@ services:
             - '/var/run/docker.sock:/var/run/docker.sock'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/orderbook_emitter.py -w 1 -F -m 1000
-            -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
+            ./exchange_data/emitters/binance/orderbook_emitter.py -w 1 -F -m 1000 -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -69,8 +68,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F
-             -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
+            ./exchange_data/emitters/binance/book_ticker_emitter.py -w 1 -F -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
         secrets:
             - DB
             - ROLLBAR_API_KEY
@@ -91,8 +89,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F
-            -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
+            ./exchange_data/emitters/binance/symbol_emitter.py -w 1 -F -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
         environment:
             - LOG_LEVEL=INFO
         networks:
@@ -109,8 +106,7 @@ services:
         image: 'registry.rubercubic.com:5001/exchange-data:latest'
         command: >-
             bash -c "source ~/.bashrc &&
-            ./exchange_data/emitters/binance/trade_emitter.py -w 1 -F
-            -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
+            ./exchange_data/emitters/binance/trade_emitter.py -w 1 -F -s UNFIUSDT TRBUSDT ARKUSDT OGNUSDT"
         environment:
             - LOG_LEVEL=INFO
         networks:
