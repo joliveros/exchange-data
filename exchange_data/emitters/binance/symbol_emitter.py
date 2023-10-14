@@ -74,7 +74,7 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                     self.handle_data(data, data_str)
             else:
                 self.increase_empty_msg_count()
-                time.sleep(self.max_lag)
+                time.sleep(1 / 10)
 
     def handle_data(self, data, data_str):
         if "data" in data:
