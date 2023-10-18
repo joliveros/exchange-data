@@ -235,14 +235,15 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.argument("symbol", type=str)
 def main(**kwargs):
     env = OrderBookFrameEnv(
-                show_img=True,
-        short_class_str="ShortRewardPnlDiffTrade",
+            show_img=True,
         flat_class_str="FlatRewardPnlDiffTrade",
-        random_frame_start=False,
-        short_reward_enabled=True,
+        frame_width=299,
         is_training=False,
         max_short_position_length=0,
         min_change=-0.5,
+        random_frame_start=False,
+        short_class_str="ShortRewardPnlDiffTrade",
+        short_reward_enabled=True,
         **kwargs
     )
 
