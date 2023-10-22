@@ -38,7 +38,7 @@ stringcase
 tensorflow-gpu==2.7.4
 protobuf < 4
 timestamp
-unicorn-binance-websocket-api
+unicorn-binance-websocket-api==1.46.2
 unicorn_fy
 ta~=0.10.2
 psycopg2-binary
