@@ -2,6 +2,8 @@
 
 from PIL import Image
 from cached_property import cached_property
+
+from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
 from exchange_data.data.orderbook_frame import OrderBookFrame
 from gym.spaces import Discrete
 from matplotlib import pyplot as plt
@@ -15,9 +17,7 @@ import cv2
 import alog
 
 
-
-
-class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
+class OrderBookFrameEnv(OrderBookChangeFrame, OrderBookTradingEnv):
     random_frame_start: bool = False
 
     def __init__(
@@ -235,7 +235,7 @@ class OrderBookFrameEnv(OrderBookFrame, OrderBookTradingEnv):
 @click.argument("symbol", type=str)
 def main(**kwargs):
     env = OrderBookFrameEnv(
-            show_img=True,
+        show_img=True,
         flat_class_str="FlatRewardPnlDiffTrade",
         frame_width=299,
         is_training=False,
