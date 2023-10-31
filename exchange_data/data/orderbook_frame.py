@@ -2,21 +2,24 @@
 from collections import deque
 from datetime import timedelta
 from exchange_data.data.measurement_frame import MeasurementFrame
-from exchange_data.data.orderbook_frame_directory_info import \
-    OrderBookFrameDirectoryInfo
+from exchange_data.data.orderbook_frame_directory_info import (
+    OrderBookFrameDirectoryInfo,
+)
 from exchange_data.streamers._orderbook_level import OrderBookLevelStreamer
 from pandas import DataFrame
 from pathlib import Path
 from pytimeparse.timeparse import timeparse
+from matplotlib import pyplot as plt
+from exchange_data.utils import DateTimeUtils
+from PIL import Image as im
 
-import hashlib
 import alog
 import click
+import cv2
+import hashlib
 import json
 import numpy as np
 import pandas as pd
-
-from exchange_data.utils import DateTimeUtils
 
 # pd.options.plotting.backend = 'plotly'
 
@@ -33,14 +36,15 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         sequence_length,
         symbol,
         window_size,
-        offset_interval='0h',
+        frame_width,
+        offset_interval="0h",
         round_decimals=4,
         max_volume_quantile=0.99,
         quantile=0.0,
         trade_volume_max=0.0,
         change_max=0.0,
         cache=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             directory_name=symbol,
@@ -49,8 +53,10 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             symbol=symbol,
             depth=depth,
             sequence_length=sequence_length,
-            **kwargs)
+            **kwargs,
+        )
 
+        self.frame_width = frame_width
         self.change_max = change_max
         self.trade_volume_max = trade_volume_max
         self.offset_interval = offset_interval
@@ -72,12 +78,12 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             round_decimals=self.round_decimals,
             depth=self.depth,
             group_by=self.group_by,
-            sequence_length=self.sequence_length
+            sequence_length=self.sequence_length,
         )
 
-        hash = hashlib.sha256(bytes(json.dumps(file_dict), 'utf8')).hexdigest()
+        hash = hashlib.sha256(bytes(json.dumps(file_dict), "utf8")).hexdigest()
 
-        self.filename = Path(self.directory / f'{hash}.pickle')
+        self.filename = Path(self.directory / f"{hash}.pickle")
         self._intervals = None
 
         self.kwargs = kwargs
@@ -97,14 +103,13 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         df = pd.concat(frames)
 
-        df.drop_duplicates(subset=['time'], inplace=True)
+        df.drop_duplicates(subset=["time"], inplace=True)
 
-        df = df.set_index('time')
+        df = df.set_index("time")
         df = df.sort_index()
-        df.dropna(how='any', inplace=True)
+        df.dropna(how="any", inplace=True)
 
-        self.intervals = [(df.index[0].to_pydatetime(),
-                           df.index[-1].to_pydatetime())]
+        self.intervals = [(df.index[0].to_pydatetime(), df.index[-1].to_pydatetime())]
 
         return df
 
@@ -114,20 +119,21 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
-        channel_name = f'{self.symbol}_OrderBookFrame'
+        channel_name = f"{self.symbol}_OrderBookFrame"
 
-        query = f'SELECT difference(last(best_ask)) AS change FROM {channel_name} ' \
-                f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
-                f'time({self.group_by});'
+        query = (
+            f"SELECT difference(last(best_ask)) AS change FROM {channel_name} "
+            f"WHERE time >= {start_date} AND time <= {end_date} GROUP BY "
+            f"time({self.group_by});"
+        )
 
         trades = self.query(query)
 
-        df = pd.DataFrame(columns=['time', 'change'])
+        df = pd.DataFrame(columns=["time", "change"])
 
         for data in trades.get_points(channel_name):
-            timestamp = DateTimeUtils.parse_db_timestamp(
-                data['time'])
-            data['time'] = timestamp
+            timestamp = DateTimeUtils.parse_db_timestamp(data["time"])
+            data["time"] = timestamp
             df.loc[df.shape[0], :] = data
 
         return df
@@ -138,20 +144,21 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
-        channel_name = f'{self.symbol}_trade'
+        channel_name = f"{self.symbol}_trade"
 
-        query = f'SELECT sum(quantity) AS volume FROM {channel_name} ' \
-                f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
-                f'time({self.group_by});'
+        query = (
+            f"SELECT sum(quantity) AS volume FROM {channel_name} "
+            f"WHERE time >= {start_date} AND time <= {end_date} GROUP BY "
+            f"time({self.group_by});"
+        )
 
         trades = self.query(query)
 
-        df = pd.DataFrame(columns=['time', 'volume'])
+        df = pd.DataFrame(columns=["time", "volume"])
 
         for data in trades.get_points(channel_name):
-            timestamp = DateTimeUtils.parse_db_timestamp(
-                data['time'])
-            data['time'] = timestamp
+            timestamp = DateTimeUtils.parse_db_timestamp(data["time"])
+            data["time"] = timestamp
             df.loc[df.shape[0], :] = data
 
         return df
@@ -167,11 +174,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         df = pd.concat(frames)
 
-        df.drop_duplicates(subset=['time'], inplace=True)
+        df.drop_duplicates(subset=["time"], inplace=True)
 
-        df = df.set_index('time')
+        df = df.set_index("time")
         df = df.sort_index()
-        df.dropna(how='any', inplace=True)
+        df.dropna(how="any", inplace=True)
 
         return df
 
@@ -186,11 +193,11 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         df = pd.concat(frames)
 
-        df.drop_duplicates(subset=['time'], inplace=True)
+        df.drop_duplicates(subset=["time"], inplace=True)
 
-        df = df.set_index('time')
+        df = df.set_index("time")
         df = df.sort_index()
-        df.dropna(how='any', inplace=True)
+        df.dropna(how="any", inplace=True)
 
         return df
 
@@ -198,23 +205,21 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
     def frame(self):
         if self.cache and self.filename.exists():
             df = pd.read_pickle(str(self.filename))
-            self.quantile = df.attrs['quantile']
-            self.trade_volume_max = df.attrs['trade_volume_max']
-            self.change_max = df.attrs['change_max']
+            self.quantile = df.attrs["quantile"]
+            self.trade_volume_max = df.attrs["trade_volume_max"]
+            self.change_max = df.attrs["change_max"]
             return df
 
         df = self._frame()
 
         orderbook_img = df.orderbook_img.to_numpy().tolist()
 
-        df.drop(['orderbook_img'], axis=1)
+        df.drop(["orderbook_img"], axis=1)
 
         orderbook_img = np.asarray(orderbook_img)
 
-        orderbook_img = np.concatenate((
-            orderbook_img[:, :, 0],
-            orderbook_img[:, :, 1]),
-            axis=2
+        orderbook_img = np.concatenate(
+            (orderbook_img[:, :, 0], orderbook_img[:, :, 1]), axis=2
         )
 
         orderbook_img = np.absolute(orderbook_img)
@@ -243,8 +248,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         if self.quantile == 0.0:
-            self.quantile = \
-                np.quantile(orderbook_img.flatten(), self.max_volume_quantile)
+            self.quantile = np.quantile(
+                orderbook_img.flatten(), self.max_volume_quantile
+            )
             if self.quantile == 0.0:
                 self.quantile = 1.0
 
@@ -254,14 +260,14 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         # orderbook_img = self.add_price_change(df, orderbook_img)
         # orderbook_img = self.add_trade_volume(df, orderbook_img)
 
-        df['orderbook_img'] = [
-            np.rot90(np.fliplr(orderbook_img[i])) for i in
-            range(0, orderbook_img.shape[0])
+        df["orderbook_img"] = [
+            np.rot90(np.fliplr(orderbook_img[i]))
+            for i in range(0, orderbook_img.shape[0])
         ]
 
-        df.attrs['trade_volume_max'] = self.trade_volume_max
-        df.attrs['change_max'] = self.change_max
-        df.attrs['quantile'] = self.quantile
+        df.attrs["trade_volume_max"] = self.trade_volume_max
+        df.attrs["change_max"] = self.change_max
+        df.attrs["quantile"] = self.quantile
 
         self.cache_frame(df)
 
@@ -272,8 +278,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         new_shape[2] = new_shape[2] + 1
         new_orderbook_img = np.zeros(new_shape)
         old_shape = orderbook_img.shape
-        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2],
-        :old_shape[3]] = orderbook_img
+        new_orderbook_img[
+            : old_shape[0], : old_shape[1], : old_shape[2], : old_shape[3]
+        ] = orderbook_img
         orderbook_img = new_orderbook_img
 
         df = df.join(self.price_change_frame).fillna(0.0)
@@ -307,8 +314,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         new_shape[2] = new_shape[2] + height
         new_orderbook_img = np.zeros(new_shape)
         old_shape = orderbook_img.shape
-        new_orderbook_img[:old_shape[0], :old_shape[1], :old_shape[2],
-        :old_shape[3]] = orderbook_img
+        new_orderbook_img[
+            : old_shape[0], : old_shape[1], : old_shape[2], : old_shape[3]
+        ] = orderbook_img
         orderbook_img = new_orderbook_img
 
         if self.trade_volume_max == 0.0:
@@ -369,8 +377,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
     def load_frames(self):
         frames = []
 
-        self.start_date = self.start_date - timedelta(seconds=(timeparse(
-            self.group_by) * self.sequence_length))
+        self.start_date = self.start_date - timedelta(
+            seconds=(timeparse(self.group_by) * self.sequence_length)
+        )
 
         levels = OrderBookLevelStreamer(
             database_name=self.database_name,
@@ -379,11 +388,12 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             group_by=self.group_by,
             start_date=self.start_date,
             symbol=self.symbol,
-            window_size=self.window_size
+            window_size=self.window_size,
         )
 
         df = pd.DataFrame(
-            columns=['timestamp', 'best_ask', 'best_bid', 'orderbook_img'])
+            columns=["timestamp", "best_ask", "best_bid", "orderbook_img"]
+        )
 
         for row in levels:
             df.loc[df.shape[0], :] = row
@@ -396,10 +406,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             if orderbook_img is not None:
                 orderbook_img = np.asarray(json.loads(orderbook_img))
 
-                orderbook_img[0][0] = \
-                    orderbook_img[0][0].round(self.round_decimals)
-                orderbook_img[1][0] = \
-                    orderbook_img[1][0].round(self.round_decimals)
+                orderbook_img[0][0] = orderbook_img[0][0].round(self.round_decimals)
+                orderbook_img[1][0] = orderbook_img[1][0].round(self.round_decimals)
 
                 left = orderbook_img[0].swapaxes(1, 0)
                 right = orderbook_img[1].swapaxes(1, 0)
@@ -427,8 +435,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                     orderbook_imgs.append(orderbook_img)
 
                     if len(orderbook_imgs) == self.sequence_length:
-                        _orderbook_imgs = np.asarray(list(
-                            orderbook_imgs.copy()))
+                        _orderbook_imgs = np.asarray(list(orderbook_imgs.copy()))
 
                         _orderbook_imgs[_orderbook_imgs == np.inf] = 0.0
                         _orderbook_imgs[_orderbook_imgs == -np.inf] = 0.0
@@ -438,7 +445,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                             best_ask=best_ask,
                             best_bid=best_bid,
                             orderbook_img=_orderbook_imgs,
-                            dtype=np.float16
+                            dtype=np.float16,
                         )
                         frames.append(frame)
 
@@ -465,21 +472,39 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         return result
 
+    def plot_orderbook(self, data):
+        fig, frame = plt.subplots(1, 1, figsize=(1, 1), dpi=self.frame_width)
+        # frame.axis('off')
+        frame = frame.twinx()
+        plt.autoscale(tight=True)
+        frame.axis("off")
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+        plt.margins(0, 0)
+
+        fig.patch.set_visible(False)
+        frame.imshow(data)
+        fig.canvas.draw()
+        img = fig.canvas.renderer._renderer
+        plt.close()
+        img = im.fromarray(np.array(img))
+
+        return img
+
 
 @click.command()
-@click.option('--database_name', '-d', default='binance', type=str)
-@click.option('--depth', default=72, type=int)
-@click.option('--group-by', '-g', default='30s', type=str)
-@click.option('--interval', '-i', default='10m', type=str)
-@click.option('--offset-interval', '-o', default='3h', type=str)
-@click.option('--plot', '-p', is_flag=True)
-@click.option('--sequence-length', '-l', default=48, type=int)
-@click.option('--round-decimals', '-D', default=4, type=int)
-@click.option('--tick', is_flag=True)
-@click.option('--cache', is_flag=True)
-@click.option('--max-volume-quantile', '-m', default=0.99, type=float)
-@click.option('--window-size', '-w', default='3m', type=str)
-@click.argument('symbol', type=str)
+@click.option("--database_name", "-d", default="binance", type=str)
+@click.option("--depth", default=72, type=int)
+@click.option("--group-by", "-g", default="30s", type=str)
+@click.option("--interval", "-i", default="10m", type=str)
+@click.option("--offset-interval", "-o", default="3h", type=str)
+@click.option("--plot", "-p", is_flag=True)
+@click.option("--sequence-length", "-l", default=48, type=int)
+@click.option("--round-decimals", "-D", default=4, type=int)
+@click.option("--tick", is_flag=True)
+@click.option("--cache", is_flag=True)
+@click.option("--max-volume-quantile", "-m", default=0.99, type=float)
+@click.option("--window-size", "-w", default="3m", type=str)
+@click.argument("symbol", type=str)
 def main(**kwargs):
     df = OrderBookFrame(**kwargs).frame
 
@@ -494,5 +519,5 @@ def main(**kwargs):
     alog.info(obook.tolist())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

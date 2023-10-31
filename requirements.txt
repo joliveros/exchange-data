@@ -50,3 +50,5 @@ requests~=2.30.0
 urllib3~=1.26.15
 pyee~=9.1.0
 wandb
+datasets
+transformers

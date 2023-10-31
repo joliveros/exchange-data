@@ -10,7 +10,7 @@ import pandas as pd
 
 class OrderBookChangeFrame(OrderBookFrame):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(frame_width=229, **kwargs)
 
     @property
     def frame(self):
@@ -83,7 +83,7 @@ class OrderBookChangeFrame(OrderBookFrame):
         orderbook_img = np.delete(orderbook_img, 1, axis=3)
 
         df["orderbook_img"] = [
-            np.rot90(np.fliplr(orderbook_img[i]))
+            self.plot_orderbook(np.rot90(np.fliplr(orderbook_img[i])))
             for i in range(0, orderbook_img.shape[0])
         ]
 
