@@ -486,8 +486,9 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         fig.canvas.draw()
         img = fig.canvas.renderer._renderer
         plt.close()
-        img = im.fromarray(np.array(img))
+        img = im.fromarray(np.array(img)).convert("RGB")
 
+        img = np.array(img)
         return img
 
 
