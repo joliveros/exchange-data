@@ -94,11 +94,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         for interval in self.intervals:
             self.start_date = interval[0]
             self.end_date = interval[1]
-            # alog.info([
-            #     str(self.start_date),
-            #     str(self.end_date),
-            #     str(self.end_date - self.start_date)
-            # ])
             frames.append(self.load_frames())
 
         df = pd.concat(frames)
@@ -257,13 +252,23 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         orderbook_img = orderbook_img / self.quantile
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
-        # orderbook_img = self.add_price_change(df, orderbook_img)
-        # orderbook_img = self.add_trade_volume(df, orderbook_img)
+
+        # df["orderbook_img"] = [
+        #     np.rot90(np.fliplr(orderbook_img[i]))
+        #     for i in range(0, orderbook_img.shape[0])
+        # ]
 
         df["orderbook_img"] = [
-            np.rot90(np.fliplr(orderbook_img[i]))
+            self.plot_orderbook(np.rot90(np.fliplr(orderbook_img[i])))
             for i in range(0, orderbook_img.shape[0])
         ]
+
+        # import time
+        #
+        # for ix in range(0, df.shape[0]):
+        #     ob_img = df["orderbook_img"].iloc[ix]
+        #     time.sleep(1 / 3)
+        #     self.show_img(ob_img)
 
         df.attrs["trade_volume_max"] = self.trade_volume_max
         df.attrs["change_max"] = self.change_max
@@ -445,7 +450,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
                             best_ask=best_ask,
                             best_bid=best_bid,
                             orderbook_img=_orderbook_imgs,
-                            dtype=np.float16,
                         )
                         frames.append(frame)
 
@@ -490,6 +494,13 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         img = np.array(img)
         return img
+
+    def show_img(self, img):
+        # img = np.array(Image.fromarray(np.uint8(np.array(img) * 255))
+        #     .convert("RGB"))
+
+        cv2.imshow("image", img)
+        cv2.waitKey(1)
 
 
 @click.command()

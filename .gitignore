@@ -160,3 +160,5 @@ fabric.properties
 logs
 .env*
 .magicindex.json
+
+vit_output

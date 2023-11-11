@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from pathlib import Path
+
+from exchange_data.data import OrderBookFrame
 from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
 
 from PIL import Image as im
@@ -7,6 +10,65 @@ import alog
 import click
 import numpy as np
 import pandas as pd
+
+
+def orderbook_dataset(**kwargs):
+    ob_frame = OrderBookFrame(frame_width=224, **kwargs)
+    df = ob_frame.frame
+    best_bid = df["best_bid"]
+    length = best_bid.shape[0]
+    df["pct_change"] = 0
+    pct_change = df["pct_change"].copy()
+
+    max_ix = length - 1
+    for ix in range(0, length):
+        next_ix = ix + 1
+        if next_ix <= max_ix:
+            pct_change.iloc[ix] = (best_bid.iloc[ix] / best_bid.iloc[next_ix]) - 1
+        else:
+            pct_change.iloc[ix] = 0
+
+    df["pct_change"] = pct_change
+    df["labels"] = 0
+
+    df.loc[(df["pct_change"] <= -0.003), "labels"] = 1
+
+    short_df = pd.DataFrame(df[df["labels"] == 1])
+
+    alog.info((df.shape[0], short_df.shape[0]))
+
+    flat_df = df[df["labels"] == 0]
+
+    num_flat = flat_df.shape[0]
+
+    short_df = short_df.sample(num_flat, replace=True)
+
+    balanced_df = pd.concat([short_df, flat_df])
+
+    df = balanced_df
+
+    df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
+
+    dataset = Dataset.from_pandas(df).train_test_split(test_size=0.2)
+
+    alog.info(dataset)
+
+    def transforms(examples):
+        examples["pixel_values"] = [
+            im.fromarray(np.array(image).reshape((224, 224, 3)), "RGB")
+            for image in examples["orderbook_img"]
+        ]
+        return examples
+
+    dataset = dataset.map(
+        transforms, remove_columns=["orderbook_img"], batched=True, batch_size=2
+    )
+
+    alog.info(alog.pformat(dataset["train"][-1]))
+
+    dataset.save_to_disk(Path.home() / ".exchange-data/orderbook")
+
+    return dataset
 
 
 @click.command()
@@ -24,30 +86,7 @@ import pandas as pd
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
-    ob_frame = OrderBookChangeFrame(**kwargs)
-    df = ob_frame.frame
-    df = df.drop("dtype", axis=1)
-
-    # alog.info(df["orderbook_img"].iloc[-1].shape)
-
-    df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
-
-    alog.info(df.tail())
-
-    dataset = Dataset.from_pandas(df)
-
-    def transforms(examples):
-        examples["pixel_values"] = [
-            im.fromarray(np.array(image).reshape((229, 229, 3)), "RGB")
-            for image in examples["orderbook_img"]
-        ]
-        return examples
-
-    dataset = dataset.map(
-        transforms, remove_columns=["orderbook_img"], batched=True, batch_size=2
-    )
-
-    alog.info(dataset)
+    orderbook_dataset(**kwargs)
 
 
 if __name__ == "__main__":

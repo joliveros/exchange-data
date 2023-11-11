@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from exchange_data.data import OrderBookFrame
-
+import time
 import alog
 import click
 import numpy as np
@@ -10,7 +10,7 @@ import pandas as pd
 
 class OrderBookChangeFrame(OrderBookFrame):
     def __init__(self, **kwargs):
-        super().__init__(frame_width=229, **kwargs)
+        super().__init__(frame_width=224, **kwargs)
 
     @property
     def frame(self):
@@ -86,6 +86,11 @@ class OrderBookChangeFrame(OrderBookFrame):
             self.plot_orderbook(np.rot90(np.fliplr(orderbook_img[i])))
             for i in range(0, orderbook_img.shape[0])
         ]
+
+        # for ix in range(0, df.shape[0]):
+        #     ob_img = df["orderbook_img"].iloc[ix]
+        #     time.sleep(1 / 3)
+        #     self.show_img(ob_img)
 
         df.attrs["trade_volume_max"] = self.trade_volume_max
         df.attrs["change_max"] = self.change_max
