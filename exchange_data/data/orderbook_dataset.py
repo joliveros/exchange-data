@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 
-def orderbook_dataset(**kwargs):
+def orderbook_dataset(save=False, split=True, **kwargs):
     ob_frame = OrderBookFrame(frame_width=224, **kwargs)
     df = ob_frame.frame
     best_bid = df["best_bid"]
@@ -49,7 +49,10 @@ def orderbook_dataset(**kwargs):
 
     df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
 
-    dataset = Dataset.from_pandas(df).train_test_split(test_size=0.2)
+    dataset = Dataset.from_pandas(df)
+
+    if split:
+        dataset = dataset.train_test_split(test_size=0.2)
 
     alog.info(dataset)
 
@@ -64,9 +67,8 @@ def orderbook_dataset(**kwargs):
         transforms, remove_columns=["orderbook_img"], batched=True, batch_size=2
     )
 
-    alog.info(alog.pformat(dataset["train"][-1]))
-
-    dataset.save_to_disk(Path.home() / ".exchange-data/orderbook")
+    if save:
+        dataset.save_to_disk(Path.home() / ".exchange-data/orderbook")
 
     return dataset
 
@@ -82,11 +84,12 @@ def orderbook_dataset(**kwargs):
 @click.option("--round-decimals", "-D", default=4, type=int)
 @click.option("--tick", is_flag=True)
 @click.option("--cache", is_flag=True)
+@click.option("--save", is_flag=True)
 @click.option("--max-volume-quantile", "-m", default=0.99, type=float)
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
-    orderbook_dataset(**kwargs)
+    orderbook_dataset(split=True, **kwargs)
 
 
 if __name__ == "__main__":

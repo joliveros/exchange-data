@@ -9,8 +9,7 @@ import click
 
 
 class OrderBookLevelStreamer(BitmexStreamer):
-    def __init__(self, symbol, depth=40, group_by='2s',
-                 **kwargs):
+    def __init__(self, symbol, depth=40, group_by="2s", **kwargs):
         super().__init__(group_by=group_by, **kwargs)
         self.symbol = symbol
         self.depth = depth
@@ -21,9 +20,9 @@ class OrderBookLevelStreamer(BitmexStreamer):
 
     def gen_channel_name(self):
         if self.depth > 0:
-            return f'{self.symbol}_OrderBookFrame_depth_{self.depth}'
+            return f"{self.symbol}_OrderBookFrame_depth_{self.depth}"
         else:
-            return f'{self.symbol}_OrderBookFrame'
+            return f"{self.symbol}_OrderBookFrame"
 
     def orderbook_frame_query(self):
         start_date = self.start_date
@@ -32,9 +31,11 @@ class OrderBookLevelStreamer(BitmexStreamer):
         start_date = self.format_date_query(start_date)
         end_date = self.format_date_query(end_date)
 
-        query = f'SELECT last(*) AS data FROM {self.channel_name} ' \
-            f'WHERE time >= {start_date} AND time <= {end_date} GROUP BY ' \
-                f'time({self.group_by});'
+        query = (
+            f"SELECT last(*) AS data FROM {self.channel_name} "
+            f"WHERE time >= {start_date} AND time <= {end_date} GROUP BY "
+            f"time({self.group_by});"
+        )
 
         return self.query(query)
 
@@ -42,14 +43,13 @@ class OrderBookLevelStreamer(BitmexStreamer):
         orderbook = self.orderbook_frame_query()
 
         for data in orderbook.get_points(self.channel_name):
-            timestamp = DateTimeUtils.parse_db_timestamp(
-                data['time'])
+            timestamp = DateTimeUtils.parse_db_timestamp(data["time"])
 
             if self.last_timestamp != timestamp:
-                best_bid = data['data_best_bid']
-                best_ask = data['data_best_ask']
+                best_bid = data["data_best_bid"]
+                best_ask = data["data_best_ask"]
 
-                levels = data['data_data']
+                levels = data["data_data"]
                 self.last_timestamp = timestamp
 
                 if best_ask and best_bid and levels:
@@ -73,29 +73,27 @@ class OrderBookLevelStreamer(BitmexStreamer):
 
 
 @click.command()
-@click.option('--window-size',
-              '-w',
-              type=str,
-              default='1m',
-              help='Window size i.e. "1m"')
-@click.option('--sample-interval',
-              '-s',
-              type=str,
-              default='1s',
-              help='interval at which to sample data from db.')
+@click.option(
+    "--window-size", "-w", type=str, default="1m", help='Window size i.e. "1m"'
+)
+@click.option(
+    "--sample-interval",
+    "-s",
+    type=str,
+    default="1s",
+    help="interval at which to sample data from db.",
+)
 def main(**kwargs):
     end_date = DateTimeUtils.now()
     start_date = end_date - timedelta(seconds=60)
 
     streamer = OrderBookLevelStreamer(
-        database_name='bitmex',
-        end_date=end_date,
-        start_date=start_date,
-        **kwargs)
+        database_name="bitmex", end_date=end_date, start_date=start_date, **kwargs
+    )
 
     for timestamp, best_ask, best_bid, orderbook_img in streamer:
         alog.info((str(timestamp), best_ask, best_bid))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

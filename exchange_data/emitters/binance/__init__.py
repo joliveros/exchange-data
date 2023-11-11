@@ -31,7 +31,7 @@ class BinanceUtils(object):
     def __init__(
         self, futures, symbols=None, log_requests=False, symbol_filter="BNB", **kwargs
     ):
-        super().__init__(**kwargs)
+        # super().__init__(**kwargs)
         self.futures = futures
         self.symbol_filter = symbol_filter
         self._symbols = symbols
