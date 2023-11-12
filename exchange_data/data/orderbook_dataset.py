@@ -85,11 +85,12 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 @click.option("--tick", is_flag=True)
 @click.option("--cache", is_flag=True)
 @click.option("--save", is_flag=True)
+@click.option("--split", is_flag=True)
 @click.option("--max-volume-quantile", "-m", default=0.99, type=float)
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
-    orderbook_dataset(split=False, **kwargs)
+    orderbook_dataset(**kwargs)
 
 
 if __name__ == "__main__":

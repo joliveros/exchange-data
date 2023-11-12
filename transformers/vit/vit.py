@@ -55,7 +55,7 @@ def main(**kwargs):
         output_dir="./vit_output",
         per_device_train_batch_size=64,
         evaluation_strategy="steps",
-        num_train_epochs=200,
+        num_train_epochs=200 * 2,
         fp16=True,
         save_steps=100,
         eval_steps=100,
@@ -88,10 +88,10 @@ def main(**kwargs):
     model.save_pretrained("./vit_output/pretrained")
 
     trainer.save_state()
-    #
-    # metrics = trainer.evaluate(prepared_ds["test"])
-    # trainer.log_metrics("eval", metrics)
-    # trainer.save_metrics("eval", metrics)
+
+    metrics = trainer.evaluate(prepared_ds["test"])
+    trainer.log_metrics("eval", metrics)
+    trainer.save_metrics("eval", metrics)
 
 
 if __name__ == "__main__":
