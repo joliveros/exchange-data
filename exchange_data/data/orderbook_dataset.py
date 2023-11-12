@@ -89,7 +89,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
-    orderbook_dataset(split=True, **kwargs)
+    orderbook_dataset(split=False, **kwargs)
 
 
 if __name__ == "__main__":
