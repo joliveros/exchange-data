@@ -15,8 +15,7 @@ import click
 import numpy as np
 import torch
 
-
-model_name_or_path = "google/vit-base-patch16-224-in21k"
+model_name_or_path = "google/vit-large-patch16-224"
 
 metric = load_metric("accuracy")
 processor = ViTImageProcessor.from_pretrained(model_name_or_path)
@@ -49,13 +48,15 @@ def main(**kwargs):
 
     prepared_ds = ds.with_transform(transform)
 
-    model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=2)
+    model = ViTForImageClassification.from_pretrained(
+        model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
+    )
 
     training_args = TrainingArguments(
         output_dir="./vit_output",
-        per_device_train_batch_size=64,
+        per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=200 * 2,
+        num_train_epochs=8 * 12,
         fp16=True,
         save_steps=100,
         eval_steps=100,

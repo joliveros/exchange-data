@@ -253,22 +253,17 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
         orderbook_img = np.clip(orderbook_img, a_min=0.0, a_max=1.0)
 
-        # df["orderbook_img"] = [
-        #     np.rot90(np.fliplr(orderbook_img[i]))
-        #     for i in range(0, orderbook_img.shape[0])
-        # ]
-
         df["orderbook_img"] = [
             self.plot_orderbook(np.rot90(np.fliplr(orderbook_img[i])))
             for i in range(0, orderbook_img.shape[0])
         ]
 
         # import time
-        #
-        # for ix in range(0, df.shape[0]):
-        #     ob_img = df["orderbook_img"].iloc[ix]
-        #     time.sleep(1 / 3)
-        #     self.show_img(ob_img)
+
+        for ix in range(0, df.shape[0]):
+            ob_img = df["orderbook_img"].iloc[ix]
+            # time.sleep(1 / 3)
+            self.show_img(ob_img)
 
         df.attrs["trade_volume_max"] = self.trade_volume_max
         df.attrs["change_max"] = self.change_max

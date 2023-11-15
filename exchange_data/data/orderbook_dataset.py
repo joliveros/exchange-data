@@ -13,7 +13,8 @@ import pandas as pd
 
 
 def orderbook_dataset(save=False, split=True, **kwargs):
-    ob_frame = OrderBookFrame(frame_width=224, **kwargs)
+    frame_width = 224
+    ob_frame = OrderBookFrame(frame_width=frame_width, **kwargs)
     df = ob_frame.frame
     best_bid = df["best_bid"]
     length = best_bid.shape[0]
@@ -31,7 +32,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     df["pct_change"] = pct_change
     df["labels"] = 0
 
-    df.loc[(df["pct_change"] <= -0.003), "labels"] = 1
+    df.loc[(df["pct_change"] <= -0.005), "labels"] = 1
 
     short_df = pd.DataFrame(df[df["labels"] == 1])
 
@@ -58,7 +59,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 
     def transforms(examples):
         examples["pixel_values"] = [
-            im.fromarray(np.array(image).reshape((224, 224, 3)), "RGB")
+            im.fromarray(np.array(image).reshape((frame_width, frame_width, 3)), "RGB")
             for image in examples["orderbook_img"]
         ]
         return examples
