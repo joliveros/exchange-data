@@ -5,7 +5,6 @@ bitmex-websocket==0.2.78
 cached-property
 click~=8.1.7
 coveralls
-# docker~=6.1.2
 flake8
 git+https://github.com/joliveros/sec.git#egg=sec
 gym~=0.26.2
@@ -46,7 +45,7 @@ slack_sdk
 # PyYAML~=6.0
 # Pillow~=9.5.0
 python-dateutil~=2.8.2
-requests~=2.30.0
+requests
 urllib3~=1.26.15
 pyee~=9.1.0
 wandb
