@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from pathlib import Path
-
-from exchange_data.data import OrderBookFrame
-from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
-
 from PIL import Image as im
 from datasets import Dataset
+from exchange_data.data import OrderBookFrame
+from pathlib import Path
+from scipy.signal import argrelextrema
+
 import alog
 import click
 import numpy as np
@@ -16,23 +15,26 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     frame_width = 224
     ob_frame = OrderBookFrame(frame_width=frame_width, **kwargs)
     df = ob_frame.frame
-    best_bid = df["best_bid"]
-    length = best_bid.shape[0]
-    df["pct_change"] = 0
-    pct_change = df["pct_change"].copy()
+    best_bid = df["best_bid"].to_numpy()
+    n = 9
 
-    max_ix = length - 1
-    for ix in range(0, length):
-        next_ix = ix + 1
-        if next_ix <= max_ix:
-            pct_change.iloc[ix] = (best_bid.iloc[ix] / best_bid.iloc[next_ix]) - 1
+    min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
+    max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
+    position = []
+    active_trade = False
+
+    for ix in range(0, df.shape[0]):
+        if ix in max_ix:
+            active_trade = True
+        if ix in min_ix:
+            active_trade = False
+
+        if active_trade:
+            position.append(1)
         else:
-            pct_change.iloc[ix] = 0
+            position.append(0)
 
-    df["pct_change"] = pct_change
-    df["labels"] = 0
-
-    df.loc[(df["pct_change"] <= -0.005), "labels"] = 1
+    df["labels"] = position
 
     short_df = pd.DataFrame(df[df["labels"] == 1])
 
@@ -51,6 +53,8 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
 
     dataset = Dataset.from_pandas(df)
+
+    dataset = dataset.shuffle()
 
     if split:
         dataset = dataset.train_test_split(test_size=0.2)
