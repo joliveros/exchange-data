@@ -44,6 +44,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         trade_volume_max=0.0,
         change_max=0.0,
         cache=False,
+        additional_group_by="10Min",
         **kwargs,
     ):
         super().__init__(
@@ -56,6 +57,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             **kwargs,
         )
 
+        self.additional_group_by = additional_group_by
         self.frame_width = frame_width
         self.change_max = change_max
         self.trade_volume_max = trade_volume_max
@@ -270,6 +272,8 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         df.attrs["quantile"] = self.quantile
 
         self.cache_frame(df)
+
+        df = df.resample(self.additional_group_by).last()
 
         return df
 
@@ -499,31 +503,24 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
 
 @click.command()
+@click.option("--cache", is_flag=True)
 @click.option("--database_name", "-d", default="binance", type=str)
 @click.option("--depth", default=72, type=int)
+@click.option("--frame-width", default=224, type=int)
 @click.option("--group-by", "-g", default="30s", type=str)
 @click.option("--interval", "-i", default="10m", type=str)
-@click.option("--offset-interval", "-o", default="3h", type=str)
-@click.option("--plot", "-p", is_flag=True)
-@click.option("--sequence-length", "-l", default=48, type=int)
-@click.option("--round-decimals", "-D", default=4, type=int)
-@click.option("--tick", is_flag=True)
-@click.option("--cache", is_flag=True)
 @click.option("--max-volume-quantile", "-m", default=0.99, type=float)
+@click.option("--offset-interval", "-o", default="0h", type=str)
+@click.option("--plot", "-p", is_flag=True)
+@click.option("--round-decimals", "-D", default=4, type=int)
+@click.option("--sequence-length", "-l", default=48, type=int)
+@click.option("--tick", is_flag=True)
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
     df = OrderBookFrame(**kwargs).frame
 
     alog.info(df)
-
-    # pd.set_option('display.max_rows', len(df) + 1)
-
-    obook = df.orderbook_img.to_numpy()
-
-    obook = np.squeeze(obook[-1])
-
-    alog.info(obook.tolist())
 
 
 if __name__ == "__main__":

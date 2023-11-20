@@ -34,6 +34,8 @@ def orderbook_dataset(save=False, split=True, **kwargs):
         else:
             position.append(0)
 
+    alog.info(df)
+
     df["labels"] = position
 
     short_df = pd.DataFrame(df[df["labels"] == 1])
@@ -82,6 +84,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 @click.option("--database_name", "-d", default="binance", type=str)
 @click.option("--depth", default=72, type=int)
 @click.option("--group-by", "-g", default="30s", type=str)
+@click.option("--additional-group-by", "-G", default="10Min", type=str)
 @click.option("--interval", "-i", default="10m", type=str)
 @click.option("--offset-interval", "-o", default="3h", type=str)
 @click.option("--plot", "-p", is_flag=True)
