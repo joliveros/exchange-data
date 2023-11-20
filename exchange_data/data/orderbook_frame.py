@@ -44,7 +44,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         trade_volume_max=0.0,
         change_max=0.0,
         cache=False,
-        additional_group_by="10Min",
+        additional_group_by="6Min",
         **kwargs,
     ):
         super().__init__(
@@ -260,13 +260,6 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
             for i in range(0, orderbook_img.shape[0])
         ]
 
-        # import time
-
-        # for ix in range(0, df.shape[0]):
-        #     ob_img = df["orderbook_img"].iloc[ix]
-        #     # time.sleep(1 / 3)
-        #     self.show_img(ob_img)
-
         df.attrs["trade_volume_max"] = self.trade_volume_max
         df.attrs["change_max"] = self.change_max
         df.attrs["quantile"] = self.quantile
@@ -274,6 +267,12 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         self.cache_frame(df)
 
         df = df.resample(self.additional_group_by).last()
+
+        import time
+        for ix in range(0, df.shape[0]):
+            ob_img = df["orderbook_img"].iloc[ix]
+            time.sleep(1 / 3)
+            self.show_img(ob_img)
 
         return df
 
@@ -503,6 +502,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
 
 
 @click.command()
+@click.option("--additional-group-by", "-G", default="10Min", type=str)
 @click.option("--cache", is_flag=True)
 @click.option("--database_name", "-d", default="binance", type=str)
 @click.option("--depth", default=72, type=int)
