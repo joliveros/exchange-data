@@ -76,27 +76,15 @@ class SymbolEmitter(Messenger, BinanceUtils, BinanceWebSocketApiManager):
                 self.increase_empty_msg_count()
                 time.sleep(1 / 10)
 
+    def report_lag(self):
+        self.timing(f"symbol_emitter_lag", self.avg_lag)
+
     def handle_data(self, data, data_str):
         if "data" in data:
             if "s" in data["data"]:
                 symbol = data["data"]["s"]
                 timestamp = DateTimeUtils.parse_db_timestamp(data["data"]["E"])
-
-                lag = DateTimeUtils.now() - timestamp
-
-                self.timing(f"{self.channel_for_symbol(symbol)}_lag", lag)
-
-                self.lag_records.append(lag.total_seconds())
-
-                avg_lag = sum(self.lag_records) / len(self.lag_records)
-
-                # alog.info((len(self.lag_records), avg_lag))
-
-                if avg_lag > self.max_lag and len(self.lag_records) > 20:
-                    alog.info("## acceptable lag has been exceeded ##")
-                    self.lag_records.clear()
-                    self.stream_is_crashing(self.stream_id)
-
+                self.set_lag(timestamp)
                 self.publish(self.channel_for_symbol(symbol), data_str)
         else:
             alog.info(data)

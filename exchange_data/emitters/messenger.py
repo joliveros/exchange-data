@@ -8,7 +8,7 @@ from inspect import signature
 from statsd import StatsClient
 
 from exchange_data import settings
-from exchange_data.utils import NoValue, EventEmitterBase
+from exchange_data.utils import NoValue, EventEmitterBase, DateTimeUtils
 from pyee import EventEmitter
 from redis import Redis
 from typing import List
@@ -59,6 +59,26 @@ class Messenger(EventEmitterBase, StatsClient):
             self.last_channel_msg[channel] = datetime.now()
 
         self.on(Events.Message.value, self.handler)
+        self.on("1m", self.report_lag)
+
+    def report_lag(self):
+        pass
+
+    @property
+    def avg_lag(self):
+        return sum(self.lag_records) / len(self.lag_records)
+
+    def set_lag(self, timestamp):
+        lag = DateTimeUtils.now() - timestamp
+        self.lag_records.append(lag.total_seconds())
+
+        if self.exceeds_lag():
+            alog.info("## acceptable lag has been exceeded ##")
+            self.lag_records.clear()
+            self.stream_is_crashing(self.stream_id)
+
+    def exceeds_lag(self):
+        return self.avg_lag > self.max_lag and len(self.lag_records) > 20
 
     def _send(self, data):
         """Send data to statsd."""
