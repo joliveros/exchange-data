@@ -12,11 +12,10 @@ import pandas as pd
 
 
 def orderbook_dataset(save=False, split=True, **kwargs):
-    frame_width = 224
-    ob_frame = OrderBookFrame(frame_width=frame_width, **kwargs)
+    ob_frame = OrderBookFrame(**kwargs)
     df = ob_frame.frame
     best_bid = df["best_bid"].to_numpy()
-    n = 9
+    n = 5
 
     min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
     max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
@@ -65,7 +64,12 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 
     def transforms(examples):
         examples["pixel_values"] = [
-            im.fromarray(np.array(image).reshape((frame_width, frame_width, 3)), "RGB")
+            im.fromarray(
+                np.array(image).reshape(
+                    (ob_frame.frame_width, ob_frame.frame_width, 3)
+                ),
+                "RGB",
+            )
             for image in examples["orderbook_img"]
         ]
         return examples
@@ -83,6 +87,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 @click.command()
 @click.option("--database_name", "-d", default="binance", type=str)
 @click.option("--depth", default=72, type=int)
+@click.option("--frame-width", "-F", default=224, type=int)
 @click.option("--group-by", "-g", default="30s", type=str)
 @click.option("--additional-group-by", "-G", default="10Min", type=str)
 @click.option("--interval", "-i", default="10m", type=str)

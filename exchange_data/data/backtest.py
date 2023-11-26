@@ -26,7 +26,7 @@ class Backtest(BinanceUtils):
 
         BinanceUtils.__init__(self, **kwargs)
 
-        ob_frame = OrderBookFrame(frame_width=224, **kwargs)
+        ob_frame = OrderBookFrame(**kwargs)
         df = ob_frame.frame
 
         feature_extractor = ViTFeatureExtractor.from_pretrained(
