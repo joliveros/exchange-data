@@ -61,7 +61,7 @@ class MacdFrame(MeasurementFrame):
 
         alog.info(df)
 
-        df = df["price"].resample("10MIN").ohlc()
+        df = df["price"].resample("15MIN").ohlc()
         df["macd_diff"] = MACD(
             close=df["close"],
             window_slow=self.window_slow,

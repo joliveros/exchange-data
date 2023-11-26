@@ -15,7 +15,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     ob_frame = OrderBookFrame(**kwargs)
     df = ob_frame.frame
     best_bid = df["best_bid"].to_numpy()
-    n = 5
+    n = 6
 
     min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
     max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
