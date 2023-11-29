@@ -19,33 +19,46 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 
     min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
     max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
-    position = []
-    active_trade = False
+    position = np.zeros(best_bid.shape)
+
+    capital = 1
+    price_in = 0.0
+    ix_in = None
+    ix_out = None
 
     for ix in range(0, df.shape[0]):
         if ix in max_ix:
-            active_trade = True
-        if ix in min_ix:
-            active_trade = False
+            ix_in = ix
+            price_in = best_bid[ix]
+            continue
+        if ix in min_ix and price_in > 0:
+            ix_out = ix
+            diff = (price_in - best_bid[ix]) / price_in
+            pnl = capital * (1 - 0.005) * diff
+            capital = capital + pnl
 
-        if active_trade:
-            position.append(1)
-        else:
-            position.append(0)
+            if pnl > 0.02:
+                alog.debug((pnl, diff))
+                position[ix_in:ix_out] = 1
 
-    alog.info(df)
+            price_in = 0.0
 
     df["labels"] = position
 
+    alog.info(df)
+
     short_df = pd.DataFrame(df[df["labels"] == 1])
 
-    alog.info((df.shape[0], short_df.shape[0]))
-
     flat_df = df[df["labels"] == 0]
+    flat_len = flat_df.shape[0]
+    short_len = short_df.shape[0]
 
-    num_flat = flat_df.shape[0]
+    alog.info((flat_len, short_len))
 
-    short_df = short_df.sample(num_flat, replace=True)
+    if flat_len > short_len:
+        short_df = short_df.sample(flat_len, replace=True)
+    else:
+        flat_df = flat_df.sample(short_len, replace=True)
 
     balanced_df = pd.concat([short_df, flat_df])
 
