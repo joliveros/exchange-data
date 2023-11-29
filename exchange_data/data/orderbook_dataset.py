@@ -48,8 +48,8 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     alog.info(df)
 
     short_df = pd.DataFrame(df[df["labels"] == 1])
+    flat_df = pd.DataFrame(df[df["labels"] == 0])
 
-    flat_df = df[df["labels"] == 0]
     flat_len = flat_df.shape[0]
     short_len = short_df.shape[0]
 
