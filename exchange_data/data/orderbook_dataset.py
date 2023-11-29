@@ -44,8 +44,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
             price_in = 0.0
 
     df["labels"] = position
-
-    alog.info(df)
+    df["labels"] = df["labels"].astype("int")
 
     short_df = pd.DataFrame(df[df["labels"] == 1])
     flat_df = pd.DataFrame(df[df["labels"] == 0])
@@ -63,6 +62,8 @@ def orderbook_dataset(save=False, split=True, **kwargs):
     balanced_df = pd.concat([short_df, flat_df])
 
     df = balanced_df
+
+    alog.info(df)
 
     df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
 
@@ -116,7 +117,8 @@ def orderbook_dataset(save=False, split=True, **kwargs):
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):
-    orderbook_dataset(**kwargs)
+    ds = orderbook_dataset(**kwargs)
+    alog.info(ds['train'][-1])
 
 
 if __name__ == "__main__":
