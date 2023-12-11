@@ -269,6 +269,7 @@ class OrderBookFrame(OrderBookFrameDirectoryInfo, MeasurementFrame):
         df = df.resample(self.additional_group_by).last()
 
         # import time
+        #
         # for ix in range(0, df.shape[0]):
         #     ob_img = df["orderbook_img"].iloc[ix]
         #     time.sleep(1 / 3)

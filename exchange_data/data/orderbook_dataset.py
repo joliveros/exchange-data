@@ -37,7 +37,7 @@ def orderbook_dataset(save=False, split=True, **kwargs):
             pnl = capital * (1 - 0.005) * diff
             capital = capital + pnl
 
-            if pnl > 0.02:
+            if pnl > 0.004:
                 alog.debug((pnl, diff))
                 position[ix_in:ix_out] = 1
 
