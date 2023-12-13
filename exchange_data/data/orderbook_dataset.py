@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from PIL import Image as im
 from datasets import Dataset
-from exchange_data.data import OrderBookFrame
+from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
+# from exchange_data.data import OrderBookFrame
 from pathlib import Path
 from scipy.signal import argrelextrema
 
@@ -12,7 +13,7 @@ import pandas as pd
 
 
 def orderbook_dataset(save=False, split=True, **kwargs):
-    ob_frame = OrderBookFrame(**kwargs)
+    ob_frame = OrderBookChangeFrame(**kwargs)
     df = ob_frame.frame
     best_bid = df["best_bid"].to_numpy()
     n = 6

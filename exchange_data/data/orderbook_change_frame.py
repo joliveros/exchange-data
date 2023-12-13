@@ -10,7 +10,7 @@ import pandas as pd
 
 class OrderBookChangeFrame(OrderBookFrame):
     def __init__(self, **kwargs):
-        super().__init__(frame_width=224, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def frame(self):
