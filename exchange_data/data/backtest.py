@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from exchange_data.data import OrderBookFrame
+from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
 from exchange_data.emitters.binance import BinanceUtils
 from os.path import realpath
 from pathlib import Path
@@ -26,7 +27,7 @@ class Backtest(BinanceUtils):
 
         BinanceUtils.__init__(self, **kwargs)
 
-        ob_frame = OrderBookFrame(**kwargs)
+        ob_frame = OrderBookChangeFrame(**kwargs)
         df = ob_frame.frame
 
         feature_extractor = ViTFeatureExtractor.from_pretrained(
