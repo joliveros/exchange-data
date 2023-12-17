@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from exchange_data import Database, Measurement
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
@@ -6,6 +7,8 @@ from os.path import realpath
 from transformers import ViTFeatureExtractor, ViTForImageClassification
 import alog
 import click
+
+from exchange_data.utils import DateTimeUtils
 
 feature_extractor = ViTFeatureExtractor.from_pretrained(
     "google/vit-base-patch16-224"
@@ -16,13 +19,14 @@ model = ViTForImageClassification.from_pretrained(PATH)
 # model = model.to(device)
 
 
-class PredictionEmitter(Messenger, BinanceUtils):
+class PredictionEmitter(Messenger, Database, BinanceUtils):
     def __init__(self, tick, tick_interval, **kwargs):
         kwargs['futures'] = True
         self.symbol = kwargs['symbol']
         self._kwargs = kwargs
 
         super().__init__(**kwargs)
+        Database.__init__(self, **kwargs)
         BinanceUtils.__init__(self, **kwargs)
 
         self.prediction_channel = f"{self.symbol}_prediction"
@@ -52,6 +56,14 @@ class PredictionEmitter(Messenger, BinanceUtils):
         alog.info(predicted_class_idx)
 
         self.publish(self.prediction_channel, predicted_class_idx)
+
+        meas = vars(Measurement(measurement=f'prediction_{self.symbol}',
+                    time=DateTimeUtils.now(), fields={
+                        'prediction': predicted_class_idx
+                    }))
+
+        self.write_points([meas], time_precision='s')
+
 
 
 
