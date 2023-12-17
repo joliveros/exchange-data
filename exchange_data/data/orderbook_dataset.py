@@ -22,7 +22,7 @@ def orderbook_dataset(save=False,
 
     if labeled:
         best_bid = df["best_bid"].to_numpy()
-        n = 7
+        n = 8
 
         min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
         max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
