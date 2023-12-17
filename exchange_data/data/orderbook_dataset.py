@@ -12,65 +12,72 @@ import numpy as np
 import pandas as pd
 
 
-def orderbook_dataset(save=False, split=True, **kwargs):
+def orderbook_dataset(save=False,
+                      split=True,
+                      shuffle=True,
+                      labeled=True,
+                      **kwargs):
     ob_frame = OrderBookChangeFrame(**kwargs)
     df = ob_frame.frame
-    best_bid = df["best_bid"].to_numpy()
-    n = 7
 
-    min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
-    max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
-    position = np.zeros(best_bid.shape)
+    if labeled:
+        best_bid = df["best_bid"].to_numpy()
+        n = 7
 
-    capital = 1
-    price_in = 0.0
-    ix_in = None
-    ix_out = None
+        min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
+        max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
+        position = np.zeros(best_bid.shape)
 
-    for ix in range(0, df.shape[0]):
-        if ix in max_ix:
-            ix_in = ix
-            price_in = best_bid[ix]
-            continue
-        if ix in min_ix and price_in > 0:
-            ix_out = ix
-            diff = (price_in - best_bid[ix]) / price_in
-            pnl = capital * (1 - 0.005) * diff
-            capital = capital + pnl
+        capital = 1
+        price_in = 0.0
+        ix_in = None
+        ix_out = None
 
-            if pnl > 0.004:
-                alog.debug((pnl, diff))
-                position[ix_in:ix_out] = 1
+        for ix in range(0, df.shape[0]):
+            if ix in max_ix:
+                ix_in = ix
+                price_in = best_bid[ix]
+                continue
+            if ix in min_ix and price_in > 0:
+                ix_out = ix
+                diff = (price_in - best_bid[ix]) / price_in
+                pnl = capital * (1 - 0.005) * diff
+                capital = capital + pnl
 
-            price_in = 0.0
+                if pnl > 0.004:
+                    alog.debug((pnl, diff))
+                    position[ix_in:ix_out] = 1
 
-    df["labels"] = position
-    df["labels"] = df["labels"].astype("int")
+                price_in = 0.0
 
-    short_df = pd.DataFrame(df[df["labels"] == 1])
-    flat_df = pd.DataFrame(df[df["labels"] == 0])
+        df["labels"] = position
+        df["labels"] = df["labels"].astype("int")
 
-    flat_len = flat_df.shape[0]
-    short_len = short_df.shape[0]
+        short_df = pd.DataFrame(df[df["labels"] == 1])
+        flat_df = pd.DataFrame(df[df["labels"] == 0])
 
-    alog.info((flat_len, short_len))
+        flat_len = flat_df.shape[0]
+        short_len = short_df.shape[0]
 
-    if flat_len > short_len:
-        short_df = short_df.sample(flat_len, replace=True)
-    else:
-        flat_df = flat_df.sample(short_len, replace=True)
+        alog.info((flat_len, short_len))
 
-    balanced_df = pd.concat([short_df, flat_df])
+        if flat_len > short_len:
+            short_df = short_df.sample(flat_len, replace=True)
+        else:
+            flat_df = flat_df.sample(short_len, replace=True)
 
-    df = balanced_df
+        balanced_df = pd.concat([short_df, flat_df])
 
-    alog.info(df)
+        df = balanced_df
+
+        alog.info(df)
 
     df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
 
     dataset = Dataset.from_pandas(df)
 
-    dataset = dataset.shuffle()
+    if shuffle:
+        dataset = dataset.shuffle()
 
     if split:
         dataset = dataset.train_test_split(test_size=0.2)

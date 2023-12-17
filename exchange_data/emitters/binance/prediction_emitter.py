@@ -1,53 +1,44 @@
 #!/usr/bin/env python
-from collections import deque
-from os.path import realpath
-from pathlib import Path
-
-from transformers import ViTFeatureExtractor, ViTForImageClassification
-from unicorn_binance_websocket_api import BinanceWebSocketApiManager
-
-from exchange_data.data import OrderBookFrame
-from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
-
-from PIL import Image as im
-from datasets import Dataset
-import alog
-import click
-import numpy as np
-import pandas as pd
-
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 from exchange_data.emitters import Messenger
 from exchange_data.emitters.binance import BinanceUtils
+from os.path import realpath
+from transformers import ViTFeatureExtractor, ViTForImageClassification
+import alog
+import click
 
-feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224")
-
+feature_extractor = ViTFeatureExtractor.from_pretrained(
+    "google/vit-base-patch16-224"
+)
+device = "cuda:0"
 PATH = realpath("./vit_output/pretrained")
-
 model = ViTForImageClassification.from_pretrained(PATH)
+# model = model.to(device)
 
 
 class PredictionEmitter(Messenger, BinanceUtils):
-    def __init__(self, tick, **kwargs):
+    def __init__(self, tick, tick_interval, **kwargs):
+        kwargs['futures'] = True
+        self.symbol = kwargs['symbol']
         self._kwargs = kwargs
-        group_by = kwargs["group_by"]
-
-        alog.info(group_by)
-        # if kwargs["futures"]:
-        #     exchange = "binance.com-futures"
-        # else:
-        #     exchange = "binance.com"
 
         super().__init__(**kwargs)
         BinanceUtils.__init__(self, **kwargs)
 
+        self.prediction_channel = f"{self.symbol}_prediction"
+
         if tick:
             self.tick()
         else:
-            self.on(group_by, self.tick)
+            self.on(tick_interval, self.tick)
 
-    def tick(self):
-        ds = orderbook_dataset(split=False, **self._kwargs)
+            self.sub([tick_interval])
+
+    def tick(self, *args):
+        ds = orderbook_dataset(split=False,
+                               shuffle=False,
+                               labeled=False,
+                               **self._kwargs)
         image = ds[-1]["pixel_values"]
 
         inputs = feature_extractor(images=image, return_tensors="pt")
@@ -60,20 +51,25 @@ class PredictionEmitter(Messenger, BinanceUtils):
 
         alog.info(predicted_class_idx)
 
+        self.publish(self.prediction_channel, predicted_class_idx)
+
+
 
 @click.command()
-@click.option("--futures", "-F", is_flag=True)
+@click.option("--additional-group-by", "-G", default="10Min", type=str)
+@click.option("--cache", is_flag=True)
 @click.option("--database_name", "-d", default="binance", type=str)
+@click.option("--frame-width", "-F", default=224, type=int)
 @click.option("--depth", default=72, type=int)
 @click.option("--group-by", "-g", default="30s", type=str)
+@click.option("--tick-interval", "-t", default="30s", type=str)
 @click.option("--interval", "-i", default="10m", type=str)
+@click.option("--max-volume-quantile", "-m", default=0.99, type=float)
 @click.option("--offset-interval", "-o", default="3h", type=str)
 @click.option("--plot", "-p", is_flag=True)
-@click.option("--sequence-length", "-l", default=48, type=int)
 @click.option("--round-decimals", "-D", default=4, type=int)
+@click.option("--sequence-length", "-l", default=48, type=int)
 @click.option("--tick", is_flag=True)
-@click.option("--cache", is_flag=True)
-@click.option("--max-volume-quantile", "-m", default=0.99, type=float)
 @click.option("--window-size", "-w", default="3m", type=str)
 @click.argument("symbol", type=str)
 def main(**kwargs):

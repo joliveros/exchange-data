@@ -61,7 +61,7 @@ class Messenger(EventEmitterBase, StatsClient):
         self.on(Events.Message.value, self.handler)
         self.on("1m", self.report_lag)
 
-    def report_lag(self):
+    def report_lag(self, *args):
         pass
 
     @property
