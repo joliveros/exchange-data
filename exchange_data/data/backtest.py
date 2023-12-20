@@ -33,7 +33,8 @@ class Backtest(BinanceUtils):
         feature_extractor = ViTFeatureExtractor.from_pretrained(
             "google/vit-base-patch16-224"
         )
-        device = "cuda:0"
+
+        device = "cuda:1"
 
         PATH = realpath("../vit_output/pretrained")
         alog.info(PATH)

@@ -2,6 +2,7 @@
 from PIL import Image as im
 from datasets import Dataset
 from exchange_data.data.orderbook_change_frame import OrderBookChangeFrame
+
 # from exchange_data.data import OrderBookFrame
 from pathlib import Path
 from scipy.signal import argrelextrema
@@ -12,16 +13,20 @@ import numpy as np
 import pandas as pd
 
 
-def orderbook_dataset(save=False,
-                      split=True,
-                      shuffle=True,
-                      labeled=True,
-                      **kwargs):
-    ob_frame = OrderBookChangeFrame(**kwargs)
+def orderbook_dataset(
+    save=False,
+    split=True,
+    shuffle=True,
+    labeled=True,
+    show=False,
+    **kwargs
+):
+    ob_frame = OrderBookChangeFrame(show=show, **kwargs)
     df = ob_frame.frame
 
     if labeled:
         best_bid = df["best_bid"].to_numpy()
+        best_ask = df["best_ask"].to_numpy()
         n = 8
 
         min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
@@ -38,15 +43,19 @@ def orderbook_dataset(save=False,
                 ix_in = ix
                 price_in = best_bid[ix]
                 continue
-            if ix in min_ix and price_in > 0:
-                ix_out = ix
-                diff = (price_in - best_bid[ix]) / price_in
-                pnl = capital * (1 - 0.005) * diff
-                capital = capital + pnl
 
-                if pnl > 0.004:
-                    alog.debug((pnl, diff))
-                    position[ix_in:ix_out] = 1
+            if ix in min_ix:
+                if price_in > 0:
+                    ix_out = ix
+                    pnl = (price_in - best_ask[ix]) / price_in
+
+                    alog.info((price_in, best_ask[ix], pnl))
+
+                    capital = capital + (capital * pnl * (1 - 0.005))
+
+                    if pnl > 0.008:
+                        alog.debug(pnl)
+                        position[ix_in:ix_out] = 1
 
                 price_in = 0.0
 
@@ -80,7 +89,7 @@ def orderbook_dataset(save=False,
         dataset = dataset.shuffle()
 
     if split:
-        dataset = dataset.train_test_split(test_size=0.2)
+        dataset = dataset.train_test_split(test_size=0.05)
 
     alog.info(dataset)
 
@@ -126,7 +135,7 @@ def orderbook_dataset(save=False,
 @click.argument("symbol", type=str)
 def main(**kwargs):
     ds = orderbook_dataset(**kwargs)
-    alog.info(ds['train'][-1])
+    alog.info(ds["train"][-1])
 
 
 if __name__ == "__main__":

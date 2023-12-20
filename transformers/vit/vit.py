@@ -56,7 +56,7 @@ def main(**kwargs):
         output_dir="./vit_output",
         per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=24,
+        num_train_epochs=12 * 2,
         fp16=False,
         save_steps=100,
         eval_steps=100,

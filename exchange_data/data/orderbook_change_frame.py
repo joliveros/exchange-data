@@ -9,8 +9,9 @@ import pandas as pd
 
 
 class OrderBookChangeFrame(OrderBookFrame):
-    def __init__(self, **kwargs):
+    def __init__(self, show=False, **kwargs):
         super().__init__(**kwargs)
+        self.show = show
 
     @property
     def frame(self):
@@ -87,10 +88,11 @@ class OrderBookChangeFrame(OrderBookFrame):
             for i in range(0, orderbook_img.shape[0])
         ]
 
-        # for ix in range(0, df.shape[0]):
-        #     ob_img = df["orderbook_img"].iloc[ix]
-        #     time.sleep(1 / 3)
-        #     self.show_img(ob_img)
+        if self.show:
+            for ix in range(0, df.shape[0]):
+                ob_img = df["orderbook_img"].iloc[ix]
+                time.sleep(1 / 3)
+                self.show_img(ob_img)
 
         df.attrs["trade_volume_max"] = self.trade_volume_max
         df.attrs["change_max"] = self.change_max
