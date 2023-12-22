@@ -15,6 +15,8 @@ import click
 import numpy as np
 import torch
 
+from exchange_data.data.orderbook_dataset import orderbook_dataset
+
 model_name_or_path="./vit_output/pretrained"
 # model_name_or_path = "google/vit-large-patch16-224"
 
@@ -43,16 +45,31 @@ def compute_metrics(p):
     )
 
 
-@click.command()
-def main(**kwargs):
-    ds = datasets.load_from_disk(str(Path.home() / ".exchange-data/orderbook"))
-
+def train():
+    # ds = datasets.load_from_disk(str(Path.home() / ".exchange-data/orderbook"))
+    ds = orderbook_dataset(**dict(
+        split=True,
+        shuffle=True,
+        cache=False,
+        database_name='binance_futures',
+        depth=72,
+        futures=True,
+        group_by='1m',
+        interval='2d',
+        max_volume_quantile=0.99,
+        offset_interval='0h',
+        plot=False,
+        round_decimals=3,
+        sequence_length=72,
+        symbol='UNFIUSDT',
+        window_size='30m',
+        additional_group_by='5Min',
+        frame_width=448
+    ))
     prepared_ds = ds.with_transform(transform)
-
     model = ViTForImageClassification.from_pretrained(
         model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
     )
-
     training_args = TrainingArguments(
         output_dir="./vit_output",
         per_device_train_batch_size=9,
@@ -70,7 +87,6 @@ def main(**kwargs):
         report_to="tensorboard",
         load_best_model_at_end=True,
     )
-
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -80,21 +96,20 @@ def main(**kwargs):
         eval_dataset=prepared_ds["test"],
         tokenizer=processor,
     )
-
     train_results = trainer.train()
-
     trainer.save_model(model_name_or_path)
     trainer.log_metrics("train", train_results.metrics)
     trainer.save_metrics("train", train_results.metrics)
-
     # model.save_pretrained("./vit_output/pretrained")
-
     trainer.save_state()
-
     metrics = trainer.evaluate(prepared_ds["test"])
     trainer.log_metrics("eval", metrics)
     trainer.save_metrics("eval", metrics)
 
+@click.command()
+def main(**kwargs):
+    while True:
+        train()
 
 if __name__ == "__main__":
     main()
