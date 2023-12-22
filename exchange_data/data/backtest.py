@@ -34,7 +34,7 @@ class Backtest(BinanceUtils):
             "google/vit-base-patch16-224"
         )
 
-        device = "cuda:1"
+        device = "cuda:0"
 
         PATH = realpath("../vit_output/pretrained")
         alog.info(PATH)

@@ -27,7 +27,7 @@ def orderbook_dataset(
     if labeled:
         best_bid = df["best_bid"].to_numpy()
         best_ask = df["best_ask"].to_numpy()
-        n = 8
+        n = 6
 
         min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
         max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
@@ -48,13 +48,10 @@ def orderbook_dataset(
                 if price_in > 0:
                     ix_out = ix
                     pnl = (price_in - best_ask[ix]) / price_in
-
-                    alog.info((price_in, best_ask[ix], pnl))
-
                     capital = capital + (capital * pnl * (1 - 0.005))
 
-                    if pnl > 0.008:
-                        alog.debug(pnl)
+                    if pnl > 0.00:
+                        alog.info((price_in, best_ask[ix], pnl))
                         position[ix_in:ix_out] = 1
 
                 price_in = 0.0
@@ -127,6 +124,7 @@ def orderbook_dataset(
 @click.option("--sequence-length", "-l", default=48, type=int)
 @click.option("--round-decimals", "-D", default=4, type=int)
 @click.option("--tick", is_flag=True)
+@click.option("--show", is_flag=True)
 @click.option("--cache", is_flag=True)
 @click.option("--save", is_flag=True)
 @click.option("--split", is_flag=True)
