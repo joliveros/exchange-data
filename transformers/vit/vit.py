@@ -15,7 +15,8 @@ import click
 import numpy as np
 import torch
 
-model_name_or_path = "google/vit-large-patch16-224"
+model_name_or_path="./vit_output/pretrained"
+# model_name_or_path = "google/vit-large-patch16-224"
 
 metric = load_metric("accuracy")
 processor = ViTImageProcessor.from_pretrained(model_name_or_path)
@@ -56,7 +57,7 @@ def main(**kwargs):
         output_dir="./vit_output",
         per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=12 * 2,
+        num_train_epochs=2,
         fp16=False,
         save_steps=100,
         eval_steps=100,
@@ -82,11 +83,11 @@ def main(**kwargs):
 
     train_results = trainer.train()
 
-    trainer.save_model()
+    trainer.save_model(model_name_or_path)
     trainer.log_metrics("train", train_results.metrics)
     trainer.save_metrics("train", train_results.metrics)
 
-    model.save_pretrained("./vit_output/pretrained")
+    # model.save_pretrained("./vit_output/pretrained")
 
     trainer.save_state()
 
