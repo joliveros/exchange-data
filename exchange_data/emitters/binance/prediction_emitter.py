@@ -15,7 +15,6 @@ feature_extractor = ViTFeatureExtractor.from_pretrained(
 )
 device = "cuda:0"
 PATH = realpath("./vit_output/pretrained")
-model = ViTForImageClassification.from_pretrained(PATH)
 # model = model.to(device)
 
 
@@ -43,6 +42,9 @@ class PredictionEmitter(Messenger, Database, BinanceUtils):
                                shuffle=False,
                                labeled=False,
                                **self._kwargs)
+
+        model = ViTForImageClassification.from_pretrained(PATH)
+
         image = ds[-1]["pixel_values"]
 
         inputs = feature_extractor(images=image, return_tensors="pt")
