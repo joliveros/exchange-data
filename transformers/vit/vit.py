@@ -80,12 +80,12 @@ def train():
         output_dir="./vit_output",
         per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=48,
+        num_train_epochs=96,
         fp16=False,
         save_steps=100,
         eval_steps=100,
         logging_steps=10,
-        learning_rate=2e-7,
+        learning_rate=5e-6,
         torch_compile=True,
         save_total_limit=2,
         remove_unused_columns=False,
@@ -102,12 +102,14 @@ def train():
         eval_dataset=prepared_ds["test"],
         tokenizer=processor,
     )
+
     train_results = trainer.train()
     trainer.save_model(model_name_or_path)
     trainer.log_metrics("train", train_results.metrics)
     trainer.save_metrics("train", train_results.metrics)
     # model.save_pretrained("./vit_output/pretrained")
     trainer.save_state()
+
     metrics = trainer.evaluate(prepared_ds["test"])
     trainer.log_metrics("eval", metrics)
     trainer.save_metrics("eval", metrics)
