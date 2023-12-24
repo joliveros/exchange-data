@@ -14,42 +14,42 @@ import alog
 import click
 import numpy as np
 import torch
-
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 
-model_name_or_path="./vit_output/pretrained"
-alt_model_name_or_path = "google/vit-large-patch16-224"
-
-metric = load_metric("accuracy")
-
-if not Path(model_name_or_path).exists():
- model_name_or_path = alt_model_name_or_path
-
-processor = ViTImageProcessor.from_pretrained(model_name_or_path)
-
-
-def transform(example_batch):
-    inputs = processor([x for x in example_batch["pixel_values"]], return_tensors="pt")
-
-    inputs["labels"] = example_batch["labels"]
-
-    return inputs
-
-
-def collate_fn(batch):
-    return {
-        "pixel_values": torch.stack([x["pixel_values"] for x in batch]),
-        "labels": torch.tensor([x["labels"] for x in batch]),
-    }
-
-
-def compute_metrics(p):
-    return metric.compute(
-        predictions=np.argmax(p.predictions, axis=1), references=p.label_ids
-    )
-
+output_path="./vit_output/pretrained"
+model_name_or_path="google/vit-large-patch16-224"
 
 def train():
+    if Path(output_path).exists():
+        model_name_or_path = output_path
+
+    metric = load_metric("accuracy")
+
+    processor = ViTImageProcessor.from_pretrained(model_name_or_path)
+
+
+    def transform(example_batch):
+        inputs = processor([x for x in example_batch["pixel_values"]], return_tensors="pt")
+
+        inputs["labels"] = example_batch["labels"]
+
+        return inputs
+
+
+    def collate_fn(batch):
+        return {
+            "pixel_values": torch.stack([x["pixel_values"] for x in batch]),
+            "labels": torch.tensor([x["labels"] for x in batch]),
+        }
+
+
+    def compute_metrics(p):
+        return metric.compute(
+            predictions=np.argmax(p.predictions, axis=1), references=p.label_ids
+        )
+
+
+
     # ds = datasets.load_from_disk(str(Path.home() / ".exchange-data/orderbook"))
     ds = orderbook_dataset(**dict(
         split=True,
@@ -104,7 +104,7 @@ def train():
     )
 
     train_results = trainer.train()
-    trainer.save_model(model_name_or_path)
+    trainer.save_model(output_path)
     trainer.log_metrics("train", train_results.metrics)
     trainer.save_metrics("train", train_results.metrics)
     # model.save_pretrained("./vit_output/pretrained")
