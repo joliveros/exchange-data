@@ -18,9 +18,13 @@ import torch
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 
 model_name_or_path="./vit_output/pretrained"
-# model_name_or_path = "google/vit-large-patch16-224"
+alt_model_name_or_path = "google/vit-large-patch16-224"
 
 metric = load_metric("accuracy")
+
+if not Path(model_name_or_path).exists():
+ model_name_or_path = alt_model_name_or_path
+
 processor = ViTImageProcessor.from_pretrained(model_name_or_path)
 
 
@@ -55,7 +59,7 @@ def train():
         depth=72,
         futures=True,
         group_by='15s',
-        interval='6h',
+        interval='12h',
         max_volume_quantile=0.99,
         offset_interval='0h',
         plot=False,
@@ -67,14 +71,16 @@ def train():
         frame_width=448
     ))
     prepared_ds = ds.with_transform(transform)
+
     model = ViTForImageClassification.from_pretrained(
         model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
     )
+
     training_args = TrainingArguments(
         output_dir="./vit_output",
         per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=8,
+        num_train_epochs=48,
         fp16=False,
         save_steps=100,
         eval_steps=100,

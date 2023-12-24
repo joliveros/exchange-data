@@ -1,0 +1,64 @@
+version: '3.8'
+
+networks:
+  public:
+    name: public
+    external: true
+
+services:
+
+    prediction:
+        deploy:
+          replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data'
+        volumes:
+            - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+            - ${HOME}/codequants/exchange-data/vit_output/:/home/joliveros/src/vit_output
+        command: bash -c "source ~/.bashrc && 
+          ./exchange_data/emitters/binance/prediction_emitter.py UNFIUSDT \
+          -d binance_futures -i 80m -g 15s -w 10m -l 72 --depth 72 -o 0h -D 3 \
+          -G 5Min -F 448 -t 5m"
+        environment:
+            - LOG_LEVEL=DEBUG
+            - CUDA_VISIBLE_DEVICES=0
+            - WANDB_DISABLE_SERVICE=True
+        networks:
+            - public
+        depends_on:
+            - influxdb
+            - redis
+        secrets:
+            - DB
+            - KERAS_DB
+            - WANDB_API_KEY
+
+    train:
+        deploy:
+          replicas: 1
+        image: 'registry.rubercubic.com:5001/exchange-data'
+        volumes:
+            - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/
+            - ${HOME}/codequants/exchange-data/vit_output/:/home/joliveros/src/vit_output
+        command: bash -c "source ~/.bashrc && ./transformers/vit/vit.py"
+        environment:
+            - LOG_LEVEL=DEBUG
+            - CUDA_VISIBLE_DEVICES=0
+            - WANDB_DISABLE_SERVICE=True
+        networks:
+            - public
+        depends_on:
+            - influxdb
+            - redis
+        secrets:
+            - DB
+            - KERAS_DB
+            - WANDB_API_KEY
+
+
+secrets:
+  DB:
+    external: true
+  KERAS_DB:
+    external: true
+  WANDB_API_KEY:
+    external: true

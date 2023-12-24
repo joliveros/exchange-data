@@ -9,8 +9,10 @@ import pandas as pd
 
 
 class OrderBookChangeFrame(OrderBookFrame):
-    def __init__(self, show=False, **kwargs):
+    def __init__(self, additional_group_by, show=False, **kwargs):
         super().__init__(**kwargs)
+        self.additional_group_by = additional_group_by
+
         self.show = show
 
     @property
@@ -87,6 +89,8 @@ class OrderBookChangeFrame(OrderBookFrame):
             self.plot_orderbook(np.rot90(np.fliplr(orderbook_img[i])))
             for i in range(0, orderbook_img.shape[0])
         ]
+
+        df = df.resample(self.additional_group_by).last()
 
         if self.show:
             for ix in range(0, df.shape[0]):

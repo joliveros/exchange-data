@@ -51,3 +51,7 @@ pyee~=9.1.0
 wandb
 datasets
 transformers
+torch==2.0.1
+datasets
+scikit-learn
+accelerate

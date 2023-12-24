@@ -159,3 +159,6 @@ fabric.properties
 .idea
 
 .git
+
+vit_output/
+notebooks/
