@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from dataclasses import dataclass
 from datasets import load_metric
 import datasets
 from pathlib import Path
@@ -16,16 +17,23 @@ import numpy as np
 import torch
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 
-output_path="./vit_output/pretrained"
-model_name_or_path="google/vit-large-patch16-224"
+@dataclass
+class Config():
+    output_path="./vit_output/pretrained"
+    model_name_or_path="google/vit-large-patch16-224"
+
+config = Config()
+
 
 def train():
-    if Path(output_path).exists():
-        model_name_or_path = output_path
+    if Path(config.output_path).exists():
+        config.model_name_or_path = config.output_path
 
     metric = load_metric("accuracy")
+    
+    alog.info(config)
 
-    processor = ViTImageProcessor.from_pretrained(model_name_or_path)
+    processor = ViTImageProcessor.from_pretrained(config.model_name_or_path)
 
 
     def transform(example_batch):
@@ -68,12 +76,12 @@ def train():
         symbol='UNFIUSDT',
         window_size='10m',
         additional_group_by='5Min',
-        frame_width=448
+        frame_width=299
     ))
     prepared_ds = ds.with_transform(transform)
 
     model = ViTForImageClassification.from_pretrained(
-        model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
+        config.model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
     )
 
     training_args = TrainingArguments(
@@ -104,7 +112,7 @@ def train():
     )
 
     train_results = trainer.train()
-    trainer.save_model(output_path)
+    trainer.save_model(config.output_path)
     trainer.log_metrics("train", train_results.metrics)
     trainer.save_metrics("train", train_results.metrics)
     # model.save_pretrained("./vit_output/pretrained")

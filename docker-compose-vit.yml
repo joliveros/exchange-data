@@ -17,7 +17,7 @@ services:
         command: bash -c "source ~/.bashrc && 
           ./exchange_data/emitters/binance/prediction_emitter.py UNFIUSDT \
           -d binance_futures -i 80m -g 15s -w 10m -l 72 --depth 72 -o 0h -D 3 \
-          -G 5Min -F 448 -t 5m"
+          -G 5Min -F 299 -t 5m"
         environment:
             - LOG_LEVEL=DEBUG
             - CUDA_VISIBLE_DEVICES=0
