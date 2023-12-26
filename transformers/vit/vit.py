@@ -11,10 +11,12 @@ from transformers import (
     Trainer,
 )
 
+import dataclasses
 import alog
 import click
 import numpy as np
 import torch
+import json
 from exchange_data.data.orderbook_dataset import orderbook_dataset
 
 @dataclass
@@ -29,10 +31,10 @@ def train():
     if Path(config.output_path).exists():
         config.model_name_or_path = config.output_path
 
+    alog.info((config.model_name_or_path, config.output_path))
+
     metric = load_metric("accuracy")
     
-    alog.info(config)
-
     processor = ViTImageProcessor.from_pretrained(config.model_name_or_path)
 
 
@@ -88,12 +90,12 @@ def train():
         output_dir="./vit_output",
         per_device_train_batch_size=9,
         evaluation_strategy="steps",
-        num_train_epochs=96,
+        num_train_epochs=112,
         fp16=False,
-        save_steps=100,
+        save_steps=300,
         eval_steps=100,
         logging_steps=10,
-        learning_rate=5e-6,
+        learning_rate=5e-5,
         torch_compile=True,
         save_total_limit=2,
         remove_unused_columns=False,
@@ -124,8 +126,7 @@ def train():
 
 @click.command()
 def main(**kwargs):
-    while True:
-        train()
+    train()
 
 if __name__ == "__main__":
     main()

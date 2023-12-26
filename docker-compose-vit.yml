@@ -20,7 +20,7 @@ services:
           -G 5Min -F 299 -t 5m"
         environment:
             - LOG_LEVEL=DEBUG
-            - CUDA_VISIBLE_DEVICES=0
+            - CUDA_VISIBLE_DEVICES=1
             - WANDB_DISABLE_SERVICE=True
         networks:
             - public
