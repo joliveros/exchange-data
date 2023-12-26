@@ -69,7 +69,7 @@ def train():
         depth=72,
         futures=True,
         group_by='15s',
-        interval='12h',
+        interval='1d',
         max_volume_quantile=0.99,
         offset_interval='0h',
         plot=False,

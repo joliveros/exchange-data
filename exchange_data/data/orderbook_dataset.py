@@ -86,7 +86,7 @@ def orderbook_dataset(
         dataset = dataset.shuffle()
 
     if split:
-        dataset = dataset.train_test_split(test_size=0.05)
+        dataset = dataset.train_test_split(test_size=0.1)
 
     alog.info(dataset)
 
