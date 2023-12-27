@@ -10,9 +10,7 @@ import click
 
 from exchange_data.utils import DateTimeUtils
 
-feature_extractor = ViTFeatureExtractor.from_pretrained(
-    "google/vit-base-patch16-224"
-)
+
 device = "cuda:0"
 PATH = realpath("./vit_output/pretrained")
 # model = model.to(device)
@@ -46,7 +44,7 @@ class PredictionEmitter(Messenger, Database, BinanceUtils):
         model = ViTForImageClassification.from_pretrained(PATH)
 
         image = ds[-1]["pixel_values"]
-
+        feature_extractor = ViTFeatureExtractor.from_pretrained(PATH)
         inputs = feature_extractor(images=image, return_tensors="pt")
         outputs = model(**inputs)
         logits = outputs.logits

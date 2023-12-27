@@ -50,7 +50,7 @@ def orderbook_dataset(
                     pnl = (price_in - best_ask[ix]) / price_in
                     capital = capital + (capital * pnl * (1 - 0.005))
 
-                    if pnl > 0.00:
+                    if pnl > 0.007:
                         alog.info((price_in, best_ask[ix], pnl))
                         position[ix_in:ix_out] = 1
 
