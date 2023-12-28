@@ -51,7 +51,9 @@ class PredictionEmitter(Messenger, Database, BinanceUtils):
 
         alog.info(logits)
 
-        predicted_class_idx = logits.argmax(-1).item()
+        alog.info(logits.argmax(0))
+
+        predicted_class_idx = logits.argmax(1).item()
 
         alog.info(predicted_class_idx)
 
