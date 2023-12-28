@@ -69,7 +69,7 @@ def train():
         depth=72,
         futures=True,
         group_by='15s',
-        interval='1d',
+        interval='2d',
         max_volume_quantile=0.99,
         offset_interval='0h',
         plot=False,
@@ -88,7 +88,7 @@ def train():
 
     training_args = TrainingArguments(
         output_dir="./vit_output",
-        per_device_train_batch_size=9,
+        per_device_train_batch_size=17,
         evaluation_strategy="steps",
         num_train_epochs=112,
         fp16=False,
