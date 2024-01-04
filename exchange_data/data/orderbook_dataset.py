@@ -67,10 +67,12 @@ def orderbook_dataset(
 
         alog.info((flat_len, short_len))
 
-        if flat_len > short_len:
-            short_df = short_df.sample(flat_len, replace=True)
-        else:
-            flat_df = flat_df.sample(short_len, replace=True)
+        # if flat_len > short_len:
+        #     short_df = short_df.sample(flat_len, replace=True)
+        # else:
+        #     flat_df = flat_df.sample(short_len, replace=True)
+
+        short_df = short_df.sample(int(flat_len * 0.1), replace=True)
 
         balanced_df = pd.concat([short_df, flat_df])
 
