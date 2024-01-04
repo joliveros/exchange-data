@@ -39,7 +39,7 @@ class Backtest(BinanceUtils):
         PATH = realpath("../vit_output/pretrained")
         alog.info(PATH)
         model = ViTForImageClassification.from_pretrained(PATH)
-        model = model.to(device)
+        # model = model.to(device)
 
         df["prediction"] = None
         predictions = []
