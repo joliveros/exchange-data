@@ -27,7 +27,7 @@ def orderbook_dataset(
     if labeled:
         best_bid = df["best_bid"].to_numpy()
         best_ask = df["best_ask"].to_numpy()
-        n = 6
+        n = 7
 
         min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
         max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
@@ -50,7 +50,7 @@ def orderbook_dataset(
                     pnl = (price_in - best_ask[ix]) / price_in
                     capital = capital + (capital * pnl * (1 - 0.005))
 
-                    if pnl > 0.007:
+                    if pnl > 0.009:
                         alog.info((price_in, best_ask[ix], pnl))
                         position[ix_in:ix_out] = 1
 
@@ -72,13 +72,15 @@ def orderbook_dataset(
         # else:
         #     flat_df = flat_df.sample(short_len, replace=True)
 
-        short_df = short_df.sample(int(flat_len * 0.1), replace=True)
+        short_df = short_df.sample(int(flat_len * 0.5), replace=True)
 
         balanced_df = pd.concat([short_df, flat_df])
 
         df = balanced_df
 
         alog.info(df)
+
+    df.dropna(inplace=True)
 
     df["orderbook_img"] = df["orderbook_img"].apply(lambda x: x.flatten())
 

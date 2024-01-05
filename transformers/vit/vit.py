@@ -90,7 +90,7 @@ def train():
         output_dir="./vit_output",
         per_device_train_batch_size=17,
         evaluation_strategy="steps",
-        num_train_epochs=112,
+        num_train_epochs=12,
         fp16=False,
         save_steps=100,
         eval_steps=100,
