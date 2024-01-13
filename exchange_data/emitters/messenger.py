@@ -35,6 +35,9 @@ class Messenger(EventEmitterBase, StatsClient):
         self.max_empty_msg_count = max_empty_msg_count
         self.last_channel_msg = dict()
         host = settings.REDIS_HOST
+
+        EventEmitterBase.__init__(self, **kwargs)
+
         super().__init__(**kwargs)
 
         StatsClient.__init__(self, host="telegraf", prefix=stats_prefix)

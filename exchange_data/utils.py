@@ -133,10 +133,7 @@ class EventEmitterBase(ABC):
 
         self.on('error', self.raise_error)
 
-        try:
-            super().__init__(**kwargs)
-        except:
-            pass
+        super().__init__(**kwargs)
 
     def raise_error(self, error):
         alog.info(error)
