@@ -72,7 +72,7 @@ def orderbook_dataset(
         # else:
         #     flat_df = flat_df.sample(short_len, replace=True)
 
-        short_df = short_df.sample(int(flat_len * 0.99), replace=True)
+        short_df = short_df.sample(int(flat_len * 1.10), replace=True)
 
         balanced_df = pd.concat([short_df, flat_df])
 

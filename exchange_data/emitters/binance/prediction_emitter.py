@@ -11,7 +11,7 @@ import click
 from exchange_data.utils import DateTimeUtils
 
 
-device = "cuda:0"
+# device = "cuda:0"
 PATH = realpath("./vit_output/pretrained")
 # model = model.to(device)
 

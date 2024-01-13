@@ -20,7 +20,7 @@ import numpy as np
 class Backtest(BinanceUtils):
     def __init__(self, **kwargs):
         alog.info(alog.pformat(kwargs))
-
+        kwargs["futures"] = True
         self._kwargs = kwargs
         group_by = kwargs["group_by"]
         super().__init__(**kwargs)
@@ -30,25 +30,30 @@ class Backtest(BinanceUtils):
         ob_frame = OrderBookChangeFrame(**kwargs)
         df = ob_frame.frame
 
-        feature_extractor = ViTFeatureExtractor.from_pretrained(
-            "google/vit-base-patch16-224"
-        )
-
-        device = "cuda:0"
+        # device = "cuda:0"
 
         PATH = realpath("../vit_output/pretrained")
+        
         alog.info(PATH)
+
+        feature_extractor = ViTFeatureExtractor.from_pretrained(PATH)
+
+
         model = ViTForImageClassification.from_pretrained(PATH)
+
         # model = model.to(device)
 
         df["prediction"] = None
         predictions = []
+
         for ix in range(0, df.shape[0]):
             image = df.iloc[ix]["orderbook_img"]
             image = im.fromarray(image)
 
             inputs = feature_extractor(images=image, return_tensors="pt")
-            inputs = inputs.to(device)
+
+            # inputs = inputs.to(device)
+
             outputs = model(**inputs)
             logits = outputs.logits
 
@@ -62,7 +67,9 @@ class Backtest(BinanceUtils):
 
 
 @click.command()
-@click.option("--futures", "-F", is_flag=True)
+@click.option("--frame-width", "-F", default=224, type=int)
+@click.option("--additional-group-by", "-G", default="10Min", type=str)
+# @click.option("--futures", "-F", is_flag=True)
 @click.option("--database_name", "-d", default="binance", type=str)
 @click.option("--depth", default=72, type=int)
 @click.option("--group-by", "-g", default="30s", type=str)
