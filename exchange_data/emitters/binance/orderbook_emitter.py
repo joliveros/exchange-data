@@ -19,8 +19,8 @@ import sys
 
 class BitmexOrderBookEmitter(
     Messenger,
-    BinanceUtils,
     Database,
+    BinanceUtils,
     SignalInterceptor,
     DateTimeUtils,
 ):
