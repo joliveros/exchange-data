@@ -14,8 +14,8 @@ import zlib
 
 class OrderBookWriter(
     Messenger,
-    BinanceUtils,
     Database,
+    BinanceUtils,
     SignalInterceptor,
     DateTimeUtils,
 ):
@@ -44,6 +44,7 @@ class OrderBookWriter(
             stats_prefix=stats_prefix,
             **kwargs
         )
+
         list_name = f'{database_name}_trades'
 
         while True:
