@@ -80,11 +80,13 @@ def train():
         additional_group_by='5Min',
         frame_width=299
     ))
+
     prepared_ds = ds.with_transform(transform)
 
     model = ViTForImageClassification.from_pretrained(
         config.model_name_or_path, num_labels=2, ignore_mismatched_sizes=True
     )
+
 
     training_args = TrainingArguments(
         output_dir="./vit_output",

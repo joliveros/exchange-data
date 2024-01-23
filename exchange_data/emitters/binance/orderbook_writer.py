@@ -13,8 +13,8 @@ import zlib
 
 class OrderBookWriter(
     Messenger,
-    BinanceUtils,
     Database,
+    BinanceUtils,
     SignalInterceptor,
     DateTimeUtils,
 ):
@@ -52,11 +52,13 @@ class OrderBookWriter(
             self.save_measurements(meas)
 
     def save_measurements(self, measurement, **kwargs):
-        try:
-            self._save_measurements(measurement, **kwargs)
-        except Exception:
-            time.sleep(2)
-            self.save_measurements(measurement, **kwargs)
+        self._save_measurements(measurement, **kwargs)
+
+        # try:
+        #     self._save_measurements(measurement, **kwargs)
+        # except Exception:
+        #   time.sleep(2)
+        #    self.save_measurements(measurement, **kwargs)
 
     def _save_measurements(self, measurement, **kwargs):
         self.write_points([measurement], time_precision='s', **kwargs)
