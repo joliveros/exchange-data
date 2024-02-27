@@ -27,7 +27,7 @@ def orderbook_dataset(
     if labeled:
         best_bid = df["best_bid"].to_numpy()
         best_ask = df["best_ask"].to_numpy()
-        n = 7
+        n = 5
 
         min_ix = argrelextrema(best_bid, np.less_equal, order=n)[0]
         max_ix = argrelextrema(best_bid, np.greater_equal, order=n)[0]
@@ -72,7 +72,9 @@ def orderbook_dataset(
         # else:
         #     flat_df = flat_df.sample(short_len, replace=True)
 
-        short_df = short_df.sample(int(flat_len * 1.10), replace=True)
+        short_fraction = int(flat_len * 0.85)
+
+        short_df = short_df.sample(short_fraction, replace=True)
 
         balanced_df = pd.concat([short_df, flat_df])
 

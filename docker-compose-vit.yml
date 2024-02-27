@@ -9,7 +9,7 @@ services:
 
     prediction:
         deploy:
-          replicas: 1
+          replicas: 0
         image: 'registry.rubercubic.com:5001/exchange-data'
         volumes:
             - ${HOME}/.exchange-data/:/home/joliveros/.exchange-data/

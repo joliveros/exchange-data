@@ -59,25 +59,24 @@ def train():
         )
 
 
-
-    # ds = datasets.load_from_disk(str(Path.home() / ".exchange-data/orderbook"))
     ds = orderbook_dataset(**dict(
         split=True,
         shuffle=True,
         cache=False,
         database_name='binance_futures',
-        depth=72,
+        depth=124,
         futures=True,
-        group_by='2m',
-        interval='2d',
+        group_by='7m',
+        interval='7d',
+        # interval='12h',
         max_volume_quantile=0.99,
         offset_interval='0h',
         plot=False,
         round_decimals=3,
-        sequence_length=72,
+        sequence_length=124,
         symbol='UNFIUSDT',
-        window_size='10m',
-        additional_group_by='5Min',
+        window_size='4h',
+        additional_group_by='20Min',
         frame_width=299
     ))
 
@@ -90,14 +89,15 @@ def train():
 
     training_args = TrainingArguments(
         output_dir="./vit_output",
-        per_device_train_batch_size=17,
+        per_device_train_batch_size=16,
         evaluation_strategy="steps",
         num_train_epochs=24,
         fp16=False,
         save_steps=100,
         eval_steps=100,
         logging_steps=10,
-        learning_rate=8e-8,
+        # learning_rate=5e-6,
+        learning_rate=1e-7,
         torch_compile=True,
         save_total_limit=2,
         remove_unused_columns=False,
